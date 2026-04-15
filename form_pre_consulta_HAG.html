@@ -965,97 +965,83 @@ async function submitForm(){
   // Envia via Web3Forms
   try{
     // Monta email em HTML formatado e legível
-        // ─── EMAIL HTML BUILDER ───
-    function row(l,v){
-      return '<tr><td style="padding:7px 16px;font-size:11px;color:#8a9ab0;font-weight:500;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;vertical-align:top;border-bottom:1px solid #eef0f5;width:175px">'+l+'</td><td style="padding:7px 16px;font-size:13.5px;color:#1A233A;border-bottom:1px solid #eef0f5;font-weight:300;line-height:1.5">'+(v&&v!=='—'?v:'<span style="color:#c4cad6">—</span>')+'</td></tr>';
-    }
-    function rowOpt(l,v){
-      return (v&&v!=='—'&&v!=='— · —'&&v!=='— / —')?row(l,v):'';
-    }
-    function sec(t){
-      return '<tr><td colspan="2" style="padding:16px 16px 6px;font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#C9AF6E;border-bottom:1.5px solid #C9AF6E;background:#faf7ef">'+t+'</td></tr>';
-    }
-    var htmlBody = '<div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;background:#fff;border:1px solid #dde2eb">'
-      +'<div style="background:#1A233A;padding:30px 36px;text-align:center">'
-      +'<div style="margin:0 auto 14px;width:46px"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" width="46" height="46"><polygon points="26,3 48,15 48,37 26,49 4,37 4,15" stroke="#C9AF6E" stroke-width="1.2" fill="none"/><line x1="17" y1="19" x2="17" y2="33" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="26" x2="26" y2="29" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/><line x1="26" y1="22" x2="26" y2="36" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/></svg></div>'
-      +'<p style="font-size:9px;letter-spacing:.24em;color:#C9AF6E;text-transform:uppercase;margin:0 0 8px">Método HAG · Dr. Henrique Alves · CRM/SP 226530</p>'
-      +'<h1 style="font-size:22px;color:#fff;margin:0;font-weight:300;letter-spacing:.06em;font-family:Georgia,serif">Pré-Consulta &mdash; '+fv('f_nome')+'</h1>'
-      +'<p style="font-size:11px;color:rgba(255,255,255,.35);margin:8px 0 0;letter-spacing:.06em">'+new Date().toLocaleDateString('pt-BR')+' &nbsp;·&nbsp; '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</p>'
-      +'</div>'
-      +'<table style="width:100%;border-collapse:collapse">'
-      // IDENTIFICAÇÃO — sempre mostra nome
-      +sec('Identificação')
-      +row('Nome',fv('f_nome'))
-      +rowOpt('Idade / Cidade',fv('f_idade')+' · '+fv('f_cidade'))
-      +rowOpt('Profissão',fv('f_profissao'))
-      +rowOpt('Como conheceu',chips('c_conheceu'))
-      // MOTIVO
-      +sec('Motivo Principal')
-      +row('Principal queixa',chips('c_incomoda'))
-      +row('Prioridade',fv('f_uma_coisa'))
-      // DADOS CORPORAIS
-      +sec('Dados Corporais')
-      +row('Peso / Altura',fv('f_peso')+' · '+fv('f_altura'))
-      +rowOpt('Meta',fv('f_peso_meta')+(fv('f_data_meta')!=='—'?' até '+fv('f_data_meta'):''))
-      +rowOpt('Histórico de peso',fv('f_peso_hist'))
-      // CLÍNICO
-      +sec('Histórico Clínico')
-      +rowOpt('Doenças / Cirurgias',fv('f_doencas'))
-      +rowOpt('Histórico familiar',chips('c_familiar'))
-      +rowOpt('Medicamentos atuais',fv('f_meds'))
-      +rowOpt('Med. anteriores',fv('f_meds_ant'))
-      +rowOpt('Alergias',fv('f_alergias'))
-      // ESTILO DE VIDA
-      +sec('Estilo de Vida')
-      +rowOpt('Atividade física',fv('f_exercicio'))
-      +rowOpt('Rotina',fv('f_trabalho'))
-      +rowOpt('Sono',radio('r_sono_horas')!=='—'?(radio('r_sono_horas')+' · '+radio('r_sono_qual')):'')
-      +rowOpt('Disposição',radio('r_disp'))
-      +rowOpt('Estresse',radio('r_estresse'))
-      +rowOpt('Memória',radio('r_memoria'))
-      // ALIMENTAR
-      +sec('Comportamento Alimentar')
-      +rowOpt('Dieta anterior',fv('f_dieta_ant'))
-      +rowOpt('Vontades freq.',chips('c_vontade'))
-      +rowOpt('Favorito',fv('f_favorito'))
-      +rowOpt('Não come',fv('f_nao_come'))
-      +rowOpt('Quem cozinha',fv('f_cozinha'))
-      +rowOpt('Restaurantes',radio('r_resto'))
-      +rowOpt('Suplementos',fv('f_supls'))
-      // HÁBITOS
-      +sec('Hábitos e Saúde')
-      +rowOpt('Água diária',radio('r_agua'))
-      +rowOpt('Intestino',radio('r_intestino'))
-      +rowOpt('Álcool',radio('r_alcool'))
-      +rowOpt('Tabagismo',radio('r_fumo'))
-      // CONTEXTO
-      +sec('Contexto Pessoal')
-      +rowOpt('Filhos / planos',radio('r_filhos'))
-      +rowOpt('Saúde emocional',fv('f_emocional'))
-      +rowOpt('Info adicional',fv('f_extra'))
-      // BARREIRAS
-      +sec('Barreiras')
-      +rowOpt('Principais',chips('c_barreiras')+(fv('f_barreiras_outro')!=='—'?' — '+fv('f_barreiras_outro'):''))
-      // MOTIVAÇÃO
-      +sec('Motivação')
-      +row('Escala 0–10',scale('r_motivacao')+'/10')
-      +rowOpt('Mensagem',fv('f_mensagem'))
-      +'</table>'
-      +'<div style="background:#1A233A;padding:14px 24px;text-align:center;font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.14em;text-transform:uppercase">'
-      +'Dr. Henrique Alves Gonzaga &nbsp;·&nbsp; CRM/SP 226530 &nbsp;·&nbsp; Método HAG'
-      +'</div></div>';
+        // ─── MONTA MENSAGEM TEXTO LIMPO ───
+    var L = '─────────────────────────────────────────────────';
+    var msg = '';
+    msg += 'PRÉ-CONSULTA HAG\n';
+    msg += 'Dr. Henrique Alves Gonzaga · CRM/SP 226530\n';
+    msg += 'Data: ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + '\n';
+    msg += L + '\n\n';
 
-        // Web3Forms: enviar como FormData para garantir HTML renderizado no email
-    var fd = new FormData();
-    fd.append('access_key', WEB3FORMS_KEY);
-    fd.append('subject', 'Pré-Consulta HAG — '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')');
-    fd.append('from_name', 'Formulário HAG — '+fv('f_nome'));
-    fd.append('message', htmlBody);
+    msg += '[ IDENTIFICAÇÃO ]\n';
+    msg += 'Nome: ' + fv('f_nome') + '\n';
+    if(fv('f_idade')!=='—') msg += 'Idade: ' + fv('f_idade') + '\n';
+    if(fv('f_cidade')!=='—') msg += 'Cidade: ' + fv('f_cidade') + '\n';
+    if(fv('f_profissao')!=='—') msg += 'Profissão: ' + fv('f_profissao') + '\n';
+    if(chips('c_conheceu')!=='—') msg += 'Como conheceu: ' + chips('c_conheceu') + '\n';
 
+    msg += '\n[ MOTIVO PRINCIPAL ]\n';
+    msg += 'Incomoda hoje: ' + chips('c_incomoda') + '\n';
+    msg += 'Prioridade única: ' + fv('f_uma_coisa') + '\n';
+
+    msg += '\n[ DADOS CORPORAIS ]\n';
+    msg += 'Peso: ' + fv('f_peso') + ' · Altura: ' + fv('f_altura') + '\n';
+    if(fv('f_peso_meta')!=='—') msg += 'Meta: ' + fv('f_peso_meta') + (fv('f_data_meta')!=='—'?' até '+fv('f_data_meta'):'') + '\n';
+    if(fv('f_peso_hist')!=='—') msg += 'Histórico: ' + fv('f_peso_hist') + '\n';
+
+    msg += '\n[ HISTÓRICO CLÍNICO ]\n';
+    if(fv('f_doencas')!=='—') msg += 'Doenças/Cirurgias: ' + fv('f_doencas') + '\n';
+    if(chips('c_familiar')!=='—') msg += 'Histórico familiar: ' + chips('c_familiar') + '\n';
+    if(fv('f_meds')!=='—') msg += 'Medicamentos atuais: ' + fv('f_meds') + '\n';
+    if(fv('f_meds_ant')!=='—') msg += 'Med. anteriores: ' + fv('f_meds_ant') + '\n';
+    if(fv('f_alergias')!=='—') msg += 'Alergias: ' + fv('f_alergias') + '\n';
+
+    msg += '\n[ ESTILO DE VIDA ]\n';
+    if(fv('f_exercicio')!=='—') msg += 'Atividade física: ' + fv('f_exercicio') + '\n';
+    if(fv('f_trabalho')!=='—') msg += 'Rotina: ' + fv('f_trabalho') + '\n';
+    if(radio('r_sono_horas')!=='—') msg += 'Sono: ' + radio('r_sono_horas') + ' · ' + radio('r_sono_qual') + ' · Disposição: ' + radio('r_disp') + '\n';
+    if(radio('r_estresse')!=='—') msg += 'Estresse: ' + radio('r_estresse') + ' · Memória: ' + radio('r_memoria') + '\n';
+
+    msg += '\n[ COMPORTAMENTO ALIMENTAR ]\n';
+    if(fv('f_dieta_ant')!=='—') msg += 'Dieta anterior: ' + fv('f_dieta_ant') + '\n';
+    if(chips('c_vontade')!=='—') msg += 'Vontades freq.: ' + chips('c_vontade') + '\n';
+    if(fv('f_favorito')!=='—') msg += 'Favorito: ' + fv('f_favorito') + '\n';
+    if(fv('f_nao_come')!=='—') msg += 'Não come: ' + fv('f_nao_come') + '\n';
+    if(fv('f_cozinha')!=='—') msg += 'Quem cozinha: ' + fv('f_cozinha') + '\n';
+    if(radio('r_resto')!=='—') msg += 'Restaurantes: ' + radio('r_resto') + '\n';
+    if(fv('f_supls')!=='—') msg += 'Suplementos: ' + fv('f_supls') + '\n';
+
+    msg += '\n[ HÁBITOS E SAÚDE ]\n';
+    if(radio('r_agua')!=='—') msg += 'Água: ' + radio('r_agua') + '\n';
+    if(radio('r_intestino')!=='—') msg += 'Intestino: ' + radio('r_intestino') + '\n';
+    if(radio('r_alcool')!=='—') msg += 'Álcool: ' + radio('r_alcool') + '\n';
+    if(radio('r_fumo')!=='—') msg += 'Tabagismo: ' + radio('r_fumo') + '\n';
+
+    msg += '\n[ CONTEXTO PESSOAL ]\n';
+    if(radio('r_filhos')!=='—') msg += 'Filhos/planos: ' + radio('r_filhos') + '\n';
+    if(fv('f_emocional')!=='—') msg += 'Saúde emocional: ' + fv('f_emocional') + '\n';
+    if(fv('f_extra')!=='—') msg += 'Info adicional: ' + fv('f_extra') + '\n';
+
+    msg += '\n[ BARREIRAS ]\n';
+    if(chips('c_barreiras')!=='—') msg += chips('c_barreiras') + (fv('f_barreiras_outro')!=='—'?' — '+fv('f_barreiras_outro'):'') + '\n';
+
+    msg += '\n[ MOTIVAÇÃO ]\n';
+    msg += 'Escala 0-10: ' + scale('r_motivacao') + '/10\n';
+    if(fv('f_mensagem')!=='—') msg += 'Mensagem: ' + fv('f_mensagem') + '\n';
+
+    msg += '\n' + L + '\n';
+    msg += 'Método HAG · drhenrique@clinicahag.com\n';
+
+    // Envia via Web3Forms com JSON simples
     var resp = await fetch('https://api.web3forms.com/submit',{
       method:'POST',
-      headers:{'Accept':'application/json'},
-      body: fd
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify({
+        access_key: WEB3FORMS_KEY,
+        subject: 'Pré-Consulta HAG — ' + fv('f_nome') + ' (' + new Date().toLocaleDateString('pt-BR') + ')',
+        from_name: 'Formulário HAG — ' + fv('f_nome'),
+        message: msg
+      })
     });
     var result = await resp.json();
 
