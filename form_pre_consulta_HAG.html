@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pré-Consulta | Dr. Henrique Alves · Método HAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1A233A;--navy2:#212d47;--navy3:#2d3c5e;
+  --gold:#C9AF6E;--gold2:#b89c58;--gold-pale:#e8d9b4;--gold-bg:#faf7ef;--gold-border:#ddd0a8;
+  --cream:#EBEDEF;--cream2:#f5f4f0;
+  --surface:#ffffff;
+  --ink:#1A233A;--ink2:#3d4a63;--ink3:#7a8399;--ink4:#adb5c4;
+  --border:#dde2eb;--border2:#c4cad6;
+  --green:#1e5c3a;--green-bg:#eaf4ee;
+  --red:#8b2020;--red-bg:#fdf0f0;--red-border:#e8c0c0;
+  --r:3px;--r2:6px;
+  --sh:0 2px 20px rgba(26,35,58,.06);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--ink);font-size:15px;line-height:1.6;min-height:100vh}
+
+/* HEADER */
+.form-header{background:var(--navy);position:relative;overflow:hidden}
+.hx1,.hx2{position:absolute;pointer-events:none;opacity:.05}
+.hx1{top:-80px;right:-80px}
+.hx2{bottom:-60px;left:-40px;opacity:.03}
+.header-inner{max-width:660px;margin:0 auto;padding:3.25rem 1.5rem 3rem;text-align:center;position:relative;z-index:1}
+
+/* Logo mark */
+.logo-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:.875rem;margin-bottom:2rem}
+.hex-svg{display:block}
+.brand-wordmark{font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:.3em;color:var(--gold-pale);text-transform:uppercase;font-weight:300}
+.brand-wordmark strong{color:var(--gold);font-weight:500;letter-spacing:.32em}
+
+.h-eyebrow{font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:.625rem}
+.h-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,5.5vw,2.75rem);font-weight:300;color:#fff;letter-spacing:.05em;line-height:1.15;margin-bottom:.875rem}
+.h-title em{font-style:italic;color:var(--gold-pale);font-weight:300}
+.h-sub{font-size:13px;color:rgba(255,255,255,.42);font-weight:300;max-width:400px;margin:0 auto;line-height:1.75;letter-spacing:.02em}
+
+/* PROGRESS */
+.prog-bar-wrap{height:2px;background:rgba(255,255,255,.07)}
+.prog-bar-fill{height:100%;background:var(--gold);transition:width .5s cubic-bezier(.4,0,.2,1)}
+.prog-meta{background:rgba(26,35,58,.95);display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.5rem;backdrop-filter:blur(4px)}
+.prog-txt{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.3);font-weight:500}
+.dots-row{display:flex;gap:.3rem;align-items:center}
+.sdot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.12);transition:all .3s ease}
+.sdot.done{background:rgba(201,175,110,.45)}
+.sdot.active{background:var(--gold);width:16px;border-radius:2px}
+
+/* BODY */
+.form-body{max-width:660px;margin:0 auto;padding:2.75rem 1.25rem 5rem}
+
+/* STEP */
+.step{display:none;animation:fu .32s ease}
+.step.active{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.s-eyebrow{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold2);font-weight:500;margin-bottom:.5rem}
+.s-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.625rem,4.5vw,2.125rem);font-weight:300;color:var(--navy);letter-spacing:.04em;margin-bottom:.5rem;line-height:1.2}
+.s-desc{font-size:13.5px;color:var(--ink3);font-weight:300;margin-bottom:2rem;line-height:1.7;letter-spacing:.01em}
+
+/* FIELD */
+.field{margin-bottom:1.625rem}
+.fl{display:block;font-size:10.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--ink2);margin-bottom:.625rem}
+.fl .req{color:var(--gold);margin-left:2px;font-size:14px;letter-spacing:0;text-transform:none;line-height:1}
+.fh{font-size:12px;color:var(--ink4);margin-bottom:.5rem;line-height:1.5;font-weight:300}
+.finput{width:100%;font-family:'Jost',sans-serif;font-size:14px;color:var(--ink);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;background:var(--surface);outline:none;resize:none;line-height:1.5;transition:border-color .15s,box-shadow .15s;font-weight:300;letter-spacing:.01em}
+.finput:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,175,110,.1)}
+.finput::placeholder{color:var(--ink4);font-weight:300}
+textarea.finput{min-height:82px}
+
+/* CHIPS */
+.chips-group{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.25rem}
+.chip-opt{display:inline-flex;align-items:center;gap:.4rem;font-size:12.5px;font-weight:400;letter-spacing:.03em;padding:.45rem .95rem;border-radius:2px;border:1px solid var(--border);background:var(--surface);color:var(--ink3);cursor:pointer;user-select:none;transition:all .14s;font-family:'Jost',sans-serif}
+.chip-opt:hover{border-color:var(--gold-border);color:var(--ink2)}
+.chip-opt.on{background:var(--navy);color:var(--gold-pale);border-color:var(--navy)}
+.chip-check{display:none;width:11px;height:11px;background:var(--gold);border-radius:50%;flex-shrink:0}
+.chip-opt.on .chip-check{display:inline-block}
+
+/* RADIO */
+.radio-group{display:flex;flex-direction:column;gap:.35rem;margin-top:.25rem}
+.radio-row{display:flex;align-items:center;gap:.875rem;padding:.625rem .875rem;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .14s;background:var(--surface)}
+.radio-row:hover{border-color:var(--gold-border);background:var(--gold-bg)}
+.radio-row.on{border-color:var(--navy);background:var(--navy)}
+.radio-row.on .radio-label{color:var(--gold-pale)}
+.radio-dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;transition:all .14s}
+.radio-row.on .radio-dot{border-color:var(--gold);background:var(--gold)}
+.radio-label{font-size:13.5px;color:var(--ink2);font-weight:300;letter-spacing:.01em}
+
+/* SCALE */
+.scale-row{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.375rem}
+.scale-btn{flex:1;min-width:33px;height:42px;border:1px solid var(--border);border-radius:var(--r);font-size:13.5px;font-weight:400;color:var(--ink3);cursor:pointer;background:var(--surface);transition:all .14s;font-family:'Jost',sans-serif}
+.scale-btn:hover{border-color:var(--gold-border);color:var(--ink)}
+.scale-btn.on{background:var(--navy);color:var(--gold-pale);border-color:var(--navy)}
+.scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--ink4);margin-top:.4rem;padding:0 2px;letter-spacing:.05em;font-weight:400;text-transform:uppercase}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+@media(max-width:500px){.g2{grid-template-columns:1fr}}
+
+/* DIVIDER */
+.fdiv{height:1px;background:var(--border);margin:1.75rem 0;position:relative;overflow:visible}
+.fdiv::after{content:'◆';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:7px;color:var(--gold);background:var(--cream);padding:0 6px;opacity:.7}
+
+/* NAV */
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:.75rem}
+.btn-back{background:none;border:1px solid var(--border2);border-radius:2px;padding:.625rem 1.5rem;font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;font-family:'Jost',sans-serif;color:var(--ink3);cursor:pointer;transition:all .14s}
+.btn-back:hover{border-color:var(--ink2);color:var(--ink)}
+.btn-next{background:var(--navy);color:var(--gold-pale);border:1px solid var(--navy);border-radius:2px;padding:.75rem 2.25rem;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-family:'Jost',sans-serif;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.625rem}
+.btn-next:hover{background:var(--navy2);box-shadow:0 4px 18px rgba(26,35,58,.18);transform:translateY(-1px)}
+.btn-submit{background:var(--gold);color:var(--navy);border:none;border-radius:2px;padding:.875rem 2.75rem;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-family:'Jost',sans-serif;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.625rem}
+.btn-submit:hover{background:var(--gold2);box-shadow:0 6px 22px rgba(201,175,110,.32);transform:translateY(-1px)}
+
+/* PRIVACY NOTE */
+.privacy-note{background:var(--navy);border-radius:var(--r2);padding:1.25rem 1.5rem;margin:2rem 0;font-size:13px;color:rgba(255,255,255,.45);font-weight:300;line-height:1.7;letter-spacing:.01em}
+.privacy-note strong{color:var(--gold-pale);display:block;margin-bottom:.375rem;font-weight:500;font-size:13.5px}
+
+/* SUCCESS SCREEN */
+.success-hex-wrap{display:flex;justify-content:center;margin-bottom:2rem;animation:hexIn .8s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes hexIn{from{opacity:0;transform:scale(.5) rotate(-30deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.hex-outer{stroke-dasharray:220;stroke-dashoffset:220;animation:hexDraw 1s .2s cubic-bezier(.4,0,.2,1) forwards}
+.hex-inner{stroke-dasharray:170;stroke-dashoffset:170;animation:hexDraw .8s .5s cubic-bezier(.4,0,.2,1) forwards}
+.check-path{stroke-dasharray:40;stroke-dashoffset:40;animation:checkDraw .5s 1s ease forwards}
+@keyframes hexDraw{to{stroke-dashoffset:0}}
+@keyframes checkDraw{to{stroke-dashoffset:0}}
+
+.success-title-wrap{text-align:center;margin-bottom:1.5rem;animation:fadeUp .5s .3s both}
+.success-eyebrow{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:.625rem}
+.success-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.25rem,6vw,3rem);font-weight:300;color:var(--navy);letter-spacing:.04em;line-height:1.1}
+.success-title em{font-style:italic;color:var(--gold2)}
+
+.success-rule{width:48px;height:1.5px;background:var(--gold);margin:0 auto 1.75rem;animation:ruleGrow .5s .6s both;transform-origin:center}
+@keyframes ruleGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.success-msg{font-size:14px;color:var(--ink3);font-weight:300;line-height:1.75;letter-spacing:.02em;text-align:center;margin-bottom:2.5rem;animation:fadeUp .5s .5s both}
+
+.success-steps{background:var(--navy);border-radius:6px;padding:1.75rem 1.875rem;max-width:440px;margin:0 auto 2rem;animation:fadeUp .5s .7s both}
+.ss-item{display:flex;align-items:flex-start;gap:1.125rem}
+.ss-num{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;color:var(--gold);letter-spacing:.04em;flex-shrink:0;line-height:1.2;min-width:28px}
+.ss-text{font-size:13px;color:rgba(255,255,255,.5);line-height:1.65;font-weight:300}
+.ss-text strong{display:block;color:var(--gold-pale);font-weight:500;font-size:13.5px;margin-bottom:.2rem;letter-spacing:.01em}
+.ss-divider{height:1px;background:rgba(255,255,255,.07);margin:.875rem 0}
+
+.success-footer{text-align:center;margin-top:.5rem;animation:fadeUp .4s .9s both}
+.sf-brand{display:inline-flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.sf-brand span{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);font-weight:400}
+.sf-close{font-size:11.5px;color:var(--ink4);letter-spacing:.06em}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* RESULTADO */
+.sending-screen,.result-screen,.error-screen{text-align:center;padding:4rem 1rem}
+.spinner{width:46px;height:46px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.5rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.r-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--navy);margin-bottom:.5rem;letter-spacing:.05em}
+.r-sub{font-size:13.5px;color:var(--ink3);font-weight:300;max-width:380px;margin:0 auto 2rem;line-height:1.75;letter-spacing:.01em}
+.r-hex{display:block;margin:0 auto 1.5rem}
+.success-card{background:var(--navy);border-radius:var(--r2);padding:1.5rem 1.875rem;margin:1.75rem auto;max-width:420px;text-align:left}
+.sc-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.625rem}
+.success-card p{font-size:13.5px;color:rgba(255,255,255,.55);line-height:1.7;font-weight:300}
+.close-note{font-size:11.5px;color:var(--ink4);margin-top:1.5rem;letter-spacing:.05em}
+.err-icon{width:54px;height:54px;border-radius:50%;background:var(--red-bg);border:1.5px solid var(--red-border);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.25rem}
+.btn-retry{background:var(--navy);color:var(--gold-pale);border:none;border-radius:2px;padding:.75rem 2rem;font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;font-family:'Jost',sans-serif;cursor:pointer;margin-top:1.25rem;display:inline-flex;align-items:center;gap:.5rem}
+.soap-err{background:var(--cream2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;text-align:left;margin-top:1.25rem}
+.soap-err textarea{width:100%;height:175px;font-family:monospace;font-size:11px;background:transparent;border:none;outline:none;resize:none;color:var(--ink2);line-height:1.6}
+
+/* VALIDATION */
+.req-msg{font-size:11.5px;color:var(--red);margin-top:.375rem;display:none;letter-spacing:.01em}
+.field.error .finput{border-color:var(--red)}
+.field.error .req-msg{display:block}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="form-header">
+  <!-- bg hexagons -->
+  <svg class="hx1" width="360" height="360" viewBox="0 0 360 360" fill="none"><polygon points="180,22 320,100 320,260 180,338 40,260 40,100" stroke="white" stroke-width="1"/><polygon points="180,60 290,120 290,240 180,300 70,240 70,120" stroke="white" stroke-width=".4"/></svg>
+  <svg class="hx2" width="220" height="220" viewBox="0 0 220 220" fill="none"><polygon points="110,14 196,62 196,158 110,206 24,158 24,62" stroke="white" stroke-width="1"/></svg>
+
+  <div class="header-inner">
+    <div class="logo-wrap">
+      <svg class="hex-svg" width="58" height="58" viewBox="0 0 58 58" fill="none">
+        <polygon points="29,3.5 53,16.5 53,41.5 29,54.5 5,41.5 5,16.5" stroke="#C9AF6E" stroke-width="1.2" fill="none"/>
+        <polygon points="29,9 47,19.5 47,38.5 29,49 11,38.5 11,19.5" stroke="#C9AF6E" stroke-width=".5" fill="none" opacity=".35"/>
+        <!-- H estilizado -->
+        <line x1="18" y1="21" x2="18" y2="37" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
+        <line x1="18" y1="29" x2="27" y2="29" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
+        <line x1="27" y1="21" x2="27" y2="37" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
+        <!-- A estilizado -->
+        <line x1="32" y1="37" x2="37" y2="21" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="37" y1="21" x2="42" y2="37" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="33.5" y1="31" x2="40.5" y2="31" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="brand-wordmark"><strong>Dr. Henrique Alves</strong> · Método HAG</span>
+    </div>
+    <div class="h-eyebrow">Questionário de Diagnóstico</div>
+    <h1 class="h-title">Pré-Consulta <em>Clínica</em></h1>
+    <p class="h-sub">Suas respostas moldam a estratégia antes mesmo de nos encontrarmos. Seja honesto — quanto mais completo, mais preciso será o seu plano.</p>
+  </div>
+</div>
+
+<div class="prog-bar-wrap"><div class="prog-bar-fill" id="progressBar" style="width:10%"></div></div>
+<div class="prog-meta">
+  <span class="prog-txt" id="stepCounter">Bloco 1 de 10</span>
+  <div class="dots-row" id="stepDots"></div>
+</div>
+
+<div class="form-body">
+
+<!-- STEP 1: CONTEXTO -->
+<div class="step active" data-step="1">
+  <div class="s-eyebrow">Bloco 1</div>
+  <h2 class="s-title">Contexto</h2>
+  <p class="s-desc">Antes de começar, algumas informações básicas para personalizar o atendimento.</p>
+
+  <div class="field">
+    <label class="fl">Nome completo <span class="req">*</span></label>
+    <input class="finput" id="f_nome" type="text" placeholder="Seu nome completo">
+    <div class="req-msg">Campo obrigatório</div>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Idade</label>
+      <input class="finput" id="f_idade" type="text" placeholder="Ex: 34 anos">
+    </div>
+    <div class="field">
+      <label class="fl">Cidade / Estado</label>
+      <input class="finput" id="f_cidade" type="text" placeholder="Ex: São Paulo / SP">
+    </div>
+  </div>
+  <div class="field">
+    <label class="fl">Profissão</label>
+    <input class="finput" id="f_profissao" type="text" placeholder="Qual é a sua ocupação?">
+  </div>
+  <div class="field">
+    <label class="fl">Como você me conheceu?</label>
+    <div class="chips-group" id="c_conheceu">
+      <div class="chip-opt" onclick="toggleChipSingle(this,'c_conheceu')"><span class="chip-check"></span>Instagram</div>
+      <div class="chip-opt" onclick="toggleChipSingle(this,'c_conheceu')"><span class="chip-check"></span>Indicação médica</div>
+      <div class="chip-opt" onclick="toggleChipSingle(this,'c_conheceu')"><span class="chip-check"></span>Indicação de amigo</div>
+      <div class="chip-opt" onclick="toggleChipSingle(this,'c_conheceu')"><span class="chip-check"></span>Google</div>
+      <div class="chip-opt" onclick="toggleChipSingle(this,'c_conheceu')"><span class="chip-check"></span>Outro</div>
+    </div>
+    <input class="finput" id="f_conheceu_outro" type="text" placeholder="Se outro, especifique..." style="margin-top:.625rem;display:none">
+  </div>
+  <div class="nav-row">
+    <div></div>
+    <button class="btn-next" onclick="goNext(1)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 2: MOTIVO PRINCIPAL -->
+<div class="step" data-step="2">
+  <div class="s-eyebrow">Bloco 2</div>
+  <h2 class="s-title">Motivo Principal</h2>
+  <p class="s-desc">O que te trouxe até aqui? Seja direto(a) — não existe resposta certa ou errada.</p>
+
+  <div class="field">
+    <label class="fl">O que mais te incomoda hoje? <span class="req">*</span><br><span style="font-size:12px;color:var(--ink4);font-weight:400">(Selecione todos que se aplicam)</span></label>
+    <div class="chips-group" id="c_incomoda">
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Peso</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Energia</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Sono</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Performance</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Estética corporal</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Saúde metabólica</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Compulsão alimentar</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Outro</div>
+    </div>
+    <input class="finput" id="f_incomoda_outro" type="text" placeholder="Especifique..." style="margin-top:.625rem;display:none">
+    <div class="req-msg">Selecione pelo menos uma opção</div>
+  </div>
+
+  <div class="fdiv"></div>
+
+  <div class="field">
+    <label class="fl">Se pudesse mudar apenas uma coisa nos próximos meses, qual seria? <span class="req">*</span></label>
+    <div class="fh">Uma frase é suficiente. Isso define a sua prioridade clínica.</div>
+    <textarea class="finput" id="f_uma_coisa" placeholder="Ex: Quero perder gordura visceral e ter mais disposição no dia a dia..."></textarea>
+    <div class="req-msg">Campo obrigatório</div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(2)">Voltar</button>
+    <button class="btn-next" onclick="goNext(2)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 3: DADOS CORPORAIS -->
+<div class="step" data-step="3">
+  <div class="s-eyebrow">Bloco 3</div>
+  <h2 class="s-title">Dados Corporais</h2>
+  <p class="s-desc">Informações básicas de composição. Não precisa ser exato — uma estimativa honesta já ajuda muito.</p>
+
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Peso atual <span class="req">*</span></label>
+      <input class="finput" id="f_peso" type="text" placeholder="Ex: 88 kg">
+      <div class="req-msg">Campo obrigatório</div>
+    </div>
+    <div class="field">
+      <label class="fl">Altura</label>
+      <input class="finput" id="f_altura" type="text" placeholder="Ex: 1,72 m">
+    </div>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Peso alvo (meta)</label>
+      <input class="finput" id="f_peso_meta" type="text" placeholder="Ex: 75 kg">
+    </div>
+    <div class="field">
+      <label class="fl">Tem uma data alvo?</label>
+      <input class="finput" id="f_data_meta" type="text" placeholder="Ex: Casamento em junho 2025">
+    </div>
+  </div>
+  <div class="field">
+    <label class="fl">Seu maior peso já registrado? E o menor nos últimos 5 anos?</label>
+    <input class="finput" id="f_peso_hist" type="text" placeholder="Ex: Maior = 98 kg / Menor = 78 kg (2020)">
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(3)">Voltar</button>
+    <button class="btn-next" onclick="goNext(3)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 4: HISTÓRICO CLÍNICO -->
+<div class="step" data-step="4">
+  <div class="s-eyebrow">Bloco 4</div>
+  <h2 class="s-title">Histórico Clínico</h2>
+  <p class="s-desc">Informações médicas que orientam a prescrição. Seja completo — tudo é confidencial.</p>
+
+  <div class="field">
+    <label class="fl">Tem alguma doença diagnosticada ou já passou por cirurgia?</label>
+    <textarea class="finput" id="f_doencas" placeholder="Ex: Hipotireoidismo (tratado) · Colecistectomia 2018 · Sem alergias..."></textarea>
+  </div>
+  <div class="field">
+    <label class="fl">Histórico familiar — marque se há ocorrência na família <span style="font-size:12px;color:var(--ink4);font-weight:400">(pai, mãe, irmãos)</span></label>
+    <div class="chips-group" id="c_familiar">
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Câncer</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Diabetes</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Doença cardiovascular</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Doença autoimune</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Doença hormonal</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Endometriose</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Hipertensão</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Hipotireoidismo</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Obesidade</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Doença renal</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Depressão</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>SOP</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Transtorno alimentar</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Morte súbita</div>
+    </div>
+  </div>
+  <div class="field">
+    <label class="fl">Medicamentos em uso atualmente</label>
+    <div class="fh">Nome, dose e horário. Se nenhum, deixe em branco.</div>
+    <textarea class="finput" id="f_meds" placeholder="Ex: Levotiroxina 50mcg / manhã · Anticoncepcional Yaz / noite..."></textarea>
+  </div>
+  <div class="field">
+    <label class="fl">Já usou medicação para emagrecer?</label>
+    <textarea class="finput" id="f_meds_ant" placeholder="Ex: Sibutramina por 6 meses em 2021 · GLP-1 por 4 meses, parei por custo..."></textarea>
+  </div>
+  <div class="field">
+    <label class="fl">Alergias ou intolerâncias</label>
+    <input class="finput" id="f_alergias" type="text" placeholder="Ex: Dipirona · Lactose · Glúten...">
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(4)">Voltar</button>
+    <button class="btn-next" onclick="goNext(4)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 5: ESTILO DE VIDA -->
+<div class="step" data-step="5">
+  <div class="s-eyebrow">Bloco 5</div>
+  <h2 class="s-title">Estilo de Vida</h2>
+  <p class="s-desc">Sua rotina revela tanto quanto seus exames.</p>
+
+  <div class="field">
+    <label class="fl">Atividade física</label>
+    <div class="fh">Modalidade, frequência semanal e duração aproximada. Se sedentário(a), informe.</div>
+    <textarea class="finput" id="f_exercicio" placeholder="Ex: Musculação 3x/semana, 60 min, manhã · Caminhada no fim de semana..."></textarea>
+  </div>
+  <div class="field">
+    <label class="fl">Como é sua rotina de trabalho?</label>
+    <input class="finput" id="f_trabalho" type="text" placeholder="Ex: Home office, muito tempo sentado, viagens frequentes...">
+  </div>
+
+  <div class="fdiv"></div>
+
+  <div class="field">
+    <label class="fl">Horas de sono por noite</label>
+    <div class="radio-group" id="r_sono_horas">
+      <div class="radio-row" onclick="toggleRadio(this,'r_sono_horas')"><div class="radio-dot"></div><span class="radio-label">Menos de 4 horas</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_sono_horas')"><div class="radio-dot"></div><span class="radio-label">4 a 6 horas</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_sono_horas')"><div class="radio-dot"></div><span class="radio-label">6 a 8 horas</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_sono_horas')"><div class="radio-dot"></div><span class="radio-label">Mais de 8 horas</span></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Qualidade do sono</label>
+      <div class="radio-group" id="r_sono_qual">
+        <div class="radio-row" onclick="toggleRadio(this,'r_sono_qual')"><div class="radio-dot"></div><span class="radio-label">Bom</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_sono_qual')"><div class="radio-dot"></div><span class="radio-label">Regular</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_sono_qual')"><div class="radio-dot"></div><span class="radio-label">Ruim</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="fl">Disposição ao acordar</label>
+      <div class="radio-group" id="r_disp">
+        <div class="radio-row" onclick="toggleRadio(this,'r_disp')"><div class="radio-dot"></div><span class="radio-label">Boa</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_disp')"><div class="radio-dot"></div><span class="radio-label">Regular</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_disp')"><div class="radio-dot"></div><span class="radio-label">Ruim</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Nível de estresse atual</label>
+      <div class="radio-group" id="r_estresse">
+        <div class="radio-row" onclick="toggleRadio(this,'r_estresse')"><div class="radio-dot"></div><span class="radio-label">Baixo</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_estresse')"><div class="radio-dot"></div><span class="radio-label">Moderado</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_estresse')"><div class="radio-dot"></div><span class="radio-label">Alto</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_estresse')"><div class="radio-dot"></div><span class="radio-label">Alto com cansaço constante</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="fl">Como classifica sua memória</label>
+      <div class="radio-group" id="r_memoria">
+        <div class="radio-row" onclick="toggleRadio(this,'r_memoria')"><div class="radio-dot"></div><span class="radio-label">Boa</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_memoria')"><div class="radio-dot"></div><span class="radio-label">Regular</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_memoria')"><div class="radio-dot"></div><span class="radio-label">Ruim</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(5)">Voltar</button>
+    <button class="btn-next" onclick="goNext(5)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 6: COMPORTAMENTO ALIMENTAR -->
+<div class="step" data-step="6">
+  <div class="s-eyebrow">Bloco 6</div>
+  <h2 class="s-title">Comportamento Alimentar</h2>
+  <p class="s-desc">Sua relação com a comida é uma das chaves do plano. Não existe resposta errada.</p>
+
+  <div class="field">
+    <label class="fl">Já seguiu algum planejamento alimentar? O que funcionou?</label>
+    <textarea class="finput" id="f_dieta_ant" placeholder="Ex: Fiz low carb em 2022 e perdi 8 kg mas não consegui manter..."></textarea>
+  </div>
+  <div class="field">
+    <label class="fl">Você sente vontade frequente de: <span style="font-size:12px;color:var(--ink4);font-weight:400">(Selecione todos que se aplicam)</span></label>
+    <div class="chips-group" id="c_vontade">
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Doce</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Carboidratos</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Beliscar o tempo todo</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Comer grandes quantidades</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Comer à noite / antes de dormir</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Nenhuma dessas</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Alimento favorito / indispensável</label>
+      <input class="finput" id="f_favorito" type="text" placeholder="Ex: Pão, chocolate, queijo...">
+    </div>
+    <div class="field">
+      <label class="fl">Alimento que não come de jeito nenhum</label>
+      <input class="finput" id="f_nao_come" type="text" placeholder="Ex: Fígado, sardinha, coentro...">
+    </div>
+  </div>
+  <div class="field">
+    <label class="fl">Quem prepara suas refeições?</label>
+    <input class="finput" id="f_cozinha" type="text" placeholder="Ex: Eu mesmo(a) / Esposa / Empregada / Delivery na maioria das vezes...">
+  </div>
+  <div class="field">
+    <label class="fl">Frequência em restaurantes, bares ou delivery</label>
+    <div class="radio-group" id="r_resto">
+      <div class="radio-row" onclick="toggleRadio(this,'r_resto')"><div class="radio-dot"></div><span class="radio-label">Não tenho esse costume</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_resto')"><div class="radio-dot"></div><span class="radio-label">1 a 2 vezes por semana</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_resto')"><div class="radio-dot"></div><span class="radio-label">3 a 4 vezes por semana</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_resto')"><div class="radio-dot"></div><span class="radio-label">Quase todos os dias</span></div>
+    </div>
+  </div>
+  <div class="field">
+    <label class="fl">Suplementos em uso</label>
+    <input class="finput" id="f_supls" type="text" placeholder="Ex: Whey 30g pós-treino · Vitamina D 4.000 UI / almoço · Magnésio noite...">
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(6)">Voltar</button>
+    <button class="btn-next" onclick="goNext(6)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 7: HÁBITOS -->
+<div class="step" data-step="7">
+  <div class="s-eyebrow">Bloco 7</div>
+  <h2 class="s-title">Hábitos e Saúde</h2>
+  <p class="s-desc">Pequenos hábitos diários revelam padrões metabólicos importantes.</p>
+
+  <div class="field">
+    <label class="fl">Ingestão diária de água</label>
+    <div class="radio-group" id="r_agua">
+      <div class="radio-row" onclick="toggleRadio(this,'r_agua')"><div class="radio-dot"></div><span class="radio-label">Menos de 1 litro</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_agua')"><div class="radio-dot"></div><span class="radio-label">1 a 1,5 litro</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_agua')"><div class="radio-dot"></div><span class="radio-label">1,5 a 2 litros</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_agua')"><div class="radio-dot"></div><span class="radio-label">2 a 3 litros</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_agua')"><div class="radio-dot"></div><span class="radio-label">Mais de 3 litros</span></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Padrão intestinal</label>
+      <div class="radio-group" id="r_intestino">
+        <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Regular (diário)</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Constipação frequente</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Diarreia frequente</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Alternado</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="fl">Consumo de álcool</label>
+      <div class="radio-group" id="r_alcool">
+        <div class="radio-row" onclick="toggleRadio(this,'r_alcool')"><div class="radio-dot"></div><span class="radio-label">Não consumo</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_alcool')"><div class="radio-dot"></div><span class="radio-label">Só finais de semana</span></div>
+        <div class="radio-row" onclick="toggleRadio(this,'r_alcool')"><div class="radio-dot"></div><span class="radio-label">Mais de 3x por semana</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="field">
+    <label class="fl">Tabagismo</label>
+    <div class="radio-group" id="r_fumo">
+      <div class="radio-row" onclick="toggleRadio(this,'r_fumo')"><div class="radio-dot"></div><span class="radio-label">Nunca fumei</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_fumo')"><div class="radio-dot"></div><span class="radio-label">Já fumei, parei</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_fumo')"><div class="radio-dot"></div><span class="radio-label">Sim, estou tentando parar</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_fumo')"><div class="radio-dot"></div><span class="radio-label">Sim, ainda fumo</span></div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(7)">Voltar</button>
+    <button class="btn-next" onclick="goNext(7)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 8: CONTEXTO PESSOAL -->
+<div class="step" data-step="8">
+  <div class="s-eyebrow">Bloco 8</div>
+  <h2 class="s-title">Contexto Pessoal</h2>
+  <p class="s-desc">Aspectos que influenciam diretamente no planejamento de longo prazo.</p>
+
+  <div class="field">
+    <label class="fl">Tem filhos ou planos de ter?</label>
+    <div class="radio-group" id="r_filhos">
+      <div class="radio-row" onclick="toggleRadio(this,'r_filhos')"><div class="radio-dot"></div><span class="radio-label">Tenho filhos</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_filhos')"><div class="radio-dot"></div><span class="radio-label">Não tenho e não pretendo</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_filhos')"><div class="radio-dot"></div><span class="radio-label">Tenho planos de engravidar nos próximos 12 meses</span></div>
+      <div class="radio-row" onclick="toggleRadio(this,'r_filhos')"><div class="radio-dot"></div><span class="radio-label">Talvez futuramente</span></div>
+    </div>
+  </div>
+  <div class="field">
+    <label class="fl">Como está sua saúde emocional / mental hoje?</label>
+    <textarea class="finput" id="f_emocional" placeholder="Ex: Estou bem, mas muito ansioso(a) com o trabalho. Já fiz terapia por 2 anos..."></textarea>
+  </div>
+  <div class="field">
+    <label class="fl">Alguma informação adicional relevante que queira me contar?</label>
+    <textarea class="finput" id="f_extra" placeholder="Situação de vida, contexto específico, algo que considera importante que eu saiba antes da consulta..."></textarea>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(8)">Voltar</button>
+    <button class="btn-next" onclick="goNext(8)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 9: BARREIRAS -->
+<div class="step" data-step="9">
+  <div class="s-eyebrow">Bloco 9</div>
+  <h2 class="s-title">Barreiras</h2>
+  <p class="s-desc">O que já te impediu de chegar onde você quer? Entender isso é metade do caminho.</p>
+
+  <div class="field">
+    <label class="fl">O que hoje mais te impede de seguir um plano estruturado?<br><span style="font-size:12px;color:var(--ink4);font-weight:400">(Selecione todos que se aplicam)</span></label>
+    <div class="chips-group" id="c_barreiras">
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Falta de tempo</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Rotina imprevisível</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Questão financeira</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Falta de motivação</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Ansiedade / estresse</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Viagens frequentes</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Família / vida social</div>
+      <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Outro</div>
+    </div>
+    <input class="finput" id="f_barreiras_outro" type="text" placeholder="Especifique a barreira..." style="margin-top:.625rem;display:none">
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(9)">Voltar</button>
+    <button class="btn-next" onclick="goNext(9)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- STEP 10: MOTIVAÇÃO + ENVIAR -->
+<div class="step" data-step="10">
+  <div class="s-eyebrow">Bloco 10</div>
+  <h2 class="s-title">Motivação</h2>
+  <p class="s-desc">Última pergunta — e talvez a mais importante.</p>
+
+  <div class="field">
+    <label class="fl">Em uma escala de 0 a 10, o quanto você está disposto(a) a mudar hábitos agora? <span class="req">*</span></label>
+    <div class="fh">0 = não estou pronto(a) · 10 = farei o que for necessário</div>
+    <div class="scale-wrap">
+      <div class="scale-row" id="r_motivacao">
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">0</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">1</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">2</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">3</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">4</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">5</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">6</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">7</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">8</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">9</button>
+        <button class="scale-btn" onclick="setScale(this,'r_motivacao')">10</button>
+      </div>
+      <div class="scale-labels"><span>Não pronto(a)</span><span>Totalmente pronto(a)</span></div>
+    </div>
+    <div class="req-msg">Selecione um valor</div>
+  </div>
+
+  <div class="field">
+    <label class="fl">Tem alguma mensagem para me deixar antes da consulta?</label>
+    <textarea class="finput" id="f_mensagem" placeholder="Algo que não cabia em nenhuma das perguntas anteriores, uma dúvida, uma expectativa específica..."></textarea>
+  </div>
+
+  <div style="background:var(--gold-bg);border:1px solid var(--gold-light);border-radius:var(--radius);padding:1.25rem 1.5rem;margin:2rem 0;font-size:13.5px;line-height:1.7;color:var(--ink2)">
+    <strong style="color:var(--ink);display:block;margin-bottom:.375rem">Suas informações chegam diretamente ao Dr. Henrique antes da consulta.</strong>
+    Tudo que você compartilhou aqui é confidencial e protegido pelo sigilo médico. Ao enviar, suas respostas ficam disponíveis para estruturar sua estratégia personalizada no Método HAG.
+  </div>
+
+  <div class="nav-row">
+    <button class="btn-back" onclick="goBack(10)">Voltar</button>
+    <button class="btn-submit" onclick="submitForm()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h10M9 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Enviar questionário
+    </button>
+  </div>
+</div>
+
+<!-- STEP 11: RESULTADO -->
+<div class="step" data-step="11">
+
+  <!-- ENVIANDO -->
+  <div class="sending-screen" id="screenSending" style="display:none">
+    <div class="spinner"></div>
+    <h2 class="r-title">Enviando...</h2>
+    <p class="r-sub">Estamos transmitindo suas respostas para o consultório.</p>
+  </div>
+
+  <!-- SUCESSO -->
+  <div class="result-screen" id="screenSuccess" style="display:none">
+
+    <!-- Hexágono animado -->
+    <div class="success-hex-wrap">
+      <svg class="success-hex-svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <polygon class="hex-outer" points="40,5 71,22.5 71,57.5 40,75 9,57.5 9,22.5" stroke="#C9AF6E" stroke-width="1.2" fill="none"/>
+        <polygon class="hex-inner" points="40,13 63,26.5 63,53.5 40,67 17,53.5 17,26.5" stroke="#C9AF6E" stroke-width=".5" fill="none"/>
+        <path class="check-path" d="M28 40l9 9 15-15" stroke="#C9AF6E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- Título -->
+    <div class="success-title-wrap">
+      <div class="success-eyebrow">Método HAG</div>
+      <h2 class="success-title">Questionário<br><em>Recebido</em></h2>
+    </div>
+
+    <!-- Linha dourada -->
+    <div class="success-rule"></div>
+
+    <!-- Mensagem principal -->
+    <p class="success-msg">Suas respostas chegaram ao Dr. Henrique.<br>A equipe entrará em contato em breve.</p>
+
+    <!-- 3 passos -->
+    <div class="success-steps">
+      <div class="ss-item">
+        <div class="ss-num">01</div>
+        <div class="ss-text">
+          <strong>Análise prévia</strong>
+          O Dr. Henrique revisará seu perfil antes da consulta
+        </div>
+      </div>
+      <div class="ss-divider"></div>
+      <div class="ss-item">
+        <div class="ss-num">02</div>
+        <div class="ss-text">
+          <strong>Contato da equipe</strong>
+          Você receberá a confirmação da data e horário
+        </div>
+      </div>
+      <div class="ss-divider"></div>
+      <div class="ss-item">
+        <div class="ss-num">03</div>
+        <div class="ss-text">
+          <strong>Consulta personalizada</strong>
+          Junto dos dados coletados na consulta, desenvolvemos o melhor plano de suporte para você alcançar o seu objetivo
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodapé da tela -->
+    <div class="success-footer">
+      <div class="sf-brand">
+        <svg width="22" height="22" viewBox="0 0 52 52" fill="none"><polygon points="26,3 48,15 48,37 26,49 4,37 4,15" stroke="#C9AF6E" stroke-width="1.2" fill="none"/><line x1="17" y1="19" x2="17" y2="33" stroke="#C9AF6E" stroke-width="1.8" stroke-linecap="round"/><line x1="17" y1="26" x2="26" y2="29" stroke="#C9AF6E" stroke-width="1.8" stroke-linecap="round"/><line x1="26" y1="22" x2="26" y2="36" stroke="#C9AF6E" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Dr. Henrique Alves · CRM/SP 226530</span>
+      </div>
+      <p class="sf-close">Você já pode fechar esta página</p>
+    </div>
+
+  </div>
+
+  <!-- ERRO -->
+  <div class="error-screen" id="screenError" style="display:none">
+    <div class="err-icon">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 7v5M11 15v.5" stroke="#8b2020" stroke-width="1.8" stroke-linecap="round"/><circle cx="11" cy="11" r="9" stroke="#8b2020" stroke-width="1.5"/></svg>
+    <h2 class="r-title">Erro no envio</h2>
+    <p class="r-sub" id="errorMsg">Não foi possível enviar. Verifique sua conexão e tente novamente.</p>
+    <p style="font-size:13px;color:var(--ink3);margin-top:.875rem">Se o problema persistir, copie o resumo abaixo e envie por WhatsApp para a equipe.</p>
+    <div class="soap-box" style="text-align:left;margin-top:1.25rem">
+      <div class="soap-label">Cópia para envio manual</div>
+      <textarea id="soapOutputErr" readonly onclick="this.select()" style="height:200px"></textarea>
+    </div>
+    <button class="btn-retry" onclick="tentarNovamente()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7a5 5 0 1 1 1.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10V7h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Tentar novamente
+    </button>
+  </div>
+
+</div>
+
+</div><!-- form-body -->
+
+<script>
+var currentStep = 1;
+var totalSteps = 10;
+
+// ─── INIT DOTS ───
+function initDots(){
+  var d=document.getElementById('stepDots'); d.innerHTML='';
+  for(var i=1;i<=totalSteps;i++){
+    var el=document.createElement('div');
+    el.className='sdot'+(i===1?' active':'');
+    el.id='dot'+i; d.appendChild(el);
+  }
+}
+initDots();
+
+// ─── NAVIGATION ───
+function goNext(from){
+  if(!validateStep(from)) return;
+  if(from>=totalSteps){ submitForm(); return; }
+  showStep(from+1);
+}
+function goBack(from){
+  if(from>1) showStep(from-1);
+}
+function showStep(n){
+  document.querySelectorAll('.step').forEach(function(s){ s.classList.remove('active'); });
+  var s=document.querySelector('[data-step="'+n+'"]');
+  if(s){ s.classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); }
+  currentStep=n;
+  var pct=n<=totalSteps?Math.round((n-1)/totalSteps*100):100;
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('stepCounter').textContent='Bloco '+Math.min(n,totalSteps)+' de '+totalSteps;
+  for(var i=1;i<=totalSteps;i++){
+    var dot=document.getElementById('dot'+i);
+    if(!dot) continue;
+    dot.className='sdot'+(i<n?'done':i===n?'active':'');
+  }
+}
+
+// ─── VALIDATE ───
+function validateStep(n){
+  var ok=true;
+  if(n===1){
+    ok=req('f_nome');
+  } else if(n===2){
+    ok=reqChips('c_incomoda')&req('f_uma_coisa');
+  } else if(n===3){
+    ok=req('f_peso');
+  } else if(n===10){
+    ok=reqScale('r_motivacao');
+  }
+  return ok;
+}
+function req(id){
+  var el=document.getElementById(id);
+  var f=el?el.closest('.field'):null;
+  if(!el||!el.value.trim()){ if(f) f.classList.add('error'); return false; }
+  if(f) f.classList.remove('error');
+  return true;
+}
+function reqChips(id){
+  var g=document.getElementById(id);
+  var f=g?g.closest('.field'):null;
+  var on=g?g.querySelectorAll('.chip-opt.on'):[];
+  if(!on.length){ if(f) f.classList.add('error'); return false; }
+  if(f) f.classList.remove('error');
+  return true;
+}
+function reqScale(id){
+  var g=document.getElementById(id);
+  var f=g?g.closest('.field'):null;
+  var on=g?g.querySelector('.scale-btn.on'):null;
+  if(!on){ if(f) f.classList.add('error'); return false; }
+  if(f) f.classList.remove('error');
+  return true;
+}
+
+// ─── CHIP INTERACTIONS ───
+function toggleChip(el){
+  el.classList.toggle('on');
+  var g=el.closest('.chips-group');
+  if(g){ var f=g.closest('.field'); if(f) f.classList.remove('error'); }
+  // Show/hide outro
+  var gid=g?g.id:'';
+  var outro=document.getElementById('f_'+gid.replace('c_','')+'_outro');
+  var hasOutro=g?([].slice.call(g.querySelectorAll('.chip-opt.on'))).some(function(c){ return c.textContent.trim().indexOf('Outro')>=0; }):false;
+  if(outro) outro.style.display=hasOutro?'block':'none';
+}
+function toggleChipSingle(el,gid){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.chip-opt').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  var outro=document.getElementById('f_conheceu_outro');
+  if(outro) outro.style.display=el.textContent.trim()==='Outro'?'block':'none';
+}
+function toggleRadio(el,gid){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.radio-row').forEach(function(r){ r.classList.remove('on'); });
+  el.classList.add('on');
+}
+function setScale(el,gid){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.scale-btn').forEach(function(b){ b.classList.remove('on'); });
+  el.classList.add('on');
+  var f=g?g.closest('.field'):null;
+  if(f) f.classList.remove('error');
+}
+
+// ─── READ VALUES ───
+function fv(id){ var e=document.getElementById(id); return e&&e.value.trim()?e.value.trim():'—'; }
+function chips(id){ var g=document.getElementById(id); if(!g) return '—'; var on=[].slice.call(g.querySelectorAll('.chip-opt.on')).map(function(c){ return c.textContent.trim(); }); return on.length?on.join(', '):'—'; }
+function radio(id){ var g=document.getElementById(id); if(!g) return '—'; var on=g.querySelector('.radio-row.on'); return on?on.querySelector('.radio-label').textContent.trim():'—'; }
+function scale(id){ var g=document.getElementById(id); if(!g) return '—'; var on=g.querySelector('.scale-btn.on'); return on?on.textContent.trim():'—'; }
+
+// ─── SUBMIT ───
+// ─── WEB3FORMS CONFIG ───
+// Web3Forms entrega o email para drhenrique@clinicahag.com
+// Para ativar: acesse https://web3forms.com, informe drhenrique@clinicahag.com
+// e substitua 'SEU_ACCESS_KEY_AQUI' pela chave recebida no email.
+var WEB3FORMS_KEY = 'd826e37c-a868-4bc1-b0d3-e6c8fce06246';
+
+function buildSoapText(){
+  var L='─'.repeat(50);
+  var lines=[
+    'PRÉ-CONSULTA HAG — Dr. Henrique Gonzaga · CRM/SP 226530',
+    'Método HAG · Nutrologia · Medicina Esportiva',
+    'Data: '+new Date().toLocaleDateString('pt-BR'),
+    L,'',
+    'IDENTIFICAÇÃO',
+    'Nome: '+fv('f_nome'),
+    'Idade: '+fv('f_idade')+' · Cidade: '+fv('f_cidade'),
+    'Profissão: '+fv('f_profissao'),
+    'Como conheceu: '+chips('c_conheceu')+(fv('f_conheceu_outro')!=='—'?' — '+fv('f_conheceu_outro'):''),
+    '',L,
+    'MOTIVO PRINCIPAL',
+    'Incomoda hoje: '+chips('c_incomoda')+(fv('f_incomoda_outro')!=='—'?' — '+fv('f_incomoda_outro'):''),
+    'Prioridade única: '+fv('f_uma_coisa'),
+    '',L,
+    'DADOS CORPORAIS',
+    'Peso: '+fv('f_peso')+' · Altura: '+fv('f_altura'),
+    'Meta: '+fv('f_peso_meta')+(fv('f_data_meta')!=='—'?' até '+fv('f_data_meta'):''),
+    'Histórico: '+fv('f_peso_hist'),
+    '',L,
+    'HISTÓRICO CLÍNICO',
+    'Doenças/Cirurgias: '+fv('f_doencas'),
+    'Histórico familiar: '+chips('c_familiar'),
+    'Medicamentos: '+fv('f_meds'),
+    'Medicamentos anteriores: '+fv('f_meds_ant'),
+    'Alergias: '+fv('f_alergias'),
+    '',L,
+    'ESTILO DE VIDA',
+    'Atividade física: '+fv('f_exercicio'),
+    'Rotina trabalho: '+fv('f_trabalho'),
+    'Sono: '+radio('r_sono_horas')+' · Qualidade: '+radio('r_sono_qual')+' · Disposição: '+radio('r_disp'),
+    'Estresse: '+radio('r_estresse')+' · Memória: '+radio('r_memoria'),
+    '',L,
+    'COMPORTAMENTO ALIMENTAR',
+    'Dieta anterior: '+fv('f_dieta_ant'),
+    'Vontades freq.: '+chips('c_vontade'),
+    'Favorito: '+fv('f_favorito')+' · Não come: '+fv('f_nao_come'),
+    'Cozinha: '+fv('f_cozinha'),
+    'Restaurantes: '+radio('r_resto'),
+    'Suplementos: '+fv('f_supls'),
+    '',L,
+    'HÁBITOS E SAÚDE',
+    'Água: '+radio('r_agua')+' · Intestino: '+radio('r_intestino'),
+    'Álcool: '+radio('r_alcool')+' · Tabagismo: '+radio('r_fumo'),
+    '',L,
+    'CONTEXTO PESSOAL',
+    'Filhos/planos: '+radio('r_filhos'),
+    'Saúde emocional: '+fv('f_emocional'),
+    'Info adicional: '+fv('f_extra'),
+    '',L,
+    'BARREIRAS',
+    chips('c_barreiras')+(fv('f_barreiras_outro')!=='—'?' — '+fv('f_barreiras_outro'):''),
+    '',L,
+    'MOTIVAÇÃO',
+    'Escala 0-10: '+scale('r_motivacao')+'/10',
+    'Mensagem: '+fv('f_mensagem'),
+    '',L,
+    'Dr. Henrique Alves Gonzaga · CRM/SP 226530',
+    'Formulário pré-consulta HAG · Gerado em '+new Date().toLocaleDateString('pt-BR'),
+  ];
+  return lines.join('\n');
+}
+
+async function submitForm(){
+  if(!validateStep(10)) return;
+
+  // Monta o texto do resumo
+  var soapTxt = buildSoapText();
+
+  // Mostra tela de carregamento
+  showStep(11);
+  document.getElementById('screenSending').style.display='block';
+  document.getElementById('screenSuccess').style.display='none';
+  document.getElementById('screenError').style.display='none';
+
+  // Popula os textareas de cópia (sucesso e erro)
+  var ta=document.getElementById('soapOutput'); if(ta) ta.value=soapTxt;
+  var taErr=document.getElementById('soapOutputErr'); if(taErr) taErr.value=soapTxt;
+
+  // Se a chave ainda não foi configurada, mostra só o resultado local
+  if(!WEB3FORMS_KEY || WEB3FORMS_KEY==='SEU_ACCESS_KEY_AQUI'){
+    document.getElementById('screenSending').style.display='none';
+    document.getElementById('screenSuccess').style.display='block';
+    return;
+  }
+
+  // Envia via Web3Forms
+  try{
+    // Monta email em HTML formatado e legível
+        // ─── EMAIL HTML BUILDER ───
+    function row(l,v){
+      return '<tr><td style="padding:7px 16px;font-size:11px;color:#8a9ab0;font-weight:500;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;vertical-align:top;border-bottom:1px solid #eef0f5;width:175px">'+l+'</td><td style="padding:7px 16px;font-size:13.5px;color:#1A233A;border-bottom:1px solid #eef0f5;font-weight:300;line-height:1.5">'+(v&&v!=='—'?v:'<span style="color:#c4cad6">—</span>')+'</td></tr>';
+    }
+    function rowOpt(l,v){
+      return (v&&v!=='—'&&v!=='— · —'&&v!=='— / —')?row(l,v):'';
+    }
+    function sec(t){
+      return '<tr><td colspan="2" style="padding:16px 16px 6px;font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#C9AF6E;border-bottom:1.5px solid #C9AF6E;background:#faf7ef">'+t+'</td></tr>';
+    }
+    var htmlBody = '<div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;background:#fff;border:1px solid #dde2eb">'
+      +'<div style="background:#1A233A;padding:30px 36px;text-align:center">'
+      +'<div style="margin:0 auto 14px;width:46px"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" width="46" height="46"><polygon points="26,3 48,15 48,37 26,49 4,37 4,15" stroke="#C9AF6E" stroke-width="1.2" fill="none"/><line x1="17" y1="19" x2="17" y2="33" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="26" x2="26" y2="29" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/><line x1="26" y1="22" x2="26" y2="36" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/></svg></div>'
+      +'<p style="font-size:9px;letter-spacing:.24em;color:#C9AF6E;text-transform:uppercase;margin:0 0 8px">Método HAG · Dr. Henrique Alves · CRM/SP 226530</p>'
+      +'<h1 style="font-size:22px;color:#fff;margin:0;font-weight:300;letter-spacing:.06em;font-family:Georgia,serif">Pré-Consulta &mdash; '+fv('f_nome')+'</h1>'
+      +'<p style="font-size:11px;color:rgba(255,255,255,.35);margin:8px 0 0;letter-spacing:.06em">'+new Date().toLocaleDateString('pt-BR')+' &nbsp;·&nbsp; '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</p>'
+      +'</div>'
+      +'<table style="width:100%;border-collapse:collapse">'
+      // IDENTIFICAÇÃO — sempre mostra nome
+      +sec('Identificação')
+      +row('Nome',fv('f_nome'))
+      +rowOpt('Idade / Cidade',fv('f_idade')+' · '+fv('f_cidade'))
+      +rowOpt('Profissão',fv('f_profissao'))
+      +rowOpt('Como conheceu',chips('c_conheceu'))
+      // MOTIVO
+      +sec('Motivo Principal')
+      +row('Principal queixa',chips('c_incomoda'))
+      +row('Prioridade',fv('f_uma_coisa'))
+      // DADOS CORPORAIS
+      +sec('Dados Corporais')
+      +row('Peso / Altura',fv('f_peso')+' · '+fv('f_altura'))
+      +rowOpt('Meta',fv('f_peso_meta')+(fv('f_data_meta')!=='—'?' até '+fv('f_data_meta'):''))
+      +rowOpt('Histórico de peso',fv('f_peso_hist'))
+      // CLÍNICO
+      +sec('Histórico Clínico')
+      +rowOpt('Doenças / Cirurgias',fv('f_doencas'))
+      +rowOpt('Histórico familiar',chips('c_familiar'))
+      +rowOpt('Medicamentos atuais',fv('f_meds'))
+      +rowOpt('Med. anteriores',fv('f_meds_ant'))
+      +rowOpt('Alergias',fv('f_alergias'))
+      // ESTILO DE VIDA
+      +sec('Estilo de Vida')
+      +rowOpt('Atividade física',fv('f_exercicio'))
+      +rowOpt('Rotina',fv('f_trabalho'))
+      +rowOpt('Sono',radio('r_sono_horas')!=='—'?(radio('r_sono_horas')+' · '+radio('r_sono_qual')):'')
+      +rowOpt('Disposição',radio('r_disp'))
+      +rowOpt('Estresse',radio('r_estresse'))
+      +rowOpt('Memória',radio('r_memoria'))
+      // ALIMENTAR
+      +sec('Comportamento Alimentar')
+      +rowOpt('Dieta anterior',fv('f_dieta_ant'))
+      +rowOpt('Vontades freq.',chips('c_vontade'))
+      +rowOpt('Favorito',fv('f_favorito'))
+      +rowOpt('Não come',fv('f_nao_come'))
+      +rowOpt('Quem cozinha',fv('f_cozinha'))
+      +rowOpt('Restaurantes',radio('r_resto'))
+      +rowOpt('Suplementos',fv('f_supls'))
+      // HÁBITOS
+      +sec('Hábitos e Saúde')
+      +rowOpt('Água diária',radio('r_agua'))
+      +rowOpt('Intestino',radio('r_intestino'))
+      +rowOpt('Álcool',radio('r_alcool'))
+      +rowOpt('Tabagismo',radio('r_fumo'))
+      // CONTEXTO
+      +sec('Contexto Pessoal')
+      +rowOpt('Filhos / planos',radio('r_filhos'))
+      +rowOpt('Saúde emocional',fv('f_emocional'))
+      +rowOpt('Info adicional',fv('f_extra'))
+      // BARREIRAS
+      +sec('Barreiras')
+      +rowOpt('Principais',chips('c_barreiras')+(fv('f_barreiras_outro')!=='—'?' — '+fv('f_barreiras_outro'):''))
+      // MOTIVAÇÃO
+      +sec('Motivação')
+      +row('Escala 0–10',scale('r_motivacao')+'/10')
+      +rowOpt('Mensagem',fv('f_mensagem'))
+      +'</table>'
+      +'<div style="background:#1A233A;padding:14px 24px;text-align:center;font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.14em;text-transform:uppercase">'
+      +'Dr. Henrique Alves Gonzaga &nbsp;·&nbsp; CRM/SP 226530 &nbsp;·&nbsp; Método HAG'
+      +'</div></div>';
+
+        var payload={
+      access_key: WEB3FORMS_KEY,
+      subject: 'Pré-Consulta HAG — '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',
+      from_name: 'Formulário HAG — '+fv('f_nome'),
+      message: htmlBody,
+      // Instrui Web3Forms a renderizar o campo message como HTML
+      'h-Content-Type': 'text/html',
+      replyto: '',
+      redirect: '',
+    };
+
+    var resp = await fetch('https://api.web3forms.com/submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var result = await resp.json();
+
+    document.getElementById('screenSending').style.display='none';
+    if(result.success){
+      document.getElementById('screenSuccess').style.display='block';
+    } else {
+      var msg=document.getElementById('errorMsg');
+      if(msg) msg.textContent='Erro: '+(result.message||'Tente novamente.');
+      document.getElementById('screenError').style.display='block';
+    }
+  } catch(err){
+    document.getElementById('screenSending').style.display='none';
+    var msg=document.getElementById('errorMsg');
+    if(msg) msg.textContent='Sem conexão. Verifique o Wi-Fi e tente novamente.';
+    document.getElementById('screenError').style.display='block';
+  }
+}
+
+function tentarNovamente(){
+  // Volta ao step 10 para reenviar
+  document.getElementById('screenError').style.display='none';
+  showStep(10);
+}
+
+function copiarSoap(){
+  var ta=document.getElementById('soapOutput');
+  if(!ta) return;
+  ta.select();
+  var btn=document.getElementById('copyBtn');
+  try{
+    document.execCommand('copy');
+    if(btn){ btn.textContent='Copiado!'; btn.classList.add('copied'); setTimeout(function(){ btn.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 3V2.5A1.5 1.5 0 015.5 1h5A1.5 1.5 0 0112 2.5v7A1.5 1.5 0 0110.5 11H10" stroke="currentColor" stroke-width="1.3"/></svg> Copiar para prontuário'; btn.classList.remove('copied'); },2500); }
+  }catch(e){
+    navigator.clipboard.writeText(ta.value).catch(function(){ alert('Use Ctrl+C.'); });
+  }
+}
+</script>
+</body>
+</html>
