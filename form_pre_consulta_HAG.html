@@ -666,8 +666,8 @@ textarea.finput{min-height:82px}
   <!-- ENVIANDO -->
   <div class="sending-screen" id="screenSending" style="display:none">
     <div class="spinner"></div>
-    <h2 class="r-title">Enviando...</h2>
-    <p class="r-sub">Estamos transmitindo suas respostas para o consultório.</p>
+    <h2 class="r-title">Enviando</h2>
+    <p class="r-sub">Aguarde um momento...</p>
   </div>
 
   <!-- SUCESSO -->
@@ -1032,7 +1032,55 @@ async function submitForm(){
     msg += '\n' + L + '\n';
     msg += 'Método HAG · drhenrique@clinicahag.com\n';
 
-    // Envia via Web3Forms com JSON simples
+    // ── Análise diagnóstica prévia via Claude API ────────────────────────────
+    var CLAUDE_KEY='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';
+    var interpretacao='';
+    try{
+      var NL=String.fromCharCode(10);
+      var promptDiag='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).'+NL+NL
+        +'Um novo paciente preencheu o formulário pré-consulta abaixo. Com base nessas informações, gere um '
+        +'relatório diagnóstico prévio interno em português, estruturado em 4 seções:'+NL+NL
+        +'1. PERFIL CLÍNICO INICIAL (resumo objetivo: queixa principal, dados corporais, histórico relevante, medicamentos)'+NL
+        +'2. HIPÓTESES DIAGNÓSTICAS (possíveis diagnósticos metabólicos, hormonais, comportamentais)'+NL
+        +'3. PONTOS DE ATENÇÃO ANTES DA CONSULTA (alertas clínicos, contraindicações potenciais, exames prioritários)'+NL
+        +'4. SUGESTÃO DE CICLO HAG (Avulso/Smart/Essencial/Reset/Transforma — com justificativa)'+NL+NL
+        +'Seja objetivo e clínico. Máximo 300 palavras. Use apenas os dados fornecidos.'+NL+NL
+        +'PRÉ-CONSULTA:'+NL+msg;
+      var respIA=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key':CLAUDE_KEY,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:800,
+          messages:[{role:'user',content:promptDiag}]
+        })
+      });
+      if(respIA.ok){
+        var dataIA=await respIA.json();
+        interpretacao=dataIA.content&&dataIA.content[0]?dataIA.content[0].text:'';
+      }
+    }catch(eIA){
+      interpretacao='[Erro ao gerar analise: '+eIA.message+']';
+    }
+
+    // Adicionar análise ao email
+    if(interpretacao){
+      var nl2=String.fromCharCode(10);
+      var sep='=================================================';
+      msg+=nl2+sep+nl2;
+      msg+='ANALISE DIAGNOSTICA PREVIA - uso exclusivo Dr. Henrique'+nl2;
+      msg+=sep+nl2+nl2;
+      msg+=interpretacao+nl2+nl2;
+      msg+=sep+nl2;
+      msg+='[Gerado automaticamente com base nas respostas do formulario]'+nl2;
+    }
+
+    // ── Envia via Web3Forms ───────────────────────────────────────────────────
     var resp = await fetch('https://api.web3forms.com/submit',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
