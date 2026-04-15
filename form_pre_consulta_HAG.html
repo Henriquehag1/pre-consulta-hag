@@ -1045,21 +1045,17 @@ async function submitForm(){
       +'Dr. Henrique Alves Gonzaga &nbsp;·&nbsp; CRM/SP 226530 &nbsp;·&nbsp; Método HAG'
       +'</div></div>';
 
-        var payload={
-      access_key: WEB3FORMS_KEY,
-      subject: 'Pré-Consulta HAG — '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',
-      from_name: 'Formulário HAG — '+fv('f_nome'),
-      message: htmlBody,
-      // Instrui Web3Forms a renderizar o campo message como HTML
-      'h-Content-Type': 'text/html',
-      replyto: '',
-      redirect: '',
-    };
+        // Web3Forms: enviar como FormData para garantir HTML renderizado no email
+    var fd = new FormData();
+    fd.append('access_key', WEB3FORMS_KEY);
+    fd.append('subject', 'Pré-Consulta HAG — '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')');
+    fd.append('from_name', 'Formulário HAG — '+fv('f_nome'));
+    fd.append('message', htmlBody);
 
     var resp = await fetch('https://api.web3forms.com/submit',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify(payload)
+      headers:{'Accept':'application/json'},
+      body: fd
     });
     var result = await resp.json();
 
