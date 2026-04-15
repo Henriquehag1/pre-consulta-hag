@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Check-in Trimestral | Manutenção HAG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1A233A;--navy2:#212d47;
+  --gold:#C9AF6E;--gold2:#b89c58;--gold-pale:#e8d9b4;--gold-bg:#faf7ef;--gold-border:#ddd0a8;
+  --cream:#EBEDEF;--cream2:#f5f4f0;--surface:#fff;
+  --ink:#1A233A;--ink2:#3d4a63;--ink3:#7a8399;--ink4:#adb5c4;
+  --border:#dde2eb;--border2:#c4cad6;
+  --green:#1e5c3a;--green-bg:#eaf4ee;--green-border:#a8d5b5;
+  --amber:#7a4f00;--amber-bg:#fff8eb;--amber-border:#f5d58a;
+  --red:#8b2020;--red-bg:#fdf0f0;--red-border:#e8c0c0;
+  --violet:#4c1d95;--violet-bg:#f5f3ff;--violet-border:#c4b5fd;
+  --r:3px;--r2:6px;
+}
+html{scroll-behavior:smooth}
+body{font-family:"Jost",sans-serif;background:var(--cream);color:var(--ink);font-size:15px;line-height:1.6;min-height:100vh}
+
+/* HEADER */
+.form-header{background:var(--navy);position:relative;overflow:hidden}
+.hx-bg{position:absolute;top:-60px;right:-60px;opacity:.04;pointer-events:none}
+.hx-bg2{position:absolute;bottom:-40px;left:-40px;opacity:.03;pointer-events:none}
+.header-inner{max-width:640px;margin:0 auto;padding:2.75rem 1.5rem 2.5rem;text-align:center;position:relative;z-index:1}
+.logo-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:.75rem;margin-bottom:1.75rem}
+.brand-wordmark{font-family:"Cormorant Garamond",serif;font-size:11px;letter-spacing:.3em;color:var(--gold-pale);text-transform:uppercase;font-weight:300}
+.brand-wordmark strong{color:var(--gold);font-weight:500}
+.trim-tag{display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,175,110,.12);border:1px solid rgba(201,175,110,.25);border-radius:20px;padding:.3rem 1rem;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:.875rem;font-weight:500}
+.h-title{font-family:"Cormorant Garamond",serif;font-size:clamp(1.875rem,5vw,2.5rem);font-weight:300;color:#fff;letter-spacing:.04em;line-height:1.15;margin-bottom:.625rem}
+.h-title em{font-style:italic;color:var(--gold-pale)}
+.h-sub{font-size:13px;color:rgba(255,255,255,.42);font-weight:300;max-width:420px;margin:0 auto;line-height:1.75}
+
+/* ALERTA */
+.alert-banner{max-width:640px;margin:0 auto;padding:0 1.25rem}
+.alert-inner{border-radius:var(--r2);padding:1rem 1.25rem;margin-top:1.25rem;display:none;align-items:flex-start;gap:.875rem;font-size:13.5px;line-height:1.6}
+.alert-inner.show{display:flex}
+.al-verde{background:var(--green-bg);border:1.5px solid var(--green-border)}
+.al-amarelo{background:var(--amber-bg);border:1.5px solid var(--amber-border)}
+.al-vermelho{background:var(--red-bg);border:1.5px solid var(--red-border)}
+.al-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.al-body strong{display:block;font-size:14px;font-weight:500;margin-bottom:.2rem}
+.al-verde .al-body strong{color:var(--green)}
+.al-amarelo .al-body strong{color:var(--amber)}
+.al-vermelho .al-body strong{color:var(--red)}
+.al-body p{font-size:13px;color:var(--ink2);font-weight:300}
+
+/* BODY */
+.form-body{max-width:640px;margin:0 auto;padding:2rem 1.25rem 5rem}
+
+/* BLOCO */
+.bloco{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:1.25rem;overflow:hidden;box-shadow:0 2px 16px rgba(26,35,58,.05)}
+.bloco-header{background:var(--navy);padding:.875rem 1.375rem;display:flex;align-items:center;gap:.875rem}
+.bloco-num{font-family:"Cormorant Garamond",serif;font-size:1.25rem;font-weight:300;color:var(--gold);letter-spacing:.06em;min-width:28px}
+.bloco-title{font-family:"Cormorant Garamond",serif;font-size:1rem;font-weight:400;color:#fff;letter-spacing:.04em}
+.bloco-body{padding:1.375rem 1.375rem .875rem}
+
+/* FIELD */
+.field{margin-bottom:1.375rem}
+.field:last-child{margin-bottom:.5rem}
+.fl{display:block;font-size:10.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--ink2);margin-bottom:.625rem}
+.fh{font-size:12px;color:var(--ink4);margin-bottom:.5rem;line-height:1.5;font-weight:300}
+.finput{width:100%;font-family:"Jost",sans-serif;font-size:14px;color:var(--ink);border:1px solid var(--border);border-radius:var(--r);padding:.7rem 1rem;background:var(--cream2);outline:none;resize:none;line-height:1.5;transition:border-color .14s,box-shadow .14s;font-weight:300}
+.finput:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,175,110,.1);background:#fff}
+.finput::placeholder{color:var(--ink4);font-weight:300}
+textarea.finput{min-height:80px}
+
+/* CARDS DE STATUS */
+.status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-top:.375rem}
+.status-grid.g3{grid-template-columns:repeat(3,1fr)}
+.status-card{border:1.5px solid var(--border);border-radius:var(--r2);padding:.875rem .75rem;text-align:center;cursor:pointer;background:var(--surface2,#fafafa);transition:all .16s;user-select:none}
+.status-card:hover{border-color:var(--gold-border)}
+.sc-icon{font-size:20px;display:block;margin-bottom:.3rem}
+.sc-label{font-size:12.5px;font-weight:500;color:var(--ink2);display:block;letter-spacing:.01em}
+.sc-desc{font-size:11px;color:var(--ink4);margin-top:.2rem;line-height:1.35}
+.status-card.on-green{background:var(--green-bg);border-color:var(--green-border)}
+.status-card.on-green .sc-label{color:var(--green)}
+.status-card.on-amber{background:var(--amber-bg);border-color:var(--amber-border)}
+.status-card.on-amber .sc-label{color:var(--amber)}
+.status-card.on-red{background:var(--red-bg);border-color:var(--red-border)}
+.status-card.on-red .sc-label{color:var(--red)}
+.status-card.on-navy{background:var(--navy);border-color:var(--navy)}
+.status-card.on-navy .sc-label{color:var(--gold-pale)}
+.status-card.on-navy .sc-desc{color:rgba(255,255,255,.4)}
+
+/* ESCALA 1-5 */
+.scale-5{display:flex;gap:.35rem;margin-top:.375rem}
+.s5-btn{flex:1;height:52px;border:1px solid var(--border);border-radius:var(--r);font-size:14px;font-weight:400;color:var(--ink3);cursor:pointer;background:var(--surface);transition:all .14s;font-family:"Jost",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.s5-btn:hover{border-color:var(--gold-border);color:var(--ink)}
+.s5-btn.on{background:var(--navy);color:var(--gold-pale);border-color:var(--navy)}
+.s5-num{font-size:16px;font-weight:500;line-height:1}
+.s5-label{font-size:8.5px;opacity:.7;white-space:nowrap}
+
+/* ESCALA 0-10 */
+.scale-10{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.375rem}
+.s10-btn{flex:1;min-width:30px;height:44px;border:1px solid var(--border);border-radius:var(--r);font-size:14px;font-weight:400;color:var(--ink3);cursor:pointer;background:var(--surface);transition:all .14s;font-family:"Jost",sans-serif}
+.s10-btn:hover{border-color:var(--gold-border);color:var(--ink)}
+.s10-btn.on{background:var(--navy);color:var(--gold-pale);border-color:var(--navy)}
+.scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--ink4);margin-top:.375rem;padding:0 2px;letter-spacing:.04em;text-transform:uppercase}
+
+/* CHIPS */
+.chips-group{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.375rem}
+.chip-opt{display:inline-flex;align-items:center;gap:.375rem;font-size:12.5px;font-weight:400;letter-spacing:.02em;padding:.45rem .95rem;border-radius:2px;border:1px solid var(--border);background:var(--surface);color:var(--ink3);cursor:pointer;user-select:none;transition:all .14s;font-family:"Jost",sans-serif}
+.chip-opt:hover{border-color:var(--gold-border);color:var(--ink2)}
+.chip-opt.on{background:var(--navy);color:var(--gold-pale);border-color:var(--navy)}
+
+/* RADIO */
+.radio-group{display:flex;flex-direction:column;gap:.35rem;margin-top:.375rem}
+.radio-row{display:flex;align-items:center;gap:.875rem;padding:.6rem .875rem;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .14s;background:var(--surface)}
+.radio-row:hover{border-color:var(--gold-border);background:var(--gold-bg)}
+.radio-row.on{border-color:var(--navy);background:var(--navy)}
+.radio-row.on .radio-label{color:var(--gold-pale)}
+.radio-dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;transition:all .14s}
+.radio-row.on .radio-dot{border-color:var(--gold);background:var(--gold)}
+.radio-label{font-size:13.5px;color:var(--ink2);font-weight:300}
+
+/* REGRA DE OURO */
+.regra-card{background:var(--navy);border-radius:var(--r2);padding:1.125rem 1.375rem;margin-bottom:1rem;border-left:3px solid var(--gold)}
+.regra-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.5rem}
+.regra-checks{display:flex;flex-direction:column;gap:.375rem}
+.regra-row{display:flex;align-items:center;gap:.875rem;padding:.5rem .75rem;border:1px solid rgba(255,255,255,.08);border-radius:var(--r);cursor:pointer;transition:all .14s;background:rgba(255,255,255,.03)}
+.regra-row:hover{background:rgba(255,255,255,.06);border-color:rgba(201,175,110,.3)}
+.regra-row.ok{border-color:var(--green-border);background:rgba(30,92,58,.2)}
+.regra-row.alerta{border-color:var(--red-border);background:rgba(139,32,32,.2)}
+.regra-num{font-family:"Cormorant Garamond",serif;font-size:1.125rem;font-weight:300;color:var(--gold);min-width:20px}
+.regra-desc{flex:1;font-size:13px;color:rgba(255,255,255,.6);font-weight:300}
+.regra-btns{display:flex;gap:.375rem}
+.regra-btn{font-size:11px;font-weight:500;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:all .12s;font-family:"Jost",sans-serif;user-select:none}
+.regra-btn.ok-on{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.regra-btn.al-on{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+
+/* DIVIDER */
+.fdiv{height:1px;background:var(--border);margin:1.25rem 0;position:relative}
+.fdiv::after{content:"◆";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:7px;color:var(--gold);background:var(--surface);padding:0 6px;opacity:.6}
+
+/* CLOSING */
+.closing-msg{background:var(--navy);border-radius:var(--r2);padding:1.5rem 1.875rem;margin-bottom:2rem;position:relative;overflow:hidden}
+.closing-msg::before{content:"";position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(201,175,110,.05)}
+.closing-eyebrow{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:.625rem}
+.closing-text{font-size:13.5px;color:rgba(255,255,255,.55);line-height:1.75;font-weight:300;font-style:italic}
+.closing-sign{font-family:"Cormorant Garamond",serif;font-size:15px;color:var(--gold-pale);margin-top:.875rem;font-weight:400;letter-spacing:.04em}
+
+/* SUBMIT */
+.submit-wrap{margin-top:2rem;text-align:center}
+.btn-submit{background:var(--gold);color:var(--navy);border:none;border-radius:2px;padding:.875rem 3rem;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-family:"Jost",sans-serif;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.625rem}
+.btn-submit:hover{background:var(--gold2);box-shadow:0 6px 22px rgba(201,175,110,.32);transform:translateY(-1px)}
+
+/* RESULTADO */
+.result-screen{text-align:center;padding:4rem 1rem;max-width:520px;margin:0 auto}
+.r-spinner{width:46px;height:46px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.5rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.r-hex-wrap{margin:0 auto 1.5rem;animation:hexIn .8s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes hexIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+.success-eyebrow{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:.625rem}
+.r-title{font-family:"Cormorant Garamond",serif;font-size:2rem;font-weight:300;color:var(--navy);letter-spacing:.04em;margin-bottom:.5rem}
+.r-rule{width:44px;height:1.5px;background:var(--gold);margin:.875rem auto 1.25rem;animation:ruleGrow .5s .4s both;transform-origin:center}
+@keyframes ruleGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.r-sub{font-size:13.5px;color:var(--ink3);font-weight:300;line-height:1.75;margin-bottom:2rem}
+.success-card{background:var(--navy);border-radius:var(--r2);padding:1.375rem 1.75rem;text-align:left;margin-bottom:1.5rem}
+.sc-eyebrow{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.75rem}
+.ss-list{display:flex;flex-direction:column;gap:.75rem}
+.ss-item{display:flex;align-items:flex-start;gap:.875rem}
+.ss-num{font-family:"Cormorant Garamond",serif;font-size:1.375rem;font-weight:300;color:var(--gold);flex-shrink:0;line-height:1.2;min-width:24px}
+.ss-text{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6;font-weight:300}
+.ss-text strong{display:block;color:var(--gold-pale);font-weight:500;font-size:13.5px;margin-bottom:.15rem}
+.ss-divider{height:1px;background:rgba(255,255,255,.06)}
+.close-note{font-size:11.5px;color:var(--ink4);letter-spacing:.06em}
+.err-icon{width:52px;height:52px;border-radius:50%;background:var(--red-bg);border:1.5px solid var(--red-border);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.25rem}
+.btn-retry{background:var(--navy);color:var(--gold-pale);border:none;border-radius:2px;padding:.75rem 2rem;font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;font-family:"Jost",sans-serif;cursor:pointer;margin-top:1.25rem;display:inline-flex;align-items:center;gap:.5rem}
+.soap-err{background:var(--cream2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;text-align:left;margin-top:1.25rem}
+.soap-err textarea{width:100%;height:160px;font-family:monospace;font-size:11px;background:transparent;border:none;outline:none;resize:none;color:var(--ink2);line-height:1.6}
+.hidden{display:none}
+@media(max-width:480px){.status-grid{grid-template-columns:1fr 1fr}.status-grid.g3{grid-template-columns:1fr 1fr}.scale-5{gap:.2rem}.s5-label{display:none}}
+</style>
+</head>
+<body>
+
+<div class="form-header">
+  <svg class="hx-bg" width="340" height="340" viewBox="0 0 340 340" fill="none"><polygon points="170,20 304,95 304,245 170,320 36,245 36,95" stroke="white" stroke-width="1"/><polygon points="170,55 278,115 278,225 170,285 62,225 62,115" stroke="white" stroke-width=".4"/></svg>
+  <svg class="hx-bg2" width="200" height="200" viewBox="0 0 200 200" fill="none"><polygon points="100,12 178,56 178,144 100,188 22,144 22,56" stroke="white" stroke-width="1"/></svg>
+  <div class="header-inner">
+    <div class="logo-wrap">
+      <svg width="52" height="52" viewBox="0 0 58 58" fill="none">
+        <polygon points="29,3.5 53,16.5 53,41.5 29,54.5 5,41.5 5,16.5" stroke="#C9AF6E" stroke-width="1.2" fill="none"/>
+        <polygon points="29,9 47,19.5 47,38.5 29,49 11,38.5 11,19.5" stroke="#C9AF6E" stroke-width=".5" fill="none" opacity=".35"/>
+        <line x1="18" y1="21" x2="18" y2="37" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
+        <line x1="18" y1="29" x2="27" y2="29" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
+        <line x1="27" y1="21" x2="27" y2="37" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
+        <line x1="32" y1="37" x2="37" y2="21" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="37" y1="21" x2="42" y2="37" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="33.5" y1="31" x2="40.5" y2="31" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="brand-wordmark"><strong>Dr. Henrique Alves</strong> · Método HAG</span>
+    </div>
+    <div class="trim-tag">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.1"/><path d="M5 3v2.2l1.3.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+      Manutenção · Check-in Trimestral
+    </div>
+    <h1 class="h-title">Balanço dos <em>últimos 90 dias</em></h1>
+    <p class="h-sub">Este check-in permite identificar precocemente qualquer desvio e ajustar sua estratégia antes que a regressão aconteça.</p>
+  </div>
+</div>
+
+<div class="alert-banner">
+  <div class="alert-inner" id="alertBanner">
+    <div class="al-icon" id="alertIcon"></div>
+    <div class="al-body"><strong id="alertTitle"></strong><p id="alertText"></p></div>
+  </div>
+</div>
+
+<div class="form-body" id="formContent">
+
+  <!-- IDENTIFICAÇÃO -->
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem">
+    <div class="field" style="flex:2;min-width:180px;margin-bottom:0">
+      <label class="fl">Nome</label>
+      <input class="finput" id="f_nome" type="text" placeholder="Seu nome completo">
+    </div>
+    <div class="field" style="flex:1;min-width:120px;margin-bottom:0">
+      <label class="fl">Período</label>
+      <input class="finput" id="f_periodo" type="text" placeholder="Ex: Jan–Mar 2025">
+    </div>
+  </div>
+
+  <!-- BLOCO 1: VISÃO GERAL -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">01</div><div class="bloco-title">Visão Geral</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Como avalia sua evolução nos últimos 90 dias?</label>
+        <div class="status-grid" id="sg_evolucao">
+          <div class="status-card" onclick="toggleStatus(this,'sg_evolucao','on-green')">
+            <span class="sc-icon">🏆</span><span class="sc-label">Mantive bem</span><span class="sc-desc">Resultado sólido e constante</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_evolucao','on-amber')">
+            <span class="sc-icon">⚖️</span><span class="sc-label">Oscilações controladas</span><span class="sc-desc">Altos e baixos, mas me recuperei</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_evolucao','on-red');calcAlerta()">
+            <span class="sc-icon">⚠️</span><span class="sc-label">Perdi o controle</span><span class="sc-desc">Dificuldade em manter o plano</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_evolucao','on-red');calcAlerta()">
+            <span class="sc-icon">📉</span><span class="sc-label">Regressão significativa</span><span class="sc-desc">Resultado comprometido</span>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:.5rem">
+        <label class="fl">Peso ou caimento das roupas de referência</label>
+        <div class="status-grid g3" id="sg_peso">
+          <div class="status-card" onclick="toggleStatus(this,'sg_peso','on-green')">
+            <span class="sc-icon">✅</span><span class="sc-label">Estável</span><span class="sc-desc">Roupas vestem perfeitamente</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_peso','on-amber')">
+            <span class="sc-icon">↕️</span><span class="sc-label">Oscilou, recuperei</span><span class="sc-desc">Ajuste natural feito</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_peso','on-red');calcAlerta()">
+            <span class="sc-icon">🔴</span><span class="sc-label">Subiu / Apertou</span><span class="sc-desc">Precisa de atenção</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 2: ADESÃO -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">02</div><div class="bloco-title">Adesão</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Consistência alimentar nos últimos 90 dias</label>
+        <div class="scale-5" id="s_alim">
+          <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">1</span><span class="s5-label">Ruim</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">2</span><span class="s5-label">Fraca</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">3</span><span class="s5-label">Regular</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">4</span><span class="s5-label">Boa</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">5</span><span class="s5-label">Ótima</span></button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="fl">Consistência nos treinos</label>
+        <div class="scale-5" id="s_treino">
+          <button class="s5-btn" onclick="setScale5(this,'s_treino')"><span class="s5-num">1</span><span class="s5-label">Ruim</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_treino')"><span class="s5-num">2</span><span class="s5-label">Fraca</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_treino')"><span class="s5-num">3</span><span class="s5-label">Regular</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_treino')"><span class="s5-num">4</span><span class="s5-label">Boa</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_treino')"><span class="s5-num">5</span><span class="s5-label">Ótima</span></button>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:.5rem">
+        <label class="fl">Organização de rotina</label>
+        <div class="scale-5" id="s_rotina">
+          <button class="s5-btn" onclick="setScale5(this,'s_rotina')"><span class="s5-num">1</span><span class="s5-label">Ruim</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_rotina')"><span class="s5-num">2</span><span class="s5-label">Fraca</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_rotina')"><span class="s5-num">3</span><span class="s5-label">Regular</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_rotina')"><span class="s5-num">4</span><span class="s5-label">Boa</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_rotina')"><span class="s5-num">5</span><span class="s5-label">Ótima</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 3: COMPORTAMENTO -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">03</div><div class="bloco-title">Comportamento</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Como está seu apetite atualmente?</label>
+        <div class="radio-group" id="r_apetite">
+          <div class="radio-row" onclick="toggleRadio(this,'r_apetite')"><div class="radio-dot"></div><span class="radio-label">Controlado</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_apetite')"><div class="radio-dot"></div><span class="radio-label">Levemente aumentado</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_apetite');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Aumentado</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_apetite');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Desregulado</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="fl">Em qual período perdeu mais o controle alimentar?</label>
+        <div class="chips-group" id="c_periodo">
+          <div class="chip-opt" onclick="toggleChip(this)">Manhã</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Tarde</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Noite</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Finais de semana</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Não tive dificuldade</div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:.5rem">
+        <label class="fl">O que mais dificultou sua constância? <span style="font-size:11px;color:var(--ink4);font-weight:300;text-transform:none;letter-spacing:0">— selecione todos</span></label>
+        <div class="chips-group" id="c_dificuldade">
+          <div class="chip-opt" onclick="toggleChip(this)">Rotina</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Trabalho</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Estresse</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Família</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Falta de acompanhamento</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Desmotivação</div>
+          <div class="chip-opt" onclick="toggleChip(this)">Outro</div>
+        </div>
+        <input class="finput" id="f_dificuldade_outro" type="text" placeholder="Especifique..." style="margin-top:.625rem;display:none">
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 4: RESPOSTA DO CORPO -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">04</div><div class="bloco-title">Resposta do Corpo</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Energia no dia a dia</label>
+        <div class="scale-5" id="s_energia">
+          <button class="s5-btn" onclick="setScale5(this,'s_energia')"><span class="s5-num">1</span><span class="s5-label">Péssima</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_energia')"><span class="s5-num">2</span><span class="s5-label">Baixa</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_energia')"><span class="s5-num">3</span><span class="s5-label">Regular</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_energia')"><span class="s5-num">4</span><span class="s5-label">Boa</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_energia')"><span class="s5-num">5</span><span class="s5-label">Ótima</span></button>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:.5rem">
+        <label class="fl">Funcionamento intestinal</label>
+        <div class="radio-group" id="r_intestino">
+          <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Regular</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Constipado com frequência</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Irregular / alternado</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_intestino')"><div class="radio-dot"></div><span class="radio-label">Diarreia frequente</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 5: ESTILO DE VIDA -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">05</div><div class="bloco-title">Estilo de Vida</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Frequência atual de atividade física</label>
+        <div class="radio-group" id="r_exercicio">
+          <div class="radio-row" onclick="toggleRadio(this,'r_exercicio')"><div class="radio-dot"></div><span class="radio-label">Não estou treinando</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_exercicio')"><div class="radio-dot"></div><span class="radio-label">1 a 2x por semana</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_exercicio')"><div class="radio-dot"></div><span class="radio-label">3 a 4x por semana</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_exercicio')"><div class="radio-dot"></div><span class="radio-label">5x ou mais por semana</span></div>
+        </div>
+      </div>
+      <div class="fdiv"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem">
+        <div class="field" style="margin-bottom:0">
+          <label class="fl">Qualidade do sono</label>
+          <div class="radio-group" id="r_sono">
+            <div class="radio-row" onclick="toggleRadio(this,'r_sono')"><div class="radio-dot"></div><span class="radio-label">Boa</span></div>
+            <div class="radio-row" onclick="toggleRadio(this,'r_sono')"><div class="radio-dot"></div><span class="radio-label">Regular</span></div>
+            <div class="radio-row" onclick="toggleRadio(this,'r_sono')"><div class="radio-dot"></div><span class="radio-label">Ruim</span></div>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label class="fl">Nível de estresse</label>
+          <div class="radio-group" id="r_estresse">
+            <div class="radio-row" onclick="toggleRadio(this,'r_estresse')"><div class="radio-dot"></div><span class="radio-label">Baixo</span></div>
+            <div class="radio-row" onclick="toggleRadio(this,'r_estresse')"><div class="radio-dot"></div><span class="radio-label">Moderado</span></div>
+            <div class="radio-row" onclick="toggleRadio(this,'r_estresse');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Alto</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 6: REGRA DE OURO -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">06</div><div class="bloco-title">Regra de Ouro</div></div>
+    <div class="bloco-body">
+      <div class="field" style="margin-bottom:.5rem">
+        <div class="fh" style="margin-bottom:.875rem">Os 3 gatilhos definidos na sua alta. Marque o status de cada um nos últimos 90 dias.</div>
+        <div class="regra-card">
+          <div class="regra-label">Verifique cada gatilho</div>
+          <div class="regra-checks">
+            <div class="regra-row" id="rck1">
+              <div class="regra-num">1</div>
+              <span class="regra-desc">Gatilho de <strong style="color:rgba(255,255,255,.8)">peso</strong></span>
+              <div class="regra-btns">
+                <div class="regra-btn" id="r1_ok" onclick="setRegra('r1','ok')">✓ Dentro</div>
+                <div class="regra-btn" id="r1_al" onclick="setRegra('r1','al')">⚠ Acionou</div>
+              </div>
+            </div>
+            <div class="regra-row" id="rck2">
+              <div class="regra-num">2</div>
+              <span class="regra-desc">Gatilho da <strong style="color:rgba(255,255,255,.8)">roupa</strong></span>
+              <div class="regra-btns">
+                <div class="regra-btn" id="r2_ok" onclick="setRegra('r2','ok')">✓ Serviu</div>
+                <div class="regra-btn" id="r2_al" onclick="setRegra('r2','al')">⚠ Apertou</div>
+              </div>
+            </div>
+            <div class="regra-row" id="rck3">
+              <div class="regra-num">3</div>
+              <span class="regra-desc">Gatilho <strong style="color:rgba(255,255,255,.8)">comportamental</strong></span>
+              <div class="regra-btns">
+                <div class="regra-btn" id="r3_ok" onclick="setRegra('r3','ok')">✓ Controlou</div>
+                <div class="regra-btn" id="r3_al" onclick="setRegra('r3','al')">⚠ Acionou</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 7: DIREÇÃO ATUAL -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">07</div><div class="bloco-title">Direção Atual</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Hoje você sente que está</label>
+        <div class="status-grid" id="sg_direcao">
+          <div class="status-card" onclick="toggleStatus(this,'sg_direcao','on-green')">
+            <span class="sc-icon">🎯</span><span class="sc-label">Totalmente no controle</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_direcao','on-amber')">
+            <span class="sc-icon">📊</span><span class="sc-label">Relativamente estável</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_direcao','on-red');calcAlerta()">
+            <span class="sc-icon">⚠️</span><span class="sc-label">Começando a perder controle</span>
+          </div>
+          <div class="status-card" onclick="toggleStatus(this,'sg_direcao','on-red');calcAlerta()">
+            <span class="sc-icon">🆘</span><span class="sc-label">Perdido(a)</span>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:.5rem">
+        <label class="fl">Seu objetivo neste momento</label>
+        <div class="chips-group" id="c_objetivo">
+          <div class="chip-opt" onclick="toggleChipSingle(this,'c_objetivo')">Manter o resultado</div>
+          <div class="chip-opt" onclick="toggleChipSingle(this,'c_objetivo')">Voltar a emagrecer</div>
+          <div class="chip-opt" onclick="toggleChipSingle(this,'c_objetivo')">Melhorar composição corporal</div>
+          <div class="chip-opt" onclick="toggleChipSingle(this,'c_objetivo')">Melhorar energia / disposição</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 8: RISCO E NECESSIDADE -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">08</div><div class="bloco-title">Risco e Necessidade</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Quão difícil foi manter a rotina nos últimos 90 dias?</label>
+        <div class="scale-5" id="s_dificuldade">
+          <button class="s5-btn" onclick="setScale5(this,'s_dificuldade');calcAlerta()"><span class="s5-num">1</span><span class="s5-label">Fácil</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_dificuldade');calcAlerta()"><span class="s5-num">2</span><span class="s5-label">Tranquilo</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_dificuldade');calcAlerta()"><span class="s5-num">3</span><span class="s5-label">Regular</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_dificuldade');calcAlerta()"><span class="s5-num">4</span><span class="s5-label">Difícil</span></button>
+          <button class="s5-btn" onclick="setScale5(this,'s_dificuldade');calcAlerta()"><span class="s5-num">5</span><span class="s5-label">Limite</span></button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="fl">Sente necessidade de acompanhamento mais próximo?</label>
+        <div class="radio-group" id="r_acompanhamento">
+          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento')"><div class="radio-dot"></div><span class="radio-label">Não — estou bem na manutenção</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Talvez — sinto que poderia melhorar</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Sim — preciso de suporte</span></div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:.5rem">
+        <label class="fl">Deseja antecipar a consulta semestral para algum ajuste?</label>
+        <div class="radio-group" id="r_antecipar">
+          <div class="radio-row" onclick="toggleRadio(this,'r_antecipar')"><div class="radio-dot"></div><span class="radio-label">Não precisa — seguirei o calendário normal</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_antecipar');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Sim, por favor entrem em contato para agendar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCO 9: AJUSTE FINAL (era bloco 8 no original) -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">09</div><div class="bloco-title">Reflexão e Comprometimento</div></div>
+    <div class="bloco-body">
+      <div class="field">
+        <label class="fl">Algo importante que o Dr. Henrique deveria saber?</label>
+        <div class="fh">Intercorrências de saúde, mudanças de vida, exames recentes, dúvidas...</div>
+        <textarea class="finput" id="f_mensagem" placeholder="Relate aqui qualquer informação relevante para o ajuste do seu plano de manutenção..."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:.5rem">
+        <label class="fl">De 0 a 10, quão comprometido(a) você está para retomar ou manter seu melhor momento?</label>
+        <div class="scale-10" id="s_compromisso">
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">0</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">1</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">2</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">3</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">4</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">5</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">6</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">7</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">8</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">9</button>
+          <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">10</button>
+        </div>
+        <div class="scale-labels"><span>Sem foco</span><span>Totalmente comprometido</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOSING -->
+  <div class="closing-msg">
+    <div class="closing-eyebrow">Método HAG · Fase de Manutenção</div>
+    <p class="closing-text">"Este momento de manutenção é o que define se o resultado se sustenta ou se há regressão. Se identificarmos necessidade, ajustamos sua estratégia e retomamos o acompanhamento de forma estruturada."</p>
+    <div class="closing-sign">Dr. Henrique Alves · CRM/SP 226530</div>
+  </div>
+
+  <div class="submit-wrap">
+    <button class="btn-submit" onclick="enviarCheckin()">
+      Enviar Check-in Trimestral
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5h8M7 4l3 2.5L7 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<!-- RESULTADO -->
+<div class="form-body hidden" id="resultScreen">
+  <div class="result-screen" id="screenSending" style="display:none">
+    <div class="r-spinner"></div>
+    <h2 class="r-title">Enviando</h2>
+    <p class="r-sub" style="margin-bottom:0">Aguarde um momento...</p>
+  </div>
+  <div class="result-screen" id="screenSuccess" style="display:none">
+    <div class="r-hex-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+        <polygon points="36,4 64,20 64,52 36,68 8,52 8,20" stroke="#C9AF6E" stroke-width="1.2" fill="none"/>
+        <polygon points="36,12 56,23.5 56,48.5 36,60 16,48.5 16,23.5" stroke="#C9AF6E" stroke-width=".5" fill="none" opacity=".35"/>
+        <path d="M25 36l8 8 14-14" stroke="#C9AF6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="success-eyebrow">Check-in Trimestral · Manutenção HAG</div>
+    <h2 class="r-title">Recebido</h2>
+    <div class="r-rule"></div>
+    <p class="r-sub">O Dr. Henrique recebeu seu balanço trimestral.<br>Se algum ponto precisar de ajuste, você será contactado antes da próxima consulta.</p>
+    <div class="success-card">
+      <div class="sc-eyebrow">O que acontece agora</div>
+      <div class="ss-list">
+        <div class="ss-item"><div class="ss-num">01</div><div class="ss-text"><strong>Análise do trimestre</strong>O Dr. Henrique revisa seu balanço e identifica pontos de atenção</div></div>
+        <div class="ss-divider"></div>
+        <div class="ss-item"><div class="ss-num">02</div><div class="ss-text"><strong>Ajuste se necessário</strong>Caso identifique necessidade, a equipe entrará em contato para orientação ou reagendamento</div></div>
+        <div class="ss-divider"></div>
+        <div class="ss-item"><div class="ss-num">03</div><div class="ss-text"><strong>Continue a manutenção</strong>O resultado conquista-se mês a mês — você está no caminho certo</div></div>
+      </div>
+    </div>
+    <p class="close-note">Você já pode fechar esta página.</p>
+  </div>
+  <div class="result-screen" id="screenError" style="display:none">
+    <div class="err-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 7v5M11 15v.5" stroke="#8b2020" stroke-width="1.8" stroke-linecap="round"/><circle cx="11" cy="11" r="9" stroke="#8b2020" stroke-width="1.5"/></svg></div>
+    <h2 class="r-title">Erro no envio</h2>
+    <p class="r-sub" id="errorMsg">Não foi possível enviar. Verifique sua conexão.</p>
+    <div class="soap-err"><textarea id="soapErr" readonly onclick="this.select()"></textarea></div>
+    <button class="btn-retry" onclick="voltarForm()">Tentar novamente</button>
+  </div>
+</div>
+
+<script>
+var WEB3FORMS_KEY='d826e37c-a868-4bc1-b0d3-e6c8fce06246';
+var CLAUDE_KEY='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';
+var regraState={r1:'',r2:'',r3:''};
+
+function setScale5(el,gid){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.s5-btn').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+}
+function setScale10(el,gid){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.s10-btn').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+}
+function toggleRadio(el,gid){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.radio-row').forEach(function(r){r.classList.remove('on');});
+  el.classList.add('on');
+}
+function toggleChip(el){
+  el.classList.toggle('on');
+  var g=el.closest('.chips-group');
+  var gid=g?g.id:'';
+  if(gid==='c_dificuldade'){
+    var hasOutro=[].slice.call(g.querySelectorAll('.chip-opt.on')).some(function(c){return c.textContent.trim()==='Outro';});
+    var f=document.getElementById('f_dificuldade_outro');
+    if(f) f.style.display=hasOutro?'block':'none';
+  }
+}
+function toggleChipSingle(el,gid){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.chip-opt').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on');
+}
+function toggleStatus(el,gid,cls){
+  var g=document.getElementById(gid);
+  if(g) g.querySelectorAll('.status-card').forEach(function(c){c.className='status-card';});
+  el.classList.add(cls);
+}
+function setRegra(key,status){
+  var okEl=document.getElementById(key+'_ok');
+  var alEl=document.getElementById(key+'_al');
+  if(okEl) okEl.className='regra-btn'+(status==='ok'?' ok-on':'');
+  if(alEl) alEl.className='regra-btn'+(status==='al'?' al-on':'');
+  regraState[key]=status;
+  calcAlerta();
+}
+
+// READ
+function fv(id){var e=document.getElementById(id);return e&&e.value.trim()?e.value.trim():'—';}
+function radio(id){var g=document.getElementById(id);if(!g)return '—';var on=g.querySelector('.radio-row.on');return on?on.querySelector('.radio-label').textContent.trim():'—';}
+function chips(id){var g=document.getElementById(id);if(!g)return '—';var on=[].slice.call(g.querySelectorAll('.chip-opt.on')).map(function(c){return c.textContent.trim();});return on.length?on.join(', '):'—';}
+function sc5(id){var g=document.getElementById(id);if(!g)return '—';var on=g.querySelector('.s5-btn.on');return on?on.querySelector('.s5-num').textContent+'/5':'—';}
+function sc10(id){var g=document.getElementById(id);if(!g)return '—';var on=g.querySelector('.s10-btn.on');return on?on.textContent+'/10':'—';}
+function statusLabel(id){var g=document.getElementById(id);if(!g)return '—';var on=g.querySelector('.status-card[class*="on-"]');return on?on.querySelector('.sc-label').textContent.trim():'—';}
+function getRck(key){return regraState[key]==='ok'?'Dentro dos limites':regraState[key]==='al'?'ACIONOU':'Nao informado';}
+
+// ALERTA
+function calcAlerta(){
+  var banner=document.getElementById('alertBanner');
+  var icon=document.getElementById('alertIcon');
+  var title=document.getElementById('alertTitle');
+  var text=document.getElementById('alertText');
+  var score=0;
+  var evolucao=statusLabel('sg_evolucao');
+  var peso=statusLabel('sg_peso');
+  var direcao=statusLabel('sg_direcao');
+  var apetite=radio('r_apetite');
+  var acomp=radio('r_acompanhamento');
+  var antecipar=radio('r_antecipar');
+  var dific=sc5('s_dificuldade');
+  var comp=sc10('s_compromisso');
+  if(evolucao.indexOf('Regress')>=0||evolucao.indexOf('perdi')>=0) score+=3;
+  else if(evolucao.indexOf('Oscila')>=0) score+=1;
+  if(peso.indexOf('Subiu')>=0) score+=2;
+  if(direcao.indexOf('perder')>=0||direcao.indexOf('Perdido')>=0) score+=2;
+  if(apetite==='Aumentado'||apetite==='Desregulado') score+=2;
+  if(acomp.indexOf('Sim')>=0) score+=2;
+  if(antecipar.indexOf('Sim')>=0) score+=2;
+  if(regraState.r1==='al') score+=2;
+  if(regraState.r2==='al'||regraState.r3==='al') score+=1;
+  if(dific==='5/5'||dific==='4/5') score+=1;
+  if(comp!=='—'&&parseInt(comp)<=3) score+=2;
+  banner.className='alert-inner';
+  if(score>=6){
+    banner.classList.add('show','al-vermelho');
+    icon.textContent='🔴';
+    title.textContent='Resgate indicado — retomada estruturada recomendada';
+    text.textContent='Seu check-in indica regressão significativa ou perda de controle. O Dr. Henrique será notificado e entrará em contato para estruturar um novo ciclo.';
+  } else if(score>=3){
+    banner.classList.add('show','al-amarelo');
+    icon.textContent='🟡';
+    title.textContent='Ajuste de rota recomendado';
+    text.textContent='Alguns pontos merecem atenção. O Dr. Henrique avaliará se é necessário antecipar a consulta ou fazer um ajuste preventivo.';
+  } else if(score===0&&(evolucao.indexOf('Mantive')>=0||evolucao.indexOf('Oscilac')>=0)){
+    banner.classList.add('show','al-verde');
+    icon.textContent='🟢';
+    title.textContent='Manutenção sólida!';
+    text.textContent='Seus indicadores mostram que você está sustentando o resultado. Continue — isso é exatamente o Método HAG em ação.';
+  }
+}
+
+function buildMsg(){
+  var banner=document.getElementById('alertBanner');
+  var status='Sem alerta';
+  if(banner.classList.contains('al-vermelho')) status='RESGATE INDICADO';
+  else if(banner.classList.contains('al-amarelo')) status='AJUSTE DE ROTA RECOMENDADO';
+  else if(banner.classList.contains('al-verde')) status='MANUTENCAO SOLIDA';
+  var NL=String.fromCharCode(10);
+  var L='─────────────────────────────────────────────────';
+  var msg='CHECK-IN TRIMESTRAL HAG - MANUTENCAO'+NL;
+  msg+='Dr. Henrique Alves Gonzaga - CRM/SP 226530'+NL;
+  msg+='Data: '+new Date().toLocaleDateString('pt-BR')+NL;
+  msg+=L+NL+NL;
+  msg+='Paciente: '+fv('f_nome')+NL;
+  msg+='Periodo: '+fv('f_periodo')+NL;
+  msg+='Status: '+status+NL+NL;
+  msg+='[ VISAO GERAL ]'+NL;
+  msg+='Evolucao 90 dias: '+statusLabel('sg_evolucao')+NL;
+  msg+='Peso/Roupas: '+statusLabel('sg_peso')+NL+NL;
+  msg+='[ ADESAO ]'+NL;
+  msg+='Alimentar: '+sc5('s_alim')+NL;
+  msg+='Treinos: '+sc5('s_treino')+NL;
+  msg+='Rotina: '+sc5('s_rotina')+NL+NL;
+  msg+='[ COMPORTAMENTO ]'+NL;
+  msg+='Apetite: '+radio('r_apetite')+NL;
+  msg+='Periodo dificil: '+chips('c_periodo')+NL;
+  msg+='Dificuldades: '+chips('c_dificuldade');
+  if(fv('f_dificuldade_outro')!=='—') msg+=' - '+fv('f_dificuldade_outro');
+  msg+=NL+NL;
+  msg+='[ RESPOSTA DO CORPO ]'+NL;
+  msg+='Energia: '+sc5('s_energia')+NL;
+  msg+='Intestino: '+radio('r_intestino')+NL+NL;
+  msg+='[ ESTILO DE VIDA ]'+NL;
+  msg+='Exercicio: '+radio('r_exercicio')+NL;
+  msg+='Sono: '+radio('r_sono')+NL;
+  msg+='Estresse: '+radio('r_estresse')+NL+NL;
+  msg+='[ REGRA DE OURO ]'+NL;
+  msg+='Gatilho peso: '+getRck('r1')+NL;
+  msg+='Gatilho roupa: '+getRck('r2')+NL;
+  msg+='Gatilho comportamental: '+getRck('r3')+NL+NL;
+  msg+='[ DIRECAO ATUAL ]'+NL;
+  msg+='Percepcao: '+statusLabel('sg_direcao')+NL;
+  msg+='Objetivo: '+chips('c_objetivo')+NL+NL;
+  msg+='[ RISCO E NECESSIDADE ]'+NL;
+  msg+='Dificuldade 90 dias: '+sc5('s_dificuldade')+NL;
+  msg+='Necessidade acompanhamento: '+radio('r_acompanhamento')+NL;
+  msg+='Antecipar consulta: '+radio('r_antecipar')+NL+NL;
+  msg+='[ COMPROMISSO ]'+NL;
+  msg+='Escala 0-10: '+sc10('s_compromisso')+NL;
+  if(fv('f_mensagem')!=='—') msg+=NL+'Mensagem: '+fv('f_mensagem')+NL;
+  msg+=NL+L+NL;
+  msg+='Metodo HAG - drhenrique@clinicahag.com'+NL;
+  return msg;
+}
+
+async function enviarCheckin(){
+  var msg=buildMsg();
+  document.getElementById('formContent').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('hidden');
+  document.getElementById('screenSending').style.display='block';
+  document.getElementById('screenSuccess').style.display='none';
+  document.getElementById('screenError').style.display='none';
+  var taErr=document.getElementById('soapErr');
+  if(taErr) taErr.value=msg;
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  // Interpretação clínica via Claude
+  var interpretacao='';
+  try{
+    var NL=String.fromCharCode(10);
+    var prompt='Voce e o Dr. Henrique Alves Gonzaga, nutrologo e medico esportivo (Metodo HAG, CRM/SP 226530).'+NL+NL
+      +'Um paciente do grupo de Manutencao preencheu o check-in trimestral abaixo. Gere um relatorio clinico interno em portugues, estruturado em 3 secoes:'+NL+NL
+      +'1. AVALIACAO DO TRIMESTRE (como esta a manutencao: adesao, composicao corporal, comportamento, Regra de Ouro)'+NL
+      +'2. PONTOS DE ATENCAO (o que merece monitoramento ou intervencao — seja direto e clinico)'+NL
+      +'3. CONDUTA SUGERIDA (manter plano / ajuste preventivo / antecipar consulta / novo ciclo HAG — com justificativa)'+NL+NL
+      +'Maximo 280 palavras. Use apenas os dados do check-in.'+NL+NL
+      +'CHECK-IN:'+NL+msg;
+    var respIA=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':CLAUDE_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:700,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(respIA.ok){
+      var dataIA=await respIA.json();
+      interpretacao=dataIA.content&&dataIA.content[0]?dataIA.content[0].text:'';
+    }
+  }catch(eIA){
+    interpretacao='[Erro ao gerar analise: '+eIA.message+']';
+  }
+
+  if(interpretacao){
+    var NL2=String.fromCharCode(10);
+    var sep='=================================================';
+    msg+=NL2+sep+NL2;
+    msg+='ANALISE CLINICA TRIMESTRAL - uso exclusivo Dr. Henrique'+NL2;
+    msg+=sep+NL2+NL2;
+    msg+=interpretacao+NL2+NL2;
+    msg+=sep+NL2;
+    msg+='[Gerado automaticamente com base nas respostas do formulario]'+NL2;
+  }
+
+  try{
+    var resp=await fetch('https://api.web3forms.com/submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        access_key:WEB3FORMS_KEY,
+        subject:'Check-in Trimestral HAG - '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',
+        from_name:'Check-in Trimestral HAG - '+fv('f_nome'),
+        message:msg
+      })
+    });
+    var result=await resp.json();
+    document.getElementById('screenSending').style.display='none';
+    if(result.success){
+      document.getElementById('screenSuccess').style.display='block';
+    } else {
+      var em=document.getElementById('errorMsg');
+      if(em) em.textContent='Erro: '+(result.message||'Tente novamente.');
+      document.getElementById('screenError').style.display='block';
+    }
+  }catch(err){
+    document.getElementById('screenSending').style.display='none';
+    var em=document.getElementById('errorMsg');
+    if(em) em.textContent='Sem conexao. Verifique o Wi-Fi.';
+    document.getElementById('screenError').style.display='block';
+  }
+}
+
+function voltarForm(){
+  document.getElementById('screenError').style.display='none';
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('formContent').classList.remove('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
