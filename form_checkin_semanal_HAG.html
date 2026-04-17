@@ -579,6 +579,80 @@ async function enviarCheckin(){
     if(em) em.textContent='Sem conexao. Verifique o Wi-Fi.';
     document.getElementById('screenError').style.display='block';
   }
+  // ── HAG OS: Salvar check-in no Supabase ─────────────────────────────
+  // Roda sempre, independente do resultado do email
+  (async function hagSave(){
+    try {
+      var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+      var SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+      var sd=getScale('s_dieta'),st2=getScale('s_treino'),ss=getScale('s_sono');
+      var sf=getScale('s_fome'),se=getScale('s_energia'),sm=getScale('s_med');
+      var sdif=getScale('s_dificuldade'),scomp=getScale('s_compromisso');
+      var scores2=[sd,st2,ss,sf,se].filter(function(x){return x>=0;});
+      var total2=scores2.reduce(function(a,b){return a+b;},0);
+      var maxPts2=scores2.length*5;
+      var pct2=maxPts2>0?Math.round(total2/maxPts2*100):0;
+      var cls2=pct2>=70?'verde':pct2>=45?'amarelo':'vermelho';
+      var padroes2=[];
+      if(pct2>=70&&sdif>=0&&sdif<=2) padroes2.push('progressao');
+      if(pct2<45&&sdif>=4) padroes2.push('ajuste_estrutural');
+      if(pct2<45&&scomp>=0&&scomp<=2) padroes2.push('intervencao_comportamental');
+      if(sf>=0&&sf<=1&&sd>=0&&sd<=1) padroes2.push('ajuste_farmacologico');
+      if(se>=0&&se<=1&&st2>=4) padroes2.push('overreaching');
+      if(ss>=0&&ss<=1&&sf>=0&&sf<=1) padroes2.push('eixo_cortisol');
+      var nomeCI=fv('f_nome');
+      var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{
+        headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}
+      });
+      var pats2=await patResp.json();
+      var patId2=null;
+      if(Array.isArray(pats2)){
+        var nl2=nomeCI.toLowerCase().trim();
+        var m2=pats2.find(function(p){return p.nome.toLowerCase()===nl2;})
+          ||pats2.find(function(p){var pn=p.nome.toLowerCase();return pn.includes(nl2.split(' ')[0]);});
+        if(m2) patId2=m2.id;
+      }
+      var ci={
+        id:'ci_'+Date.now(),
+        patient_id:patId2,
+        patient_nome:nomeCI,
+        semana:fv('f_semana'),
+        data_envio:new Date().toISOString().slice(0,10),
+        s_dieta:sd>=0?sd:null,
+        s_treino:st2>=0?st2:null,
+        s_sono:ss>=0?ss:null,
+        s_fome:sf>=0?sf:null,
+        s_energia:se>=0?se:null,
+        s_med:sm>=0?sm:null,
+        s_dificuldade:sdif>=0?sdif:null,
+        s_compromisso:scomp>=0?scomp:null,
+        score_total:total2,
+        score_pct:pct2,
+        classificacao:cls2,
+        padroes:padroes2,
+        peso:fv('f_peso'),
+        colateral:fv('f_colateral'),
+        acerto:fv('f_acerto'),
+        obstaculo:fv('f_obstaculo'),
+        resultado:(document.querySelector('input[name="r_resultado"]:checked')||{}).value||'',
+        evento:fv('f_evento'),
+        estoque:(document.querySelector('input[name="r_estoque"]:checked')||{}).value||'',
+        mensagem:fv('f_mensagem'),
+        interpretacao:typeof interpretacao!=='undefined'?interpretacao:'',
+        criado:new Date().toISOString(),
+        tipo:'semanal'
+      };
+      await fetch(SURL+'/rest/v1/checkins',{
+        method:'POST',
+        headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify(ci)
+      });
+      console.log('HAG OS: check-in salvo',ci.id);
+    } catch(eHag){
+      console.warn('HAG OS save error:',eHag);
+    }
+  })();
+
 
 function voltarForm(){
   document.getElementById('screenError').style.display='none';

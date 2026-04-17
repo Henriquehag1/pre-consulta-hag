@@ -818,6 +818,64 @@ async function enviarCheckin(){
     document.getElementById('screenSending').style.display='none';
     if(result.success){
       document.getElementById('screenSuccess').style.display='block';
+      // ── HAG OS: Salvar trimestral no Supabase ─────────────────────────────
+      try {
+        var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+        var SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+        function fvt(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+        function fvrt(nm){var el=document.querySelector('input[name="'+nm+'"]:checked');return el?el.value:'';}
+        function getSt(id){var g=document.getElementById(id);if(!g)return null;var on=g.querySelector('.s5-btn.on');return on?parseInt(on.querySelector('.s5-num').textContent):-1;}
+
+        var nome=fvt('f_nome');
+        var sa=getSt('s_alim'),str=getSt('s_treino'),sro=getSt('s_rotina');
+        var sen=getSt('s_energia'),sdi=getSt('s_dificuldade'),sco=getSt('s_compromisso');
+        var scores=[sa,str,sro,sen].filter(function(x){return x>=0;});
+        var total=scores.reduce(function(a,b){return a+b;},0);
+        var maxP=scores.length*5;
+        var pct=maxP>0?Math.round(total/maxP*100):0;
+
+        // Padrões trimestrais
+        var padroes=[];
+        if(pct>=70&&sdi>=0&&sdi<=2) padroes.push('progressao');
+        if(pct<45&&sdi>=4) padroes.push('ajuste_estrutural');
+        if(pct<45&&sco>=0&&sco<=2) padroes.push('intervencao_comportamental');
+        if(sen>=0&&sen<=1&&str>=4) padroes.push('overreaching');
+
+        // Find patient
+        var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
+        var pats=await patResp.json();
+        var patId=null;
+        if(Array.isArray(pats)){
+          var nl=nome.toLowerCase().trim();
+          var m=pats.find(function(p){return p.nome.toLowerCase()===nl;})||
+            pats.find(function(p){var pn=p.nome.toLowerCase();return pn.includes(nl.split(' ')[0]);});
+          if(m) patId=m.id;
+        }
+
+        await fetch(SURL+'/rest/v1/checkins',{
+          method:'POST',
+          headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify({
+            id:'cit_'+Date.now(),
+            patient_id:patId,
+            patient_nome:nome,
+            semana:fvt('f_periodo'),
+            data_envio:new Date().toISOString().slice(0,10),
+            s_dieta:sa>=0?sa:null,
+            s_treino:str>=0?str:null,
+            s_energia:sen>=0?sen:null,
+            s_dificuldade:sdi>=0?sdi:null,
+            s_compromisso:sco>=0?sco:null,
+            score_total:total,
+            score_pct:pct,
+            classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',
+            padroes:padroes,
+            mensagem:fvt('f_mensagem'),
+            criado:new Date().toISOString(),
+            tipo:'trimestral'
+          })
+        });
+      } catch(eTri){ console.warn('HAG OS trimestral save:', eTri); }
     } else {
       var em=document.getElementById('errorMsg');
       if(em) em.textContent='Erro: '+(result.message||'Tente novamente.');
