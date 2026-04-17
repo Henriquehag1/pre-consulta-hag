@@ -872,7 +872,8 @@ async function enviarCheckin(){
             padroes:padroes,
             mensagem:fvt('f_mensagem'),
             criado:new Date().toISOString(),
-            tipo:'trimestral'
+            tipo:'trimestral',
+          texto_completo:typeof buildMsg==='function'?buildMsg():''
           })
         });
       } catch(eTri){ console.warn('HAG OS trimestral save:', eTri); }

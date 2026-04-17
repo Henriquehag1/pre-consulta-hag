@@ -640,7 +640,8 @@ async function enviarCheckin(){
         mensagem:fv('f_mensagem'),
         interpretacao:typeof interpretacao!=='undefined'?interpretacao:'',
         criado:new Date().toISOString(),
-        tipo:'semanal'
+        tipo:'semanal',
+        texto_completo:typeof buildMsg==='function'?buildMsg():''
       };
       await fetch(SURL+'/rest/v1/checkins',{
         method:'POST',

@@ -1018,6 +1018,30 @@ async function submitForm(){
           body:JSON.stringify(preConsulta)
         });
 
+        // Salvar tambem na tabela checkins para aparecer em Respostas
+        var ciPre={
+          id:'pre_'+Date.now(),
+          patient_id:patId||preConsulta.id,
+          patient_nome:nomeP,
+          semana:'Pre-consulta',
+          data_envio:new Date().toISOString().slice(0,10),
+          score_total:null,
+          score_pct:null,
+          classificacao:null,
+          padroes:[],
+          peso:fvp('f_peso'),
+          mensagem:fvp('f_mensagem')||fvp('f_uma_coisa'),
+          interpretacao:'',
+          texto_completo:typeof soapTxt!=='undefined'?soapTxt:'',
+          criado:new Date().toISOString(),
+          tipo:'pre-consulta'
+        };
+        await fetch(SURL+'/rest/v1/checkins',{
+          method:'POST',
+          headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify(ciPre)
+        });
+
         // Store in localStorage for D0 consultation bridge
         localStorage.setItem('hag_active_patient', JSON.stringify({
           id: preConsulta.id,
