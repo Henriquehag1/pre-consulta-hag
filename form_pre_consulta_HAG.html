@@ -173,9 +173,34 @@ textarea.finput{min-height:82px}
 .req-msg{font-size:11.5px;color:var(--red);margin-top:.375rem;display:none;letter-spacing:.01em}
 .field.error .finput{border-color:var(--red)}
 .field.error .req-msg{display:block}
+
+/* ─── ADMIN API BAR (oculta para pacientes) ─── */
+.hag-api-bar{display:none;background:#1a1918;border-bottom:2px solid #C9AF6E;padding:.625rem 1rem}
+.hag-api-bar.visible{display:block}
+.hag-api-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:.625rem;flex-wrap:wrap}
+.hag-api-label{font-size:10px;font-weight:700;color:#C9AF6E;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.hag-api-input{flex:1;min-width:200px;font-size:11px;font-family:monospace;padding:5px 10px;border-radius:6px;border:1px solid #444;background:#2a2928;color:#fff;outline:none}
+.hag-api-input:focus{border-color:#C9AF6E}
+.hag-api-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:none;background:#C9AF6E;color:#1a1918;cursor:pointer;white-space:nowrap}
+.hag-api-btn:hover{background:#dcc47a}
+.hag-api-st{font-size:10px;white-space:nowrap}
+.hag-api-st.ok{color:#4ade80;font-weight:600}
+.hag-api-st.err{color:#f87171}
+
 </style>
 </head>
 <body>
+
+<!-- HAG Admin API Bar — visível apenas com ?admin=1 na URL -->
+<div class="hag-api-bar" id="hagApiBar">
+  <div class="hag-api-inner">
+    <span class="hag-api-label">🔑 Chave API</span>
+    <input class="hag-api-input" id="hagApiInput" type="password" placeholder="sk-ant-..." autocomplete="off">
+    <button class="hag-api-btn" onclick="hagSaveKey()">Salvar</button>
+    <span class="hag-api-st" id="hagApiSt"></span>
+  </div>
+</div>
+
 
 <!-- HEADER -->
 <div class="form-header">
@@ -950,24 +975,26 @@ async function submitForm(){
   var taErr=document.getElementById('soapOutputErr');if(taErr)taErr.value=soapTxt;
 
   // ── PASSO 1: Análise diagnóstica via Claude API ────────────────────────────
-  var CLAUDE_KEY='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';
+  var CLAUDE_KEY=hagGetKey();
   var interpretacao='';
-  try{
-    var NL=String.fromCharCode(10);
-    var promptDiag='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).'+NL+NL
-      +'Um novo paciente preencheu o formulário pré-consulta abaixo. Gere um relatório diagnóstico prévio interno em português, em 4 seções:'+NL
-      +'1. PERFIL CLÍNICO INICIAL (queixa principal, dados corporais, histórico, medicamentos)'+NL
-      +'2. HIPÓTESES DIAGNÓSTICAS (metabólicas, hormonais, comportamentais)'+NL
-      +'3. PONTOS DE ATENÇÃO (alertas, contraindicações, exames prioritários)'+NL
-      +'4. SUGESTÃO DE CICLO HAG (Avulso/Smart/Essencial/Reset/Transforma — com justificativa)'+NL+NL
-      +'Objetivo e clínico. Máximo 300 palavras.'+NL+'PRÉ-CONSULTA:'+NL+soapTxt;
-    var respIA=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:promptDiag}]})
-    });
-    if(respIA.ok){var dIA=await respIA.json();interpretacao=dIA.content&&dIA.content[0]?dIA.content[0].text:'';}
-  }catch(eIA){interpretacao='[Erro ao gerar analise: '+eIA.message+']';}
+  if(CLAUDE_KEY && CLAUDE_KEY.startsWith('sk-ant-')){
+    try{
+      var NL=String.fromCharCode(10);
+      var promptDiag='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).'+NL+NL
+        +'Um novo paciente preencheu o formulário pré-consulta abaixo. Gere um relatório diagnóstico prévio interno em português, em 4 seções:'+NL
+        +'1. PERFIL CLÍNICO INICIAL (queixa principal, dados corporais, histórico, medicamentos)'+NL
+        +'2. HIPÓTESES DIAGNÓSTICAS (metabólicas, hormonais, comportamentais)'+NL
+        +'3. PONTOS DE ATENÇÃO (alertas, contraindicações, exames prioritários)'+NL
+        +'4. SUGESTÃO DE CICLO HAG (Avulso/Smart/Essencial/Reset/Transforma — com justificativa)'+NL+NL
+        +'Objetivo e clínico. Máximo 300 palavras.'+NL+'PRÉ-CONSULTA:'+NL+soapTxt;
+      var respIA=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:promptDiag}]})
+      });
+      if(respIA.ok){var dIA=await respIA.json();interpretacao=dIA.content&&dIA.content[0]?dIA.content[0].text:'';}
+    }catch(eIA){interpretacao='[Erro ao gerar analise: '+eIA.message+']';}
+  }
 
   // ── PASSO 2: Salvar no Supabase (sempre, com interpretacao garantida) ──────
   try {
@@ -1029,6 +1056,49 @@ function copiarSoap(){
     navigator.clipboard.writeText(ta.value).catch(function(){ alert('Use Ctrl+C.'); });
   }
 }
+
+/* ═══ HAG — API Key via localStorage (sem hardcode) ═══ */
+var HAG_KEY_STORAGE = 'hag_api_key';
+
+function hagGetKey(){
+  try { return localStorage.getItem(HAG_KEY_STORAGE) || ''; } catch(e){ return ''; }
+}
+function hagSaveKey(){
+  var input = document.getElementById('hagApiInput');
+  var st    = document.getElementById('hagApiSt');
+  var k = input ? input.value.trim() : '';
+  if(!k.startsWith('sk-ant-') || k.length < 30){
+    if(st){ st.textContent = '✗ Chave inválida'; st.className = 'hag-api-st err'; }
+    return;
+  }
+  try {
+    localStorage.setItem(HAG_KEY_STORAGE, k);
+    if(st){ st.textContent = '✓ Salva no navegador'; st.className = 'hag-api-st ok'; }
+    setTimeout(function(){ if(st) st.textContent = ''; }, 3000);
+  } catch(e) {
+    if(st){ st.textContent = '✗ Erro: '+e.message; st.className = 'hag-api-st err'; }
+  }
+}
+(function hagInitKey(){
+  function _init(){
+    // Mostrar barra apenas para admin (?admin=1)
+    var isAdmin = window.location.search.indexOf('admin=1') > -1;
+    var bar = document.getElementById('hagApiBar');
+    if(bar && isAdmin) bar.classList.add('visible');
+
+    // Auto-preencher campo se já tem chave salva
+    var stored = hagGetKey();
+    var input = document.getElementById('hagApiInput');
+    if(stored && input) input.value = stored;
+
+    // Enter para salvar
+    if(input) input.addEventListener('keydown', function(e){ if(e.key==='Enter') hagSaveKey(); });
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', _init);
+  } else { _init(); }
+})();
+
 </script>
 </body>
 </html>

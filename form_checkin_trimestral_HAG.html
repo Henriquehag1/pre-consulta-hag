@@ -176,9 +176,34 @@ textarea.finput{min-height:80px}
 .soap-err textarea{width:100%;height:160px;font-family:monospace;font-size:11px;background:transparent;border:none;outline:none;resize:none;color:var(--ink2);line-height:1.6}
 .hidden{display:none}
 @media(max-width:480px){.status-grid{grid-template-columns:1fr 1fr}.status-grid.g3{grid-template-columns:1fr 1fr}.scale-5{gap:.2rem}.s5-label{display:none}}
+
+/* ─── ADMIN API BAR (oculta para pacientes) ─── */
+.hag-api-bar{display:none;background:#1a1918;border-bottom:2px solid #C9AF6E;padding:.625rem 1rem}
+.hag-api-bar.visible{display:block}
+.hag-api-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:.625rem;flex-wrap:wrap}
+.hag-api-label{font-size:10px;font-weight:700;color:#C9AF6E;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.hag-api-input{flex:1;min-width:200px;font-size:11px;font-family:monospace;padding:5px 10px;border-radius:6px;border:1px solid #444;background:#2a2928;color:#fff;outline:none}
+.hag-api-input:focus{border-color:#C9AF6E}
+.hag-api-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:none;background:#C9AF6E;color:#1a1918;cursor:pointer;white-space:nowrap}
+.hag-api-btn:hover{background:#dcc47a}
+.hag-api-st{font-size:10px;white-space:nowrap}
+.hag-api-st.ok{color:#4ade80;font-weight:600}
+.hag-api-st.err{color:#f87171}
+
 </style>
 </head>
 <body>
+
+<!-- HAG Admin API Bar — visível apenas com ?admin=1 na URL -->
+<div class="hag-api-bar" id="hagApiBar">
+  <div class="hag-api-inner">
+    <span class="hag-api-label">🔑 Chave API</span>
+    <input class="hag-api-input" id="hagApiInput" type="password" placeholder="sk-ant-..." autocomplete="off">
+    <button class="hag-api-btn" onclick="hagSaveKey()">Salvar</button>
+    <span class="hag-api-st" id="hagApiSt"></span>
+  </div>
+</div>
+
 
 <div class="form-header">
   <svg class="hx-bg" width="340" height="340" viewBox="0 0 340 340" fill="none"><polygon points="170,20 304,95 304,245 170,320 36,245 36,95" stroke="white" stroke-width="1"/><polygon points="170,55 278,115 278,225 170,285 62,225 62,115" stroke="white" stroke-width=".4"/></svg>
@@ -593,7 +618,7 @@ textarea.finput{min-height:80px}
 
 <script>
 var WEB3FORMS_KEY='d826e37c-a868-4bc1-b0d3-e6c8fce06246';
-var CLAUDE_KEY='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';
+var CLAUDE_KEY=hagGetKey();
 var regraState={r1:'',r2:'',r3:''};
 
 function setScale5(el,gid){
@@ -882,6 +907,49 @@ function voltarForm(){
   document.getElementById('formContent').classList.remove('hidden');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+/* ═══ HAG — API Key via localStorage (sem hardcode) ═══ */
+var HAG_KEY_STORAGE = 'hag_api_key';
+
+function hagGetKey(){
+  try { return localStorage.getItem(HAG_KEY_STORAGE) || ''; } catch(e){ return ''; }
+}
+function hagSaveKey(){
+  var input = document.getElementById('hagApiInput');
+  var st    = document.getElementById('hagApiSt');
+  var k = input ? input.value.trim() : '';
+  if(!k.startsWith('sk-ant-') || k.length < 30){
+    if(st){ st.textContent = '✗ Chave inválida'; st.className = 'hag-api-st err'; }
+    return;
+  }
+  try {
+    localStorage.setItem(HAG_KEY_STORAGE, k);
+    if(st){ st.textContent = '✓ Salva no navegador'; st.className = 'hag-api-st ok'; }
+    setTimeout(function(){ if(st) st.textContent = ''; }, 3000);
+  } catch(e) {
+    if(st){ st.textContent = '✗ Erro: '+e.message; st.className = 'hag-api-st err'; }
+  }
+}
+(function hagInitKey(){
+  function _init(){
+    // Mostrar barra apenas para admin (?admin=1)
+    var isAdmin = window.location.search.indexOf('admin=1') > -1;
+    var bar = document.getElementById('hagApiBar');
+    if(bar && isAdmin) bar.classList.add('visible');
+
+    // Auto-preencher campo se já tem chave salva
+    var stored = hagGetKey();
+    var input = document.getElementById('hagApiInput');
+    if(stored && input) input.value = stored;
+
+    // Enter para salvar
+    if(input) input.addEventListener('keydown', function(e){ if(e.key==='Enter') hagSaveKey(); });
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', _init);
+  } else { _init(); }
+})();
+
 </script>
 </body>
 </html>
