@@ -941,275 +941,73 @@ function buildSoapText(){
 
 async function submitForm(){
   if(!validateStep(10)) return;
-
-  // Monta o texto do resumo
-  var soapTxt = buildSoapText();
-
-  // Mostra tela de carregamento
+  var soapTxt=buildSoapText();
   showStep(11);
   document.getElementById('screenSending').style.display='block';
   document.getElementById('screenSuccess').style.display='none';
   document.getElementById('screenError').style.display='none';
+  var ta=document.getElementById('soapOutput');if(ta)ta.value=soapTxt;
+  var taErr=document.getElementById('soapOutputErr');if(taErr)taErr.value=soapTxt;
 
-  // Popula os textareas de cópia (sucesso e erro)
-  var ta=document.getElementById('soapOutput'); if(ta) ta.value=soapTxt;
-  var taErr=document.getElementById('soapOutputErr'); if(taErr) taErr.value=soapTxt;
+  // ── PASSO 1: Análise diagnóstica via Claude API ────────────────────────────
+  var CLAUDE_KEY='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';
+  var interpretacao='';
+  try{
+    var NL=String.fromCharCode(10);
+    var promptDiag='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).'+NL+NL
+      +'Um novo paciente preencheu o formulário pré-consulta abaixo. Gere um relatório diagnóstico prévio interno em português, em 4 seções:'+NL
+      +'1. PERFIL CLÍNICO INICIAL (queixa principal, dados corporais, histórico, medicamentos)'+NL
+      +'2. HIPÓTESES DIAGNÓSTICAS (metabólicas, hormonais, comportamentais)'+NL
+      +'3. PONTOS DE ATENÇÃO (alertas, contraindicações, exames prioritários)'+NL
+      +'4. SUGESTÃO DE CICLO HAG (Avulso/Smart/Essencial/Reset/Transforma — com justificativa)'+NL+NL
+      +'Objetivo e clínico. Máximo 300 palavras.'+NL+'PRÉ-CONSULTA:'+NL+soapTxt;
+    var respIA=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:promptDiag}]})
+    });
+    if(respIA.ok){var dIA=await respIA.json();interpretacao=dIA.content&&dIA.content[0]?dIA.content[0].text:'';}
+  }catch(eIA){interpretacao='[Erro ao gerar analise: '+eIA.message+']';}
 
-  // Se a chave ainda não foi configurada, mostra só o resultado local
-  if(!WEB3FORMS_KEY || WEB3FORMS_KEY==='SEU_ACCESS_KEY_AQUI'){
+  // ── PASSO 2: Salvar no Supabase (sempre, com interpretacao garantida) ──────
+  try {
+    var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+    var SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+    function fvp(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+    function fvr(nm){var el=document.querySelector('input[name="'+nm+'"]:checked');return el?el.value:'';}
+    function fvc(id){var g=document.getElementById(id);if(!g)return '';return Array.from(g.querySelectorAll('input[type=checkbox]:checked')).map(function(cb){return cb.value;}).join(', ');}
+    var nomeP=fvp('f_nome');
+    var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
+    var pats=await patResp.json();
+    var patId=null;
+    if(Array.isArray(pats)){
+      var nl=nomeP.toLowerCase().trim();
+      var ep=pats.find(function(p){return p.nome.toLowerCase()===nl;})||pats.find(function(p){return p.nome.toLowerCase().includes(nl.split(' ')[0]);});
+      if(ep)patId=ep.id;
+    }
+    var preC={id:patId||('p_'+Date.now()),nome:nomeP,idade:fvp('f_idade'),objetivo:fvc('c_incomoda')||fvp('f_incomoda_outro'),obs:[fvp('f_uma_coisa')?'Meta: '+fvp('f_uma_coisa'):'',fvp('f_doencas')?'Doenças: '+fvp('f_doencas'):'',fvp('f_meds')?'Medicações: '+fvp('f_meds'):'',fvp('f_alergias')?'Alergias: '+fvp('f_alergias'):'',fvp('f_emocional')?'Emocional: '+fvp('f_emocional'):''].filter(Boolean).join('\n'),alertas:[fvp('f_alergias')?'🚨 Alergia: '+fvp('f_alergias'):'',fvp('f_doencas')?'⚕️ '+fvp('f_doencas'):''].filter(Boolean),consulta:'D0',status:'ativo',plano:null,criado:new Date().toISOString(),atualizado:new Date().toISOString()};
+    await fetch(SURL+'/rest/v1/patients',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(preC)});
+    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'pre_'+Date.now(),patient_id:patId||preC.id,patient_nome:nomeP,semana:'Pre-consulta',data_envio:new Date().toISOString().slice(0,10),score_total:null,score_pct:null,classificacao:null,padroes:[],peso:fvp('f_peso'),mensagem:fvp('f_mensagem')||fvp('f_uma_coisa'),interpretacao:interpretacao||'',texto_completo:soapTxt||'',criado:new Date().toISOString(),tipo:'pre-consulta'})});
+    localStorage.setItem('hag_active_patient',JSON.stringify({id:preC.id,nome:nomeP,idade:fvp('f_idade'),objetivo:preC.objetivo,alertas:preC.alertas,obs:preC.obs,consulta:'D0',peso_atual:fvp('f_peso'),altura:fvp('f_altura'),peso_meta:fvp('f_peso_meta'),doencas:fvp('f_doencas'),meds:fvp('f_meds'),alergias:fvp('f_alergias'),exercicio:fvp('f_exercicio'),sono:fvr('r_sono_qual'),estresse:fvr('r_estresse'),ts:Date.now()}));
+  } catch(eSupa){console.warn('HAG OS pre-consulta save:',eSupa);}
+
+  // ── PASSO 3: Enviar via Web3Forms (se chave configurada) ──────────────────
+  if(!WEB3FORMS_KEY||WEB3FORMS_KEY==='SEU_ACCESS_KEY_AQUI'){
     document.getElementById('screenSending').style.display='none';
     document.getElementById('screenSuccess').style.display='block';
-      // ── HAG OS: Salvar pré-consulta no Supabase ──────────────────────────
-      try {
-        var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
-        var SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
-        function fvp(id){var el=document.getElementById(id);return el?el.value.trim():'';}
-        function fvr(nm){var el=document.querySelector('input[name="'+nm+'"]:checked');return el?el.value:'';}
-        function fvc(id){var g=document.getElementById(id);if(!g)return '';return Array.from(g.querySelectorAll('input[type=checkbox]:checked')).map(function(cb){return cb.value;}).join(', ');}
-
-        var nomeP=fvp('f_nome');
-        // Try to find existing patient
-        var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
-        var pats=await patResp.json();
-        var patId=null, existingPat=null;
-        if(Array.isArray(pats)){
-          var nl=nomeP.toLowerCase().trim();
-          existingPat=pats.find(function(p){return p.nome.toLowerCase()===nl;})||
-            pats.find(function(p){var pn=p.nome.toLowerCase();return pn.includes(nl.split(' ')[0]);});
-          if(existingPat) patId=existingPat.id;
-        }
-
-        var preConsulta={
-          id: patId||('p_'+Date.now()),
-          nome: nomeP,
-          idade: fvp('f_idade'),
-          objetivo: fvc('c_incomoda')||fvp('f_incomoda_outro'),
-          obs: [
-            fvp('f_uma_coisa')?'Meta: '+fvp('f_uma_coisa'):'',
-            fvp('f_doencas')?'Doenças: '+fvp('f_doencas'):'',
-            fvp('f_meds')?'Medicações: '+fvp('f_meds'):'',
-            fvp('f_alergias')?'Alergias: '+fvp('f_alergias'):'',
-            fvp('f_emocional')?'Emocional: '+fvp('f_emocional'):'',
-          ].filter(Boolean).join('\\n'),
-          alertas: [
-            fvp('f_alergias')?'🚨 Alergia: '+fvp('f_alergias'):'',
-            fvp('f_doencas')?'⚕️ '+fvp('f_doencas'):'',
-          ].filter(Boolean),
-          consulta: 'D0',
-          status: 'ativo',
-          plano: null,
-          criado: new Date().toISOString(),
-          atualizado: new Date().toISOString(),
-          // Pre-consultation clinical data stored in obs
-          _peso_meta: fvp('f_peso_meta'),
-          _altura: fvp('f_altura'),
-          _peso_atual: fvp('f_peso'),
-        };
-
-        // Remove fields not in schema
-        delete preConsulta._peso_meta;
-        delete preConsulta._altura;
-        delete preConsulta._peso_atual;
-
-        // Upsert: update if exists, insert if new
-        await fetch(SURL+'/rest/v1/patients',{
-          method:'POST',
-          headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-          body:JSON.stringify(preConsulta)
-        });
-
-        // Salvar tambem na tabela checkins para aparecer em Respostas
-        var ciPre={
-          id:'pre_'+Date.now(),
-          patient_id:patId||preConsulta.id,
-          patient_nome:nomeP,
-          semana:'Pre-consulta',
-          data_envio:new Date().toISOString().slice(0,10),
-          score_total:null,
-          score_pct:null,
-          classificacao:null,
-          padroes:[],
-          peso:fvp('f_peso'),
-          mensagem:fvp('f_mensagem')||fvp('f_uma_coisa'),
-          interpretacao:'',
-          texto_completo:typeof soapTxt!=='undefined'?soapTxt:'',
-          criado:new Date().toISOString(),
-          tipo:'pre-consulta'
-        };
-        await fetch(SURL+'/rest/v1/checkins',{
-          method:'POST',
-          headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-          body:JSON.stringify(ciPre)
-        });
-
-        // Store in localStorage for D0 consultation bridge
-        localStorage.setItem('hag_active_patient', JSON.stringify({
-          id: preConsulta.id,
-          nome: nomeP,
-          idade: fvp('f_idade'),
-          objetivo: preConsulta.objetivo,
-          alertas: preConsulta.alertas,
-          obs: preConsulta.obs,
-          consulta: 'D0',
-          peso_atual: fvp('f_peso'),
-          altura: fvp('f_altura'),
-          peso_meta: fvp('f_peso_meta'),
-          doencas: fvp('f_doencas'),
-          meds: fvp('f_meds'),
-          alergias: fvp('f_alergias'),
-          exercicio: fvp('f_exercicio'),
-          sono: fvr('r_sono_qual'),
-          estresse: fvr('r_estresse'),
-          ts: Date.now()
-        }));
-      } catch(eSupa){ console.warn('HAG OS pre-consulta save:', eSupa); }
     return;
   }
-
-  // Envia via Web3Forms
   try{
-    // Monta email em HTML formatado e legível
-        // ─── MONTA MENSAGEM TEXTO LIMPO ───
-    var L = '─────────────────────────────────────────────────';
-    var msg = '';
-    msg += 'PRÉ-CONSULTA HAG\n';
-    msg += 'Dr. Henrique Alves Gonzaga · CRM/SP 226530\n';
-    msg += 'Data: ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + '\n';
-    msg += L + '\n\n';
-
-    msg += '[ IDENTIFICAÇÃO ]\n';
-    msg += 'Nome: ' + fv('f_nome') + '\n';
-    if(fv('f_idade')!=='—') msg += 'Idade: ' + fv('f_idade') + '\n';
-    if(fv('f_cidade')!=='—') msg += 'Cidade: ' + fv('f_cidade') + '\n';
-    if(fv('f_profissao')!=='—') msg += 'Profissão: ' + fv('f_profissao') + '\n';
-    if(chips('c_conheceu')!=='—') msg += 'Como conheceu: ' + chips('c_conheceu') + '\n';
-
-    msg += '\n[ MOTIVO PRINCIPAL ]\n';
-    msg += 'Incomoda hoje: ' + chips('c_incomoda') + '\n';
-    msg += 'Prioridade única: ' + fv('f_uma_coisa') + '\n';
-
-    msg += '\n[ DADOS CORPORAIS ]\n';
-    msg += 'Peso: ' + fv('f_peso') + ' · Altura: ' + fv('f_altura') + '\n';
-    if(fv('f_peso_meta')!=='—') msg += 'Meta: ' + fv('f_peso_meta') + (fv('f_data_meta')!=='—'?' até '+fv('f_data_meta'):'') + '\n';
-    if(fv('f_peso_hist')!=='—') msg += 'Histórico: ' + fv('f_peso_hist') + '\n';
-
-    msg += '\n[ HISTÓRICO CLÍNICO ]\n';
-    if(fv('f_doencas')!=='—') msg += 'Doenças/Cirurgias: ' + fv('f_doencas') + '\n';
-    if(chips('c_familiar')!=='—') msg += 'Histórico familiar: ' + chips('c_familiar') + '\n';
-    if(fv('f_meds')!=='—') msg += 'Medicamentos atuais: ' + fv('f_meds') + '\n';
-    if(fv('f_meds_ant')!=='—') msg += 'Med. anteriores: ' + fv('f_meds_ant') + '\n';
-    if(fv('f_alergias')!=='—') msg += 'Alergias: ' + fv('f_alergias') + '\n';
-
-    msg += '\n[ ESTILO DE VIDA ]\n';
-    if(fv('f_exercicio')!=='—') msg += 'Atividade física: ' + fv('f_exercicio') + '\n';
-    if(fv('f_trabalho')!=='—') msg += 'Rotina: ' + fv('f_trabalho') + '\n';
-    if(radio('r_sono_horas')!=='—') msg += 'Sono: ' + radio('r_sono_horas') + ' · ' + radio('r_sono_qual') + ' · Disposição: ' + radio('r_disp') + '\n';
-    if(radio('r_estresse')!=='—') msg += 'Estresse: ' + radio('r_estresse') + ' · Memória: ' + radio('r_memoria') + '\n';
-
-    msg += '\n[ COMPORTAMENTO ALIMENTAR ]\n';
-    if(fv('f_dieta_ant')!=='—') msg += 'Dieta anterior: ' + fv('f_dieta_ant') + '\n';
-    if(chips('c_vontade')!=='—') msg += 'Vontades freq.: ' + chips('c_vontade') + '\n';
-    if(fv('f_favorito')!=='—') msg += 'Favorito: ' + fv('f_favorito') + '\n';
-    if(fv('f_nao_come')!=='—') msg += 'Não come: ' + fv('f_nao_come') + '\n';
-    if(fv('f_cozinha')!=='—') msg += 'Quem cozinha: ' + fv('f_cozinha') + '\n';
-    if(radio('r_resto')!=='—') msg += 'Restaurantes: ' + radio('r_resto') + '\n';
-    if(fv('f_supls')!=='—') msg += 'Suplementos: ' + fv('f_supls') + '\n';
-
-    msg += '\n[ HÁBITOS E SAÚDE ]\n';
-    if(radio('r_agua')!=='—') msg += 'Água: ' + radio('r_agua') + '\n';
-    if(radio('r_intestino')!=='—') msg += 'Intestino: ' + radio('r_intestino') + '\n';
-    if(radio('r_alcool')!=='—') msg += 'Álcool: ' + radio('r_alcool') + '\n';
-    if(radio('r_fumo')!=='—') msg += 'Tabagismo: ' + radio('r_fumo') + '\n';
-
-    msg += '\n[ CONTEXTO PESSOAL ]\n';
-    if(radio('r_filhos')!=='—') msg += 'Filhos/planos: ' + radio('r_filhos') + '\n';
-    if(fv('f_emocional')!=='—') msg += 'Saúde emocional: ' + fv('f_emocional') + '\n';
-    if(fv('f_extra')!=='—') msg += 'Info adicional: ' + fv('f_extra') + '\n';
-
-    msg += '\n[ BARREIRAS ]\n';
-    if(chips('c_barreiras')!=='—') msg += chips('c_barreiras') + (fv('f_barreiras_outro')!=='—'?' — '+fv('f_barreiras_outro'):'') + '\n';
-
-    msg += '\n[ MOTIVAÇÃO ]\n';
-    msg += 'Escala 0-10: ' + scale('r_motivacao') + '/10\n';
-    if(fv('f_mensagem')!=='—') msg += 'Mensagem: ' + fv('f_mensagem') + '\n';
-
-    msg += '\n' + L + '\n';
-    msg += 'Método HAG · drhenrique@clinicahag.com\n';
-
-    // ── Análise diagnóstica prévia via Claude API ────────────────────────────
-    var CLAUDE_KEY='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';
-    var interpretacao='';
-    try{
-      var NL=String.fromCharCode(10);
-      var promptDiag='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).'+NL+NL
-        +'Um novo paciente preencheu o formulário pré-consulta abaixo. Com base nessas informações, gere um '
-        +'relatório diagnóstico prévio interno em português, estruturado em 4 seções:'+NL+NL
-        +'1. PERFIL CLÍNICO INICIAL (resumo objetivo: queixa principal, dados corporais, histórico relevante, medicamentos)'+NL
-        +'2. HIPÓTESES DIAGNÓSTICAS (possíveis diagnósticos metabólicos, hormonais, comportamentais)'+NL
-        +'3. PONTOS DE ATENÇÃO ANTES DA CONSULTA (alertas clínicos, contraindicações potenciais, exames prioritários)'+NL
-        +'4. SUGESTÃO DE CICLO HAG (Avulso/Smart/Essencial/Reset/Transforma — com justificativa)'+NL+NL
-        +'Seja objetivo e clínico. Máximo 300 palavras. Use apenas os dados fornecidos.'+NL+NL
-        +'PRÉ-CONSULTA:'+NL+msg;
-      var respIA=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'x-api-key':CLAUDE_KEY,
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-direct-browser-access':'true'
-        },
-        body:JSON.stringify({
-          model:'claude-sonnet-4-20250514',
-          max_tokens:800,
-          messages:[{role:'user',content:promptDiag}]
-        })
-      });
-      if(respIA.ok){
-        var dataIA=await respIA.json();
-        interpretacao=dataIA.content&&dataIA.content[0]?dataIA.content[0].text:'';
-      }
-    }catch(eIA){
-      interpretacao='[Erro ao gerar analise: '+eIA.message+']';
-    }
-
-    // Adicionar análise ao email
-    if(interpretacao){
-      var nl2=String.fromCharCode(10);
-      var sep='=================================================';
-      msg+=nl2+sep+nl2;
-      msg+='ANALISE DIAGNOSTICA PREVIA - uso exclusivo Dr. Henrique'+nl2;
-      msg+=sep+nl2+nl2;
-      msg+=interpretacao+nl2+nl2;
-      msg+=sep+nl2;
-      msg+='[Gerado automaticamente com base nas respostas do formulario]'+nl2;
-    }
-
-    // ── Envia via Web3Forms ───────────────────────────────────────────────────
-    var resp = await fetch('https://api.web3forms.com/submit',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify({
-        access_key: WEB3FORMS_KEY,
-        subject: 'Pré-Consulta HAG — ' + fv('f_nome') + ' (' + new Date().toLocaleDateString('pt-BR') + ')',
-        from_name: 'Formulário HAG — ' + fv('f_nome'),
-        message: msg
-      })
-    });
-    var result = await resp.json();
-
+    var msg=soapTxt;
+    if(interpretacao){var nl2=String.fromCharCode(10),sep='=================================================';msg+=nl2+sep+nl2+'ANALISE DIAGNOSTICA PREVIA - uso exclusivo Dr. Henrique'+nl2+sep+nl2+nl2+interpretacao+nl2+nl2+sep+nl2+'[Gerado automaticamente]'+nl2;}
+    var resp=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({access_key:WEB3FORMS_KEY,subject:'Pré-Consulta HAG — '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',from_name:'Formulário HAG — '+fv('f_nome'),message:msg})});
+    var result=await resp.json();
     document.getElementById('screenSending').style.display='none';
-    if(result.success){
-      document.getElementById('screenSuccess').style.display='block';
-    } else {
-      var msg=document.getElementById('errorMsg');
-      if(msg) msg.textContent='Erro: '+(result.message||'Tente novamente.');
-      document.getElementById('screenError').style.display='block';
-    }
-  } catch(err){
+    if(result.success){document.getElementById('screenSuccess').style.display='block';}
+    else{var errEl=document.getElementById('errorMsg');if(errEl)errEl.textContent='Erro: '+(result.message||'Tente novamente.');document.getElementById('screenError').style.display='block';}
+  }catch(err){
     document.getElementById('screenSending').style.display='none';
-    var msg=document.getElementById('errorMsg');
-    if(msg) msg.textContent='Sem conexão. Verifique o Wi-Fi e tente novamente.';
-    document.getElementById('screenError').style.display='block';
+    var errEl=document.getElementById('errorMsg');if(errEl)errEl.textContent='Sem conexão. Verifique o Wi-Fi.';document.getElementById('screenError').style.display='block';
   }
 }
 
