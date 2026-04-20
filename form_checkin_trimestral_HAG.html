@@ -177,7 +177,7 @@ textarea.finput{min-height:80px}
 .hidden{display:none}
 @media(max-width:480px){.status-grid{grid-template-columns:1fr 1fr}.status-grid.g3{grid-template-columns:1fr 1fr}.scale-5{gap:.2rem}.s5-label{display:none}}
 
-/* ─── ADMIN API BAR (oculta para pacientes) ─── */
+/* ─── ADMIN API BAR ─── */
 .hag-api-bar{display:none;background:#1a1918;border-bottom:2px solid #C9AF6E;padding:.625rem 1rem}
 .hag-api-bar.visible{display:block}
 .hag-api-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:.625rem;flex-wrap:wrap}
@@ -185,7 +185,6 @@ textarea.finput{min-height:80px}
 .hag-api-input{flex:1;min-width:200px;font-size:11px;font-family:monospace;padding:5px 10px;border-radius:6px;border:1px solid #444;background:#2a2928;color:#fff;outline:none}
 .hag-api-input:focus{border-color:#C9AF6E}
 .hag-api-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:none;background:#C9AF6E;color:#1a1918;cursor:pointer;white-space:nowrap}
-.hag-api-btn:hover{background:#dcc47a}
 .hag-api-st{font-size:10px;white-space:nowrap}
 .hag-api-st.ok{color:#4ade80;font-weight:600}
 .hag-api-st.err{color:#f87171}
@@ -194,13 +193,13 @@ textarea.finput{min-height:80px}
 </head>
 <body>
 
-<!-- HAG Admin API Bar — visível apenas com ?admin=1 na URL -->
+<!-- HAG Admin Bar — visível apenas com ?admin=1 -->
 <div class="hag-api-bar" id="hagApiBar">
   <div class="hag-api-inner">
-    <span class="hag-api-label">🔑 Chave API</span>
+    <span class="hag-api-label">🔑 Chave API (admin)</span>
     <input class="hag-api-input" id="hagApiInput" type="password" placeholder="sk-ant-..." autocomplete="off">
-    <button class="hag-api-btn" onclick="hagSaveKey()">Salvar</button>
-    <span class="hag-api-st" id="hagApiSt"></span>
+    <button class="hag-api-btn" onclick="hagSaveKey()">Salvar no servidor</button>
+    <span class="hag-api-st" id="hagApiSt">A chave é enviada ao servidor Supabase — nunca fica no HTML</span>
   </div>
 </div>
 
@@ -618,7 +617,7 @@ textarea.finput{min-height:80px}
 
 <script>
 var WEB3FORMS_KEY='d826e37c-a868-4bc1-b0d3-e6c8fce06246';
-var CLAUDE_KEY=hagGetKey();
+// chave removida — usando proxy Supabase
 var regraState={r1:'',r2:'',r3:''};
 
 function setScale5(el,gid){
@@ -795,24 +794,8 @@ async function enviarCheckin(){
       +'3. CONDUTA SUGERIDA (manter plano / ajuste preventivo / antecipar consulta / novo ciclo HAG — com justificativa)'+NL+NL
       +'Maximo 280 palavras. Use apenas os dados do check-in.'+NL+NL
       +'CHECK-IN:'+NL+msg;
-    var respIA=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':CLAUDE_KEY,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:700,
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    if(respIA.ok){
-      var dataIA=await respIA.json();
-      interpretacao=dataIA.content&&dataIA.content[0]?dataIA.content[0].text:'';
-    }
+    var dataIA=await hagCallClaude([{role:'user',content:prompt}],700);
+    interpretacao=dataIA.content&&dataIA.content[0]?dataIA.content[0].text:'';
   }catch(eIA){
     interpretacao='[Erro ao gerar analise: '+eIA.message+']';
   }
@@ -841,64 +824,29 @@ async function enviarCheckin(){
     });
     var result=await resp.json();
     document.getElementById('screenSending').style.display='none';
-    if(result.success){
-      document.getElementById('screenSuccess').style.display='block';
-    } else {
-      var em=document.getElementById('errorMsg');
-      if(em) em.textContent='Erro: '+(result.message||'Tente novamente.');
-      document.getElementById('screenError').style.display='block';
-    }
+    if(result.success){document.getElementById('screenSuccess').style.display='block';}
+    else{var em=document.getElementById('errorMsg');if(em)em.textContent='Erro: '+(result.message||'Tente novamente.');document.getElementById('screenError').style.display='block';}
   }catch(err){
     document.getElementById('screenSending').style.display='none';
-    var em=document.getElementById('errorMsg');
-    if(em) em.textContent='Sem conexao. Verifique o Wi-Fi.';
-    document.getElementById('screenError').style.display='block';
+    var em=document.getElementById('errorMsg');if(em)em.textContent='Sem conexao. Verifique o Wi-Fi.';document.getElementById('screenError').style.display='block';
   }
-
-  // ── HAG OS: Salvar trimestral no Supabase (sempre, com interpretacao) ──────
-  try {
-    var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
-    var SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+  // ── HAG OS: Salvar trimestral (sempre, com interpretacao) ──────────────────
+  try{
+    var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co',SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
     function fvt(id){var el=document.getElementById(id);return el?el.value.trim():'';}
     function getSt(id){var g=document.getElementById(id);if(!g)return -1;var on=g.querySelector('.s5-btn.on');return on?parseInt(on.querySelector('.s5-num').textContent):-1;}
-    var nome=fvt('f_nome');
-    var sa=getSt('s_alim'),str=getSt('s_treino'),sro=getSt('s_rotina');
-    var sen=getSt('s_energia'),sdi=getSt('s_dificuldade'),sco=getSt('s_compromisso');
+    var nome=fvt('f_nome'),sa=getSt('s_alim'),str=getSt('s_treino'),sro=getSt('s_rotina'),sen=getSt('s_energia'),sdi=getSt('s_dificuldade'),sco=getSt('s_compromisso');
     var scores=[sa,str,sro,sen].filter(function(x){return x>=0;});
-    var total=scores.reduce(function(a,b){return a+b;},0);
-    var maxP=scores.length*5;
-    var pct=maxP>0?Math.round(total/maxP*100):0;
+    var total=scores.reduce(function(a,b){return a+b;},0),maxP=scores.length*5,pct=maxP>0?Math.round(total/maxP*100):0;
     var padroes=[];
-    if(pct>=70&&sdi>=0&&sdi<=2) padroes.push('progressao');
-    if(pct<45&&sdi>=4) padroes.push('ajuste_estrutural');
-    if(pct<45&&sco>=0&&sco<=2) padroes.push('intervencao_comportamental');
-    if(sen>=0&&sen<=1&&str>=4) padroes.push('overreaching');
+    if(pct>=70&&sdi>=0&&sdi<=2)padroes.push('progressao');if(pct<45&&sdi>=4)padroes.push('ajuste_estrutural');
+    if(pct<45&&sco>=0&&sco<=2)padroes.push('intervencao_comportamental');if(sen>=0&&sen<=1&&str>=4)padroes.push('overreaching');
     var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
-    var pats=await patResp.json();
-    var patId=null;
-    if(Array.isArray(pats)){
-      var nl=nome.toLowerCase().trim();
-      var m=pats.find(function(p){return p.nome.toLowerCase()===nl;})||pats.find(function(p){return p.nome.toLowerCase().includes(nl.split(' ')[0]);});
-      if(m) patId=m.id;
-    }
-    await fetch(SURL+'/rest/v1/checkins',{
-      method:'POST',
-      headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-      body:JSON.stringify({
-        id:'cit_'+Date.now(),patient_id:patId,patient_nome:nome,
-        semana:fvt('f_periodo'),data_envio:new Date().toISOString().slice(0,10),
-        s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,
-        s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,
-        score_total:total,score_pct:pct,
-        classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',
-        padroes:padroes,mensagem:fvt('f_mensagem'),
-        interpretacao:interpretacao||'',
-        criado:new Date().toISOString(),tipo:'trimestral',
-        texto_completo:typeof buildMsg==='function'?buildMsg():''
-      })
-    });
+    var pats=await patResp.json(),patId=null;
+    if(Array.isArray(pats)){var nl=nome.toLowerCase().trim();var m=pats.find(function(p){return p.nome.toLowerCase()===nl;})||pats.find(function(p){return p.nome.toLowerCase().includes(nl.split(' ')[0]);});if(m)patId=m.id;}
+    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'cit_'+Date.now(),patient_id:patId,patient_nome:nome,semana:fvt('f_periodo'),data_envio:new Date().toISOString().slice(0,10),s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,score_total:total,score_pct:pct,classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',padroes:padroes,mensagem:fvt('f_mensagem'),interpretacao:interpretacao||'',criado:new Date().toISOString(),tipo:'trimestral',texto_completo:typeof buildMsg==='function'?buildMsg():''})});
     console.log('HAG OS: check-in trimestral salvo com interpretacao');
-  } catch(eTri){ console.warn('HAG OS trimestral save:', eTri); }
+  }catch(eTri){console.warn('HAG OS trimestral save:',eTri);}
 }
 
 function voltarForm(){
@@ -907,49 +855,6 @@ function voltarForm(){
   document.getElementById('formContent').classList.remove('hidden');
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
-/* ═══ HAG — API Key via localStorage (sem hardcode) ═══ */
-var HAG_KEY_STORAGE = 'hag_api_key';
-
-function hagGetKey(){
-  try { return localStorage.getItem(HAG_KEY_STORAGE) || ''; } catch(e){ return ''; }
-}
-function hagSaveKey(){
-  var input = document.getElementById('hagApiInput');
-  var st    = document.getElementById('hagApiSt');
-  var k = input ? input.value.trim() : '';
-  if(!k.startsWith('sk-ant-') || k.length < 30){
-    if(st){ st.textContent = '✗ Chave inválida'; st.className = 'hag-api-st err'; }
-    return;
-  }
-  try {
-    localStorage.setItem(HAG_KEY_STORAGE, k);
-    if(st){ st.textContent = '✓ Salva no navegador'; st.className = 'hag-api-st ok'; }
-    setTimeout(function(){ if(st) st.textContent = ''; }, 3000);
-  } catch(e) {
-    if(st){ st.textContent = '✗ Erro: '+e.message; st.className = 'hag-api-st err'; }
-  }
-}
-(function hagInitKey(){
-  function _init(){
-    // Mostrar barra apenas para admin (?admin=1)
-    var isAdmin = window.location.search.indexOf('admin=1') > -1;
-    var bar = document.getElementById('hagApiBar');
-    if(bar && isAdmin) bar.classList.add('visible');
-
-    // Auto-preencher campo se já tem chave salva
-    var stored = hagGetKey();
-    var input = document.getElementById('hagApiInput');
-    if(stored && input) input.value = stored;
-
-    // Enter para salvar
-    if(input) input.addEventListener('keydown', function(e){ if(e.key==='Enter') hagSaveKey(); });
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', _init);
-  } else { _init(); }
-})();
-
 </script>
 </body>
 </html>

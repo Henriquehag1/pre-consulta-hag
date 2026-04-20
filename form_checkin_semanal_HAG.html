@@ -111,7 +111,7 @@ textarea.finput{min-height:76px}
 .hidden{display:none}
 @media(max-width:480px){.scale-5{gap:.2rem}.s5-btn{height:46px}.s5-label{display:none}}
 
-/* ─── ADMIN API BAR (oculta para pacientes) ─── */
+/* ─── ADMIN API BAR ─── */
 .hag-api-bar{display:none;background:#1a1918;border-bottom:2px solid #C9AF6E;padding:.625rem 1rem}
 .hag-api-bar.visible{display:block}
 .hag-api-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:.625rem;flex-wrap:wrap}
@@ -119,7 +119,6 @@ textarea.finput{min-height:76px}
 .hag-api-input{flex:1;min-width:200px;font-size:11px;font-family:monospace;padding:5px 10px;border-radius:6px;border:1px solid #444;background:#2a2928;color:#fff;outline:none}
 .hag-api-input:focus{border-color:#C9AF6E}
 .hag-api-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:none;background:#C9AF6E;color:#1a1918;cursor:pointer;white-space:nowrap}
-.hag-api-btn:hover{background:#dcc47a}
 .hag-api-st{font-size:10px;white-space:nowrap}
 .hag-api-st.ok{color:#4ade80;font-weight:600}
 .hag-api-st.err{color:#f87171}
@@ -128,13 +127,13 @@ textarea.finput{min-height:76px}
 </head>
 <body>
 
-<!-- HAG Admin API Bar — visível apenas com ?admin=1 na URL -->
+<!-- HAG Admin Bar — visível apenas com ?admin=1 -->
 <div class="hag-api-bar" id="hagApiBar">
   <div class="hag-api-inner">
-    <span class="hag-api-label">🔑 Chave API</span>
+    <span class="hag-api-label">🔑 Chave API (admin)</span>
     <input class="hag-api-input" id="hagApiInput" type="password" placeholder="sk-ant-..." autocomplete="off">
-    <button class="hag-api-btn" onclick="hagSaveKey()">Salvar</button>
-    <span class="hag-api-st" id="hagApiSt"></span>
+    <button class="hag-api-btn" onclick="hagSaveKey()">Salvar no servidor</button>
+    <span class="hag-api-st" id="hagApiSt">A chave é enviada ao servidor Supabase — nunca fica no HTML</span>
   </div>
 </div>
 
@@ -530,7 +529,7 @@ async function enviarCheckin(){
 
   // ── PASSO 1: Gerar interpretação clínica via Claude API ──────────────────
   var interpretacao='';
-    var apiKey=hagGetKey();
+  // chave removida — usando proxy Supabase
   if(apiKey&&apiKey.startsWith('sk-ant-')){
     try{
       var prompt='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).\n\n'
@@ -545,9 +544,7 @@ async function enviarCheckin(){
         method:'POST',
         headers:{
           'Content-Type':'application/json',
-          'x-api-key':apiKey,
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-direct-browser-access':'true'
+          'x-api-key':'via-proxy'
         },
         body:JSON.stringify({
           model:'claude-sonnet-4-20250514',
@@ -686,44 +683,41 @@ function voltarForm(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* ═══ HAG — API Key via localStorage (sem hardcode) ═══ */
-var HAG_KEY_STORAGE = 'hag_api_key';
+/* ═══ HAG — Claude via Supabase Proxy (sem chave no HTML) ═══ */
+var HAG_PROXY = 'https://yutcnphwovqeiwcwzzhs.supabase.co/functions/v1/claude-proxy';
+var HAG_SKEY  = 'sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
 
-function hagGetKey(){
-  try { return localStorage.getItem(HAG_KEY_STORAGE) || ''; } catch(e){ return ''; }
+/* Chama o Claude pelo proxy seguro */
+async function hagCallClaude(messages, maxTokens) {
+  maxTokens = maxTokens || 800;
+  var resp = await fetch(HAG_PROXY, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + HAG_SKEY,
+      'apikey': HAG_SKEY
+    },
+    body: JSON.stringify({ messages: messages, max_tokens: maxTokens })
+  });
+  if (!resp.ok) throw new Error('Proxy error HTTP ' + resp.status);
+  var data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  return data;
 }
-function hagSaveKey(){
-  var input = document.getElementById('hagApiInput');
-  var st    = document.getElementById('hagApiSt');
-  var k = input ? input.value.trim() : '';
-  if(!k.startsWith('sk-ant-') || k.length < 30){
-    if(st){ st.textContent = '✗ Chave inválida'; st.className = 'hag-api-st err'; }
-    return;
-  }
-  try {
-    localStorage.setItem(HAG_KEY_STORAGE, k);
-    if(st){ st.textContent = '✓ Salva no navegador'; st.className = 'hag-api-st ok'; }
-    setTimeout(function(){ if(st) st.textContent = ''; }, 3000);
-  } catch(e) {
-    if(st){ st.textContent = '✗ Erro: '+e.message; st.className = 'hag-api-st err'; }
-  }
+
+/* Admin: salvar chave no Supabase como secret (via função admin) */
+function hagSaveKey() {
+  var st = document.getElementById('hagApiSt');
+  if(st) { st.textContent = 'A chave é configurada diretamente no painel do Supabase (ver instruções).'; st.className = 'hag-api-st ok'; }
 }
-(function hagInitKey(){
-  function _init(){
-    // Mostrar barra apenas para admin (?admin=1)
+
+(function hagInitAdmin() {
+  function _init() {
     var isAdmin = window.location.search.indexOf('admin=1') > -1;
     var bar = document.getElementById('hagApiBar');
-    if(bar && isAdmin) bar.classList.add('visible');
-
-    // Auto-preencher campo se já tem chave salva
-    var stored = hagGetKey();
-    var input = document.getElementById('hagApiInput');
-    if(stored && input) input.value = stored;
-
-    // Enter para salvar
-    if(input) input.addEventListener('keydown', function(e){ if(e.key==='Enter') hagSaveKey(); });
+    if (bar && isAdmin) bar.classList.add('visible');
   }
-  if(document.readyState === 'loading'){
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _init);
   } else { _init(); }
 })();
