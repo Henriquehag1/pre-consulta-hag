@@ -527,38 +527,19 @@ async function enviarCheckin(){
   if(taErr) taErr.value=msg;
   window.scrollTo({top:0,behavior:'smooth'});
 
-  // ── PASSO 1: Gerar interpretação clínica via Claude API ──────────────────
+  // ── PASSO 1: Gerar interpretação clínica via proxy Supabase ─────────────────
   var interpretacao='';
-  // chave removida — usando proxy Supabase
-  if(apiKey&&apiKey.startsWith('sk-ant-')){
-    try{
-      var prompt='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).\n\n'
-        +'Analise o check-in semanal abaixo de um paciente do seu ciclo de emagrecimento (Essencial/Reset/Transforma) '
-        +'e gere um relatório clínico interno em português, estruturado em 3 seções:\n\n'
-        +'1. INTERPRETAÇÃO CLÍNICA (análise objetiva do estado atual: adesão, sintomas, metabolismo, comportamento)\n'
-        +'2. PONTOS DE ATENÇÃO (o que merece monitoramento ou intervenção imediata — seja direto e clínico)\n'
-        +'3. CONDUTA SUGERIDA (ação concreta: manter, ajustar dose, contatar paciente, antecipar consulta, etc.)\n\n'
-        +'Seja objetivo, clínico e direto. Máximo 250 palavras. Use apenas dados do check-in.\n\n'
-        +'CHECK-IN:\n'+msg;
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'x-api-key':'via-proxy'
-        },
-        body:JSON.stringify({
-          model:'claude-sonnet-4-20250514',
-          max_tokens:600,
-          messages:[{role:'user',content:prompt}]
-        })
-      });
-      if(resp.ok){
-        var data=await resp.json();
-        interpretacao=data.content&&data.content[0]?data.content[0].text:'';
-      }
-    }catch(e){
-      interpretacao='[Erro ao gerar interpretação: '+e.message+']';
-    }
+  try{
+    var prompt='Você é o Dr. Henrique Alves Gonzaga, nutrólogo e médico esportivo (Método HAG, CRM/SP 226530).\n\n'
+      +'Analise o check-in semanal abaixo e gere um relatório clínico interno em português, em 3 seções:\n'
+      +'1. INTERPRETAÇÃO CLÍNICA (adesão, sintomas, metabolismo, comportamento)\n'
+      +'2. PONTOS DE ATENÇÃO (o que merece monitoramento ou intervenção imediata)\n'
+      +'3. CONDUTA SUGERIDA (manter, ajustar dose, contatar paciente, antecipar consulta)\n\n'
+      +'Objetivo e clínico. Máximo 250 palavras.\n\nCHECK-IN:\n'+msg;
+    var iaData=await hagCallClaude([{role:'user',content:prompt}],600);
+    interpretacao=iaData.content&&iaData.content[0]?iaData.content[0].text:'';
+  }catch(e){
+    interpretacao='[Erro ao gerar interpretação: '+e.message+']';
   }
 
   // ── PASSO 2: Montar email completo com interpretação ─────────────────────
