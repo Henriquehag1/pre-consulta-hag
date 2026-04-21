@@ -216,6 +216,250 @@ textarea.finput{min-height:80px}
 <body>
 <div id="hagVersionTag" style="position:fixed;top:8px;right:8px;z-index:99999;background:#c11e1e;color:#fff;font-family:monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.3);letter-spacing:.05em">⚠ JS NÃO CARREGOU</div>
 <script>console.log('[HAG-EARLY] script tag reached, JS runtime active');</script>
+
+/* ═══ Globals para o sistema de documento flexível ═══ */
+var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
+var SKEY = 'sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+/* ═══ Documentos flexíveis: CPF | RG | Passaporte ═══ */
+/* CPF: 11 dígitos + checksum */
+function cpfMask(v){v=(v||'').replace(/\D/g,'').substring(0,11);if(v.length<=3)return v;if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);}
+function cpfDigits(v){return (v||'').replace(/\D/g,'');}
+function cpfValid(cpf){cpf=cpfDigits(cpf);if(cpf.length!==11)return false;if(/^(\d)\1{10}$/.test(cpf))return false;var sum=0,rem;for(var i=0;i<9;i++)sum+=parseInt(cpf.charAt(i))*(10-i);rem=(sum*10)%11;if(rem===10)rem=0;if(rem!==parseInt(cpf.charAt(9)))return false;sum=0;for(var j=0;j<10;j++)sum+=parseInt(cpf.charAt(j))*(11-j);rem=(sum*10)%11;if(rem===10)rem=0;return rem===parseInt(cpf.charAt(10));}
+
+/* RG: alfanumérico livre (formato varia por estado) */
+function rgClean(v){return (v||'').toUpperCase().replace(/[^0-9A-Z]/g,'').substring(0,14);}
+function rgMask(v){v=rgClean(v);if(v.length<=2)return v;if(v.length<=5)return v.slice(0,2)+'.'+v.slice(2);if(v.length<=8)return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'-'+v.slice(8);}
+function rgValid(v){var c=rgClean(v);return c.length>=5 && c.length<=14;}
+
+/* Passaporte: alfanumérico (padrão BR: 2 letras + 6 dígitos, mas aceitamos qualquer coisa) */
+function passClean(v){return (v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').substring(0,15);}
+function passValid(v){var c=passClean(v);return c.length>=6 && c.length<=15;}
+
+/* Unified API */
+function docNormalize(tipo, v){
+  if(tipo==='cpf') return cpfDigits(v);
+  if(tipo==='rg') return rgClean(v);
+  if(tipo==='passaporte') return passClean(v);
+  return '';
+}
+function docFormat(tipo, v){
+  if(tipo==='cpf') return cpfMask(v);
+  if(tipo==='rg') return rgMask(v);
+  if(tipo==='passaporte') return passClean(v);
+  return v;
+}
+function docValid(tipo, v){
+  if(tipo==='cpf') return cpfValid(v);
+  if(tipo==='rg') return rgValid(v);
+  if(tipo==='passaporte') return passValid(v);
+  return false;
+}
+function docPlaceholder(tipo){
+  if(tipo==='cpf') return '000.000.000-00';
+  if(tipo==='rg') return '12.345.678-9';
+  if(tipo==='passaporte') return 'FG123456';
+  return '';
+}
+function docMaxLen(tipo){
+  if(tipo==='cpf') return 14;
+  if(tipo==='rg') return 14;
+  if(tipo==='passaporte') return 15;
+  return 20;
+}
+function docInvalidMsg(tipo){
+  if(tipo==='cpf') return '✗ CPF inválido (dígito verificador)';
+  if(tipo==='rg') return '✗ RG inválido (mínimo 5 caracteres)';
+  if(tipo==='passaporte') return '✗ Passaporte inválido (6 a 15 caracteres)';
+  return '✗ Documento inválido';
+}
+
+/* Attach mask to input - DEPRECATED: mask now handled in _init onValueChange */
+function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
+
+/* Lookup patient by document (CPF | RG | Passaporte) */
+async function docLookupPatient(tipo, numero, supaUrl, supaKey){
+  var n = docNormalize(tipo, numero);
+  if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
+  var url = supaUrl + '/rest/v1/patients?' + encodeURIComponent(tipo) + '=eq.' + encodeURIComponent(n) + '&select=id,nome,cpf,rg,passaporte&limit=1';
+  try{
+    var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
+    if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
+    var data = await r.json();
+    if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
+    return {ok:true, patient:data[0]};
+  }catch(e){
+    return {ok:false, reason:'error', error:e.message};
+  }
+}
+
+/* Legacy CPF-only lookup (mantido para compatibilidade) */
+async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient('cpf', cpf, supaUrl, supaKey); }
+
+/* Documento flexível: dropdown + input + auto-lookup */
+(function(){
+  function _el(id){return document.getElementById(id);}
+  function _updateStatus(cls, msg){
+    var s = _el('docStatus'); if(!s) return;
+    s.className = 'doc-status ' + cls;
+    s.textContent = msg;
+  }
+  function _lockName(name, patientId){
+    var n = _el('f_nome');
+    if(n){ n.value = name; n.readOnly = true; n.classList.add('doc-locked'); n.setAttribute('data-patient-id', patientId); }
+  }
+  function _unlockName(){
+    var n = _el('f_nome');
+    if(n){ n.readOnly = false; n.classList.remove('doc-locked'); n.removeAttribute('data-patient-id'); }
+  }
+  function _getType(){ var s = _el('f_doc_tipo'); return s ? s.value : 'cpf'; }
+
+  async function _verify(){
+    var inp = _el('f_doc_numero');
+    if(!inp){ console.warn('[HAG] _verify: input #f_doc_numero not found'); return; }
+    var tipo = _getType();
+    var raw = inp.value.trim();
+    console.log('[HAG] _verify called. tipo=' + tipo + ', raw=' + JSON.stringify(raw));
+    if(!raw){ _updateStatus('', ''); _unlockName(); return; }
+    var n = docNormalize(tipo, raw);
+    console.log('[HAG] normalized=' + JSON.stringify(n) + ', length=' + n.length + ', valid=' + docValid(tipo, n));
+    if(!docValid(tipo, n)){
+      if(tipo==='cpf' && n.length < 11){ _updateStatus('pending', 'Digite os 11 dígitos do CPF'); _unlockName(); return; }
+      if(tipo==='rg' && n.length < 5){ _updateStatus('pending', 'Continue digitando o RG...'); _unlockName(); return; }
+      if(tipo==='passaporte' && n.length < 6){ _updateStatus('pending', 'Continue digitando o passaporte...'); _unlockName(); return; }
+      _updateStatus('err', docInvalidMsg(tipo));
+      _unlockName();
+      return;
+    }
+    _updateStatus('pending', '⟳ Verificando no HAG OS...');
+    console.log('[HAG] Calling Supabase lookup: ' + SURL + '/rest/v1/patients?' + tipo + '=eq.' + n);
+    var res = await docLookupPatient(tipo, n, SURL, SKEY);
+    console.log('[HAG] Lookup response:', res);
+    if(res.ok){
+      _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
+      _lockName(res.patient.nome, res.patient.id);
+      console.log('[HAG] Name locked to:', res.patient.nome, '| id:', res.patient.id);
+    } else if(res.reason==='not_found'){
+      _updateStatus('err', '✗ ' + tipo.toUpperCase() + ' não cadastrado no HAG OS. Verifique com o Dr. Henrique.');
+      _unlockName();
+      console.warn('[HAG] CPF/documento não encontrado:', n);
+    } else {
+      _updateStatus('err', '✗ Erro ao consultar: ' + (res.error||res.reason));
+      _unlockName();
+      console.error('[HAG] Erro no lookup:', res);
+    }
+  }
+
+  function _onTypeChange(){
+    var inp = _el('f_doc_numero');
+    var tipo = _getType();
+    if(inp){
+      inp.value = '';
+      inp.placeholder = docPlaceholder(tipo);
+      inp.maxLength = docMaxLen(tipo);
+    }
+    _updateStatus('', '');
+    _unlockName();
+    if(inp) inp.focus();
+  }
+
+  var _initDone = false;
+  var _maskTimer = null;
+  function _applyMask(){
+    var inp = _el('f_doc_numero');
+    if(!inp) return;
+    var tipo = _getType();
+    var formatted = docFormat(tipo, inp.value);
+    if(inp.value !== formatted){
+      var pos = inp.selectionStart;
+      var diff = formatted.length - inp.value.length;
+      inp.value = formatted;
+      try{ inp.setSelectionRange(pos + diff, pos + diff); }catch(e){}
+    }
+  }
+  function _init(){
+    var inp = _el('f_doc_numero');
+    var sel = _el('f_doc_tipo');
+    if(!inp || !sel){
+      console.warn('[HAG] Campos de documento ainda nao no DOM, tentando novamente...');
+      setTimeout(_init, 200);
+      return;
+    }
+    if(_initDone) return;
+    _initDone = true;
+    console.log('[HAG] Sistema de identificacao por documento inicializado v2.1');
+    var tag = document.getElementById('hagVersionTag');
+    if(tag){ tag.style.background='#2d7a3a'; tag.textContent='✓ HAG v2.1 · DOC-FLEX'; }
+
+    // Set initial placeholder based on default type (CPF)
+    inp.placeholder = docPlaceholder(_getType());
+    inp.maxLength = docMaxLen(_getType());
+
+    var verifyTimer = null;
+    // Universal handler: mask + auto-lookup
+    function onValueChange(){
+      _applyMask();
+      if(verifyTimer) clearTimeout(verifyTimer);
+      var tipo = _getType();
+      var n = docNormalize(tipo, inp.value);
+      if(!docValid(tipo, n)){
+        if((tipo==='cpf' && n.length < 11) || (tipo==='rg' && n.length < 5) || (tipo==='passaporte' && n.length < 6)){
+          _updateStatus('', ''); _unlockName();
+        } else {
+          _updateStatus('err', docInvalidMsg(tipo)); _unlockName();
+        }
+        return;
+      }
+      verifyTimer = setTimeout(_verify, 250);
+    }
+    // Attach to multiple events for maximum reliability
+    inp.addEventListener('input', onValueChange);
+    inp.addEventListener('keyup', onValueChange);
+    inp.addEventListener('change', onValueChange);
+    inp.addEventListener('paste', function(){ setTimeout(onValueChange, 10); });
+    inp.addEventListener('blur', function(){ if(verifyTimer) clearTimeout(verifyTimer); _verify(); });
+    sel.addEventListener('change', _onTypeChange);
+  }
+  // Try to init multiple times to handle any timing edge case
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+  setTimeout(_init, 200);
+  setTimeout(_init, 800);
+  window.addEventListener('load', _init);
+
+  // Expose guards
+  window.cpfGuardSubmit = function(){
+    var inp = _el('f_doc_numero');
+    var sel = _el('f_doc_tipo');
+    if(!inp || !sel) return true;
+    var tipo = sel.value;
+    var n = docNormalize(tipo, inp.value||'');
+    if(!docValid(tipo, n)){
+      alert('Documento inválido ou não preenchido.\n\nPor favor, escolha o tipo (CPF, RG ou Passaporte) e preencha corretamente para que sua resposta seja vinculada ao seu prontuário.');
+      inp.focus();
+      return false;
+    }
+    var nm = _el('f_nome');
+    if(!nm || !nm.hasAttribute('data-patient-id')){
+      alert('Seu documento não foi localizado no sistema.\n\nEntre em contato com o Dr. Henrique antes de enviar o formulário.');
+      inp.focus();
+      return false;
+    }
+    return true;
+  };
+  window.cpfGetPatientId = function(){
+    var n = _el('f_nome');
+    return n ? n.getAttribute('data-patient-id') : null;
+  };
+  window.cpfGetCleanDigits = function(){
+    var inp = _el('f_doc_numero'); var sel = _el('f_doc_tipo');
+    if(!inp || !sel) return '';
+    return docNormalize(sel.value, inp.value||'');
+  };
+})();
+
 <!-- HAG Admin Bar — visível apenas com ?admin=1 -->
 <div class="hag-api-bar" id="hagApiBar">
   <div class="hag-api-inner">
@@ -874,245 +1118,7 @@ async function enviarCheckin(){
     var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co',SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
 
 
-/* ═══ Documentos flexíveis: CPF | RG | Passaporte ═══ */
-/* CPF: 11 dígitos + checksum */
-function cpfMask(v){v=(v||'').replace(/\D/g,'').substring(0,11);if(v.length<=3)return v;if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);}
-function cpfDigits(v){return (v||'').replace(/\D/g,'');}
-function cpfValid(cpf){cpf=cpfDigits(cpf);if(cpf.length!==11)return false;if(/^(\d)\1{10}$/.test(cpf))return false;var sum=0,rem;for(var i=0;i<9;i++)sum+=parseInt(cpf.charAt(i))*(10-i);rem=(sum*10)%11;if(rem===10)rem=0;if(rem!==parseInt(cpf.charAt(9)))return false;sum=0;for(var j=0;j<10;j++)sum+=parseInt(cpf.charAt(j))*(11-j);rem=(sum*10)%11;if(rem===10)rem=0;return rem===parseInt(cpf.charAt(10));}
 
-/* RG: alfanumérico livre (formato varia por estado) */
-function rgClean(v){return (v||'').toUpperCase().replace(/[^0-9A-Z]/g,'').substring(0,14);}
-function rgMask(v){v=rgClean(v);if(v.length<=2)return v;if(v.length<=5)return v.slice(0,2)+'.'+v.slice(2);if(v.length<=8)return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'-'+v.slice(8);}
-function rgValid(v){var c=rgClean(v);return c.length>=5 && c.length<=14;}
-
-/* Passaporte: alfanumérico (padrão BR: 2 letras + 6 dígitos, mas aceitamos qualquer coisa) */
-function passClean(v){return (v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').substring(0,15);}
-function passValid(v){var c=passClean(v);return c.length>=6 && c.length<=15;}
-
-/* Unified API */
-function docNormalize(tipo, v){
-  if(tipo==='cpf') return cpfDigits(v);
-  if(tipo==='rg') return rgClean(v);
-  if(tipo==='passaporte') return passClean(v);
-  return '';
-}
-function docFormat(tipo, v){
-  if(tipo==='cpf') return cpfMask(v);
-  if(tipo==='rg') return rgMask(v);
-  if(tipo==='passaporte') return passClean(v);
-  return v;
-}
-function docValid(tipo, v){
-  if(tipo==='cpf') return cpfValid(v);
-  if(tipo==='rg') return rgValid(v);
-  if(tipo==='passaporte') return passValid(v);
-  return false;
-}
-function docPlaceholder(tipo){
-  if(tipo==='cpf') return '000.000.000-00';
-  if(tipo==='rg') return '12.345.678-9';
-  if(tipo==='passaporte') return 'FG123456';
-  return '';
-}
-function docMaxLen(tipo){
-  if(tipo==='cpf') return 14;
-  if(tipo==='rg') return 14;
-  if(tipo==='passaporte') return 15;
-  return 20;
-}
-function docInvalidMsg(tipo){
-  if(tipo==='cpf') return '✗ CPF inválido (dígito verificador)';
-  if(tipo==='rg') return '✗ RG inválido (mínimo 5 caracteres)';
-  if(tipo==='passaporte') return '✗ Passaporte inválido (6 a 15 caracteres)';
-  return '✗ Documento inválido';
-}
-
-/* Attach mask to input - DEPRECATED: mask now handled in _init onValueChange */
-function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
-
-/* Lookup patient by document (CPF | RG | Passaporte) */
-async function docLookupPatient(tipo, numero, supaUrl, supaKey){
-  var n = docNormalize(tipo, numero);
-  if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
-  var url = supaUrl + '/rest/v1/patients?' + encodeURIComponent(tipo) + '=eq.' + encodeURIComponent(n) + '&select=id,nome,cpf,rg,passaporte&limit=1';
-  try{
-    var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
-    if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
-    var data = await r.json();
-    if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
-    return {ok:true, patient:data[0]};
-  }catch(e){
-    return {ok:false, reason:'error', error:e.message};
-  }
-}
-
-/* Legacy CPF-only lookup (mantido para compatibilidade) */
-async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient('cpf', cpf, supaUrl, supaKey); }
-
-/* Documento flexível: dropdown + input + auto-lookup */
-(function(){
-  function _el(id){return document.getElementById(id);}
-  function _updateStatus(cls, msg){
-    var s = _el('docStatus'); if(!s) return;
-    s.className = 'doc-status ' + cls;
-    s.textContent = msg;
-  }
-  function _lockName(name, patientId){
-    var n = _el('f_nome');
-    if(n){ n.value = name; n.readOnly = true; n.classList.add('doc-locked'); n.setAttribute('data-patient-id', patientId); }
-  }
-  function _unlockName(){
-    var n = _el('f_nome');
-    if(n){ n.readOnly = false; n.classList.remove('doc-locked'); n.removeAttribute('data-patient-id'); }
-  }
-  function _getType(){ var s = _el('f_doc_tipo'); return s ? s.value : 'cpf'; }
-
-  async function _verify(){
-    var inp = _el('f_doc_numero');
-    if(!inp){ console.warn('[HAG] _verify: input #f_doc_numero not found'); return; }
-    var tipo = _getType();
-    var raw = inp.value.trim();
-    console.log('[HAG] _verify called. tipo=' + tipo + ', raw=' + JSON.stringify(raw));
-    if(!raw){ _updateStatus('', ''); _unlockName(); return; }
-    var n = docNormalize(tipo, raw);
-    console.log('[HAG] normalized=' + JSON.stringify(n) + ', length=' + n.length + ', valid=' + docValid(tipo, n));
-    if(!docValid(tipo, n)){
-      if(tipo==='cpf' && n.length < 11){ _updateStatus('pending', 'Digite os 11 dígitos do CPF'); _unlockName(); return; }
-      if(tipo==='rg' && n.length < 5){ _updateStatus('pending', 'Continue digitando o RG...'); _unlockName(); return; }
-      if(tipo==='passaporte' && n.length < 6){ _updateStatus('pending', 'Continue digitando o passaporte...'); _unlockName(); return; }
-      _updateStatus('err', docInvalidMsg(tipo));
-      _unlockName();
-      return;
-    }
-    _updateStatus('pending', '⟳ Verificando no HAG OS...');
-    console.log('[HAG] Calling Supabase lookup: ' + SURL + '/rest/v1/patients?' + tipo + '=eq.' + n);
-    var res = await docLookupPatient(tipo, n, SURL, SKEY);
-    console.log('[HAG] Lookup response:', res);
-    if(res.ok){
-      _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
-      _lockName(res.patient.nome, res.patient.id);
-      console.log('[HAG] Name locked to:', res.patient.nome, '| id:', res.patient.id);
-    } else if(res.reason==='not_found'){
-      _updateStatus('err', '✗ ' + tipo.toUpperCase() + ' não cadastrado no HAG OS. Verifique com o Dr. Henrique.');
-      _unlockName();
-      console.warn('[HAG] CPF/documento não encontrado:', n);
-    } else {
-      _updateStatus('err', '✗ Erro ao consultar: ' + (res.error||res.reason));
-      _unlockName();
-      console.error('[HAG] Erro no lookup:', res);
-    }
-  }
-
-  function _onTypeChange(){
-    var inp = _el('f_doc_numero');
-    var tipo = _getType();
-    if(inp){
-      inp.value = '';
-      inp.placeholder = docPlaceholder(tipo);
-      inp.maxLength = docMaxLen(tipo);
-    }
-    _updateStatus('', '');
-    _unlockName();
-    if(inp) inp.focus();
-  }
-
-  var _initDone = false;
-  var _maskTimer = null;
-  function _applyMask(){
-    var inp = _el('f_doc_numero');
-    if(!inp) return;
-    var tipo = _getType();
-    var formatted = docFormat(tipo, inp.value);
-    if(inp.value !== formatted){
-      var pos = inp.selectionStart;
-      var diff = formatted.length - inp.value.length;
-      inp.value = formatted;
-      try{ inp.setSelectionRange(pos + diff, pos + diff); }catch(e){}
-    }
-  }
-  function _init(){
-    var inp = _el('f_doc_numero');
-    var sel = _el('f_doc_tipo');
-    if(!inp || !sel){
-      console.warn('[HAG] Campos de documento ainda nao no DOM, tentando novamente...');
-      setTimeout(_init, 200);
-      return;
-    }
-    if(_initDone) return;
-    _initDone = true;
-    console.log('[HAG] Sistema de identificacao por documento inicializado v2.1');
-    var tag = document.getElementById('hagVersionTag');
-    if(tag){ tag.style.background='#2d7a3a'; tag.textContent='✓ HAG v2.1 · DOC-FLEX'; }
-
-    // Set initial placeholder based on default type (CPF)
-    inp.placeholder = docPlaceholder(_getType());
-    inp.maxLength = docMaxLen(_getType());
-
-    var verifyTimer = null;
-    // Universal handler: mask + auto-lookup
-    function onValueChange(){
-      _applyMask();
-      if(verifyTimer) clearTimeout(verifyTimer);
-      var tipo = _getType();
-      var n = docNormalize(tipo, inp.value);
-      if(!docValid(tipo, n)){
-        if((tipo==='cpf' && n.length < 11) || (tipo==='rg' && n.length < 5) || (tipo==='passaporte' && n.length < 6)){
-          _updateStatus('', ''); _unlockName();
-        } else {
-          _updateStatus('err', docInvalidMsg(tipo)); _unlockName();
-        }
-        return;
-      }
-      verifyTimer = setTimeout(_verify, 250);
-    }
-    // Attach to multiple events for maximum reliability
-    inp.addEventListener('input', onValueChange);
-    inp.addEventListener('keyup', onValueChange);
-    inp.addEventListener('change', onValueChange);
-    inp.addEventListener('paste', function(){ setTimeout(onValueChange, 10); });
-    inp.addEventListener('blur', function(){ if(verifyTimer) clearTimeout(verifyTimer); _verify(); });
-    sel.addEventListener('change', _onTypeChange);
-  }
-  // Try to init multiple times to handle any timing edge case
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded', _init);
-  } else {
-    _init();
-  }
-  setTimeout(_init, 200);
-  setTimeout(_init, 800);
-  window.addEventListener('load', _init);
-
-  // Expose guards
-  window.cpfGuardSubmit = function(){
-    var inp = _el('f_doc_numero');
-    var sel = _el('f_doc_tipo');
-    if(!inp || !sel) return true;
-    var tipo = sel.value;
-    var n = docNormalize(tipo, inp.value||'');
-    if(!docValid(tipo, n)){
-      alert('Documento inválido ou não preenchido.\n\nPor favor, escolha o tipo (CPF, RG ou Passaporte) e preencha corretamente para que sua resposta seja vinculada ao seu prontuário.');
-      inp.focus();
-      return false;
-    }
-    var nm = _el('f_nome');
-    if(!nm || !nm.hasAttribute('data-patient-id')){
-      alert('Seu documento não foi localizado no sistema.\n\nEntre em contato com o Dr. Henrique antes de enviar o formulário.');
-      inp.focus();
-      return false;
-    }
-    return true;
-  };
-  window.cpfGetPatientId = function(){
-    var n = _el('f_nome');
-    return n ? n.getAttribute('data-patient-id') : null;
-  };
-  window.cpfGetCleanDigits = function(){
-    var inp = _el('f_doc_numero'); var sel = _el('f_doc_tipo');
-    if(!inp || !sel) return '';
-    return docNormalize(sel.value, inp.value||'');
-  };
-})();
 
 
 
