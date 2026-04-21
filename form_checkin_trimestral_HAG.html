@@ -189,6 +189,15 @@ textarea.finput{min-height:80px}
 .hag-api-st.ok{color:#4ade80;font-weight:600}
 .hag-api-st.err{color:#f87171}
 
+
+/* CPF field feedback */
+.cpf-wrap{position:relative;display:flex;flex-direction:column;gap:3px}
+.cpf-status{font-size:10.5px;font-weight:500;min-height:14px;display:flex;align-items:center;gap:5px}
+.cpf-status.ok{color:#2d7a3a}
+.cpf-status.err{color:#c11e1e}
+.cpf-status.pending{color:#c07020}
+.cpf-locked{background:#f4f4f0;cursor:not-allowed;color:#6b6a63}
+
 </style>
 </head>
 <body>
@@ -241,6 +250,13 @@ textarea.finput{min-height:80px}
 
   <!-- IDENTIFICAÇÃO -->
   <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem">
+    <div class="field" style="flex:2;min-width:180px;margin-bottom:0">
+      <label class="fl">CPF <span style="font-size:10px;font-weight:500;color:var(--red,#c11e1e)">*obrigatório</span></label>
+      <div class="cpf-wrap">
+        <input class="finput" id="f_cpf" type="text" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off">
+        <div class="cpf-status" id="cpfStatus"></div>
+      </div>
+    </div>
     <div class="field" style="flex:2;min-width:180px;margin-bottom:0">
       <label class="fl">Nome</label>
       <input class="finput" id="f_nome" type="text" placeholder="Seu nome completo">
@@ -773,6 +789,8 @@ function buildMsg(){
 }
 
 async function enviarCheckin(){
+    if(window.cpfGuardSubmit && !cpfGuardSubmit()) return;
+
   var msg=buildMsg();
   document.getElementById('formContent').classList.add('hidden');
   document.getElementById('resultScreen').classList.remove('hidden');
@@ -833,6 +851,143 @@ async function enviarCheckin(){
   // ── HAG OS: Salvar trimestral (sempre, com interpretacao) ──────────────────
   try{
     var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co',SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+
+
+/* ═══ CPF: máscara + validação checksum + busca Supabase ═══ */
+function cpfMask(v){
+  v = (v||'').replace(/\D/g,'').substring(0,11);
+  if(v.length<=3)return v;
+  if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);
+  if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
+  return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
+}
+function cpfDigits(v){return (v||'').replace(/\D/g,'');}
+function cpfValid(cpf){
+  cpf = cpfDigits(cpf);
+  if(cpf.length!==11) return false;
+  // Reject known invalid patterns (all same digit)
+  if(/^(\d)\1{10}$/.test(cpf)) return false;
+  // Checksum
+  var sum=0, rem;
+  for(var i=0;i<9;i++) sum += parseInt(cpf.charAt(i)) * (10-i);
+  rem = (sum*10) % 11;
+  if(rem===10) rem=0;
+  if(rem !== parseInt(cpf.charAt(9))) return false;
+  sum=0;
+  for(var j=0;j<10;j++) sum += parseInt(cpf.charAt(j)) * (11-j);
+  rem = (sum*10) % 11;
+  if(rem===10) rem=0;
+  if(rem !== parseInt(cpf.charAt(10))) return false;
+  return true;
+}
+function cpfAttachMask(inputEl){
+  if(!inputEl) return;
+  inputEl.addEventListener('input', function(){
+    var cur = this.selectionStart;
+    var oldLen = this.value.length;
+    this.value = cpfMask(this.value);
+    var newLen = this.value.length;
+    this.setSelectionRange(cur+(newLen-oldLen), cur+(newLen-oldLen));
+  });
+  inputEl.addEventListener('paste', function(e){
+    setTimeout(function(){ inputEl.value = cpfMask(inputEl.value); }, 0);
+  });
+}
+async function cpfLookupPatient(cpf, supaUrl, supaKey){
+  var digits = cpfDigits(cpf);
+  if(!cpfValid(digits)) return {ok:false, reason:'invalid'};
+  var url = supaUrl + '/rest/v1/patients?cpf=eq.' + digits + '&select=id,nome,cpf&limit=1';
+  try{
+    var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
+    if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
+    var data = await r.json();
+    if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
+    return {ok:true, patient:data[0]};
+  }catch(e){
+    return {ok:false, reason:'error', error:e.message};
+  }
+}
+
+/* CPF verification on this form */
+(function(){
+  function _el(id){return document.getElementById(id);}
+  function _updateStatus(cls, msg){
+    var s = _el('cpfStatus'); if(!s) return;
+    s.className = 'cpf-status ' + cls;
+    s.textContent = msg;
+  }
+  function _lockName(name, patientId){
+    var n = _el('f_nome');
+    if(n){ n.value = name; n.readOnly = true; n.classList.add('cpf-locked'); n.setAttribute('data-patient-id', patientId); }
+  }
+  function _unlockName(){
+    var n = _el('f_nome');
+    if(n){ n.readOnly = false; n.classList.remove('cpf-locked'); n.removeAttribute('data-patient-id'); }
+  }
+  async function _verify(){
+    var cpfEl = _el('f_cpf');
+    if(!cpfEl) return;
+    var raw = cpfEl.value.trim();
+    if(!raw){ _updateStatus('', ''); _unlockName(); return; }
+    var d = cpfDigits(raw);
+    if(d.length < 11){ _updateStatus('pending', 'Digite os 11 dígitos'); _unlockName(); return; }
+    if(!cpfValid(d)){ _updateStatus('err', '✗ CPF inválido (dígito verificador)'); _unlockName(); return; }
+    _updateStatus('pending', '⟳ Verificando no HAG OS...');
+    var SURL_V = SURL, SKEY_V = SKEY;
+    var res = await cpfLookupPatient(d, SURL_V, SKEY_V);
+    if(res.ok){
+      _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
+      _lockName(res.patient.nome, res.patient.id);
+    } else if(res.reason==='not_found'){
+      _updateStatus('err', '✗ CPF não cadastrado. Entre em contato com o Dr. Henrique.');
+      _unlockName();
+    } else {
+      _updateStatus('err', '✗ Erro ao consultar: ' + (res.error||res.reason));
+      _unlockName();
+    }
+  }
+  function _init(){
+    var cpfEl = _el('f_cpf');
+    if(!cpfEl) return;
+    cpfAttachMask(cpfEl);
+    cpfEl.addEventListener('blur', _verify);
+    cpfEl.addEventListener('input', function(){
+      // Clear status as user types until 11 digits
+      if(cpfDigits(cpfEl.value).length < 11){ _updateStatus('', ''); _unlockName(); }
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _init);
+  else setTimeout(_init, 100);
+
+  // Expose guard for form submit
+  window.cpfGuardSubmit = function(){
+    var cpfEl = _el('f_cpf');
+    if(!cpfEl){ return true; }
+    var d = cpfDigits(cpfEl.value||'');
+    if(!cpfValid(d)){
+      alert('CPF inválido ou não preenchido.\n\nPor favor, preencha seu CPF para que a resposta seja vinculada corretamente ao seu prontuário.');
+      cpfEl.focus();
+      return false;
+    }
+    var n = _el('f_nome');
+    if(!n || !n.hasAttribute('data-patient-id')){
+      alert('Seu CPF não foi localizado no sistema.\n\nEntre em contato com o Dr. Henrique antes de enviar o formulário.');
+      cpfEl.focus();
+      return false;
+    }
+    return true;
+  };
+  // Also expose a getter for the matched patient_id
+  window.cpfGetPatientId = function(){
+    var n = _el('f_nome');
+    return n ? n.getAttribute('data-patient-id') : null;
+  };
+  window.cpfGetCleanDigits = function(){
+    var cpfEl = _el('f_cpf');
+    return cpfEl ? cpfDigits(cpfEl.value||'') : '';
+  };
+})();
+
     function fvt(id){var el=document.getElementById(id);return el?el.value.trim():'';}
     function getSt(id){var g=document.getElementById(id);if(!g)return -1;var on=g.querySelector('.s5-btn.on');return on?parseInt(on.querySelector('.s5-num').textContent):-1;}
     var nome=fvt('f_nome'),sa=getSt('s_alim'),str=getSt('s_treino'),sro=getSt('s_rotina'),sen=getSt('s_energia'),sdi=getSt('s_dificuldade'),sco=getSt('s_compromisso');
@@ -844,7 +999,7 @@ async function enviarCheckin(){
     var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
     var pats=await patResp.json(),patId=null;
     if(Array.isArray(pats)){var nl=nome.toLowerCase().trim();var m=pats.find(function(p){return p.nome.toLowerCase()===nl;})||pats.find(function(p){return p.nome.toLowerCase().includes(nl.split(' ')[0]);});if(m)patId=m.id;}
-    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'cit_'+Date.now(),patient_id:patId,patient_nome:nome,semana:fvt('f_periodo'),data_envio:new Date().toISOString().slice(0,10),s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,score_total:total,score_pct:pct,classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',padroes:padroes,mensagem:fvt('f_mensagem'),interpretacao:interpretacao||'',criado:new Date().toISOString(),tipo:'trimestral',texto_completo:typeof buildMsg==='function'?buildMsg():''})});
+    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'cit_'+Date.now(),patient_id:(window.cpfGetPatientId&&window.cpfGetPatientId())||patId,patient_nome:nome,semana:fvt('f_periodo'),data_envio:new Date().toISOString().slice(0,10),s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,score_total:total,score_pct:pct,classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',padroes:padroes,mensagem:fvt('f_mensagem'),interpretacao:interpretacao||'',criado:new Date().toISOString(),tipo:'trimestral',texto_completo:typeof buildMsg==='function'?buildMsg():''})});
     console.log('HAG OS: check-in trimestral salvo com interpretacao');
   }catch(eTri){console.warn('HAG OS trimestral save:',eTri);}
 }
