@@ -151,6 +151,7 @@ textarea.finput{min-height:76px}
 <div id="hagVersionTag" style="position:fixed;top:8px;right:8px;z-index:99999;background:#c11e1e;color:#fff;font-family:monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.3);letter-spacing:.05em">⚠ JS NÃO CARREGOU</div>
 <script>console.log('[HAG-EARLY] script tag reached, JS runtime active');</script>
 
+<script>
 /* ═══ Globals para o sistema de documento flexível ═══ */
 var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
 var SKEY = 'sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
@@ -393,6 +394,8 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     return docNormalize(sel.value, inp.value||'');
   };
 })();
+</script>
+
 
 <!-- HAG Admin Bar — visível apenas com ?admin=1 -->
 <div class="hag-api-bar" id="hagApiBar">
