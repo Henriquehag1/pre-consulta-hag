@@ -138,15 +138,18 @@ textarea.finput{min-height:76px}
 .doc-type{font-size:12px;padding:7px 10px;border:1px solid var(--border,#e8e4da);border-radius:6px;background:#fff;color:var(--ink,#1f1e1a);outline:none;cursor:pointer;min-width:110px;font-family:inherit}
 .doc-type:focus{border-color:#9a7b3d}
 .doc-number{flex:1;min-width:140px;font-family:monospace;letter-spacing:.02em}
-.doc-status{font-size:10.5px;font-weight:500;min-height:14px;display:flex;align-items:center;gap:5px;margin-top:3px}
-.doc-status.ok{color:#2d7a3a}
-.doc-status.err{color:#c11e1e}
-.doc-status.pending{color:#b8740c}
+.doc-status{font-size:13px;font-weight:600;min-height:24px;display:flex;align-items:center;gap:5px;margin-top:8px;padding:6px 10px;border-radius:6px;background:transparent;transition:all .15s}
+.doc-status:empty{padding:0;min-height:14px}
+.doc-status.ok{color:#1a5728;background:#e4f3e7;border:1px solid #9ec9a7}
+.doc-status.err{color:#9b1818;background:#fae8e8;border:1px solid #e0a9a9}
+.doc-status.pending{color:#915a07;background:#fbefd5;border:1px solid #dfc08a}
 .doc-locked{background:#f4f4f0;cursor:not-allowed;color:#6b6a63}
 
 </style>
 </head>
 <body>
+<div id="hagVersionTag" style="position:fixed;top:8px;right:8px;z-index:99999;background:#2d7a3a;color:#fff;font-family:monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.2);letter-spacing:.05em">HAG v2.1 · DOC-FLEX</div>
+
 
 <!-- HAG Admin Bar — visível apenas com ?admin=1 -->
 <div class="hag-api-bar" id="hagApiBar">
@@ -721,14 +724,14 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   async function _verify(){
     var inp = _el('f_doc_numero');
-    if(!inp) return;
+    if(!inp){ console.warn('[HAG] _verify: input #f_doc_numero not found'); return; }
     var tipo = _getType();
     var raw = inp.value.trim();
+    console.log('[HAG] _verify called. tipo=' + tipo + ', raw=' + JSON.stringify(raw));
     if(!raw){ _updateStatus('', ''); _unlockName(); return; }
     var n = docNormalize(tipo, raw);
-    // First: format check
+    console.log('[HAG] normalized=' + JSON.stringify(n) + ', length=' + n.length + ', valid=' + docValid(tipo, n));
     if(!docValid(tipo, n)){
-      // Show "pending" if too short, "err" if definitively invalid
       if(tipo==='cpf' && n.length < 11){ _updateStatus('pending', 'Digite os 11 dígitos do CPF'); _unlockName(); return; }
       if(tipo==='rg' && n.length < 5){ _updateStatus('pending', 'Continue digitando o RG...'); _unlockName(); return; }
       if(tipo==='passaporte' && n.length < 6){ _updateStatus('pending', 'Continue digitando o passaporte...'); _unlockName(); return; }
@@ -736,18 +739,22 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       _unlockName();
       return;
     }
-    // Valid format → lookup in Supabase
     _updateStatus('pending', '⟳ Verificando no HAG OS...');
+    console.log('[HAG] Calling Supabase lookup: ' + SURL + '/rest/v1/patients?' + tipo + '=eq.' + n);
     var res = await docLookupPatient(tipo, n, SURL, SKEY);
+    console.log('[HAG] Lookup response:', res);
     if(res.ok){
       _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
       _lockName(res.patient.nome, res.patient.id);
+      console.log('[HAG] Name locked to:', res.patient.nome, '| id:', res.patient.id);
     } else if(res.reason==='not_found'){
-      _updateStatus('err', '✗ ' + tipo.toUpperCase() + ' não cadastrado. Entre em contato com o Dr. Henrique.');
+      _updateStatus('err', '✗ ' + tipo.toUpperCase() + ' não cadastrado no HAG OS. Verifique com o Dr. Henrique.');
       _unlockName();
+      console.warn('[HAG] CPF/documento não encontrado:', n);
     } else {
       _updateStatus('err', '✗ Erro ao consultar: ' + (res.error||res.reason));
       _unlockName();
+      console.error('[HAG] Erro no lookup:', res);
     }
   }
 
