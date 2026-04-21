@@ -195,6 +195,18 @@ textarea.finput{min-height:82px}
 .cpf-status.pending{color:#c07020}
 .cpf-locked{background:#f4f4f0;cursor:not-allowed;color:#6b6a63}
 
+
+/* Documento flexível */
+.doc-row{display:flex;gap:6px;align-items:stretch}
+.doc-type{font-size:12px;padding:7px 10px;border:1px solid var(--border,#e8e4da);border-radius:6px;background:#fff;color:var(--ink,#1f1e1a);outline:none;cursor:pointer;min-width:110px;font-family:inherit}
+.doc-type:focus{border-color:#9a7b3d}
+.doc-number{flex:1;min-width:140px;font-family:monospace;letter-spacing:.02em}
+.doc-status{font-size:10.5px;font-weight:500;min-height:14px;display:flex;align-items:center;gap:5px;margin-top:3px}
+.doc-status.ok{color:#2d7a3a}
+.doc-status.err{color:#c11e1e}
+.doc-status.pending{color:#b8740c}
+.doc-locked{background:#f4f4f0;cursor:not-allowed;color:#6b6a63}
+
 </style>
 </head>
 <body>
@@ -258,10 +270,17 @@ textarea.finput{min-height:82px}
     <div class="req-msg">Campo obrigatório</div>
   </div>
   <div class="field">
-    <label class="fl">CPF <span class="req">*</span><span style="font-size:10px;font-weight:500;color:#6b6a63;margin-left:6px">(identificador único para vincular ao seu prontuário)</span></label>
+    <label class="fl">Documento de identificação <span class="req">*</span><span style="font-size:10px;font-weight:500;color:#6b6a63;margin-left:6px">(escolha um e vincularemos ao seu prontuário)</span></label>
     <div class="cpf-wrap">
-      <input class="finput" id="f_cpf" type="text" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off">
-      <div class="cpf-status" id="cpfStatus"></div>
+      <div class="doc-row">
+        <select class="finput doc-type" id="f_doc_tipo">
+          <option value="cpf">CPF</option>
+          <option value="rg">RG</option>
+          <option value="passaporte">Passaporte</option>
+        </select>
+        <input class="finput doc-number" id="f_doc_numero" type="text" placeholder="000.000.000-00" autocomplete="off">
+      </div>
+      <div class="doc-status" id="docStatus"></div>
     </div>
   </div>
   
@@ -1010,50 +1029,80 @@ async function submitForm(){
     var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co',SKEY='sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
 
 
-/* ═══ CPF: máscara + validação checksum + busca Supabase ═══ */
-function cpfMask(v){
-  v = (v||'').replace(/\D/g,'').substring(0,11);
-  if(v.length<=3)return v;
-  if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);
-  if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
-  return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
-}
+/* ═══ Documentos flexíveis: CPF | RG | Passaporte ═══ */
+/* CPF: 11 dígitos + checksum */
+function cpfMask(v){v=(v||'').replace(/\D/g,'').substring(0,11);if(v.length<=3)return v;if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);}
 function cpfDigits(v){return (v||'').replace(/\D/g,'');}
-function cpfValid(cpf){
-  cpf = cpfDigits(cpf);
-  if(cpf.length!==11) return false;
-  // Reject known invalid patterns (all same digit)
-  if(/^(\d)\1{10}$/.test(cpf)) return false;
-  // Checksum
-  var sum=0, rem;
-  for(var i=0;i<9;i++) sum += parseInt(cpf.charAt(i)) * (10-i);
-  rem = (sum*10) % 11;
-  if(rem===10) rem=0;
-  if(rem !== parseInt(cpf.charAt(9))) return false;
-  sum=0;
-  for(var j=0;j<10;j++) sum += parseInt(cpf.charAt(j)) * (11-j);
-  rem = (sum*10) % 11;
-  if(rem===10) rem=0;
-  if(rem !== parseInt(cpf.charAt(10))) return false;
-  return true;
+function cpfValid(cpf){cpf=cpfDigits(cpf);if(cpf.length!==11)return false;if(/^(\d)\1{10}$/.test(cpf))return false;var sum=0,rem;for(var i=0;i<9;i++)sum+=parseInt(cpf.charAt(i))*(10-i);rem=(sum*10)%11;if(rem===10)rem=0;if(rem!==parseInt(cpf.charAt(9)))return false;sum=0;for(var j=0;j<10;j++)sum+=parseInt(cpf.charAt(j))*(11-j);rem=(sum*10)%11;if(rem===10)rem=0;return rem===parseInt(cpf.charAt(10));}
+
+/* RG: alfanumérico livre (formato varia por estado) */
+function rgClean(v){return (v||'').toUpperCase().replace(/[^0-9A-Z]/g,'').substring(0,14);}
+function rgMask(v){v=rgClean(v);if(v.length<=2)return v;if(v.length<=5)return v.slice(0,2)+'.'+v.slice(2);if(v.length<=8)return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'-'+v.slice(8);}
+function rgValid(v){var c=rgClean(v);return c.length>=5 && c.length<=14;}
+
+/* Passaporte: alfanumérico (padrão BR: 2 letras + 6 dígitos, mas aceitamos qualquer coisa) */
+function passClean(v){return (v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').substring(0,15);}
+function passValid(v){var c=passClean(v);return c.length>=6 && c.length<=15;}
+
+/* Unified API */
+function docNormalize(tipo, v){
+  if(tipo==='cpf') return cpfDigits(v);
+  if(tipo==='rg') return rgClean(v);
+  if(tipo==='passaporte') return passClean(v);
+  return '';
 }
-function cpfAttachMask(inputEl){
+function docFormat(tipo, v){
+  if(tipo==='cpf') return cpfMask(v);
+  if(tipo==='rg') return rgMask(v);
+  if(tipo==='passaporte') return passClean(v);
+  return v;
+}
+function docValid(tipo, v){
+  if(tipo==='cpf') return cpfValid(v);
+  if(tipo==='rg') return rgValid(v);
+  if(tipo==='passaporte') return passValid(v);
+  return false;
+}
+function docPlaceholder(tipo){
+  if(tipo==='cpf') return '000.000.000-00';
+  if(tipo==='rg') return '12.345.678-9';
+  if(tipo==='passaporte') return 'FG123456';
+  return '';
+}
+function docMaxLen(tipo){
+  if(tipo==='cpf') return 14;
+  if(tipo==='rg') return 14;
+  if(tipo==='passaporte') return 15;
+  return 20;
+}
+function docInvalidMsg(tipo){
+  if(tipo==='cpf') return '✗ CPF inválido (dígito verificador)';
+  if(tipo==='rg') return '✗ RG inválido (mínimo 5 caracteres)';
+  if(tipo==='passaporte') return '✗ Passaporte inválido (6 a 15 caracteres)';
+  return '✗ Documento inválido';
+}
+
+/* Attach mask to input based on current doc type */
+function docAttachMask(inputEl, getType){
   if(!inputEl) return;
   inputEl.addEventListener('input', function(){
+    var t = getType();
     var cur = this.selectionStart;
     var oldLen = this.value.length;
-    this.value = cpfMask(this.value);
+    this.value = docFormat(t, this.value);
     var newLen = this.value.length;
     this.setSelectionRange(cur+(newLen-oldLen), cur+(newLen-oldLen));
   });
-  inputEl.addEventListener('paste', function(e){
-    setTimeout(function(){ inputEl.value = cpfMask(inputEl.value); }, 0);
+  inputEl.addEventListener('paste', function(){
+    setTimeout(function(){ inputEl.value = docFormat(getType(), inputEl.value); }, 0);
   });
 }
-async function cpfLookupPatient(cpf, supaUrl, supaKey){
-  var digits = cpfDigits(cpf);
-  if(!cpfValid(digits)) return {ok:false, reason:'invalid'};
-  var url = supaUrl + '/rest/v1/patients?cpf=eq.' + digits + '&select=id,nome,cpf&limit=1';
+
+/* Lookup patient by document (CPF | RG | Passaporte) */
+async function docLookupPatient(tipo, numero, supaUrl, supaKey){
+  var n = docNormalize(tipo, numero);
+  if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
+  var url = supaUrl + '/rest/v1/patients?' + encodeURIComponent(tipo) + '=eq.' + encodeURIComponent(n) + '&select=id,nome,cpf,rg,passaporte&limit=1';
   try{
     var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
     if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
@@ -1065,85 +1114,136 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){
   }
 }
 
-/* CPF verification on this form */
+/* Legacy CPF-only lookup (mantido para compatibilidade) */
+async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient('cpf', cpf, supaUrl, supaKey); }
+
+/* Documento flexível: dropdown + input + auto-lookup */
 (function(){
   function _el(id){return document.getElementById(id);}
   function _updateStatus(cls, msg){
-    var s = _el('cpfStatus'); if(!s) return;
-    s.className = 'cpf-status ' + cls;
+    var s = _el('docStatus'); if(!s) return;
+    s.className = 'doc-status ' + cls;
     s.textContent = msg;
   }
   function _lockName(name, patientId){
     var n = _el('f_nome');
-    if(n){ n.value = name; n.readOnly = true; n.classList.add('cpf-locked'); n.setAttribute('data-patient-id', patientId); }
+    if(n){ n.value = name; n.readOnly = true; n.classList.add('doc-locked'); n.setAttribute('data-patient-id', patientId); }
   }
   function _unlockName(){
     var n = _el('f_nome');
-    if(n){ n.readOnly = false; n.classList.remove('cpf-locked'); n.removeAttribute('data-patient-id'); }
+    if(n){ n.readOnly = false; n.classList.remove('doc-locked'); n.removeAttribute('data-patient-id'); }
   }
+  function _getType(){ var s = _el('f_doc_tipo'); return s ? s.value : 'cpf'; }
+
   async function _verify(){
-    var cpfEl = _el('f_cpf');
-    if(!cpfEl) return;
-    var raw = cpfEl.value.trim();
+    var inp = _el('f_doc_numero');
+    if(!inp) return;
+    var tipo = _getType();
+    var raw = inp.value.trim();
     if(!raw){ _updateStatus('', ''); _unlockName(); return; }
-    var d = cpfDigits(raw);
-    if(d.length < 11){ _updateStatus('pending', 'Digite os 11 dígitos'); _unlockName(); return; }
-    if(!cpfValid(d)){ _updateStatus('err', '✗ CPF inválido (dígito verificador)'); _unlockName(); return; }
+    var n = docNormalize(tipo, raw);
+    // First: format check
+    if(!docValid(tipo, n)){
+      // Show "pending" if too short, "err" if definitively invalid
+      if(tipo==='cpf' && n.length < 11){ _updateStatus('pending', 'Digite os 11 dígitos do CPF'); _unlockName(); return; }
+      if(tipo==='rg' && n.length < 5){ _updateStatus('pending', 'Continue digitando o RG...'); _unlockName(); return; }
+      if(tipo==='passaporte' && n.length < 6){ _updateStatus('pending', 'Continue digitando o passaporte...'); _unlockName(); return; }
+      _updateStatus('err', docInvalidMsg(tipo));
+      _unlockName();
+      return;
+    }
+    // Valid format → lookup in Supabase
     _updateStatus('pending', '⟳ Verificando no HAG OS...');
-    var SURL_V = SURL, SKEY_V = SKEY;
-    var res = await cpfLookupPatient(d, SURL_V, SKEY_V);
+    var res = await docLookupPatient(tipo, n, SURL, SKEY);
     if(res.ok){
       _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
       _lockName(res.patient.nome, res.patient.id);
     } else if(res.reason==='not_found'){
-      _updateStatus('err', '✗ CPF não cadastrado. Entre em contato com o Dr. Henrique.');
+      _updateStatus('err', '✗ ' + tipo.toUpperCase() + ' não cadastrado. Entre em contato com o Dr. Henrique.');
       _unlockName();
     } else {
       _updateStatus('err', '✗ Erro ao consultar: ' + (res.error||res.reason));
       _unlockName();
     }
   }
+
+  function _onTypeChange(){
+    var inp = _el('f_doc_numero');
+    var tipo = _getType();
+    if(inp){
+      inp.value = '';
+      inp.placeholder = docPlaceholder(tipo);
+      inp.maxLength = docMaxLen(tipo);
+    }
+    _updateStatus('', '');
+    _unlockName();
+    if(inp) inp.focus();
+  }
+
   function _init(){
-    var cpfEl = _el('f_cpf');
-    if(!cpfEl) return;
-    cpfAttachMask(cpfEl);
-    cpfEl.addEventListener('blur', _verify);
-    cpfEl.addEventListener('input', function(){
-      // Clear status as user types until 11 digits
-      if(cpfDigits(cpfEl.value).length < 11){ _updateStatus('', ''); _unlockName(); }
+    var inp = _el('f_doc_numero');
+    var sel = _el('f_doc_tipo');
+    if(!inp || !sel) return;
+    docAttachMask(inp, _getType);
+    // Set initial placeholder
+    inp.placeholder = docPlaceholder(_getType());
+    inp.maxLength = docMaxLen(_getType());
+    // Auto-lookup on input (debounced)
+    var timer = null;
+    inp.addEventListener('input', function(){
+      if(timer) clearTimeout(timer);
+      var tipo = _getType();
+      var n = docNormalize(tipo, inp.value);
+      if(!docValid(tipo, n)){
+        // Clear status if too short, keep err otherwise
+        if((tipo==='cpf' && n.length < 11) || (tipo==='rg' && n.length < 5) || (tipo==='passaporte' && n.length < 6)){
+          _updateStatus('', ''); _unlockName();
+        }
+        return;
+      }
+      timer = setTimeout(_verify, 250);
     });
+    inp.addEventListener('blur', function(){ if(timer) clearTimeout(timer); _verify(); });
+    sel.addEventListener('change', _onTypeChange);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _init);
   else setTimeout(_init, 100);
 
-  // Expose guard for form submit
+  // Expose guards
   window.cpfGuardSubmit = function(){
-    var cpfEl = _el('f_cpf');
-    if(!cpfEl){ return true; }
-    var d = cpfDigits(cpfEl.value||'');
-    if(!cpfValid(d)){
-      alert('CPF inválido ou não preenchido.\n\nPor favor, preencha seu CPF para que a resposta seja vinculada corretamente ao seu prontuário.');
-      cpfEl.focus();
+    var inp = _el('f_doc_numero');
+    var sel = _el('f_doc_tipo');
+    if(!inp || !sel) return true;
+    var tipo = sel.value;
+    var n = docNormalize(tipo, inp.value||'');
+    if(!docValid(tipo, n)){
+      alert('Documento inválido ou não preenchido.\n\nPor favor, escolha o tipo (CPF, RG ou Passaporte) e preencha corretamente para que sua resposta seja vinculada ao seu prontuário.');
+      inp.focus();
       return false;
     }
-    var n = _el('f_nome');
-    if(!n || !n.hasAttribute('data-patient-id')){
-      alert('Seu CPF não foi localizado no sistema.\n\nEntre em contato com o Dr. Henrique antes de enviar o formulário.');
-      cpfEl.focus();
+    var nm = _el('f_nome');
+    if(!nm || !nm.hasAttribute('data-patient-id')){
+      alert('Seu documento não foi localizado no sistema.\n\nEntre em contato com o Dr. Henrique antes de enviar o formulário.');
+      inp.focus();
       return false;
     }
     return true;
   };
-  // Also expose a getter for the matched patient_id
   window.cpfGetPatientId = function(){
     var n = _el('f_nome');
     return n ? n.getAttribute('data-patient-id') : null;
   };
   window.cpfGetCleanDigits = function(){
-    var cpfEl = _el('f_cpf');
-    return cpfEl ? cpfDigits(cpfEl.value||'') : '';
+    var inp = _el('f_doc_numero'); var sel = _el('f_doc_tipo');
+    if(!inp || !sel) return '';
+    return docNormalize(sel.value, inp.value||'');
   };
 })();
+
+
+
+
+
 
     function fvp(id){var el=document.getElementById(id);return el?el.value.trim():'';}
     function fvr(nm){var el=document.querySelector('input[name="'+nm+'"]:checked');return el?el.value:'';}
