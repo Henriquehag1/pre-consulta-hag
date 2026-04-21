@@ -679,21 +679,8 @@ function docInvalidMsg(tipo){
   return '✗ Documento inválido';
 }
 
-/* Attach mask to input based on current doc type */
-function docAttachMask(inputEl, getType){
-  if(!inputEl) return;
-  inputEl.addEventListener('input', function(){
-    var t = getType();
-    var cur = this.selectionStart;
-    var oldLen = this.value.length;
-    this.value = docFormat(t, this.value);
-    var newLen = this.value.length;
-    this.setSelectionRange(cur+(newLen-oldLen), cur+(newLen-oldLen));
-  });
-  inputEl.addEventListener('paste', function(){
-    setTimeout(function(){ inputEl.value = docFormat(getType(), inputEl.value); }, 0);
-  });
-}
+/* Attach mask to input - DEPRECATED: mask now handled in _init onValueChange */
+function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 
 /* Lookup patient by document (CPF | RG | Passaporte) */
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
@@ -777,34 +764,70 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     if(inp) inp.focus();
   }
 
+  var _initDone = false;
+  var _maskTimer = null;
+  function _applyMask(){
+    var inp = _el('f_doc_numero');
+    if(!inp) return;
+    var tipo = _getType();
+    var formatted = docFormat(tipo, inp.value);
+    if(inp.value !== formatted){
+      var pos = inp.selectionStart;
+      var diff = formatted.length - inp.value.length;
+      inp.value = formatted;
+      try{ inp.setSelectionRange(pos + diff, pos + diff); }catch(e){}
+    }
+  }
   function _init(){
     var inp = _el('f_doc_numero');
     var sel = _el('f_doc_tipo');
-    if(!inp || !sel) return;
-    docAttachMask(inp, _getType);
-    // Set initial placeholder
+    if(!inp || !sel){
+      console.warn('[HAG] Campos de documento ainda nao no DOM, tentando novamente...');
+      setTimeout(_init, 200);
+      return;
+    }
+    if(_initDone) return;
+    _initDone = true;
+    console.log('[HAG] Sistema de identificacao por documento inicializado v2.1');
+
+    // Set initial placeholder based on default type (CPF)
     inp.placeholder = docPlaceholder(_getType());
     inp.maxLength = docMaxLen(_getType());
-    // Auto-lookup on input (debounced)
-    var timer = null;
-    inp.addEventListener('input', function(){
-      if(timer) clearTimeout(timer);
+
+    var verifyTimer = null;
+    // Universal handler: mask + auto-lookup
+    function onValueChange(){
+      _applyMask();
+      if(verifyTimer) clearTimeout(verifyTimer);
       var tipo = _getType();
       var n = docNormalize(tipo, inp.value);
       if(!docValid(tipo, n)){
-        // Clear status if too short, keep err otherwise
         if((tipo==='cpf' && n.length < 11) || (tipo==='rg' && n.length < 5) || (tipo==='passaporte' && n.length < 6)){
           _updateStatus('', ''); _unlockName();
+        } else {
+          _updateStatus('err', docInvalidMsg(tipo)); _unlockName();
         }
         return;
       }
-      timer = setTimeout(_verify, 250);
-    });
-    inp.addEventListener('blur', function(){ if(timer) clearTimeout(timer); _verify(); });
+      verifyTimer = setTimeout(_verify, 250);
+    }
+    // Attach to multiple events for maximum reliability
+    inp.addEventListener('input', onValueChange);
+    inp.addEventListener('keyup', onValueChange);
+    inp.addEventListener('change', onValueChange);
+    inp.addEventListener('paste', function(){ setTimeout(onValueChange, 10); });
+    inp.addEventListener('blur', function(){ if(verifyTimer) clearTimeout(verifyTimer); _verify(); });
     sel.addEventListener('change', _onTypeChange);
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _init);
-  else setTimeout(_init, 100);
+  // Try to init multiple times to handle any timing edge case
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+  setTimeout(_init, 200);
+  setTimeout(_init, 800);
+  window.addEventListener('load', _init);
 
   // Expose guards
   window.cpfGuardSubmit = function(){
