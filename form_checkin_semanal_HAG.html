@@ -154,7 +154,7 @@ textarea.finput{min-height:76px}
 <script>
 /* ═══ Globals para o sistema de documento flexível ═══ */
 var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
-var SKEY = 'sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+var SKEY = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 /* ═══ Documentos flexíveis: CPF | RG | Passaporte ═══ */
 /* CPF: 11 dígitos + checksum */
 function cpfMask(v){v=(v||'').replace(/\D/g,'').substring(0,11);if(v.length<=3)return v;if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);}
@@ -960,7 +960,7 @@ function voltarForm(){
 
 /* ═══ HAG — Claude via Supabase Proxy (sem chave no HTML) ═══ */
 var HAG_PROXY = 'https://yutcnphwovqeiwcwzzhs.supabase.co/functions/v1/claude-proxy';
-var HAG_SKEY  = 'sb_publishable_5ZA9Cwf42Ie4cgg8WObIjQ_t0fCVcol';
+var HAG_SKEY  = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 
 /* Chama o Claude pelo proxy seguro */
 async function hagCallClaude(messages, maxTokens) {
