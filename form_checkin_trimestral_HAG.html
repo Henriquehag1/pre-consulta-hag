@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Check-in Trimestral | Manutenção HAG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    IBM Plex Mono — fonte mono oficial do Método HAG.
@@ -219,6 +219,363 @@ textarea.finput{min-height:80px}
 .doc-status.err{color:#9b1818;background:#fae8e8;border:1px solid #e0a9a9}
 .doc-status.pending{color:#915a07;background:#fbefd5;border:1px solid #dfc08a}
 .doc-locked{background:#f4f4f0;cursor:not-allowed;color:#6b6a63}
+
+
+
+/* ============================================================
+   HAG OFFICIAL TOKENS · Migration override (final layer)
+   ------------------------------------------------------------
+   Mapeia o vocabulário existente dos forms HAG (.s-title, .fl,
+   .bloco-num, .btn-next, .chip-opt, .h-eyebrow, .h-title,
+   .brand-wordmark, .success-title, .scale-btn, etc.) para os
+   tokens oficiais HAG sem tocar em markup, IDs ou JS.
+   ============================================================ */
+:root {
+  /* ---- Official HAG tokens ---- */
+  --hag-ink:        #1A1A1A;
+  --hag-white:      #FFFFFF;
+  --hag-champ:      #A89968;
+  --hag-champ-lt:   #C5B98A;
+  --hag-navy:       #1B2745;
+  --hag-cream:      #F5F2ED;
+  --hag-bg:         #FAFAF7;
+  --hag-hairline:   #E5E5E5;
+  --hag-graydark:   #6B6B6B;
+  --hag-graylight:  #888888;
+  --hag-blackDeep:  #0A0A0A;
+  --hag-blackSoft:  #1F1F1F;
+  --hag-olive:      #9A8A45;
+  --hag-nude:       #BBA89A;
+
+  /* Semantic pairs */
+  --hag-green-bg:   #E8F0DD; --hag-green-tx: #4F6B22; --hag-green-bd: #BFD49A;
+  --hag-amber-bg:   #FCEACE; --hag-amber-tx: #9A691C; --hag-amber-bd: #E8C887;
+  --hag-mahog-bg:   #FBF1EE; --hag-mahog-tx: #8B4A3F; --hag-mahog-bd: #E8C7BF;
+
+  /* ---- Re-bind legacy variables to HAG palette ---- */
+  --navy:        var(--hag-navy);
+  --navy2:       #243254;
+  --gold:        var(--hag-champ);
+  --gold2:       #B5A674;
+  --gold-pale:   var(--hag-champ-lt);
+  --gold-bg:     #F7F4EA;
+  --gold-border: #DCD2B0;
+  --cream:       var(--hag-cream);
+  --cream2:      #EFEBE3;
+  --surface:     var(--hag-white);
+  --ink:         var(--hag-ink);
+  --ink2:        #3A3A3A;
+  --ink3:        var(--hag-graydark);
+  --ink4:        var(--hag-graylight);
+  --border:      var(--hag-hairline);
+  --border2:     #C8C8C8;
+  --green:       var(--hag-green-tx);
+  --green-bg:    var(--hag-green-bg);
+  --green-border:var(--hag-green-bd);
+  --red:         var(--hag-mahog-tx);
+  --red-bg:      var(--hag-mahog-bg);
+  --red-border:  var(--hag-mahog-bd);
+
+  /* ---- HAG type stack ---- */
+  --hag-display: 'Cinzel','Trajan Pro',serif;
+  --hag-serif:   Cambria,'PT Serif',Georgia,serif;
+  --hag-sans:    Calibri,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --hag-mono:    'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+
+/* ---- Body inherits Calibri across the form ---- */
+html, body {
+  font-family: var(--hag-sans) !important;
+  color: var(--hag-ink) !important;
+  background: var(--hag-bg) !important;
+}
+
+/* ---- Headings → Cambria, no caps no spacing ---- */
+h1, h2, h3, h4, h5, h6,
+.s-title, .closing-title, .success-title, .r-title, .h-title, .bloco-title {
+  font-family: var(--hag-serif) !important;
+  color: var(--hag-ink) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.h-title, .bloco-title { color: var(--hag-white) !important; }
+.h-title em, .success-title em, .s-title em {
+  font-style: italic !important;
+  color: var(--hag-olive) !important;
+  font-weight: 400 !important;
+}
+.h-sub, .s-desc, .r-sub {
+  font-family: var(--hag-sans) !important;
+  font-style: italic !important;
+  color: var(--hag-graydark) !important;
+}
+.h-sub { color: rgba(255,255,255,.6) !important; }
+
+/* ---- Brand wordmark (DR. HENRIQUE ALVES · MÉTODO HAG) → Cinzel ---- */
+.brand-wordmark {
+  font-family: var(--hag-display) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-champ-lt) !important;
+}
+.brand-wordmark strong {
+  color: var(--hag-champ) !important;
+  font-weight: 500 !important;
+}
+
+/* ---- Eyebrows → IBM Plex Mono caps 0.08em ---- */
+.h-eyebrow, .s-eyebrow, .success-eyebrow, .closing-eyebrow {
+  font-family: var(--hag-mono) !important;
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-graydark) !important;
+}
+
+/* ---- Block number badge ---- */
+.bloco-num {
+  font-family: var(--hag-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-champ) !important;
+}
+
+/* ---- Trimester / progress / chips of metadata ---- */
+.trim-tag, .prog-txt {
+  font-family: var(--hag-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-champ) !important;
+}
+
+/* ---- Field labels ---- */
+.fl {
+  font-family: var(--hag-mono) !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-graydark) !important;
+}
+.fl .req { color: var(--hag-champ) !important; }
+.fh {
+  font-family: var(--hag-sans) !important;
+  font-style: italic !important;
+  color: var(--hag-graylight) !important;
+}
+
+/* ---- Inputs / selects / textareas ---- */
+.finput, input.finput, select.finput, textarea.finput,
+input[type="text"], input[type="email"], input[type="tel"],
+input[type="number"], input[type="date"], select, textarea {
+  font-family: var(--hag-sans) !important;
+  color: var(--hag-ink) !important;
+}
+.finput:focus, input:focus, textarea:focus, select:focus {
+  border-color: var(--hag-champ) !important;
+  box-shadow: 0 0 0 3px rgba(168,153,104,0.12) !important;
+}
+.finput::placeholder, input::placeholder, textarea::placeholder {
+  font-style: italic;
+  color: var(--hag-graylight) !important;
+  font-weight: 400 !important;
+}
+
+/* ---- Chips ---- */
+.chip-opt {
+  font-family: var(--hag-sans) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--hag-ink) !important;
+}
+.chip-opt:hover { border-color: var(--hag-champ) !important; }
+.chip-opt.on {
+  background: var(--hag-navy) !important;
+  color: var(--hag-champ-lt) !important;
+  border-color: var(--hag-navy) !important;
+}
+
+/* ---- Scales (1-5, 0-10, generic .scale-btn) ---- */
+.s5-btn, .s10-btn, .scale-btn {
+  font-family: var(--hag-mono) !important;
+  font-size: 13px !important;
+  letter-spacing: 0.04em !important;
+  color: var(--hag-graydark) !important;
+}
+.s5-btn:hover, .s10-btn:hover, .scale-btn:hover {
+  border-color: var(--hag-champ) !important;
+  color: var(--hag-ink) !important;
+}
+.s5-btn.on, .s10-btn.on, .scale-btn.on {
+  background: var(--hag-navy) !important;
+  color: var(--hag-champ-lt) !important;
+  border-color: var(--hag-navy) !important;
+}
+.scale-labels {
+  font-family: var(--hag-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-graydark) !important;
+}
+
+/* ---- Buttons ---- */
+.btn-next, .btn-prev, .btn-back, .btn-submit, .btn-retry, button[type="submit"] {
+  font-family: var(--hag-sans) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  border-radius: 4px !important;
+}
+.btn-next, .btn-submit, button[type="submit"] {
+  background: var(--hag-ink) !important;
+  color: var(--hag-white) !important;
+  border: 1px solid var(--hag-ink) !important;
+}
+.btn-prev, .btn-back {
+  background: transparent !important;
+  color: var(--hag-ink) !important;
+  border: 1px solid var(--hag-ink) !important;
+}
+.btn-retry {
+  background: var(--hag-ink) !important;
+  color: var(--hag-white) !important;
+  border: none !important;
+  padding: 0.75rem 2rem !important;
+  font-size: 13px !important;
+}
+
+/* ---- Numerical badges (regra-num, ss-num) ---- */
+.regra-num, .ss-num {
+  font-family: var(--hag-mono) !important;
+  font-size: 14px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-champ) !important;
+  font-weight: 400 !important;
+}
+
+/* ---- Closing block (sign-off in italic Cambria) ---- */
+.closing-text {
+  font-family: var(--hag-serif) !important;
+  font-style: italic !important;
+  color: rgba(255,255,255,0.7) !important;
+}
+.closing-sign {
+  font-family: var(--hag-serif) !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+  color: var(--hag-champ-lt) !important;
+  letter-spacing: 0 !important;
+}
+
+/* ---- Success steps text ---- */
+.ss-text strong {
+  font-family: var(--hag-serif) !important;
+  font-weight: 600 !important;
+  color: var(--hag-champ-lt) !important;
+  letter-spacing: 0 !important;
+}
+.ss-text {
+  font-family: var(--hag-sans) !important;
+  color: rgba(255,255,255,0.6) !important;
+}
+.close-note {
+  font-family: var(--hag-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-graydark) !important;
+}
+
+/* ============================================================
+   COMPONENT-SPECIFIC OVERRIDES · features added post-migration
+   ============================================================ */
+
+/* ---- SOAP error textarea (technical readout, IBM Plex Mono) ---- */
+.soap-err {
+  background: var(--hag-cream) !important;
+  border: 1px solid var(--hag-hairline) !important;
+}
+.soap-err textarea {
+  font-family: var(--hag-mono) !important;
+  color: var(--hag-graydark) !important;
+}
+
+/* ---- Admin API bar (HAG blackSoft + champ) ---- */
+.hag-api-bar {
+  background: var(--hag-blackSoft) !important;
+  border-bottom: 2px solid var(--hag-champ) !important;
+}
+.hag-api-label {
+  font-family: var(--hag-mono) !important;
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--hag-champ) !important;
+}
+.hag-api-input {
+  font-family: var(--hag-mono) !important;
+  background: #2A2A2A !important;
+  color: var(--hag-white) !important;
+  border-color: #444 !important;
+}
+.hag-api-input:focus { border-color: var(--hag-champ) !important; }
+.hag-api-btn {
+  font-family: var(--hag-sans) !important;
+  font-weight: 600 !important;
+  background: var(--hag-champ) !important;
+  color: var(--hag-blackSoft) !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+}
+.hag-api-st {
+  font-family: var(--hag-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.04em !important;
+  color: var(--hag-graylight) !important;
+}
+.hag-api-st.ok  { color: var(--hag-green-tx) !important; }
+.hag-api-st.err { color: var(--hag-mahog-tx) !important; }
+
+/* ---- Document validation status (mapped to HAG semantic pairs) ---- */
+.doc-number {
+  font-family: var(--hag-mono) !important;
+  letter-spacing: 0.04em !important;
+}
+.doc-status {
+  font-family: var(--hag-sans) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  border-radius: 4px !important;
+}
+.doc-status.ok {
+  background: var(--hag-green-bg) !important;
+  color: var(--hag-green-tx) !important;
+  border: 1px solid var(--hag-green-bd) !important;
+}
+.doc-status.err {
+  background: var(--hag-mahog-bg) !important;
+  color: var(--hag-mahog-tx) !important;
+  border: 1px solid var(--hag-mahog-bd) !important;
+}
+.doc-status.pending {
+  background: var(--hag-amber-bg) !important;
+  color: var(--hag-amber-tx) !important;
+  border: 1px solid var(--hag-amber-bd) !important;
+}
+.doc-locked {
+  background: var(--hag-cream) !important;
+  color: var(--hag-graydark) !important;
+}
 
 </style>
 </head>
