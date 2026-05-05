@@ -822,6 +822,22 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     if(!inp || !sel) return '';
     return docNormalize(sel.value, inp.value||'');
   };
+
+  // ═══ Máscara de WhatsApp brasileiro ═══
+  window._waMask = function(el){
+    var v = (el.value||'').replace(/\D/g,'').substring(0,11);
+    var f = '';
+    if(v.length === 0) f = '';
+    else if(v.length <= 2) f = '(' + v;
+    else if(v.length <= 6) f = '(' + v.substring(0,2) + ') ' + v.substring(2);
+    else if(v.length <= 10) f = '(' + v.substring(0,2) + ') ' + v.substring(2,6) + '-' + v.substring(6);
+    else f = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
+    el.value = f;
+  };
+  window._waDigits = function(el){
+    return (el && el.value || '').replace(/\D/g,'');
+  };
+
 })();
 </script>
 
@@ -903,6 +919,17 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="field">
       <label class="fl">Idade</label>
       <input class="finput" id="f_idade" type="text" placeholder="Ex: 34 anos">
+    </div>
+    <div class="field">
+      <label class="fl">Data de nascimento</label>
+      <input class="finput" id="f_data_nasc" type="date" placeholder="dd/mm/aaaa">
+    </div>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <label class="fl">WhatsApp <span class="req">*</span></label>
+      <input class="finput" id="f_whatsapp" type="tel" placeholder="(11) 99999-9999" maxlength="16" oninput="window._waMask&&window._waMask(this)">
+      <div class="req-msg">Campo obrigatório</div>
     </div>
     <div class="field">
       <label class="fl">Cidade / Estado</label>
@@ -1654,15 +1681,153 @@ async function submitForm(){
     function fvp(id){var el=document.getElementById(id);return el?el.value.trim():'';}
     function fvr(nm){var el=document.querySelector('input[name="'+nm+'"]:checked');return el?el.value:'';}
     function fvc(id){var g=document.getElementById(id);if(!g)return '';return Array.from(g.querySelectorAll('input[type=checkbox]:checked')).map(function(cb){return cb.value;}).join(', ');}
-    var nomeP=fvp('f_nome');
-    var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
-    var pats=await patResp.json(),patId=null;
-    if(Array.isArray(pats)){var nl=nomeP.toLowerCase().trim();var ep=pats.find(function(p){return p.nome.toLowerCase()===nl;})||pats.find(function(p){return p.nome.toLowerCase().includes(nl.split(' ')[0]);});if(ep)patId=ep.id;}
-    var preC={id:patId||('p_'+Date.now()),nome:nomeP,idade:fvp('f_idade'),objetivo:fvc('c_incomoda')||fvp('f_incomoda_outro'),obs:[fvp('f_uma_coisa')?'Meta: '+fvp('f_uma_coisa'):'',fvp('f_doencas')?'Doenças: '+fvp('f_doencas'):'',fvp('f_meds')?'Medicações: '+fvp('f_meds'):'',fvp('f_alergias')?'Alergias: '+fvp('f_alergias'):'',fvp('f_emocional')?'Emocional: '+fvp('f_emocional'):''].filter(Boolean).join('\n'),alertas:[fvp('f_alergias')?'🚨 Alergia: '+fvp('f_alergias'):'',fvp('f_doencas')?'⚕️ '+fvp('f_doencas'):''].filter(Boolean),consulta:'D0',status:'ativo',plano:null,criado:new Date().toISOString(),atualizado:new Date().toISOString()};
-    await fetch(SURL+'/rest/v1/patients',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(preC)});
-    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'pre_'+Date.now(),patient_id:(window.cpfGetPatientId&&window.cpfGetPatientId())||patId||preC.id,patient_nome:nomeP,semana:'Pre-consulta',data_envio:new Date().toISOString().slice(0,10),score_total:null,score_pct:null,classificacao:null,padroes:[],peso:fvp('f_peso'),mensagem:fvp('f_mensagem')||fvp('f_uma_coisa'),interpretacao:interpretacao||'',texto_completo:soapTxt||'',criado:new Date().toISOString(),tipo:'pre-consulta'})});
-    localStorage.setItem('hag_active_patient',JSON.stringify({id:preC.id,nome:nomeP,idade:fvp('f_idade'),objetivo:preC.objetivo,alertas:preC.alertas,obs:preC.obs,consulta:'D0',peso_atual:fvp('f_peso'),altura:fvp('f_altura'),peso_meta:fvp('f_peso_meta'),doencas:fvp('f_doencas'),meds:fvp('f_meds'),alergias:fvp('f_alergias'),exercicio:fvp('f_exercicio'),sono:fvr('r_sono_qual'),estresse:fvr('r_estresse'),ts:Date.now()}));
-  }catch(eSupa){console.warn('HAG OS pre-consulta save:',eSupa);}
+    
+    var nomeP = fvp('f_nome');
+    var docTipo = (document.getElementById('f_doc_tipo')||{}).value || 'cpf';
+    var docNum = (window.cpfGetCleanDigits && window.cpfGetCleanDigits()) || '';
+    var waEl = document.getElementById('f_whatsapp');
+    var waDigits = (window._waDigits && window._waDigits(waEl)) || '';
+    var dataNasc = fvp('f_data_nasc');
+    var sexoVal = fvr('r_sexo') || fvc('c_sexo');
+    
+    // ═══ NOVA LÓGICA DE LOOKUP/UPSERT ═══
+    // 1. Se o lookup em tempo real (durante digitação) já achou paciente,
+    //    cpfGetPatientId() retorna o ID. USA ESSE.
+    // 2. Se não achou em tempo real, faz lookup definitivo agora pelo
+    //    documento exato preenchido (cpf, rg ou passaporte).
+    // 3. Se mesmo assim não achar, cria paciente novo COM cpf/rg/passaporte.
+    
+    var patId = (window.cpfGetPatientId && window.cpfGetPatientId()) || null;
+    
+    if(!patId && docNum){
+      // Lookup definitivo pelo documento que o paciente preencheu
+      try {
+        var lookupUrl = SURL + '/rest/v1/patients?' + encodeURIComponent(docTipo) + '=eq.' + encodeURIComponent(docNum) + '&select=id&limit=1';
+        var lookupResp = await fetch(lookupUrl, {headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
+        if(lookupResp.ok){
+          var lookupData = await lookupResp.json();
+          if(Array.isArray(lookupData) && lookupData.length > 0){
+            patId = lookupData[0].id;
+            console.log('[HAG] Paciente encontrado via lookup definitivo, id=' + patId);
+          }
+        }
+      } catch(eLookup){
+        console.warn('[HAG] Lookup definitivo falhou:', eLookup);
+      }
+    }
+    
+    // Montar payload de paciente APENAS se for novo (Q1=A: não atualiza existentes)
+    if(!patId){
+      patId = 'p_' + Date.now();
+      var novoPaciente = {
+        id: patId,
+        nome: nomeP,
+        idade: fvp('f_idade'),
+        objetivo: fvc('c_incomoda') || fvp('f_incomoda_outro'),
+        obs: [
+          fvp('f_uma_coisa') ? 'Meta: ' + fvp('f_uma_coisa') : '',
+          fvp('f_doencas') ? 'Doenças: ' + fvp('f_doencas') : '',
+          fvp('f_meds') ? 'Medicações: ' + fvp('f_meds') : '',
+          fvp('f_alergias') ? 'Alergias: ' + fvp('f_alergias') : '',
+          fvp('f_emocional') ? 'Emocional: ' + fvp('f_emocional') : ''
+        ].filter(Boolean).join('\n'),
+        alertas: [
+          fvp('f_alergias') ? '🚨 Alergia: ' + fvp('f_alergias') : '',
+          fvp('f_doencas') ? '⚕️ ' + fvp('f_doencas') : ''
+        ].filter(Boolean),
+        consulta: 'D0',
+        status: 'ativo',
+        plano: null,
+        criado: new Date().toISOString(),
+        atualizado: new Date().toISOString()
+      };
+      // Adicionar documento conforme tipo escolhido
+      if(docTipo === 'cpf' && docNum) novoPaciente.cpf = docNum;
+      else if(docTipo === 'rg' && docNum) novoPaciente.rg = docNum;
+      else if(docTipo === 'passaporte' && docNum) novoPaciente.passaporte = docNum;
+      // Campos opcionais
+      if(waDigits) novoPaciente.whatsapp = waDigits;
+      if(dataNasc) novoPaciente.data_nascimento = dataNasc;
+      if(sexoVal) novoPaciente.sexo = sexoVal;
+      
+      try {
+        var insertResp = await fetch(SURL+'/rest/v1/patients', {
+          method:'POST',
+          headers:{'apikey':SKEY, 'Authorization':'Bearer '+SKEY, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
+          body: JSON.stringify(novoPaciente)
+        });
+        if(!insertResp.ok){
+          var errTxt = await insertResp.text();
+          // Se conflito de UNIQUE (paciente já existia, race condition), refazer lookup
+          if(insertResp.status === 409 && docNum){
+            console.warn('[HAG] Conflito 409 ao criar paciente, fazendo retry-lookup');
+            var retryUrl = SURL + '/rest/v1/patients?' + encodeURIComponent(docTipo) + '=eq.' + encodeURIComponent(docNum) + '&select=id&limit=1';
+            var retryResp = await fetch(retryUrl, {headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
+            var retryData = await retryResp.json();
+            if(Array.isArray(retryData) && retryData.length > 0){
+              patId = retryData[0].id;
+              console.log('[HAG] Recuperado via retry-lookup, id=' + patId);
+            }
+          } else {
+            console.error('[HAG] Falha ao criar paciente:', insertResp.status, errTxt);
+          }
+        } else {
+          console.log('[HAG] Paciente novo criado, id=' + patId);
+        }
+      } catch(eInsert){
+        console.error('[HAG] Erro de rede ao criar paciente:', eInsert);
+      }
+    } else {
+      console.log('[HAG] Paciente existente reutilizado, id=' + patId + ' (dados básicos preservados)');
+    }
+    
+    // ═══ Salvar checkin SEMPRE (vinculando ao patId correto) ═══
+    var checkinPayload = {
+      id: 'pre_' + Date.now(),
+      patient_id: patId,
+      patient_nome: nomeP,
+      semana: 'Pre-consulta',
+      data_envio: new Date().toISOString().slice(0,10),
+      score_total: null,
+      score_pct: null,
+      classificacao: null,
+      padroes: [],
+      peso: fvp('f_peso'),
+      mensagem: fvp('f_mensagem') || fvp('f_uma_coisa'),
+      interpretacao: interpretacao || '',
+      texto_completo: soapTxt || '',
+      criado: new Date().toISOString(),
+      tipo: 'pre-consulta'
+    };
+    await fetch(SURL+'/rest/v1/checkins', {
+      method:'POST',
+      headers:{'apikey':SKEY, 'Authorization':'Bearer '+SKEY, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
+      body: JSON.stringify(checkinPayload)
+    });
+    
+    // ═══ localStorage para o HAG OS pré-carregar ═══
+    localStorage.setItem('hag_active_patient', JSON.stringify({
+      id: patId,
+      nome: nomeP,
+      idade: fvp('f_idade'),
+      objetivo: fvc('c_incomoda') || fvp('f_incomoda_outro'),
+      alertas: [fvp('f_alergias') ? '🚨 Alergia: ' + fvp('f_alergias') : '', fvp('f_doencas') ? '⚕️ ' + fvp('f_doencas') : ''].filter(Boolean),
+      obs: [fvp('f_uma_coisa') ? 'Meta: ' + fvp('f_uma_coisa') : '', fvp('f_doencas') ? 'Doenças: ' + fvp('f_doencas') : '', fvp('f_meds') ? 'Medicações: ' + fvp('f_meds') : '', fvp('f_alergias') ? 'Alergias: ' + fvp('f_alergias') : '', fvp('f_emocional') ? 'Emocional: ' + fvp('f_emocional') : ''].filter(Boolean).join('\n'),
+      consulta: 'D0',
+      peso_atual: fvp('f_peso'),
+      altura: fvp('f_altura'),
+      peso_meta: fvp('f_peso_meta'),
+      doencas: fvp('f_doencas'),
+      meds: fvp('f_meds'),
+      alergias: fvp('f_alergias'),
+      exercicio: fvp('f_exercicio'),
+      sono: fvr('r_sono_qual'),
+      estresse: fvr('r_estresse'),
+      whatsapp: waDigits,
+      data_nascimento: dataNasc,
+      ts: Date.now()
+    }));
+  }catch(eSupa){console.warn('HAG OS pre-consulta save:', eSupa);}
 
   // ── PASSO 3: Enviar via Web3Forms ────────────────────────────────────────
   if(!WEB3FORMS_KEY||WEB3FORMS_KEY==='SEU_ACCESS_KEY_AQUI'){
