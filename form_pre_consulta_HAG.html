@@ -1867,6 +1867,45 @@ function copiarSoap(){
     navigator.clipboard.writeText(ta.value).catch(function(){ alert('Use Ctrl+C.'); });
   }
 }
+
+/* ═══ Helper Claude via proxy seguro ═══ */
+var HAG_PROXY = 'https://yutcnphwovqeiwcwzzhs.supabase.co/functions/v1/claude-proxy';
+var HAG_SKEY  = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+
+async function hagCallClaude(messages, maxTokens) {
+  maxTokens = maxTokens || 800;
+  var resp = await fetch(HAG_PROXY, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + HAG_SKEY,
+      'apikey': HAG_SKEY
+    },
+    body: JSON.stringify({ messages: messages, max_tokens: maxTokens })
+  });
+  if (!resp.ok) throw new Error('Proxy error HTTP ' + resp.status);
+  var data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+/* Admin bar visibility */
+function hagSaveKey() {
+  var st = document.getElementById('hagApiSt');
+  if(st) { st.textContent = 'A chave é configurada diretamente no painel do Supabase.'; st.className = 'hag-api-st ok'; }
+}
+
+(function hagInitAdmin() {
+  function _init() {
+    var isAdmin = window.location.search.indexOf('admin=1') > -1;
+    var bar = document.getElementById('hagApiBar');
+    if (bar && isAdmin) bar.classList.add('visible');
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else { _init(); }
+})();
+
 </script>
 </body>
 </html>
