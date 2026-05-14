@@ -1435,6 +1435,26 @@ async function enviarCheckin(){
   if(taErr) taErr.value=msg;
   window.scrollTo({top:0,behavior:'smooth'});
 
+  /* === HAG - Claude via Supabase Proxy (injetado pelo patch A2) === */
+  var HAG_PROXY = 'https://yutcnphwovqeiwcwzzhs.supabase.co/functions/v1/claude-proxy';
+  var HAG_SKEY  = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+  async function hagCallClaude(messages, maxTokens) {
+    maxTokens = maxTokens || 800;
+    var resp = await fetch(HAG_PROXY, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + HAG_SKEY,
+        'apikey': HAG_SKEY
+      },
+      body: JSON.stringify({ messages: messages, max_tokens: maxTokens })
+    });
+    if (!resp.ok) throw new Error('Proxy error HTTP ' + resp.status);
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+  }
+
   // Interpretação clínica via Claude
   var interpretacao='';
   try{
