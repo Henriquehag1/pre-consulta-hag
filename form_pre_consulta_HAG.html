@@ -1049,6 +1049,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       <div class="chip-opt" onclick="toggleChipSingle(this,'c_conheceu')"><span class="chip-check"></span>Outro</div>
     </div>
     <input class="finput" id="f_conheceu_outro" type="text" placeholder="Se outro, especifique..." style="margin-top:.625rem;display:none">
+    <input class="finput" id="f_indicacao_nome" type="text" placeholder="Nome de quem indicou você" style="margin-top:.625rem;display:none">
   </div>
   <div class="nav-row">
     <div></div>
@@ -1648,6 +1649,13 @@ function toggleChipSingle(el,gid){
   el.classList.add('on');
   var outro=document.getElementById('f_conheceu_outro');
   if(outro) outro.style.display=el.textContent.trim()==='Outro'?'block':'none';
+  var indic=document.getElementById('f_indicacao_nome');
+  if(indic){
+    var t=el.textContent.trim();
+    var ehIndicacao = (t==='Indicação médica' || t==='Indicação de amigo');
+    indic.style.display = ehIndicacao ? 'block' : 'none';
+    if(!ehIndicacao) indic.value='';
+  }
 }
 function toggleRadio(el,gid){
   var g=document.getElementById(gid);
@@ -1693,6 +1701,7 @@ function buildSoapText(){
     'Endereço: '+fv('f_rua')+', '+fv('f_numero')+(fv('f_complemento')!=='—'?' · '+fv('f_complemento'):''),
     'Bairro: '+fv('f_bairro')+' · Cidade: '+fv('f_cidade_nf')+' / '+fv('f_estado'),
     'Como conheceu: '+chips('c_conheceu')+(fv('f_conheceu_outro')!=='—'?' — '+fv('f_conheceu_outro'):''),
+    (fv('f_indicacao_nome')!=='—'?'Indicado por: '+fv('f_indicacao_nome'):'Indicado por: —'),
     '',L,
     'MOTIVO PRINCIPAL',
     'Incomoda hoje: '+chips('c_incomoda')+(fv('f_incomoda_outro')!=='—'?' — '+fv('f_incomoda_outro'):''),
