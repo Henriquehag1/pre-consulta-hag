@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HAG OS · Respostas dos Pacientes</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#f8f7f4;--bg2:#f2f0eb;--surface:#ffffff;--surface2:#faf9f7;--surface3:#f2f0eb;
+  --border:#e8e4dc;--border2:#d4cfc4;
+  --ink:#1a1a18;--ink2:#5a5a52;--ink3:#9a9a8e;
+  --gold:#b8922a;--gold-dim:#8a6820;--gold-bg:#f5ede0;--gold-border:#e8d5b0;--gold-glow:rgba(184,146,42,.06);
+  --blue:#2563a8;--blue-bg:#edf4fc;--blue-border:#b8d4f0;
+  --green:#2d7a45;--green-bg:#edf7f0;--green-border:#b8dfc5;
+  --red:#c0392b;--red-bg:#fdf0ee;--red-border:#f0c4be;
+  --amber:#c07020;--amber-bg:#fef6ec;--amber-border:#f0d4a8;
+  --purple:#6b46c1;--purple-bg:#f3f0fc;--purple-border:#c4b8e8;
+  --r:10px;--rsm:6px;--rxs:4px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 4px 16px rgba(0,0,0,.07),0 1px 4px rgba(0,0,0,.04);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.1),0 4px 12px rgba(0,0,0,.05);
+  --fd:'Playfair Display',Georgia,serif;
+  --fb:'DM Sans',system-ui,sans-serif;
+  --fm:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fb);background:var(--bg);color:var(--ink);font-size:13px;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.shell{max-width:1100px;margin:0 auto;padding:0 24px 80px;position:relative;z-index:1}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;background:var(--bg);position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;border-radius:8px;background:var(--ink);border:none;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:14px;font-weight:500;color:#fff}
+.brand-name{font-family:var(--fd);font-size:16px;font-weight:400;color:var(--ink)}
+.brand-crm{font-family:var(--fm);font-size:9.5px;color:var(--ink3);letter-spacing:.1em;margin-top:1px}
+.back-btn{font-family:var(--fm);font-size:10px;padding:6px 13px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2);color:var(--ink3);cursor:pointer;transition:all .14s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.back-btn:hover{color:var(--ink)}
+.hero{padding:32px 0 24px;border-bottom:1px solid var(--border)}
+.hero-eye{font-family:var(--fm);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.hero-eye::before{content:'';width:16px;height:1px;background:var(--gold-dim)}
+.hero-title{font-family:var(--fd);font-size:38px;font-weight:300;color:var(--ink);margin-bottom:6px;letter-spacing:-.3px}
+.hero-title em{font-style:italic;color:var(--gold)}
+.hero-sub{font-size:12.5px;color:var(--ink3)}
+/* FILTERS */
+.filters{display:flex;align-items:center;gap:8px;padding:20px 0 16px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:20px}
+.filter-btn{font-family:var(--fm);font-size:10px;font-weight:500;padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--ink3);cursor:pointer;transition:all .12s;white-space:nowrap}
+.filter-btn:hover{background:var(--surface2);color:var(--ink)}
+.filter-btn.active{background:var(--gold-bg);color:var(--gold);border-color:var(--gold-border)}
+.search-wrap{position:relative;margin-left:auto}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:12px;pointer-events:none}
+.search-input{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:7px 11px 7px 30px;font-family:var(--fb);font-size:12px;color:var(--ink);outline:none;width:220px;transition:all .14s}
+.search-input::placeholder{color:var(--ink3)}
+.search-input:focus{border-color:var(--gold-dim);box-shadow:0 0 0 3px rgba(200,168,74,.08)}
+/* DATE GROUPS */
+.date-group{margin-bottom:28px}
+.date-label{font-family:var(--fm);font-size:9.5px;font-weight:500;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);padding:8px 0;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.date-label::after{content:'';flex:1;height:1px;background:var(--border)}
+/* RESPONSE CARDS */
+.resp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:8px;transition:border-color .14s}
+.resp-card:hover{border-color:var(--border2)}
+.resp-card.verde{border-left:3px solid var(--green)}
+.resp-card.amarelo{border-left:3px solid var(--amber)}
+.resp-card.vermelho{border-left:3px solid var(--red)}
+.resp-card.pre-consulta{border-left:3px solid var(--blue)}
+.resp-card.trimestral{border-left:3px solid var(--gold)}
+.resp-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer}
+.resp-avatar{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:14px;font-weight:500;color:#fff;flex-shrink:0}
+.resp-info{flex:1;min-width:0}
+.resp-name{font-family:var(--fd);font-size:14px;font-weight:400;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resp-meta{font-size:11px;color:var(--ink3);margin-top:2px}
+.resp-badges{display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.badge{font-family:var(--fm);font-size:9.5px;font-weight:500;padding:3px 8px;border-radius:10px}
+.b-semanal{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+.b-trimestral{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-border)}
+.b-pre{background:var(--purple-bg,rgba(155,114,208,.08));color:#9b72d0;border:1px solid rgba(155,114,208,.2)}
+.b-verde{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.b-amarelo{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+.b-vermelho{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.score-pill{font-family:var(--fm);font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px}
+.toggle-arrow{font-size:12px;color:var(--ink3);transition:transform .2s;flex-shrink:0}
+.toggle-arrow.open{transform:rotate(180deg)}
+/* FULL TEXT */
+.resp-body{display:none;border-top:1px solid var(--border);padding:16px 18px;background:var(--bg2)}
+.resp-body.open{display:block}
+.resp-texto{font-family:var(--fm);font-size:11.5px;color:var(--ink2);line-height:1.8;white-space:pre-wrap;word-break:break-word}
+.resp-interp{margin-top:14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm)}
+.resp-interp-label{font-family:var(--fm);font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:8px}
+.resp-interp-text{font-size:12.5px;color:var(--ink2);line-height:1.75;white-space:pre-wrap}
+/* SCORES MINI */
+.resp-scores{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sc-chip{font-family:var(--fm);font-size:9.5px;padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--ink3);border:1px solid var(--border)}
+.sc-chip.high{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.sc-chip.mid{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
+.sc-chip.low{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;transition:opacity .4s}
+.loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-logo{font-family:var(--fd);font-size:36px;font-weight:300;color:var(--gold)}
+.loading-sub{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.loading-bar{width:180px;height:1px;background:var(--border);border-radius:2px;overflow:hidden}
+.loading-bar-fill{height:100%;background:var(--gold);animation:lf 1.8s ease infinite}
+@keyframes lf{0%{width:0;opacity:1}80%{width:100%;opacity:1}100%{width:100%;opacity:0}}
+.empty{text-align:center;padding:60px;color:var(--ink3)}
+.empty-icon{font-size:28px;margin-bottom:12px;opacity:.25}
+.empty-title{font-family:var(--fd);font-size:18px;color:var(--ink2);margin-bottom:6px}
+@media(max-width:700px){.shell{padding:0 14px 60px}.hero-title{font-size:28px}.search-input{width:100%}.search-wrap{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="ls">
+  <div class="loading-logo">HAG OS</div>
+  <div class="loading-sub">Carregando respostas</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">HG</div>
+      <div><div class="brand-name">Dr. Henrique Gonzaga</div><div class="brand-crm">CRM/SP 226530 &middot; METODO HAG</div></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <a class="back-btn" href="acompanhamento_semanal_HAG.html">📊 Painel Semanal</a>
+      <a class="back-btn" href="index_HAG.html">&#8592; Voltar ao painel</a>
+    </div>
+  </div>
+  <div class="hero">
+    <div class="hero-eye">Arquivo</div>
+    <div class="hero-title">Respostas dos <em>pacientes</em></div>
+    <div class="hero-sub">Todos os formularios respondidos, organizados por data — semanal, trimestral e pre-consulta</div>
+  </div>
+  <div class="filters">
+    <button class="filter-btn active" data-tipo="all" onclick="setTipo('all')">Todos <span id="cnt-all"></span></button>
+    <button class="filter-btn" data-tipo="semanal" onclick="setTipo('semanal')">Semanal <span id="cnt-semanal"></span></button>
+    <button class="filter-btn" data-tipo="trimestral" onclick="setTipo('trimestral')">Trimestral <span id="cnt-trimestral"></span></button>
+    <button class="filter-btn" data-tipo="pre-consulta" onclick="setTipo('pre-consulta')">Pre-consulta <span id="cnt-preconsulta"></span></button>
+    <button class="filter-btn b-verde" data-cls="verde" onclick="setCls('verde')" style="background:transparent">Excelente</button>
+    <button class="filter-btn" data-cls="amarelo" onclick="setCls('amarelo')">Atencao</button>
+    <button class="filter-btn" data-cls="vermelho" onclick="setCls('vermelho')">Intervencao</button>
+    <div class="search-wrap">
+      <span class="search-icon">&#8981;</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar por paciente..." oninput="render()">
+    </div>
+  </div>
+  <div id="listArea"></div>
+</div>
+<script>
+const SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+const SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+const {createClient}=window.supabase;
+const db=createClient(SURL,SKEY);
+const AC=['#1a5fa8','#2d7a3a','#7c3a8a','#b45309','#1a7a6a','#8a3a1a','#3a5a8a','#5a3a7a','#2a6a4a','#6a2a4a'];
+function gac(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);return AC[Math.abs(h)%AC.length];}
+function gin(n){const p=n.trim().split(' ').filter(Boolean);return p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();}
+let _all=[], _tipo='all', _cls='';
+function setTipo(t){_tipo=t;_cls='';document.querySelectorAll('.filter-btn[data-tipo]').forEach(b=>b.classList.toggle('active',b.dataset.tipo===t));document.querySelectorAll('.filter-btn[data-cls]').forEach(b=>b.classList.remove('active'));render();}
+function setCls(c){_cls=_cls===c?'':c;document.querySelectorAll('.filter-btn[data-cls]').forEach(b=>b.classList.toggle('active',b.dataset.cls===c&&_cls===c));render();}
+function scChipCls(v){return v>=4?'high':v>=2?'mid':v!==null&&v!==undefined&&v>=0?'low':'';}
+function render(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  let list=_all.filter(r=>{
+    if(q&&!r.patient_nome.toLowerCase().includes(q))return false;
+    if(_tipo!=='all'&&r.tipo!==_tipo)return false;
+    if(_cls&&r.classificacao!==_cls)return false;
+    return true;
+  });
+  // Update counts
+  document.getElementById('cnt-all').textContent='('+_all.length+')';
+  document.getElementById('cnt-semanal').textContent='('+_all.filter(r=>r.tipo==='semanal').length+')';
+  document.getElementById('cnt-trimestral').textContent='('+_all.filter(r=>r.tipo==='trimestral').length+')';
+  var _elPre=document.getElementById('cnt-preconsulta'); if(_elPre) _elPre.textContent='('+_all.filter(r=>r.tipo==='pre-consulta').length+')';
+  const area=document.getElementById('listArea');
+  if(!list.length){
+    area.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">Nenhuma resposta encontrada</div></div>';
+    return;
+  }
+  // Group by date
+  const groups={};
+  list.forEach(r=>{
+    const d=r.data_envio||r.criado?.slice(0,10)||'desconhecido';
+    if(!groups[d])groups[d]=[];
+    groups[d].push(r);
+  });
+  const sortedDates=Object.keys(groups).sort((a,b)=>b.localeCompare(a));
+  area.innerHTML=sortedDates.map(date=>{
+    const label=date==='desconhecido'?'Data desconhecida':new Date(date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const cards=groups[date].map(r=>buildCard(r)).join('');
+    return '<div class="date-group"><div class="date-label">'+label+'</div>'+cards+'</div>';
+  }).join('');
+}
+function buildCard(r){
+  const color=gac(r.patient_nome);
+  const inits=gin(r.patient_nome);
+  const tipo=r.tipo||'semanal';
+  const cls=r.classificacao||'';
+  const cardCls='resp-card '+(cls||tipo==='trimestral'?tipo==='trimestral'?'trimestral':cls:'');
+  const typeBadge=tipo==='trimestral'?'<span class="badge b-trimestral">Trimestral</span>':tipo==='pre-consulta'?'<span class="badge b-pre">Pre-consulta</span>':'<span class="badge b-semanal">Semanal</span>';
+  const clsBadge=cls?'<span class="badge b-'+cls+'">'+(cls==='verde'?'Excelente':cls==='amarelo'?'Atencao':'Intervencao')+'</span>':'';
+  const scorePill=r.score_pct!=null?'<span class="score-pill" style="background:'+(r.score_pct>=70?'var(--green-bg)':r.score_pct>=45?'var(--amber-bg)':'var(--red-bg)')+';color:'+(r.score_pct>=70?'var(--green)':r.score_pct>=45?'var(--amber)':'var(--red)')+';border:1px solid '+(r.score_pct>=70?'var(--green-border)':r.score_pct>=45?'var(--amber-border)':'var(--red-border)')+'">'+r.score_pct+'%</span>':'';
+  const semana=r.semana?'<span style="font-family:var(--fm);font-size:9.5px;color:var(--ink3)">'+r.semana+'</span>':'';
+  // Format date + time
+  const dataHora=(function(){
+    const d=r.criado||r.data_envio;
+    if(!d)return '';
+    try{
+      const dt=new Date(d);
+      const date=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const time=dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      return '<span style="font-family:var(--fm);font-size:9.5px;color:var(--ink3)">&#128197; '+date+' &middot; '+time+'</span>';
+    }catch(e){return '';}
+  }());
+  // Score chips
+  const scoreFields=[['Dieta',r.s_dieta],['Treino',r.s_treino],['Sono',r.s_sono],['Fome',r.s_fome],['Energia',r.s_energia],['Med',r.s_med]];
+  const chips=scoreFields.filter(s=>s[1]!=null).map(s=>'<span class="sc-chip '+scChipCls(s[1])+'">'+s[0]+' '+s[1]+'/5</span>').join('');
+  const id='rc_'+r.id.replace(/[^a-z0-9]/gi,'_');
+  // Peso if present
+  const pesoStr=r.peso?'<span style="font-family:var(--fm);font-size:10px;color:var(--ink3)">&#9878; '+r.peso+'</span>':'';
+  return '<div class="'+cardCls+'" id="'+id+'">' +
+    '<div class="resp-head" data-cid="'+id+'">' +
+      '<div class="resp-avatar" style="background:'+color+'">'+inits+'</div>' +
+      '<div class="resp-info">' +
+        '<div class="resp-name">'+r.patient_nome+'</div>' +
+        '<div class="resp-meta">'+dataHora+' '+semana+' '+pesoStr+'</div>' +
+        (chips?'<div class="resp-scores">'+chips+'</div>':'') +
+      '</div>' +
+      '<div class="resp-badges">'+typeBadge+clsBadge+scorePill+'</div>' +
+      '<span class="toggle-arrow" id="arr_'+id+'">&#9660;</span>' +
+    '</div>' +
+    '<div class="resp-body" id="body_'+id+'">' +
+      (r.texto_completo?'<div class="resp-texto">'+r.texto_completo.replace(/</g,'&lt;')+'</div>':'<div style="color:var(--ink3);font-size:12px;padding:8px 0">Texto completo nao disponivel para este registro.</div>') +
+      (r.interpretacao?'<div class="resp-interp"><div class="resp-interp-label">Interpretacao clinica (IA)</div><div class="resp-interp-text">'+r.interpretacao.replace(/</g,'&lt;')+'</div></div>':'') +
+    '</div>' +
+  '</div>';
+}
+function toggleCard(id){
+  const body=document.getElementById('body_'+id);
+  const arr=document.getElementById('arr_'+id);
+  if(body){body.classList.toggle('open');}
+  if(arr){arr.classList.toggle('open');}
+}
+// Click handler using event delegation
+document.addEventListener('click',function(e){
+  const head=e.target.closest('.resp-head');
+  if(head&&head.dataset.cid){toggleCard(head.dataset.cid);}
+});
+// Real-time
+db.channel('ci-rt').on('postgres_changes',{event:'*',schema:'public',table:'checkins'},async()=>{await load();}).subscribe();
+async function load(){
+  const{data}=await db.from('checkins').select('*').order('data_envio',{ascending:false});
+  _all=data||[];
+  render();
+}
+async function init(){
+  // Cross-link: pré-aplica filtro ?patient=NOME se vier do Painel Semanal
+  try{
+    const urlParams=new URLSearchParams(window.location.search);
+    const patientFilter=urlParams.get('patient');
+    if(patientFilter){
+      const si=document.getElementById('searchInput');
+      if(si)si.value=decodeURIComponent(patientFilter);
+    }
+  }catch(e){}
+  try{await load();}catch(e){console.error(e);}finally{
+    const ls=document.getElementById('ls');
+    ls.classList.add('hidden');
+    setTimeout(()=>ls.style.display='none',500);
+  }
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
