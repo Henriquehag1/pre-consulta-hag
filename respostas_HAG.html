@@ -134,6 +134,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <button class="filter-btn" data-tipo="semanal" onclick="setTipo('semanal')">Semanal <span id="cnt-semanal"></span></button>
     <button class="filter-btn" data-tipo="trimestral" onclick="setTipo('trimestral')">Trimestral <span id="cnt-trimestral"></span></button>
     <button class="filter-btn" data-tipo="pre-consulta" onclick="setTipo('pre-consulta')">Pre-consulta <span id="cnt-preconsulta"></span></button>
+    <button class="filter-btn" data-tipo="mensal" onclick="setTipo('mensal')">Mensal <span id="cnt-mensal"></span></button>
     <button class="filter-btn b-verde" data-cls="verde" onclick="setCls('verde')" style="background:transparent">Excelente</button>
     <button class="filter-btn" data-cls="amarelo" onclick="setCls('amarelo')">Atencao</button>
     <button class="filter-btn" data-cls="vermelho" onclick="setCls('vermelho')">Intervencao</button>
@@ -169,6 +170,7 @@ function render(){
   document.getElementById('cnt-semanal').textContent='('+_all.filter(r=>r.tipo==='semanal').length+')';
   document.getElementById('cnt-trimestral').textContent='('+_all.filter(r=>r.tipo==='trimestral').length+')';
   var _elPre=document.getElementById('cnt-preconsulta'); if(_elPre) _elPre.textContent='('+_all.filter(r=>r.tipo==='pre-consulta').length+')';
+  var _elMes=document.getElementById('cnt-mensal'); if(_elMes) _elMes.textContent='('+_all.filter(r=>r.tipo==='mensal').length+')';
   const area=document.getElementById('listArea');
   if(!list.length){
     area.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">Nenhuma resposta encontrada</div></div>';
