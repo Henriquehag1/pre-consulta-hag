@@ -583,6 +583,36 @@ input[type="number"], input[type="date"], select, textarea {
 <script>
 /* ═══ Globals para o sistema de documento flexível ═══ */
 var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
+
+/* ═══ CEP: mascara + busca ViaCEP (patch 2026-06-14) ═══ */
+window._cepMask = function(el){
+  var v = (el.value||'').replace(/\D/g,'').substring(0,8);
+  if(v.length>5){ v = v.substring(0,5)+'-'+v.substring(5); }
+  el.value = v;
+};
+window._cepBuscar = function(el){
+  var cep = (el.value||'').replace(/\D/g,'');
+  var st = document.getElementById('cepStatus');
+  if(cep.length !== 8){ if(st) st.textContent=''; return; }
+  if(st){ st.textContent = 'Buscando endereço...'; st.style.color='#6b6a63'; }
+  fetch('https://viacep.com.br/ws/'+cep+'/json/')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d && !d.erro){
+        var setIf = function(id,val){ var e=document.getElementById(id); if(e && !e.value.trim() && val){ e.value = val; } };
+        setIf('f_rua', d.logradouro);
+        setIf('f_bairro', d.bairro);
+        setIf('f_cidade_nf', d.localidade);
+        setIf('f_estado', d.uf);
+        if(st){ st.textContent = '✓ Endereço encontrado'; st.style.color='#5a7a52'; }
+        var num = document.getElementById('f_numero'); if(num) num.focus();
+      } else {
+        if(st){ st.textContent = 'CEP não encontrado, preencha manualmente'; st.style.color='#a06a3a'; }
+      }
+    })
+    .catch(function(){ if(st){ st.textContent = 'Não foi possível buscar, preencha manualmente'; st.style.color='#a06a3a'; } });
+};
+
 var SKEY = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 /* ═══ Documentos flexíveis: CPF | RG | Passaporte ═══ */
 /* CPF: 11 dígitos + checksum */
@@ -940,6 +970,75 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <label class="fl">Profissão</label>
     <input class="finput" id="f_profissao" type="text" placeholder="Qual é a sua ocupação?">
   </div>
+
+  <!-- ═══ DADOS PARA NOTA FISCAL E PRONTUÁRIO (patch 2026-06-14) ═══ -->
+  <div style="margin:1.5rem 0 .75rem;padding:.75rem .875rem;background:#f4f1ea;border:1px solid #e3ddd0;border-radius:10px">
+    <div style="font-size:12px;font-weight:600;color:#3a3a36;letter-spacing:.02em">Dados para emissão de nota fiscal</div>
+    <div style="font-size:11px;font-weight:500;color:#6b6a63;margin-top:3px;line-height:1.4">Preencha uma única vez aqui. Esses dados são usados para emitir sua nota fiscal e completar seu prontuário, então você não precisa enviá-los separadamente.</div>
+  </div>
+
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Sexo</label>
+      <select class="finput" id="f_sexo">
+        <option value="">Selecione</option>
+        <option value="Feminino">Feminino</option>
+        <option value="Masculino">Masculino</option>
+        <option value="Outro">Outro</option>
+        <option value="Prefiro não informar">Prefiro não informar</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="fl">E-mail <span class="req">*</span></label>
+      <input class="finput" id="f_email" type="email" placeholder="seu@email.com" autocomplete="email">
+      <div class="req-msg">Campo obrigatório</div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="field">
+      <label class="fl">CEP <span class="req">*</span></label>
+      <input class="finput" id="f_cep" type="text" inputmode="numeric" placeholder="00000-000" maxlength="9" autocomplete="postal-code" oninput="window._cepMask&&window._cepMask(this)" onblur="window._cepBuscar&&window._cepBuscar(this)">
+      <div class="req-msg">Campo obrigatório</div>
+      <div class="doc-status" id="cepStatus"></div>
+    </div>
+    <div class="field">
+      <label class="fl">Número <span class="req">*</span></label>
+      <input class="finput" id="f_numero" type="text" placeholder="Ex: 208" autocomplete="address-line2">
+      <div class="req-msg">Campo obrigatório</div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="fl">Rua / Logradouro <span class="req">*</span></label>
+    <input class="finput" id="f_rua" type="text" placeholder="Preenchido pelo CEP" autocomplete="address-line1">
+    <div class="req-msg">Campo obrigatório</div>
+  </div>
+
+  <div class="field">
+    <label class="fl">Complemento</label>
+    <input class="finput" id="f_complemento" type="text" placeholder="Apto, bloco, referência (opcional)">
+  </div>
+
+  <div class="g2">
+    <div class="field">
+      <label class="fl">Bairro <span class="req">*</span></label>
+      <input class="finput" id="f_bairro" type="text" placeholder="Preenchido pelo CEP" autocomplete="address-level3">
+      <div class="req-msg">Campo obrigatório</div>
+    </div>
+    <div class="field">
+      <label class="fl">Cidade <span class="req">*</span></label>
+      <input class="finput" id="f_cidade_nf" type="text" placeholder="Preenchido pelo CEP" autocomplete="address-level2">
+      <div class="req-msg">Campo obrigatório</div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="fl">Estado (UF) <span class="req">*</span></label>
+    <input class="finput" id="f_estado" type="text" placeholder="Ex: SP" maxlength="2" style="text-transform:uppercase" autocomplete="address-level1">
+    <div class="req-msg">Campo obrigatório</div>
+  </div>
+  <!-- ═══ FIM DADOS NOTA FISCAL ═══ -->
   <div class="field">
     <label class="fl">Como você me conheceu?</label>
     <div class="chips-group" id="c_conheceu">
@@ -1498,7 +1597,7 @@ function showStep(n){
 function validateStep(n){
   var ok=true;
   if(n===1){
-    ok=req('f_nome');
+    ok=req('f_nome')&req('f_email')&req('f_cep')&req('f_numero')&req('f_rua')&req('f_bairro')&req('f_cidade_nf')&req('f_estado');
   } else if(n===2){
     ok=reqChips('c_incomoda')&req('f_uma_coisa');
   } else if(n===3){
@@ -1587,6 +1686,12 @@ function buildSoapText(){
     'Nome: '+fv('f_nome'),
     'Idade: '+fv('f_idade')+' · Cidade: '+fv('f_cidade'),
     'Profissão: '+fv('f_profissao'),
+    'Sexo: '+fv('f_sexo')+' · E-mail: '+fv('f_email'),
+    '',L,
+    'DADOS PARA NOTA FISCAL',
+    'CEP: '+fv('f_cep'),
+    'Endereço: '+fv('f_rua')+', '+fv('f_numero')+(fv('f_complemento')!=='—'?' · '+fv('f_complemento'):''),
+    'Bairro: '+fv('f_bairro')+' · Cidade: '+fv('f_cidade_nf')+' / '+fv('f_estado'),
     'Como conheceu: '+chips('c_conheceu')+(fv('f_conheceu_outro')!=='—'?' — '+fv('f_conheceu_outro'):''),
     '',L,
     'MOTIVO PRINCIPAL',
@@ -1688,7 +1793,17 @@ async function submitForm(){
     var waEl = document.getElementById('f_whatsapp');
     var waDigits = (window._waDigits && window._waDigits(waEl)) || '';
     var dataNasc = fvp('f_data_nasc');
-    var sexoVal = fvr('r_sexo') || fvc('c_sexo');
+    var sexoVal = fvr('r_sexo') || fvc('c_sexo') || fvp('f_sexo');
+    // ═══ Dados de nota fiscal (patch 2026-06-14) ═══
+    var emailVal = fvp('f_email');
+    var cepVal = (document.getElementById('f_cep')||{}).value || '';
+    cepVal = cepVal.replace(/\D/g,'');
+    var ruaVal = fvp('f_rua');
+    var numeroVal = fvp('f_numero');
+    var complementoVal = fvp('f_complemento');
+    var bairroVal = fvp('f_bairro');
+    var cidadeNfVal = fvp('f_cidade_nf');
+    var estadoVal = (fvp('f_estado')||'').toUpperCase();
     
     // ═══ NOVA LÓGICA DE LOOKUP/UPSERT ═══
     // 1. Se o lookup em tempo real (durante digitação) já achou paciente,
@@ -1749,6 +1864,15 @@ async function submitForm(){
       if(waDigits) novoPaciente.whatsapp = waDigits;
       if(dataNasc) novoPaciente.data_nascimento = dataNasc;
       if(sexoVal) novoPaciente.sexo = sexoVal;
+      // ═══ Dados de nota fiscal (patch 2026-06-14) ═══
+      if(emailVal) novoPaciente.email = emailVal;
+      if(cepVal) novoPaciente.cep = cepVal;
+      if(ruaVal) novoPaciente.endereco_rua = ruaVal;
+      if(numeroVal) novoPaciente.endereco_numero = numeroVal;
+      if(complementoVal) novoPaciente.endereco_complemento = complementoVal;
+      if(bairroVal) novoPaciente.endereco_bairro = bairroVal;
+      if(cidadeNfVal) novoPaciente.endereco_cidade = cidadeNfVal;
+      if(estadoVal) novoPaciente.endereco_uf = estadoVal;
       
       try {
         var insertResp = await fetch(SURL+'/rest/v1/patients', {
