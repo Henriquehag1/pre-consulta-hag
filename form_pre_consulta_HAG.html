@@ -1758,6 +1758,9 @@ function buildSoapText(){
 async function submitForm(){
   if(!validateStep(10)) return;
   var soapTxt=buildSoapText();
+  // _HAG_PATCH_BLINDAGEM_v1 : rastreio de falha de gravacao no HAG OS
+  var _hagGravouOK = true;
+  var _hagFalhaMotivo = '';
   showStep(11);
   document.getElementById('screenSending').style.display='block';
   document.getElementById('screenSuccess').style.display='none';
@@ -1903,12 +1906,16 @@ async function submitForm(){
             }
           } else {
             console.error('[HAG] Falha ao criar paciente:', insertResp.status, errTxt);
+            _hagGravouOK = false;
+            _hagFalhaMotivo = 'criar paciente HTTP ' + insertResp.status;
           }
         } else {
           console.log('[HAG] Paciente novo criado, id=' + patId);
         }
       } catch(eInsert){
         console.error('[HAG] Erro de rede ao criar paciente:', eInsert);
+        _hagGravouOK = false;
+        _hagFalhaMotivo = 'rede ao criar paciente';
       }
     } else {
       console.log('[HAG] Paciente existente reutilizado, id=' + patId + ' (dados básicos preservados)');
@@ -1932,11 +1939,30 @@ async function submitForm(){
       criado: new Date().toISOString(),
       tipo: 'pre-consulta'
     };
-    await fetch(SURL+'/rest/v1/checkins', {
-      method:'POST',
-      headers:{'apikey':SKEY, 'Authorization':'Bearer '+SKEY, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
-      body: JSON.stringify(checkinPayload)
-    });
+    // _HAG_PATCH_BLINDAGEM_v1 : so grava checkin se o paciente existe de fato
+    // (a tabela checkins tem FK para patients; sem paciente, o checkin e rejeitado)
+    if(_hagGravouOK && patId){
+      try{
+        var _ckResp = await fetch(SURL+'/rest/v1/checkins', {
+          method:'POST',
+          headers:{'apikey':SKEY, 'Authorization':'Bearer '+SKEY, 'Content-Type':'application/json', 'Prefer':'return=minimal'},
+          body: JSON.stringify(checkinPayload)
+        });
+        if(!_ckResp.ok){
+          var _ckErr = await _ckResp.text();
+          console.error('[HAG] Falha ao gravar checkin:', _ckResp.status, _ckErr);
+          _hagGravouOK = false;
+          _hagFalhaMotivo = 'gravar resposta HTTP ' + _ckResp.status;
+        }
+      }catch(eCk){
+        console.error('[HAG] Erro de rede ao gravar checkin:', eCk);
+        _hagGravouOK = false;
+        _hagFalhaMotivo = 'rede ao gravar resposta';
+      }
+    } else if(!patId){
+      _hagGravouOK = false;
+      if(!_hagFalhaMotivo) _hagFalhaMotivo = 'paciente nao criado';
+    }
     
     // ═══ localStorage para o HAG OS pré-carregar ═══
     localStorage.setItem('hag_active_patient', JSON.stringify({
@@ -1969,7 +1995,18 @@ async function submitForm(){
     return;
   }
   try{
-    var msg=soapTxt;
+    // _HAG_PATCH_BLINDAGEM_v1 : se a gravacao no HAG OS falhou, avisa no topo do email
+    var _avisoTopo = '';
+    if(!_hagGravouOK){
+      _avisoTopo = '=================================================\n'
+        + '*** ATENCAO: FALHA AO GRAVAR NO HAG OS ***\n'
+        + 'Este paciente NAO entrou no sistema automaticamente.\n'
+        + 'Motivo tecnico: ' + (_hagFalhaMotivo || 'desconhecido') + '\n'
+        + 'ACAO: cadastrar este paciente manualmente no HAG OS usando\n'
+        + 'os dados abaixo (+ Nova Paciente).\n'
+        + '=================================================\n\n';
+    }
+    var msg=_avisoTopo+soapTxt;
     if(interpretacao){var nl2=String.fromCharCode(10),sep='=================================================';msg+=nl2+sep+nl2+'ANALISE DIAGNOSTICA PREVIA - uso exclusivo Dr. Henrique'+nl2+sep+nl2+nl2+interpretacao+nl2+nl2+sep+nl2+'[Gerado automaticamente]'+nl2;}
     var resp=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({access_key:WEB3FORMS_KEY,subject:'Pré-Consulta HAG — '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',from_name:'Formulário HAG — '+fv('f_nome'),message:msg})});
     var result=await resp.json();
