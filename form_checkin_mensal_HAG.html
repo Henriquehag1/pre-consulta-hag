@@ -587,6 +587,46 @@ input[type="number"], input[type="date"], select, textarea {
 /* ═══ Globals para o sistema de documento flexível ═══ */
 var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
 var SKEY = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+
+/* HAG: identificacao do paciente pelo link (?patient=<id>) */
+/* Privacidade + preparacao para RLS: o paciente vem do parametro do link; */
+/* nao lemos mais a lista de pacientes. */
+window.HAG_URL_PID = (function(){
+  try{
+    var q = new URLSearchParams(window.location.search);
+    return q.get('patient') || q.get('pid') || q.get('id') || '';
+  }catch(e){ return ''; }
+})();
+(function(){
+  function _gate(){
+    if(window.HAG_URL_PID){
+      /* Identificado pelo link: dispensa o campo de documento. */
+      var dt = document.getElementById('f_doc_tipo');
+      if(dt && dt.closest){ var fld = dt.closest('.field'); if(fld) fld.style.display = 'none'; }
+      return;
+    }
+    /* Sem id no link: nao le pacientes, mostra aviso e oculta o formulario. */
+    var fc = document.getElementById('formContent');
+    if(fc) fc.style.display = 'none';
+    var ab = document.querySelector('.alert-banner');
+    if(ab) ab.style.display = 'none';
+    if(document.getElementById('hagLinkInvalido')) return;
+    var box = document.createElement('div');
+    box.id = 'hagLinkInvalido';
+    box.className = 'form-body';
+    box.style.textAlign = 'center';
+    box.innerHTML = '<div style="max-width:520px;margin:32px auto;padding:28px 24px;border:1px solid #e2ddd0;border-radius:12px;background:#fff">'
+      + '<div style="font-size:30px;margin-bottom:10px">🔒</div>'
+      + '<h2 style="color:#1f2a24;margin:0 0 8px;font-size:20px">Link invalido ou expirado</h2>'
+      + '<p style="color:#5a5a5a;line-height:1.5;margin:0">Por favor, solicite um novo link ao consultorio do Dr. Henrique para preencher o seu check-in.</p>'
+      + '</div>';
+    var hdr = document.querySelector('.form-header');
+    if(hdr && hdr.parentNode){ hdr.parentNode.insertBefore(box, hdr.nextSibling); }
+    else { document.body.appendChild(box); }
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', _gate); }
+  else { _gate(); }
+})();
 /* ═══ Documentos flexíveis: CPF | RG | Passaporte ═══ */
 /* CPF: 11 dígitos + checksum */
 function cpfMask(v){v=(v||'').replace(/\D/g,'').substring(0,11);if(v.length<=3)return v;if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);}
@@ -681,6 +721,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   function _getType(){ var s = _el('f_doc_tipo'); return s ? s.value : 'cpf'; }
 
   async function _verify(){
+    if(window.HAG_URL_PID){ return; } /* HAG: identificado pelo link, nao consulta pacientes */
     var inp = _el('f_doc_numero');
     if(!inp){ console.warn('[HAG] _verify: input #f_doc_numero not found'); return; }
     var tipo = _getType();
@@ -798,6 +839,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   // Expose guards
   window.cpfGuardSubmit = function(){
+    if(window.HAG_URL_PID) return true; /* HAG: identificado pelo link, dispensa documento */
     var inp = _el('f_doc_numero');
     var sel = _el('f_doc_tipo');
     if(!inp || !sel) return true;
@@ -1484,10 +1526,9 @@ async function enviarCheckin(){
     var padroes=[];
     if(pct>=70&&sdi>=0&&sdi<=2)padroes.push('progressao');if(pct<45&&sdi>=4)padroes.push('ajuste_estrutural');
     if(pct<45&&sco>=0&&sco<=2)padroes.push('intervencao_comportamental');if(sen>=0&&sen<=1&&str>=4)padroes.push('overreaching');
-    var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
-    var pats=await patResp.json(),patId=null;
-    if(Array.isArray(pats)){var nl=nome.toLowerCase().trim();var m=pats.find(function(p){return p.nome.toLowerCase()===nl;})||pats.find(function(p){return p.nome.toLowerCase().includes(nl.split(' ')[0]);});if(m)patId=m.id;}
-    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'cim_'+Date.now(),patient_id:(window.cpfGetPatientId&&window.cpfGetPatientId())||patId,patient_nome:nome,semana:fvt('f_periodo'),peso:(document.getElementById('f_peso_num')||{value:''}).value.trim(),data_envio:new Date().toISOString().slice(0,10),s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,score_total:total,score_pct:pct,classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',padroes:padroes,mensagem:fvt('f_mensagem'),interpretacao:interpretacao||'',criado:new Date().toISOString(),tipo:'mensal',texto_completo:typeof buildMsg==='function'?buildMsg():''})});
+    // HAG: paciente identificado pelo link (?patient=<id>); sem leitura da lista de pacientes.
+    var patId = window.HAG_URL_PID || null;
+    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'cim_'+Date.now(),patient_id:window.HAG_URL_PID||patId,patient_nome:nome,semana:fvt('f_periodo'),peso:(document.getElementById('f_peso_num')||{value:''}).value.trim(),data_envio:new Date().toISOString().slice(0,10),s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,score_total:total,score_pct:pct,classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',padroes:padroes,mensagem:fvt('f_mensagem'),interpretacao:interpretacao||'',criado:new Date().toISOString(),tipo:'mensal',texto_completo:typeof buildMsg==='function'?buildMsg():''})});
     console.log('HAG OS: check-in mensal salvo com interpretacao');
   }catch(eTri){console.warn('HAG OS trimestral save:',eTri);}
 }
