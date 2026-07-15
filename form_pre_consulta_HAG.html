@@ -584,6 +584,16 @@ input[type="number"], input[type="date"], select, textarea {
 /* ═══ Globals para o sistema de documento flexível ═══ */
 var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
 
+/* HAG: identificacao do paciente pelo link (?patient=<id>) */
+/* Intake de paciente novo: se houver id no link, reutiliza o paciente existente; */
+/* sem id, mantem o fluxo de cadastro. Nunca le a lista de pacientes. */
+window.HAG_URL_PID = (function(){
+  try{
+    var q = new URLSearchParams(window.location.search);
+    return q.get('patient') || q.get('pid') || q.get('id') || '';
+  }catch(e){ return ''; }
+})();
+
 /* ═══ CEP: mascara + busca ViaCEP (patch 2026-06-14) ═══ */
 window._cepMask = function(el){
   var v = (el.value||'').replace(/\D/g,'').substring(0,8);
@@ -1824,7 +1834,7 @@ async function submitForm(){
     //    documento exato preenchido (cpf, rg ou passaporte).
     // 3. Se mesmo assim não achar, cria paciente novo COM cpf/rg/passaporte.
     
-    var patId = (window.cpfGetPatientId && window.cpfGetPatientId()) || null;
+    var patId = window.HAG_URL_PID || (window.cpfGetPatientId && window.cpfGetPatientId()) || null;
     
     if(!patId && docNum){
       // Lookup definitivo pelo documento que o paciente preencheu
