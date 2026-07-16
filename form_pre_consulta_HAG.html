@@ -1836,16 +1836,48 @@ async function submitForm(){
     var cidadeNfVal = fvp('f_cidade_nf');
     var estadoVal = (fvp('f_estado')||'').toUpperCase();
     
-    // ═══ NOVA LÓGICA DE LOOKUP/UPSERT ═══
-    // 1. Se o lookup em tempo real (durante digitação) já achou paciente,
-    //    cpfGetPatientId() retorna o ID. USA ESSE.
-    // 2. Se não achou em tempo real, faz lookup definitivo agora pelo
-    //    documento exato preenchido (cpf, rg ou passaporte).
-    // 3. Se mesmo assim não achar, cria paciente novo COM cpf/rg/passaporte.
-    
+    // ═══ GRAVAÇÃO — link único com deduplicação segura no servidor ═══
+    // Preferência: função upsert_pre_consulta (confere o documento no servidor,
+    // não duplica, cria se novo). Se a função ainda não existir no banco, cai
+    // no fluxo direto antigo (fallback), então nada quebra na ordem do rollout.
     var patId = window.HAG_URL_PID || (window.cpfGetPatientId && window.cpfGetPatientId()) || null;
-    
-    if(!patId && docNum){
+    var _rpcOK = false;
+    if(!patId){
+      var _pac = { nome:nomeP, idade:fvp('f_idade'), objetivo:(fvc('c_incomoda')||fvp('f_incomoda_outro')),
+        obs:[fvp('f_uma_coisa')?'Meta: '+fvp('f_uma_coisa'):'', fvp('f_doencas')?'Doenças: '+fvp('f_doencas'):'',
+             fvp('f_meds')?'Medicações: '+fvp('f_meds'):'', fvp('f_alergias')?'Alergias: '+fvp('f_alergias'):'',
+             fvp('f_emocional')?'Emocional: '+fvp('f_emocional'):''].filter(Boolean).join('\n') };
+      if(docTipo==='cpf'&&docNum) _pac.cpf=docNum; else if(docTipo==='rg'&&docNum) _pac.rg=docNum; else if(docTipo==='passaporte'&&docNum) _pac.passaporte=docNum;
+      if(waDigits) _pac.whatsapp=waDigits;
+      if(dataNasc) _pac.data_nascimento=dataNasc;
+      if(sexoVal) _pac.sexo=sexoVal;
+      if(emailVal) _pac.email=emailVal;
+      if(cepVal) _pac.endereco_cep=cepVal;
+      if(ruaVal) _pac.endereco=ruaVal;
+      if(numeroVal) _pac.endereco_numero=numeroVal;
+      if(complementoVal) _pac.endereco_complemento=complementoVal;
+      if(bairroVal) _pac.endereco_bairro=bairroVal;
+      if(cidadeNfVal) _pac.endereco_cidade=cidadeNfVal;
+      if(estadoVal) _pac.endereco_uf=estadoVal;
+      var _chk = { patient_nome:nomeP, semana:'Pre-consulta', data_envio:new Date().toISOString().slice(0,10),
+        padroes:[], peso:fvp('f_peso'), mensagem:(fvp('f_mensagem')||fvp('f_uma_coisa')), interpretacao:interpretacao||'',
+        texto_completo:soapTxt||'', tipo:'pre-consulta' };
+      try{
+        var _rpc = await fetch(SURL+'/rest/v1/rpc/upsert_pre_consulta', {
+          method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
+          body: JSON.stringify({ paciente:_pac, checkin:_chk }) });
+        if(_rpc.ok){
+          var _rj = await _rpc.json().catch(function(){return null;});
+          if(_rj && _rj.patient_id) patId = _rj.patient_id;
+          _rpcOK = true; _hagGravouOK = true;
+          console.log('[HAG] Gravado via upsert_pre_consulta', _rj);
+        } else {
+          console.warn('[HAG] upsert_pre_consulta indisponivel (HTTP '+_rpc.status+'), usando fluxo direto');
+        }
+      }catch(eRpc){ console.warn('[HAG] upsert_pre_consulta falhou, fluxo direto:', eRpc); }
+    }
+
+    if(!_rpcOK && !patId && docNum){
       // Lookup definitivo pelo documento que o paciente preencheu
       try {
         var lookupUrl = SURL + '/rest/v1/patients?' + encodeURIComponent(docTipo) + '=eq.' + encodeURIComponent(docNum) + '&select=id&limit=1';
@@ -1863,7 +1895,7 @@ async function submitForm(){
     }
     
     // Montar payload de paciente APENAS se for novo (Q1=A: não atualiza existentes)
-    if(!patId){
+    if(!_rpcOK && !patId){
       patId = 'p_' + Date.now();
       var novoPaciente = {
         id: patId,
@@ -1960,7 +1992,7 @@ async function submitForm(){
     };
     // _HAG_PATCH_BLINDAGEM_v1 : so grava checkin se o paciente existe de fato
     // (a tabela checkins tem FK para patients; sem paciente, o checkin e rejeitado)
-    if(_hagGravouOK && patId){
+    if(!_rpcOK && _hagGravouOK && patId){
       try{
         var _ckResp = await fetch(SURL+'/rest/v1/checkins', {
           method:'POST',
