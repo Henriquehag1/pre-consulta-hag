@@ -574,6 +574,19 @@ input[type="number"], input[type="date"], select, textarea {
   color: var(--hag-graydark) !important;
 }
 
+
+/* HAG_ACABAMENTO_PREMIUM_v1 (aditivo, sem mexer em estrutura) */
+::selection{background:rgba(201,175,110,.22);color:var(--ink)}
+*{scrollbar-width:thin;scrollbar-color:#cfc8b6 transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#cfc8b6;border-radius:20px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#b3ab95;background-clip:padding-box}
+::-webkit-scrollbar-track{background:transparent}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+button:active{transform:translateY(.5px)}
+img{-webkit-user-drag:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+/* fim HAG_ACABAMENTO_PREMIUM_v1 */
 </style>
 </head>
 <body>
@@ -734,22 +747,18 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       _unlockName();
       return;
     }
-    _updateStatus('pending', '⟳ Verificando no HAG OS...');
-    console.log('[HAG] Calling Supabase lookup: ' + SURL + '/rest/v1/patients?' + tipo + '=eq.' + n);
+    _updateStatus('pending', '⟳ Verificando...');
     var res = await docLookupPatient(tipo, n, SURL, SKEY);
-    console.log('[HAG] Lookup response:', res);
     if(res.ok){
+      // Só acontece se houver leitura liberada (link do paciente ou lookup seguro).
       _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
       _lockName(res.patient.nome, res.patient.id);
-      console.log('[HAG] Name locked to:', res.patient.nome, '| id:', res.patient.id);
-    } else if(res.reason==='not_found'){
-      _updateStatus('err', '✗ ' + tipo.toUpperCase() + ' não cadastrado no HAG OS. Verifique com o Dr. Henrique.');
-      _unlockName();
-      console.warn('[HAG] CPF/documento não encontrado:', n);
     } else {
-      _updateStatus('err', '✗ Erro ao consultar: ' + (res.error||res.reason));
+      // Por privacidade (LGPD/RLS), o formulário público NÃO lê a base de
+      // pacientes. Documento válido é tratado como cadastro novo, que é
+      // criado automaticamente ao enviar. Nunca bloqueia nem mostra erro.
+      _updateStatus('ok', '✓ Documento válido');
       _unlockName();
-      console.error('[HAG] Erro no lookup:', res);
     }
   }
 
