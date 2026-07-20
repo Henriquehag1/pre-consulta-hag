@@ -1825,6 +1825,9 @@ async function submitForm(){
     var waDigits = (window._waDigits && window._waDigits(waEl)) || '';
     var dataNasc = fvp('f_data_nasc');
     var sexoVal = fvr('r_sexo') || fvc('c_sexo') || fvp('f_sexo');
+    // HAG: a coluna sexo tem CHECK que so aceita 'M' ou 'F'. Enviar a palavra
+    // inteira ("Masculino") derrubava o cadastro inteiro com erro 23514.
+    sexoVal = /^m/i.test(sexoVal) ? 'M' : (/^f/i.test(sexoVal) ? 'F' : '');
     // ═══ Dados de nota fiscal (patch 2026-06-14) ═══
     var emailVal = fvp('f_email');
     var cepVal = (document.getElementById('f_cep')||{}).value || '';
