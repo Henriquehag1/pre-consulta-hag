@@ -425,6 +425,19 @@ input[type="number"], input[type="date"], select, textarea {
   color: var(--hag-graydark) !important;
 }
 
+
+/* HAG_ACABAMENTO_PREMIUM_v1 (aditivo, sem mexer em estrutura) */
+::selection{background:rgba(201,175,110,.22);color:var(--ink)}
+*{scrollbar-width:thin;scrollbar-color:#cfc8b6 transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#cfc8b6;border-radius:20px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#b3ab95;background-clip:padding-box}
+::-webkit-scrollbar-track{background:transparent}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+button:active{transform:translateY(.5px)}
+img{-webkit-user-drag:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+/* fim HAG_ACABAMENTO_PREMIUM_v1 */
 </style>
 </head>
 <body>
@@ -1144,7 +1157,7 @@ async function enviarCheckin(){
       +'2. PONTOS DE ATENÇÃO (o que merece monitoramento ou intervenção imediata)\n'
       +'3. CONDUTA SUGERIDA (manter, ajustar dose, contatar paciente, antecipar consulta)\n\n'
       +'Objetivo e clínico. Máximo 250 palavras.\n\nCHECK-IN:\n'+msg;
-    var iaData=await hagCallClaude([{role:'user',content:prompt}],600);
+    var iaData={content:[{text:''}]};   /* HAG_SEM_IA_v1: interpretacao desativada, nao gasta token */
     interpretacao=iaData.content&&iaData.content[0]?iaData.content[0].text:'';
   }catch(e){
     interpretacao='[Erro ao gerar interpretação: '+e.message+']';

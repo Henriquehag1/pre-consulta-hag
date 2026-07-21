@@ -1798,7 +1798,7 @@ async function submitForm(){
       +'3. PONTOS DE ATENÇÃO (alertas, contraindicações, exames prioritários)'+NL
       +'4. SUGESTÃO DE CICLO HAG (Avulso/Smart/Essencial/Reset/Transforma — com justificativa)'+NL+NL
       +'Objetivo e clínico. Máximo 300 palavras.'+NL+'PRÉ-CONSULTA:'+NL+soapTxt;
-    var iaData=await hagCallClaude([{role:'user',content:promptDiag}],800);
+    var iaData={content:[{text:''}]};   /* HAG_SEM_IA_v1: interpretacao desativada, nao gasta token */
     interpretacao=iaData.content&&iaData.content[0]?iaData.content[0].text:'';
   }catch(eIA){interpretacao='[Erro ao gerar analise: '+eIA.message+']';}
 

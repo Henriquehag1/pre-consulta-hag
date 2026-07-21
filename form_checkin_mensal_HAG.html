@@ -577,6 +577,19 @@ input[type="number"], input[type="date"], select, textarea {
   color: var(--hag-graydark) !important;
 }
 
+
+/* HAG_ACABAMENTO_PREMIUM_v1 (aditivo, sem mexer em estrutura) */
+::selection{background:rgba(201,175,110,.22);color:var(--ink)}
+*{scrollbar-width:thin;scrollbar-color:#cfc8b6 transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#cfc8b6;border-radius:20px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#b3ab95;background-clip:padding-box}
+::-webkit-scrollbar-track{background:transparent}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+button:active{transform:translateY(.5px)}
+img{-webkit-user-drag:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+/* fim HAG_ACABAMENTO_PREMIUM_v1 */
 </style>
 </head>
 <body>
@@ -1470,7 +1483,7 @@ async function enviarCheckin(){
       +'3. CONDUTA SUGERIDA (manter plano / ajuste preventivo / antecipar consulta / novo ciclo HAG — com justificativa)'+NL+NL
       +'Maximo 280 palavras. Use apenas os dados do check-in.'+NL+NL
       +'CHECK-IN:'+NL+msg;
-    var dataIA=await hagCallClaude([{role:'user',content:prompt}],700);
+    var dataIA={content:[{text:''}]};   /* HAG_SEM_IA_v1: interpretacao desativada, nao gasta token */
     interpretacao=dataIA.content&&dataIA.content[0]?dataIA.content[0].text:'';
   }catch(eIA){
     interpretacao='[Erro ao gerar analise: '+eIA.message+']';
