@@ -89,7 +89,20 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 .sh-acts{display:flex;gap:10px;margin-top:20px}
 .sh-btn{flex:1;padding:14px;border-radius:11px;border:1px solid var(--line);background:#fff;font-size:.95rem;font-weight:600;font-family:inherit;color:var(--ink-soft);cursor:pointer}
 .sh-btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.sh-btn.whats{background:var(--green);border-color:var(--green);color:#fff}
 .sh-err{margin-top:10px;font-size:.8rem;color:var(--red);display:none}
+.sh-textarea{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:11px;font-size:.95rem;font-family:inherit;background:#FAF8F4;min-height:170px;resize:vertical;line-height:1.5}
+.hdr-btns{display:flex;gap:8px}
+.btn-agenda{border:1px solid var(--gold-soft);background:#FBF8F0;border-radius:9px;padding:8px 12px;font-size:.75rem;color:var(--gold);font-weight:600;font-family:inherit}
+.ag-dia{margin-bottom:14px}
+.ag-dia-lbl{font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:7px}
+.ag-ev{display:flex;gap:10px;align-items:baseline;padding:5px 0;font-size:.85rem}
+.ag-ev .hora{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--navy);font-weight:600;white-space:nowrap}
+.ag-ev .quem{color:var(--ink-soft)}
+.ag-ev .onde{font-size:.7rem;color:var(--ink-faint)}
+.ag-livre{font-size:.8rem;color:var(--green);padding:4px 0}
+.ag-scroll{max-height:55vh;overflow-y:auto;margin-top:6px}
+.ag-atual{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--ink-faint);margin-top:10px;text-align:center}
 </style>
 </head>
 <body>
@@ -115,7 +128,10 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 <div class="hdr-title">Fila de Agendamento</div>
 <div class="hdr-sub" id="hdrSub">—</div>
 </div>
+<div class="hdr-btns">
+<button class="btn-agenda" onclick="abrirAgenda()">📆 Agenda do Dr.</button>
 <button class="btn-sair" onclick="sair()">Sair</button>
+</div>
 </div>
 <div class="tabs">
 <button class="tab on" id="tabAbertas" onclick="setTab('abertas')"><span class="n" id="nAbertas">—</span>a agendar</button>
@@ -148,6 +164,32 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 </div>
 </div>
 
+<!-- SHEET: editar mensagem do WhatsApp -->
+<div id="msgWrap" style="display:none;position:fixed;inset:0;background:rgba(27,35,64,.55);z-index:80;align-items:flex-end;justify-content:center">
+<div class="sheet">
+<div class="sh-title">Mensagem do WhatsApp</div>
+<div class="sh-sub" id="msgSub">Edite à vontade antes de enviar.</div>
+<textarea class="sh-textarea" id="msgTexto"></textarea>
+<div class="sh-acts">
+<button class="sh-btn" onclick="fecharMsg()">Cancelar</button>
+<button class="sh-btn whats" onclick="enviarMsgEditada()">Abrir WhatsApp →</button>
+</div>
+</div>
+</div>
+
+<!-- SHEET: agenda do Dr. -->
+<div id="agWrap" style="display:none;position:fixed;inset:0;background:rgba(27,35,64,.55);z-index:80;align-items:flex-end;justify-content:center">
+<div class="sheet">
+<div class="sh-title">📆 Agenda do Dr. Henrique</div>
+<div class="sh-sub">Horários já ocupados nos próximos dias. Ofereça alternativas fora deles.</div>
+<div class="ag-scroll" id="agLista">—</div>
+<div class="ag-atual" id="agAtual"></div>
+<div class="sh-acts">
+<button class="sh-btn primary" onclick="fecharAgenda()">Fechar</button>
+</div>
+</div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -155,7 +197,7 @@ var SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';
 var SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 var db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
-var STATE={tarefas:[],fones:{},tab:'abertas'};
+var STATE={tarefas:[],fones:{},tab:'abertas',agenda:null,agendaAt:null};
 var TIPO_LABEL={retorno:'Retorno',diagnostica:'Consulta diagnóstica',procedimento:'Procedimento',injetavel:'Injetável',geral:'Agendamento'};
 var TIPO_MSG={retorno:'sua consulta de retorno',diagnostica:'sua consulta com o Dr. Henrique',procedimento:'o seu procedimento',injetavel:'a sua aplicação'};
 
@@ -207,8 +249,78 @@ if(ids.length){
 var pr=await db.from('patients').select('id, nome, whatsapp, telefone').in('id',ids);
 (pr.data||[]).forEach(function(p){STATE.fones[p.id]=p.whatsapp||p.telefone||'';});
 }
+try{
+var ar=await db.from('agenda_cache').select('payload,atualizado_em').eq('id','principal').maybeSingle();
+if(ar&&ar.data){STATE.agenda=ar.data.payload;STATE.agendaAt=ar.data.atualizado_em;}
+}catch(e){}
 await reconciliarCalendar();
 render();
+}
+
+/* ===== AGENDA DO DR. ===== */
+var DIAS_PT=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+function abrirAgenda(){
+var el=document.getElementById('agLista');
+var at=document.getElementById('agAtual');
+var ag=STATE.agenda;
+if(!ag||!ag.eventos||!ag.eventos.length){
+el.innerHTML='<div class="empty" style="padding:30px 10px">Agenda ainda não sincronizada. Tente novamente em alguns minutos.</div>';
+at.textContent='';
+}else{
+var hoje=hojeISO();
+var porDia={};
+ag.eventos.forEach(function(e){
+var d=String(e.inicio).slice(0,10);
+if(d<hoje)return;
+(porDia[d]=porDia[d]||[]).push(e);
+});
+var dias=Object.keys(porDia).sort();
+if(!dias.length){
+el.innerHTML='<div class="ag-livre">✓ Nenhum compromisso nos próximos dias. Agenda livre.</div>';
+}else{
+el.innerHTML=dias.map(function(d){
+var p=d.split('-');
+var dt=new Date(d+'T12:00:00');
+var lbl=DIAS_PT[dt.getDay()]+' · '+p[2]+'/'+p[1];
+var evs=porDia[d].sort(function(a,b){return String(a.inicio).localeCompare(String(b.inicio));});
+return '<div class="ag-dia"><div class="ag-dia-lbl">'+lbl+'</div>'+
+evs.map(function(e){
+return '<div class="ag-ev"><span class="hora">'+String(e.inicio).slice(11,16)+'–'+String(e.fim).slice(11,16)+'</span>'+
+'<span class="quem">'+esc(e.titulo)+'</span>'+
+(e.local?'<span class="onde">'+esc(e.local)+'</span>':'')+'</div>';
+}).join('')+'</div>';
+}).join('');
+}
+at.textContent=STATE.agendaAt?('Atualizada em '+new Date(STATE.agendaAt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' · dias sem lista = livres'):'';
+}
+document.getElementById('agWrap').style.display='flex';
+}
+function fecharAgenda(){document.getElementById('agWrap').style.display='none';}
+document.getElementById('agWrap').addEventListener('click',function(e){if(e.target===this)fecharAgenda();});
+
+/* ===== MENSAGEM EDITÁVEL ===== */
+var _msgId=null;
+function abrirMsg(id){
+var t=STATE.tarefas.find(function(x){return String(x.id)===String(id);});
+if(!t)return;
+_msgId=id;
+document.getElementById('msgSub').textContent=(t.patient_nome||'')+' · edite à vontade antes de enviar.';
+document.getElementById('msgTexto').value=msgWhats(t);
+document.getElementById('msgWrap').style.display='flex';
+}
+function fecharMsg(){document.getElementById('msgWrap').style.display='none';_msgId=null;}
+document.getElementById('msgWrap').addEventListener('click',function(e){if(e.target===this)fecharMsg();});
+function enviarMsgEditada(){
+var t=STATE.tarefas.find(function(x){return String(x.id)===String(_msgId);});
+if(!t)return;
+var fone=(t.patient_id&&STATE.fones[t.patient_id])||'';
+var foneDig=fone.replace(/\D/g,'');
+if(foneDig&&foneDig.length<=11)foneDig='55'+foneDig;
+if(!foneDig){toast('Paciente sem WhatsApp cadastrado');return;}
+var txt=document.getElementById('msgTexto').value;
+window.open('https://wa.me/'+foneDig+'?text='+encodeURIComponent(txt),'_blank');
+if(t.status==='pendente')marcar(t.id,'andamento',true);
+fecharMsg();
 }
 
 /* Rede de seguranca: quando aberto no Mac (mesma pasta do HAG OS), le o export do
@@ -324,6 +436,7 @@ agendadoLinha+
 (t.status!=='concluida'
 ? '<div class="c-acts">'+
 (wa?'<a class="act wa" href="'+wa+'" target="_blank" onclick="marcar(\''+t.id+'\',\'andamento\',true)">WhatsApp</a>':'<span class="act" style="opacity:.5">Sem WhatsApp</span>')+
+(wa?'<button class="act undo" onclick="abrirMsg(\''+t.id+'\')" title="Editar mensagem">✎</button>':'')+
 '<button class="act ok" onclick="abrirAgendar(\''+t.id+'\')">Agendado ✓</button>'+
 '</div>'+
 (t.status==='pendente'
