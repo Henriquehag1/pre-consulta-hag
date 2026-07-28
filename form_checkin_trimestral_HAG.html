@@ -855,7 +855,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     if(window.HAG_URL_PID) return true; /* HAG: identificado pelo link, dispensa documento */
     var inp = _el('f_doc_numero');
     var sel = _el('f_doc_tipo');
-    if(!inp || !sel) return true;
+    if(!inp || !sel){ alert('O formulário ainda está carregando. Atualize a página e tente novamente.'); return false; }
     var tipo = sel.value;
     var n = docNormalize(tipo, inp.value||'');
     if(!docValid(tipo, n)){
@@ -1478,7 +1478,17 @@ function buildMsg(){
 }
 
 async function enviarCheckin(){
-    if(window.cpfGuardSubmit && !cpfGuardSubmit()) return;
+    // ── TRAVA DE IDENTIFICAÇÃO OBRIGATÓRIA (fail-closed) ────────────────
+    if(typeof window.cpfGuardSubmit !== 'function'){
+      alert('A identificação de paciente não carregou corretamente.\n\nAtualize a página e tente novamente antes de enviar.');
+      return;
+    }
+    if(!cpfGuardSubmit()) return;
+    var _pid = (typeof window.cpfGetPatientId==='function') ? cpfGetPatientId() : null;
+    if(!_pid || fv('f_nome')==='—'){
+      alert('Este check-in não pode ser enviado sem identificação.\n\nInforme seu documento e aguarde aparecer "Paciente localizado". Se precisar, fale com a secretaria.');
+      return;
+    }
 
   var msg=buildMsg();
   document.getElementById('formContent').classList.add('hidden');
