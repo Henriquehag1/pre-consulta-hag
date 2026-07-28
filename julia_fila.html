@@ -142,6 +142,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 </div>
 <div class="tabs">
 <button class="tab on" id="tabAbertas" onclick="setTab('abertas')"><span class="n" id="nAbertas">—</span>a agendar</button>
+<button class="tab" id="tabComunic" onclick="setTab('comunicado')"><span class="n" id="nComunic">0</span>comunicado</button>
 <button class="tab" id="tabFeitas" onclick="setTab('feitas')"><span class="n" id="nFeitas">—</span>agendadas</button>
 </div>
 <div id="lista"></div>
@@ -352,6 +353,7 @@ var dtHit=String(hit.inicio).slice(0,10);
 var hrHit=String(hit.inicio).slice(11,16)||null;
 await db.from('tarefas').update({status:'concluida',concluido_em:new Date().toISOString(),agendado_data:dtHit,agendado_hora:hrHit,calendar_sync:'criado',obs:((t.obs||'')+' [auto: Calendar '+dtHit+']').trim()}).eq('id',t.id);
 t.status='concluida';t.concluido_em=new Date().toISOString();t.agendado_data=dtHit;t.agendado_hora=hrHit;t.calendar_sync='criado';
+if(t.patient_id){ try{ await db.from('patients').update({proxima:dtHit}).eq('id',t.patient_id); }catch(e){} }
 }
 }
 }catch(e){/* hospedado: sem export local, segue manual */}
@@ -388,6 +390,7 @@ document.getElementById('shOk').textContent='Confirmar ✓';
 if(r.error){err.textContent='Erro: '+r.error.message;err.style.display='block';return;}
 t.status='concluida';t.agendado_data=data;t.agendado_hora=hora;t.calendar_sync='pendente';
 if(body.concluido_em)t.concluido_em=body.concluido_em;
+if(t.patient_id){ try{ await db.from('patients').update({proxima:data}).eq('id',t.patient_id); }catch(e){} }
 fecharSheet();
 toast('Agendado para '+fmtBR(data)+' às '+hora+' ✓');
 render();
@@ -396,6 +399,7 @@ render();
 /* ===== UI ===== */
 function setTab(t){STATE.tab=t;
 document.getElementById('tabAbertas').classList.toggle('on',t==='abertas');
+var _tc=document.getElementById('tabComunic'); if(_tc)_tc.classList.toggle('on',t==='comunicado');
 document.getElementById('tabFeitas').classList.toggle('on',t==='feitas');
 render();
 }
@@ -408,22 +412,24 @@ return 'Olá '+nome+'! Aqui é a Julia, do consultório do Dr. Henrique.\n\n'+
 'Me diga os melhores dias e horários para você que eu organizo por aqui.';
 }
 function render(){
-var abertas=STATE.tarefas.filter(function(t){return t.status!=='concluida';});
+var abertas=STATE.tarefas.filter(function(t){return t.status==='pendente';});
+var comunic=STATE.tarefas.filter(function(t){return t.status==='andamento'||t.status==='aguardando';});
 var feitas=STATE.tarefas.filter(function(t){return t.status==='concluida';});
 document.getElementById('nAbertas').textContent=abertas.length;
+var _ncc=document.getElementById('nComunic'); if(_ncc)_ncc.textContent=comunic.length;
 document.getElementById('nFeitas').textContent=feitas.length;
-var lista=(STATE.tab==='abertas')?abertas:feitas;
+var lista=(STATE.tab==='comunicado')?comunic:((STATE.tab==='feitas')?feitas:abertas);
 /* ordena pela data do evento mais próxima primeiro; sem data vai para o fim */
 lista.sort(function(a,b){
-var da=(STATE.tab==='abertas'?a.janela_data:a.agendado_data)||'';
-var db2=(STATE.tab==='abertas'?b.janela_data:b.agendado_data)||'';
+var da=(STATE.tab==='feitas'?a.agendado_data:a.janela_data)||'';
+var db2=(STATE.tab==='feitas'?b.agendado_data:b.janela_data)||'';
 if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1;
 return da<db2?-1:(da>db2?1:0);
 });
 var el=document.getElementById('lista');
 if(!lista.length){
-el.innerHTML='<div class="empty"><div class="big">'+(STATE.tab==='abertas'?'✓':'—')+'</div>'+
-(STATE.tab==='abertas'?'Nenhum paciente aguardando agendamento.':'Nada agendado nos últimos dias.')+'</div>';
+el.innerHTML='<div class="empty"><div class="big">'+(STATE.tab==='feitas'?'—':'✓')+'</div>'+
+(STATE.tab==='feitas'?'Nada agendado nos últimos dias.':(STATE.tab==='comunicado'?'Ninguém aguardando retorno.':'Nenhum paciente aguardando agendamento.'))+'</div>';
 return;
 }
 var hoje=hojeISO();
