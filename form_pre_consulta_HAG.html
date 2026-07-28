@@ -1776,6 +1776,20 @@ function buildSoapText(){
 
 async function submitForm(){
   if(!validateStep(10)) return;
+  // ── TRAVA DE IDENTIFICAÇÃO OBRIGATÓRIA (paciente novo) ────────────────
+  // Exige nome preenchido e documento válido. Não exige cadastro prévio,
+  // pois a pré-consulta é justamente para pacientes que ainda não têm cadastro.
+  var _nomeChk = (document.getElementById('f_nome')||{}).value || '';
+  var _tipoChk = (document.getElementById('f_doc_tipo')||{}).value || 'cpf';
+  var _docChk = (window.cpfGetCleanDigits && window.cpfGetCleanDigits()) || '';
+  if(!_nomeChk.trim()){
+    alert('Informe o seu nome completo antes de enviar o formulário.');
+    return;
+  }
+  if(typeof docValid!=='function' || !docValid(_tipoChk, _docChk)){
+    alert('Informe um documento de identificação válido (CPF, RG ou passaporte) antes de enviar.\n\nSe o campo não estiver aparecendo, atualize a página e tente novamente.');
+    return;
+  }
   var soapTxt=buildSoapText();
   // _HAG_PATCH_BLINDAGEM_v1 : rastreio de falha de gravacao no HAG OS
   var _hagGravouOK = true;
