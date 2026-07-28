@@ -47,7 +47,13 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 .tab .n{display:block;font-size:1.15rem;font-weight:700}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:16px 15px;margin-bottom:12px;box-shadow:0 2px 10px rgba(35,32,26,.04)}
-.card.atrasada{border-color:#E4C6C3}
+.card.atrasada{border-color:#E4C6C3;box-shadow:0 2px 12px rgba(179,38,30,.10)}
+.card.proxima{border-color:#E6D9A8}
+.urg{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:20px;font-weight:600;margin-left:6px;white-space:nowrap}
+.urg-late{background:#FBE4E1;color:#B3261E}
+.urg-soon{background:#FBF3DA;color:#8A6D00}
+.urg-ok{background:#EFEBE0;color:#5B5647}
+.urg-none{background:#F1EEE6;color:#98917F}
 .c-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .c-nome{font-size:1.08rem;font-weight:700;color:var(--navy);line-height:1.2}
 .c-tipo{font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:20px;background:#EFEBE0;color:var(--gold);white-space:nowrap}
@@ -129,6 +135,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 <div class="hdr-sub" id="hdrSub">—</div>
 </div>
 <div class="hdr-btns">
+<button class="btn-agenda" onclick="atualizarFila(this)">🔄 Atualizar</button>
 <button class="btn-agenda" onclick="abrirAgenda()">📆 Agenda do Dr.</button>
 <button class="btn-sair" onclick="sair()">Sair</button>
 </div>
@@ -406,6 +413,13 @@ var feitas=STATE.tarefas.filter(function(t){return t.status==='concluida';});
 document.getElementById('nAbertas').textContent=abertas.length;
 document.getElementById('nFeitas').textContent=feitas.length;
 var lista=(STATE.tab==='abertas')?abertas:feitas;
+/* ordena pela data do evento mais próxima primeiro; sem data vai para o fim */
+lista.sort(function(a,b){
+var da=(STATE.tab==='abertas'?a.janela_data:a.agendado_data)||'';
+var db2=(STATE.tab==='abertas'?b.janela_data:b.agendado_data)||'';
+if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1;
+return da<db2?-1:(da>db2?1:0);
+});
 var el=document.getElementById('lista');
 if(!lista.length){
 el.innerHTML='<div class="empty"><div class="big">'+(STATE.tab==='abertas'?'✓':'—')+'</div>'+
@@ -415,6 +429,8 @@ return;
 var hoje=hojeISO();
 el.innerHTML=lista.map(function(t){
 var late=t.janela_data && t.janela_data<hoje && t.status!=='concluida';
+var _dd=diasAte(t.janela_data);
+var near=(t.status!=='concluida' && _dd!==null && _dd>=0 && _dd<=3);
 var fone=(t.patient_id&&STATE.fones[t.patient_id])||'';
 var foneDig=fone.replace(/\D/g,'');
 if(foneDig && foneDig.length<=11) foneDig='55'+foneDig;
@@ -426,10 +442,10 @@ var agendadoLinha=(t.status==='concluida'&&t.agendado_data)
     ? '<span class="c-sync ok">✓ Na agenda do Dr.</span>'
     : '<span class="c-sync pend">⏳ Entra na agenda no próximo ciclo</span>')
 : '';
-return '<div class="card'+(late?' atrasada':'')+'">'+
+return '<div class="card'+(late?' atrasada':(near?' proxima':''))+'">'+
 '<div class="c-top"><div class="c-nome">'+esc(t.patient_nome||'—')+'</div>'+
 '<span class="c-tipo">'+(TIPO_LABEL[t.tipo_evento]||'Agendamento')+'</span></div>'+
-'<div class="c-janela">Janela: <b>'+(t.janela_data?('semana de '+fmtBR(t.janela_data)):'a combinar')+'</b>'+(late?' <span class="late">· atrasada</span>':'')+'</div>'+
+'<div class="c-janela">Janela: <b>'+(t.janela_data?('semana de '+fmtBR(t.janela_data)):'a combinar')+'</b>'+urgPill(t)+'</div>'+
 (t.obs||t.descricao?'<div class="c-obs">'+esc(t.obs||t.descricao)+'</div>':'')+
 '<div class="c-status '+t.status+'">'+stTxt+'</div>'+
 agendadoLinha+
@@ -450,6 +466,27 @@ agendadoLinha+
 }).join('');
 }
 function esc(s){return String(s||'').replace(/[<>&"]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+/* dias entre hoje e a data (negativo = já passou) */
+function diasAte(iso){ if(!iso)return null; var h=new Date(hojeISO()+'T12:00:00'); var d=new Date(String(iso).slice(0,10)+'T12:00:00'); if(isNaN(d))return null; return Math.round((d-h)/86400000); }
+/* selo de urgência colorido na janela desejada */
+function urgPill(t){
+if(t.status==='concluida')return '';
+var dd=diasAte(t.janela_data);
+if(dd===null)return '<span class="urg urg-none">sem data</span>';
+if(dd<0)return '<span class="urg urg-late">⏰ atrasada '+(Math.abs(dd)===1?'1 dia':(Math.abs(dd)+' dias'))+'</span>';
+if(dd===0)return '<span class="urg urg-late">⏰ é hoje</span>';
+if(dd===1)return '<span class="urg urg-soon">⏰ amanhã</span>';
+if(dd<=3)return '<span class="urg urg-soon">⏰ em '+dd+' dias</span>';
+return '<span class="urg urg-ok">em '+dd+' dias</span>';
+}
+/* botão Atualizar do menu */
+async function atualizarFila(btn){
+var _o=btn?btn.textContent:'';
+if(btn){ btn.textContent='Atualizando…'; btn.disabled=true; }
+try{ await carregar(); toast('Fila atualizada'); }
+catch(e){ toast('Erro ao atualizar'); }
+if(btn){ btn.textContent=_o||'🔄 Atualizar'; btn.disabled=false; }
+}
 async function marcar(id,status,silencioso){
 var body={status:status,atualizado_em:new Date().toISOString()};
 var r=await db.from('tarefas').update(body).eq('id',id);
