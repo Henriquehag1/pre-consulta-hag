@@ -379,13 +379,23 @@ async function atualizarRetornoPaciente(pid, data, hora){
   if(!pid) return;
   try{ await db.from('patients').update({proxima:data}).eq('id',pid); }catch(e){}
   try{
-    var cr=await db.from('ciclos').select('id').eq('patient_id',pid).eq('status','ativo');
-    var cids=((cr&&cr.data)||[]).map(function(c){return c.id;});
-    if(!cids.length) return;
-    var rr=await db.from('retornos').select('id,status,nome_retorno,ordem').in('ciclo_id',cids).order('ordem',{ascending:true});
-    var rets=(rr&&rr.data)||[];
-    var alvo=rets.find(function(x){ return x.status!=='realizada' && !/quest/i.test(String(x.nome_retorno||'')); });
-    if(alvo){ await db.from('retornos').update({status:'agendada',data_planejada:data,data_realizada:null,horario:hora}).eq('id',alvo.id); }
+    var cr=await db.from('ciclos').select('id,status').eq('patient_id',pid);
+    var todos=((cr&&cr.data)||[]);
+    var ativos=todos.filter(function(c){return c.status==='ativo';});
+    if(ativos.length){
+      var cids=ativos.map(function(c){return c.id;});
+      var rr=await db.from('retornos').select('id,status,nome_retorno,ordem').in('ciclo_id',cids).order('ordem',{ascending:true});
+      var rets=(rr&&rr.data)||[];
+      var alvo=rets.find(function(x){ return x.status!=='realizada' && !/quest/i.test(String(x.nome_retorno||'')); });
+      if(alvo){ await db.from('retornos').update({status:'agendada',data_planejada:data,data_realizada:null,horario:hora}).eq('id',alvo.id); }
+      return;
+    }
+    if(todos.length===0){
+      var hojeC=new Date().toISOString().slice(0,10);
+      var cc=await db.from('ciclos').insert({patient_id:pid,tipo_ciclo:'aguardando_diagnostica',ordem_renovacao:1,ciclo_anterior_id:null,status:'ativo',inicio:hojeC,fim_previsto:null,modalidade:null,source_label:'agendamento_fila_'+hojeC}).select();
+      var novo=(cc&&cc.data&&cc.data[0])||null;
+      if(novo){ await db.from('retornos').insert({ciclo_id:novo.id,ordem:1,nome_retorno:'Consulta diagnóstica',data_planejada:data,data_realizada:null,status:'agendada',modalidade:null,horario:hora,tem_inconsistencia:false}); }
+    }
   }catch(e){}
 }
 async function confirmarAgendamento(){
