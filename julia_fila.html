@@ -353,7 +353,7 @@ var dtHit=String(hit.inicio).slice(0,10);
 var hrHit=String(hit.inicio).slice(11,16)||null;
 await db.from('tarefas').update({status:'concluida',concluido_em:new Date().toISOString(),agendado_data:dtHit,agendado_hora:hrHit,calendar_sync:'criado',obs:((t.obs||'')+' [auto: Calendar '+dtHit+']').trim()}).eq('id',t.id);
 t.status='concluida';t.concluido_em=new Date().toISOString();t.agendado_data=dtHit;t.agendado_hora=hrHit;t.calendar_sync='criado';
-if(t.patient_id){ try{ await db.from('patients').update({proxima:dtHit}).eq('id',t.patient_id); }catch(e){} }
+await atualizarRetornoPaciente(t.patient_id, dtHit, hrHit);
 }
 }
 }catch(e){/* hospedado: sem export local, segue manual */}
@@ -375,6 +375,19 @@ document.getElementById('sheetWrap').classList.add('show');
 }
 function fecharSheet(){document.getElementById('sheetWrap').classList.remove('show');_sheetId=null;}
 document.getElementById('sheetWrap').addEventListener('click',function(e){if(e.target===this)fecharSheet();});
+async function atualizarRetornoPaciente(pid, data, hora){
+  if(!pid) return;
+  try{ await db.from('patients').update({proxima:data}).eq('id',pid); }catch(e){}
+  try{
+    var cr=await db.from('ciclos').select('id').eq('patient_id',pid).eq('status','ativo');
+    var cids=((cr&&cr.data)||[]).map(function(c){return c.id;});
+    if(!cids.length) return;
+    var rr=await db.from('retornos').select('id,status,nome_retorno,ordem').in('ciclo_id',cids).order('ordem',{ascending:true});
+    var rets=(rr&&rr.data)||[];
+    var alvo=rets.find(function(x){ return x.status!=='realizada' && !/quest/i.test(String(x.nome_retorno||'')); });
+    if(alvo){ await db.from('retornos').update({status:'agendada',data_planejada:data,data_realizada:null,horario:hora}).eq('id',alvo.id); }
+  }catch(e){}
+}
 async function confirmarAgendamento(){
 var data=document.getElementById('shData').value;
 var hora=document.getElementById('shHora').value;
@@ -390,7 +403,7 @@ document.getElementById('shOk').textContent='Confirmar ✓';
 if(r.error){err.textContent='Erro: '+r.error.message;err.style.display='block';return;}
 t.status='concluida';t.agendado_data=data;t.agendado_hora=hora;t.calendar_sync='pendente';
 if(body.concluido_em)t.concluido_em=body.concluido_em;
-if(t.patient_id){ try{ await db.from('patients').update({proxima:data}).eq('id',t.patient_id); }catch(e){} }
+await atualizarRetornoPaciente(t.patient_id, data, hora);
 fecharSheet();
 toast('Agendado para '+fmtBR(data)+' às '+hora+' ✓');
 render();
