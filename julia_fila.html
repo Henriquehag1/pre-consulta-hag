@@ -426,12 +426,17 @@ var _tc=document.getElementById('tabComunic'); if(_tc)_tc.classList.toggle('on',
 document.getElementById('tabFeitas').classList.toggle('on',t==='feitas');
 render();
 }
+var HAG_LOCAIS={online:{label:'Online',end:''},pinheiros:{label:'Pinheiros',end:'Livance Pinheiros, Av. Brig. Faria Lima, 1461, 6º andar, Pinheiros, São Paulo/SP, 01452-002'},tatuape:{label:'Tatuapé',end:'Livance Tatuapé, R. Vilela, 665, 8º andar, Tatuapé, São Paulo/SP, 03314-000'}};
 function msgWhats(t){
 var nome=firstName(t.patient_nome);
 var oque=TIPO_MSG[t.tipo_evento]||'sua próxima consulta';
 var quando=t.janela_data?(' por volta de '+fmtBR(t.janela_data)):'';
+var lc=HAG_LOCAIS[t.local||'online']||HAG_LOCAIS.online;
+var localTxt=(t.local==='pinheiros'||t.local==='tatuape')
+? '\n\nO atendimento será presencial, na nossa unidade de '+lc.label+':\n'+lc.end
+: '\n\nO atendimento será online, por vídeo. Envio o link mais perto do horário.';
 return 'Olá '+nome+'! Aqui é a Julia, do consultório do Dr. Henrique.\n\n'+
-'O Dr. pediu para já deixarmos agendada '+oque+quando+'.\n\n'+
+'O Dr. pediu para já deixarmos agendada '+oque+quando+'.'+localTxt+'\n\n'+
 'Me diga os melhores dias e horários para você que eu organizo por aqui.';
 }
 function render(){
@@ -475,6 +480,7 @@ return '<div class="card'+(late?' atrasada':(near?' proxima':''))+'">'+
 '<div class="c-top"><div class="c-nome">'+esc(t.patient_nome||'—')+'</div>'+
 '<span class="c-tipo">'+(TIPO_LABEL[t.tipo_evento]||'Agendamento')+'</span></div>'+
 '<div class="c-janela">Janela: <b>'+(t.janela_data?('semana de '+fmtBR(t.janela_data)):'a combinar')+'</b>'+urgPill(t)+'</div>'+
+(t.local?'<div class="c-janela" style="margin-top:2px">'+((t.local==='pinheiros'||t.local==='tatuape')?('📍 Presencial · '+((HAG_LOCAIS[t.local]||{}).label||'')):'💻 Online')+'</div>':'')+
 (t.obs||t.descricao?'<div class="c-obs">'+esc(t.obs||t.descricao)+'</div>':'')+
 '<div class="c-status '+t.status+'">'+stTxt+'</div>'+
 agendadoLinha+
