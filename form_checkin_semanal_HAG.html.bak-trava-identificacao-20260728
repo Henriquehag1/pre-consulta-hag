@@ -495,11 +495,9 @@ function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
   var n = docNormalize(tipo, numero);
   if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
-  /* HAG_RPC_LOOKUP_v1: busca via funcao segura no banco (nao le a tabela patients
-     diretamente; funciona com o banco trancado por RLS/LGPD). */
-  var url = supaUrl + '/rest/v1/rpc/hag_buscar_paciente_por_doc';
+  var url = supaUrl + '/rest/v1/patients?' + encodeURIComponent(tipo) + '=eq.' + encodeURIComponent(n) + '&select=id,nome,cpf,rg,passaporte&limit=1';
   try{
-    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n})});
+    var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
     if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
     var data = await r.json();
     if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
@@ -548,7 +546,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       return;
     }
     _updateStatus('pending', '⟳ Verificando no HAG OS...');
-    console.log('[HAG] Lookup de paciente via RPC hag_buscar_paciente_por_doc ('+tipo+')');
+    console.log('[HAG] Calling Supabase lookup: ' + SURL + '/rest/v1/patients?' + tipo + '=eq.' + n);
     var res = await docLookupPatient(tipo, n, SURL, SKEY);
     console.log('[HAG] Lookup response:', res);
     if(res.ok){
@@ -650,7 +648,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   window.cpfGuardSubmit = function(){
     var inp = _el('f_doc_numero');
     var sel = _el('f_doc_tipo');
-    if(!inp || !sel){ alert('O formulário ainda está carregando. Atualize a página e tente novamente.'); return false; }
+    if(!inp || !sel) return true;
     var tipo = sel.value;
     var n = docNormalize(tipo, inp.value||'');
     if(!docValid(tipo, n)){
@@ -1083,19 +1081,7 @@ function buildMsg(){
 }
 
 async function enviarCheckin(){
-    // ── TRAVA DE IDENTIFICAÇÃO OBRIGATÓRIA (fail-closed) ──────────────────
-    // Se o sistema de identificação não carregou (conexão ruim / erro de JS),
-    // NÃO enviar. Antes isso deixava passar check-in sem paciente.
-    if(typeof window.cpfGuardSubmit !== 'function'){
-      alert('A identificação de paciente não carregou corretamente.\n\nAtualize a página (puxe a tela para baixo) e tente novamente antes de enviar.');
-      return;
-    }
-    if(!cpfGuardSubmit()) return;
-    var _pid = (typeof window.cpfGetPatientId==='function') ? cpfGetPatientId() : null;
-    if(!_pid || fv('f_nome')==='—'){
-      alert('Seu check-in não pode ser enviado sem identificação.\n\nInforme seu documento (CPF, RG ou passaporte) e aguarde aparecer "Paciente localizado". Se precisar, fale com a secretaria.');
-      return;
-    }
+    if(window.cpfGuardSubmit && !cpfGuardSubmit()) return;
 
   var msg=buildMsg();
   document.getElementById('formContent').classList.add('hidden');
@@ -1191,9 +1177,17 @@ async function enviarCheckin(){
     if(se>=0&&se<=1&&st2>=4) padroes2.push('overreaching');
     if(ss>=0&&ss<=1&&sf>=0&&sf<=1) padroes2.push('eixo_cortisol');
     var nomeCI=fv('f_nome');
-    /* HAG_RPC_LOOKUP_v1: fallback antigo de casar por nome removido.
-       A identificacao obrigatoria (trava) ja garante o patient_id. */
+    var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{
+      headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}
+    });
+    var pats2=await patResp.json();
     var patId2=null;
+    if(Array.isArray(pats2)){
+      var nl2=nomeCI.toLowerCase().trim();
+      var m2=pats2.find(function(p){return p.nome.toLowerCase()===nl2;})
+        ||pats2.find(function(p){var pn=p.nome.toLowerCase();return pn.includes(nl2.split(' ')[0]);});
+      if(m2) patId2=m2.id;
+    }
     var ci={
       id:'ci_'+Date.now(),
       patient_id:(window.cpfGetPatientId&&window.cpfGetPatientId())||patId2,

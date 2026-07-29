@@ -700,9 +700,11 @@ function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
   var n = docNormalize(tipo, numero);
   if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
-  var url = supaUrl + '/rest/v1/patients?' + encodeURIComponent(tipo) + '=eq.' + encodeURIComponent(n) + '&select=id,nome,cpf,rg,passaporte&limit=1';
+  /* HAG_RPC_LOOKUP_v1: busca via funcao segura no banco (nao le a tabela patients
+     diretamente; funciona com o banco trancado por RLS/LGPD). */
+  var url = supaUrl + '/rest/v1/rpc/hag_buscar_paciente_por_doc';
   try{
-    var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
+    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n})});
     if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
     var data = await r.json();
     if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
@@ -752,7 +754,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       return;
     }
     _updateStatus('pending', '⟳ Verificando no HAG OS...');
-    console.log('[HAG] Calling Supabase lookup: ' + SURL + '/rest/v1/patients?' + tipo + '=eq.' + n);
+    console.log('[HAG] Lookup de paciente via RPC hag_buscar_paciente_por_doc ('+tipo+')');
     var res = await docLookupPatient(tipo, n, SURL, SKEY);
     console.log('[HAG] Lookup response:', res);
     if(res.ok){

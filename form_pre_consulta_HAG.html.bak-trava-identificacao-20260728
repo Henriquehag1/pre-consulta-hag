@@ -697,11 +697,9 @@ function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
   var n = docNormalize(tipo, numero);
   if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
-  /* HAG_RPC_LOOKUP_v1: busca via funcao segura no banco (nao le a tabela patients
-     diretamente; funciona com o banco trancado por RLS/LGPD). */
-  var url = supaUrl + '/rest/v1/rpc/hag_buscar_paciente_por_doc';
+  var url = supaUrl + '/rest/v1/patients?' + encodeURIComponent(tipo) + '=eq.' + encodeURIComponent(n) + '&select=id,nome,cpf,rg,passaporte&limit=1';
   try{
-    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n})});
+    var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
     if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
     var data = await r.json();
     if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
@@ -1778,20 +1776,6 @@ function buildSoapText(){
 
 async function submitForm(){
   if(!validateStep(10)) return;
-  // ── TRAVA DE IDENTIFICAÇÃO OBRIGATÓRIA (paciente novo) ────────────────
-  // Exige nome preenchido e documento válido. Não exige cadastro prévio,
-  // pois a pré-consulta é justamente para pacientes que ainda não têm cadastro.
-  var _nomeChk = (document.getElementById('f_nome')||{}).value || '';
-  var _tipoChk = (document.getElementById('f_doc_tipo')||{}).value || 'cpf';
-  var _docChk = (window.cpfGetCleanDigits && window.cpfGetCleanDigits()) || '';
-  if(!_nomeChk.trim()){
-    alert('Informe o seu nome completo antes de enviar o formulário.');
-    return;
-  }
-  if(typeof docValid!=='function' || !docValid(_tipoChk, _docChk)){
-    alert('Informe um documento de identificação válido (CPF, RG ou passaporte) antes de enviar.\n\nSe o campo não estiver aparecendo, atualize a página e tente novamente.');
-    return;
-  }
   var soapTxt=buildSoapText();
   // _HAG_PATCH_BLINDAGEM_v1 : rastreio de falha de gravacao no HAG OS
   var _hagGravouOK = true;
@@ -1899,8 +1883,8 @@ async function submitForm(){
     if(!_rpcOK && !patId && docNum){
       // Lookup definitivo pelo documento que o paciente preencheu
       try {
-        var lookupUrl = SURL + '/rest/v1/rpc/hag_buscar_paciente_por_doc'; /* HAG_RPC_LOOKUP_v1 */
-        var lookupResp = await fetch(lookupUrl, {method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:docTipo, p_valor:docNum})});
+        var lookupUrl = SURL + '/rest/v1/patients?' + encodeURIComponent(docTipo) + '=eq.' + encodeURIComponent(docNum) + '&select=id&limit=1';
+        var lookupResp = await fetch(lookupUrl, {headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
         if(lookupResp.ok){
           var lookupData = await lookupResp.json();
           if(Array.isArray(lookupData) && lookupData.length > 0){
@@ -1967,8 +1951,8 @@ async function submitForm(){
           // Se conflito de UNIQUE (paciente já existia, race condition), refazer lookup
           if(insertResp.status === 409 && docNum){
             console.warn('[HAG] Conflito 409 ao criar paciente, fazendo retry-lookup');
-            var retryUrl = SURL + '/rest/v1/rpc/hag_buscar_paciente_por_doc'; /* HAG_RPC_LOOKUP_v1 */
-            var retryResp = await fetch(retryUrl, {method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:docTipo, p_valor:docNum})});
+            var retryUrl = SURL + '/rest/v1/patients?' + encodeURIComponent(docTipo) + '=eq.' + encodeURIComponent(docNum) + '&select=id&limit=1';
+            var retryResp = await fetch(retryUrl, {headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
             var retryData = await retryResp.json();
             if(Array.isArray(retryData) && retryData.length > 0){
               patId = retryData[0].id;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Check-in Mensal | Acompanhamento HAG</title>
+<title>Check-in Trimestral | Manutenção HAG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -577,19 +577,6 @@ input[type="number"], input[type="date"], select, textarea {
   color: var(--hag-graydark) !important;
 }
 
-
-/* HAG_ACABAMENTO_PREMIUM_v1 (aditivo, sem mexer em estrutura) */
-::selection{background:rgba(201,175,110,.22);color:var(--ink)}
-*{scrollbar-width:thin;scrollbar-color:#cfc8b6 transparent}
-::-webkit-scrollbar{width:10px;height:10px}
-::-webkit-scrollbar-thumb{background:#cfc8b6;border-radius:20px;border:2px solid transparent;background-clip:padding-box}
-::-webkit-scrollbar-thumb:hover{background:#b3ab95;background-clip:padding-box}
-::-webkit-scrollbar-track{background:transparent}
-a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
-button:active{transform:translateY(.5px)}
-img{-webkit-user-drag:none}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
-/* fim HAG_ACABAMENTO_PREMIUM_v1 */
 </style>
 </head>
 <body>
@@ -600,46 +587,6 @@ img{-webkit-user-drag:none}
 /* ═══ Globals para o sistema de documento flexível ═══ */
 var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
 var SKEY = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
-
-/* HAG: identificacao do paciente pelo link (?patient=<id>) */
-/* Privacidade + preparacao para RLS: o paciente vem do parametro do link; */
-/* nao lemos mais a lista de pacientes. */
-window.HAG_URL_PID = (function(){
-  try{
-    var q = new URLSearchParams(window.location.search);
-    return q.get('patient') || q.get('pid') || q.get('id') || '';
-  }catch(e){ return ''; }
-})();
-(function(){
-  function _gate(){
-    if(window.HAG_URL_PID){
-      /* Identificado pelo link: dispensa o campo de documento. */
-      var dt = document.getElementById('f_doc_tipo');
-      if(dt && dt.closest){ var fld = dt.closest('.field'); if(fld) fld.style.display = 'none'; }
-      return;
-    }
-    /* Sem id no link: nao le pacientes, mostra aviso e oculta o formulario. */
-    var fc = document.getElementById('formContent');
-    if(fc) fc.style.display = 'none';
-    var ab = document.querySelector('.alert-banner');
-    if(ab) ab.style.display = 'none';
-    if(document.getElementById('hagLinkInvalido')) return;
-    var box = document.createElement('div');
-    box.id = 'hagLinkInvalido';
-    box.className = 'form-body';
-    box.style.textAlign = 'center';
-    box.innerHTML = '<div style="max-width:520px;margin:32px auto;padding:28px 24px;border:1px solid #e2ddd0;border-radius:12px;background:#fff">'
-      + '<div style="font-size:30px;margin-bottom:10px">🔒</div>'
-      + '<h2 style="color:#1f2a24;margin:0 0 8px;font-size:20px">Link invalido ou expirado</h2>'
-      + '<p style="color:#5a5a5a;line-height:1.5;margin:0">Por favor, solicite um novo link ao consultorio do Dr. Henrique para preencher o seu check-in.</p>'
-      + '</div>';
-    var hdr = document.querySelector('.form-header');
-    if(hdr && hdr.parentNode){ hdr.parentNode.insertBefore(box, hdr.nextSibling); }
-    else { document.body.appendChild(box); }
-  }
-  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', _gate); }
-  else { _gate(); }
-})();
 /* ═══ Documentos flexíveis: CPF | RG | Passaporte ═══ */
 /* CPF: 11 dígitos + checksum */
 function cpfMask(v){v=(v||'').replace(/\D/g,'').substring(0,11);if(v.length<=3)return v;if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);}
@@ -700,11 +647,9 @@ function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
   var n = docNormalize(tipo, numero);
   if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
-  /* HAG_RPC_LOOKUP_v1: busca via funcao segura no banco (nao le a tabela patients
-     diretamente; funciona com o banco trancado por RLS/LGPD). */
-  var url = supaUrl + '/rest/v1/rpc/hag_buscar_paciente_por_doc';
+  var url = supaUrl + '/rest/v1/patients?' + encodeURIComponent(tipo) + '=eq.' + encodeURIComponent(n) + '&select=id,nome,cpf,rg,passaporte&limit=1';
   try{
-    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n})});
+    var r = await fetch(url, {headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
     if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
     var data = await r.json();
     if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
@@ -736,7 +681,6 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   function _getType(){ var s = _el('f_doc_tipo'); return s ? s.value : 'cpf'; }
 
   async function _verify(){
-    if(window.HAG_URL_PID){ return; } /* HAG: identificado pelo link, nao consulta pacientes */
     var inp = _el('f_doc_numero');
     if(!inp){ console.warn('[HAG] _verify: input #f_doc_numero not found'); return; }
     var tipo = _getType();
@@ -754,7 +698,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       return;
     }
     _updateStatus('pending', '⟳ Verificando no HAG OS...');
-    console.log('[HAG] Lookup de paciente via RPC hag_buscar_paciente_por_doc ('+tipo+')');
+    console.log('[HAG] Calling Supabase lookup: ' + SURL + '/rest/v1/patients?' + tipo + '=eq.' + n);
     var res = await docLookupPatient(tipo, n, SURL, SKEY);
     console.log('[HAG] Lookup response:', res);
     if(res.ok){
@@ -854,7 +798,6 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   // Expose guards
   window.cpfGuardSubmit = function(){
-    if(window.HAG_URL_PID) return true; /* HAG: identificado pelo link, dispensa documento */
     var inp = _el('f_doc_numero');
     var sel = _el('f_doc_tipo');
     if(!inp || !sel) return true;
@@ -916,10 +859,10 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     </div>
     <div class="trim-tag">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.1"/><path d="M5 3v2.2l1.3.9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-      Acompanhamento · Check-in Mensal
+      Manutenção · Check-in Trimestral
     </div>
-    <h1 class="h-title">Balanço do <em>último mês</em></h1>
-    <p class="h-sub">Este check-in mantém o acompanhamento entre as consultas e permite identificar precocemente qualquer desvio para ajustar a estratégia.</p>
+    <h1 class="h-title">Balanço dos <em>últimos 90 dias</em></h1>
+    <p class="h-sub">Este check-in permite identificar precocemente qualquer desvio e ajustar sua estratégia antes que a regressão aconteça.</p>
   </div>
 </div>
 
@@ -953,8 +896,8 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       <input class="finput" id="f_nome" type="text" placeholder="Seu nome completo">
     </div>
     <div class="field" style="flex:1;min-width:120px;margin-bottom:0">
-      <label class="fl">Mês de referência</label>
-      <input class="finput" id="f_periodo" type="text" placeholder="Ex: Junho 2026">
+      <label class="fl">Período</label>
+      <input class="finput" id="f_periodo" type="text" placeholder="Ex: Jan–Mar 2025">
     </div>
   </div>
 
@@ -963,7 +906,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="bloco-header"><div class="bloco-num">01</div><div class="bloco-title">Visão Geral</div></div>
     <div class="bloco-body">
       <div class="field">
-        <label class="fl">Como avalia sua evolução neste último mês?</label>
+        <label class="fl">Como avalia sua evolução nos últimos 90 dias?</label>
         <div class="status-grid" id="sg_evolucao">
           <div class="status-card" onclick="toggleStatus(this,'sg_evolucao','on-green')">
             <span class="sc-icon">🏆</span><span class="sc-label">Mantive bem</span><span class="sc-desc">Resultado sólido e constante</span>
@@ -978,11 +921,6 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
             <span class="sc-icon">📉</span><span class="sc-label">Regressão significativa</span><span class="sc-desc">Resultado comprometido</span>
           </div>
         </div>
-      </div>
-      <div class="field" style="margin-bottom:.75rem">
-        <label class="fl">Peso atual (kg) <span style="font-size:10px;font-weight:500;color:var(--ink3,#9a978d)">opcional</span></label>
-        <input class="finput" id="f_peso_num" type="text" inputmode="decimal" placeholder="Ex: 78,5">
-        <div style="font-size:11px;color:var(--ink3,#9a978d);margin-top:4px">Se preferir não pesar, deixe em branco e responda pela percepção abaixo.</div>
       </div>
       <div class="field" style="margin-bottom:.5rem">
         <label class="fl">Peso ou caimento das roupas de referência</label>
@@ -1006,7 +944,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="bloco-header"><div class="bloco-num">02</div><div class="bloco-title">Adesão</div></div>
     <div class="bloco-body">
       <div class="field">
-        <label class="fl">Consistência alimentar nos último mês</label>
+        <label class="fl">Consistência alimentar nos últimos 90 dias</label>
         <div class="scale-5" id="s_alim">
           <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">1</span><span class="s5-label">Ruim</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">2</span><span class="s5-label">Fraca</span></button>
@@ -1138,9 +1076,48 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     </div>
   </div>
 
+  <!-- BLOCO 6: REGRA DE OURO -->
+  <div class="bloco">
+    <div class="bloco-header"><div class="bloco-num">06</div><div class="bloco-title">Regra de Ouro</div></div>
+    <div class="bloco-body">
+      <div class="field" style="margin-bottom:.5rem">
+        <div class="fh" style="margin-bottom:.875rem">Os 3 gatilhos definidos na sua alta. Marque o status de cada um nos últimos 90 dias.</div>
+        <div class="regra-card">
+          <div class="regra-label">Verifique cada gatilho</div>
+          <div class="regra-checks">
+            <div class="regra-row" id="rck1">
+              <div class="regra-num">1</div>
+              <span class="regra-desc">Gatilho de <strong style="color:rgba(255,255,255,.8)">peso</strong></span>
+              <div class="regra-btns">
+                <div class="regra-btn" id="r1_ok" onclick="setRegra('r1','ok')">✓ Dentro</div>
+                <div class="regra-btn" id="r1_al" onclick="setRegra('r1','al')">⚠ Acionou</div>
+              </div>
+            </div>
+            <div class="regra-row" id="rck2">
+              <div class="regra-num">2</div>
+              <span class="regra-desc">Gatilho da <strong style="color:rgba(255,255,255,.8)">roupa</strong></span>
+              <div class="regra-btns">
+                <div class="regra-btn" id="r2_ok" onclick="setRegra('r2','ok')">✓ Serviu</div>
+                <div class="regra-btn" id="r2_al" onclick="setRegra('r2','al')">⚠ Apertou</div>
+              </div>
+            </div>
+            <div class="regra-row" id="rck3">
+              <div class="regra-num">3</div>
+              <span class="regra-desc">Gatilho <strong style="color:rgba(255,255,255,.8)">comportamental</strong></span>
+              <div class="regra-btns">
+                <div class="regra-btn" id="r3_ok" onclick="setRegra('r3','ok')">✓ Controlou</div>
+                <div class="regra-btn" id="r3_al" onclick="setRegra('r3','al')">⚠ Acionou</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- BLOCO 7: DIREÇÃO ATUAL -->
   <div class="bloco">
-    <div class="bloco-header"><div class="bloco-num">06</div><div class="bloco-title">Direção Atual</div></div>
+    <div class="bloco-header"><div class="bloco-num">07</div><div class="bloco-title">Direção Atual</div></div>
     <div class="bloco-body">
       <div class="field">
         <label class="fl">Hoje você sente que está</label>
@@ -1173,10 +1150,10 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   <!-- BLOCO 8: RISCO E NECESSIDADE -->
   <div class="bloco">
-    <div class="bloco-header"><div class="bloco-num">07</div><div class="bloco-title">Risco e Necessidade</div></div>
+    <div class="bloco-header"><div class="bloco-num">08</div><div class="bloco-title">Risco e Necessidade</div></div>
     <div class="bloco-body">
       <div class="field">
-        <label class="fl">Quão difícil foi manter a rotina neste último mês?</label>
+        <label class="fl">Quão difícil foi manter a rotina nos últimos 90 dias?</label>
         <div class="scale-5" id="s_dificuldade">
           <button class="s5-btn" onclick="setScale5(this,'s_dificuldade');calcAlerta()"><span class="s5-num">1</span><span class="s5-label">Fácil</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_dificuldade');calcAlerta()"><span class="s5-num">2</span><span class="s5-label">Tranquilo</span></button>
@@ -1188,13 +1165,13 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       <div class="field">
         <label class="fl">Sente necessidade de acompanhamento mais próximo?</label>
         <div class="radio-group" id="r_acompanhamento">
-          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento')"><div class="radio-dot"></div><span class="radio-label">Não — estou bem com o acompanhamento atual</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento')"><div class="radio-dot"></div><span class="radio-label">Não — estou bem na manutenção</span></div>
           <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Talvez — sinto que poderia melhorar</span></div>
           <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Sim — preciso de suporte</span></div>
         </div>
       </div>
       <div class="field" style="margin-bottom:.5rem">
-        <label class="fl">Deseja antecipar sua próxima consulta para algum ajuste?</label>
+        <label class="fl">Deseja antecipar a consulta semestral para algum ajuste?</label>
         <div class="radio-group" id="r_antecipar">
           <div class="radio-row" onclick="toggleRadio(this,'r_antecipar')"><div class="radio-dot"></div><span class="radio-label">Não precisa — seguirei o calendário normal</span></div>
           <div class="radio-row" onclick="toggleRadio(this,'r_antecipar');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Sim, por favor entrem em contato para agendar</span></div>
@@ -1205,15 +1182,15 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   <!-- BLOCO 9: AJUSTE FINAL (era bloco 8 no original) -->
   <div class="bloco">
-    <div class="bloco-header"><div class="bloco-num">08</div><div class="bloco-title">Reflexão e Comprometimento</div></div>
+    <div class="bloco-header"><div class="bloco-num">09</div><div class="bloco-title">Reflexão e Comprometimento</div></div>
     <div class="bloco-body">
       <div class="field">
         <label class="fl">Algo importante que o Dr. Henrique deveria saber?</label>
         <div class="fh">Intercorrências de saúde, mudanças de vida, exames recentes, dúvidas...</div>
-        <textarea class="finput" id="f_mensagem" placeholder="Relate aqui qualquer informação relevante para o ajuste do seu plano..."></textarea>
+        <textarea class="finput" id="f_mensagem" placeholder="Relate aqui qualquer informação relevante para o ajuste do seu plano de manutenção..."></textarea>
       </div>
       <div class="field" style="margin-bottom:.5rem">
-        <label class="fl">De 0 a 10, quão comprometido(a) você está com o seu plano neste momento?</label>
+        <label class="fl">De 0 a 10, quão comprometido(a) você está para retomar ou manter seu melhor momento?</label>
         <div class="scale-10" id="s_compromisso">
           <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">0</button>
           <button class="s10-btn" onclick="setScale10(this,'s_compromisso');calcAlerta()">1</button>
@@ -1234,14 +1211,14 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   <!-- CLOSING -->
   <div class="closing-msg">
-    <div class="closing-eyebrow">Método HAG · Acompanhamento Contínuo</div>
-    <p class="closing-text">"O acompanhamento entre as consultas é o que mantém você no caminho certo. Cada check-in me permite enxergar sua evolução e ajustar a estratégia no momento exato, para que cada etapa do seu plano seja bem aproveitada."</p>
+    <div class="closing-eyebrow">Método HAG · Fase de Manutenção</div>
+    <p class="closing-text">"Este momento de manutenção é o que define se o resultado se sustenta ou se há regressão. Se identificarmos necessidade, ajustamos sua estratégia e retomamos o acompanhamento de forma estruturada."</p>
     <div class="closing-sign">Dr. Henrique Alves · CRM/SP 226530</div>
   </div>
 
   <div class="submit-wrap">
     <button class="btn-submit" onclick="enviarCheckin()">
-      Enviar Check-in Mensal
+      Enviar Check-in Trimestral
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5h8M7 4l3 2.5L7 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
@@ -1263,18 +1240,18 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         <path d="M25 36l8 8 14-14" stroke="#C9AF6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="success-eyebrow">Check-in Mensal · Método HAG</div>
+    <div class="success-eyebrow">Check-in Trimestral · Manutenção HAG</div>
     <h2 class="r-title">Recebido</h2>
     <div class="r-rule"></div>
-    <p class="r-sub">O Dr. Henrique recebeu seu balanço mensal.<br>Se algum ponto precisar de ajuste, você será contactado antes da próxima consulta.</p>
+    <p class="r-sub">O Dr. Henrique recebeu seu balanço trimestral.<br>Se algum ponto precisar de ajuste, você será contactado antes da próxima consulta.</p>
     <div class="success-card">
       <div class="sc-eyebrow">O que acontece agora</div>
       <div class="ss-list">
-        <div class="ss-item"><div class="ss-num">01</div><div class="ss-text"><strong>Análise do mês</strong>O Dr. Henrique revisa seu balanço e identifica pontos de atenção</div></div>
+        <div class="ss-item"><div class="ss-num">01</div><div class="ss-text"><strong>Análise do trimestre</strong>O Dr. Henrique revisa seu balanço e identifica pontos de atenção</div></div>
         <div class="ss-divider"></div>
         <div class="ss-item"><div class="ss-num">02</div><div class="ss-text"><strong>Ajuste se necessário</strong>Caso identifique necessidade, a equipe entrará em contato para orientação ou reagendamento</div></div>
         <div class="ss-divider"></div>
-        <div class="ss-item"><div class="ss-num">03</div><div class="ss-text"><strong>Continue firme</strong>O resultado conquista-se mês a mês — você está no caminho certo</div></div>
+        <div class="ss-item"><div class="ss-num">03</div><div class="ss-text"><strong>Continue a manutenção</strong>O resultado conquista-se mês a mês — você está no caminho certo</div></div>
       </div>
     </div>
     <p class="close-note">Você já pode fechar esta página.</p>
@@ -1386,8 +1363,8 @@ function calcAlerta(){
   } else if(score===0&&(evolucao.indexOf('Mantive')>=0||evolucao.indexOf('Oscilac')>=0)){
     banner.classList.add('show','al-verde');
     icon.textContent='🟢';
-    title.textContent='Mês sólido!';
-    text.textContent='Seus indicadores mostram que você está no caminho certo. Continue — isso é exatamente o Método HAG em ação.';
+    title.textContent='Manutenção sólida!';
+    text.textContent='Seus indicadores mostram que você está sustentando o resultado. Continue — isso é exatamente o Método HAG em ação.';
   }
 }
 
@@ -1399,7 +1376,7 @@ function buildMsg(){
   else if(banner.classList.contains('al-verde')) status='MANUTENCAO SOLIDA';
   var NL=String.fromCharCode(10);
   var L='─────────────────────────────────────────────────';
-  var msg='CHECK-IN MENSAL HAG - MANUTENCAO'+NL;
+  var msg='CHECK-IN TRIMESTRAL HAG - MANUTENCAO'+NL;
   msg+='Dr. Henrique Alves Gonzaga - CRM/SP 226530'+NL;
   msg+='Data: '+new Date().toLocaleDateString('pt-BR')+NL;
   msg+=L+NL+NL;
@@ -1407,7 +1384,7 @@ function buildMsg(){
   msg+='Periodo: '+fv('f_periodo')+NL;
   msg+='Status: '+status+NL+NL;
   msg+='[ VISAO GERAL ]'+NL;
-  msg+='Evolucao 30 dias: '+statusLabel('sg_evolucao')+NL;
+  msg+='Evolucao 90 dias: '+statusLabel('sg_evolucao')+NL;
   msg+='Peso/Roupas: '+statusLabel('sg_peso')+NL+NL;
   msg+='[ ADESAO ]'+NL;
   msg+='Alimentar: '+sc5('s_alim')+NL;
@@ -1426,11 +1403,15 @@ function buildMsg(){
   msg+='Exercicio: '+radio('r_exercicio')+NL;
   msg+='Sono: '+radio('r_sono')+NL;
   msg+='Estresse: '+radio('r_estresse')+NL+NL;
+  msg+='[ REGRA DE OURO ]'+NL;
+  msg+='Gatilho peso: '+getRck('r1')+NL;
+  msg+='Gatilho roupa: '+getRck('r2')+NL;
+  msg+='Gatilho comportamental: '+getRck('r3')+NL+NL;
   msg+='[ DIRECAO ATUAL ]'+NL;
   msg+='Percepcao: '+statusLabel('sg_direcao')+NL;
   msg+='Objetivo: '+chips('c_objetivo')+NL+NL;
   msg+='[ RISCO E NECESSIDADE ]'+NL;
-  msg+='Dificuldade 30 dias: '+sc5('s_dificuldade')+NL;
+  msg+='Dificuldade 90 dias: '+sc5('s_dificuldade')+NL;
   msg+='Necessidade acompanhamento: '+radio('r_acompanhamento')+NL;
   msg+='Antecipar consulta: '+radio('r_antecipar')+NL+NL;
   msg+='[ COMPROMISSO ]'+NL;
@@ -1454,38 +1435,18 @@ async function enviarCheckin(){
   if(taErr) taErr.value=msg;
   window.scrollTo({top:0,behavior:'smooth'});
 
-  /* === HAG - Claude via Supabase Proxy (injetado pelo patch A2) === */
-  var HAG_PROXY = 'https://yutcnphwovqeiwcwzzhs.supabase.co/functions/v1/claude-proxy';
-  var HAG_SKEY  = 'sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
-  async function hagCallClaude(messages, maxTokens) {
-    maxTokens = maxTokens || 800;
-    var resp = await fetch(HAG_PROXY, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + HAG_SKEY,
-        'apikey': HAG_SKEY
-      },
-      body: JSON.stringify({ messages: messages, max_tokens: maxTokens })
-    });
-    if (!resp.ok) throw new Error('Proxy error HTTP ' + resp.status);
-    var data = await resp.json();
-    if (data.error) throw new Error(data.error);
-    return data;
-  }
-
   // Interpretação clínica via Claude
   var interpretacao='';
   try{
     var NL=String.fromCharCode(10);
     var prompt='Voce e o Dr. Henrique Alves Gonzaga, nutrologo e medico esportivo (Metodo HAG, CRM/SP 226530).'+NL+NL
-      +'Um paciente do grupo de Manutencao preencheu o check-in mensal abaixo. Gere um relatorio clinico interno em portugues, estruturado em 3 secoes:'+NL+NL
-      +'1. AVALIACAO DO MÊS (como esta a manutencao: adesao, composicao corporal, comportamento, Regra de Ouro)'+NL
+      +'Um paciente do grupo de Manutencao preencheu o check-in trimestral abaixo. Gere um relatorio clinico interno em portugues, estruturado em 3 secoes:'+NL+NL
+      +'1. AVALIACAO DO TRIMESTRE (como esta a manutencao: adesao, composicao corporal, comportamento, Regra de Ouro)'+NL
       +'2. PONTOS DE ATENCAO (o que merece monitoramento ou intervencao — seja direto e clinico)'+NL
       +'3. CONDUTA SUGERIDA (manter plano / ajuste preventivo / antecipar consulta / novo ciclo HAG — com justificativa)'+NL+NL
       +'Maximo 280 palavras. Use apenas os dados do check-in.'+NL+NL
       +'CHECK-IN:'+NL+msg;
-    var dataIA={content:[{text:''}]};   /* HAG_SEM_IA_v1: interpretacao desativada, nao gasta token */
+    var dataIA=await hagCallClaude([{role:'user',content:prompt}],700);
     interpretacao=dataIA.content&&dataIA.content[0]?dataIA.content[0].text:'';
   }catch(eIA){
     interpretacao='[Erro ao gerar analise: '+eIA.message+']';
@@ -1495,7 +1456,7 @@ async function enviarCheckin(){
     var NL2=String.fromCharCode(10);
     var sep='=================================================';
     msg+=NL2+sep+NL2;
-    msg+='ANALISE CLINICA MENSAL - uso exclusivo Dr. Henrique'+NL2;
+    msg+='ANALISE CLINICA TRIMESTRAL - uso exclusivo Dr. Henrique'+NL2;
     msg+=sep+NL2+NL2;
     msg+=interpretacao+NL2+NL2;
     msg+=sep+NL2;
@@ -1508,8 +1469,8 @@ async function enviarCheckin(){
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
         access_key:WEB3FORMS_KEY,
-        subject:'Check-in Mensal HAG - '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',
-        from_name:'Check-in Mensal HAG - '+fv('f_nome'),
+        subject:'Check-in Trimestral HAG - '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',
+        from_name:'Check-in Trimestral HAG - '+fv('f_nome'),
         message:msg
       })
     });
@@ -1541,10 +1502,11 @@ async function enviarCheckin(){
     var padroes=[];
     if(pct>=70&&sdi>=0&&sdi<=2)padroes.push('progressao');if(pct<45&&sdi>=4)padroes.push('ajuste_estrutural');
     if(pct<45&&sco>=0&&sco<=2)padroes.push('intervencao_comportamental');if(sen>=0&&sen<=1&&str>=4)padroes.push('overreaching');
-    // HAG: paciente identificado pelo link (?patient=<id>); sem leitura da lista de pacientes.
-    var patId = window.HAG_URL_PID || null;
-    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'cim_'+Date.now(),patient_id:window.HAG_URL_PID||patId,patient_nome:nome,semana:fvt('f_periodo'),peso:(document.getElementById('f_peso_num')||{value:''}).value.trim(),data_envio:new Date().toISOString().slice(0,10),s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,score_total:total,score_pct:pct,classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',padroes:padroes,mensagem:fvt('f_mensagem'),interpretacao:interpretacao||'',criado:new Date().toISOString(),tipo:'mensal',texto_completo:typeof buildMsg==='function'?buildMsg():''})});
-    console.log('HAG OS: check-in mensal salvo com interpretacao');
+    var patResp=await fetch(SURL+'/rest/v1/patients?select=id,nome&limit=200',{headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
+    var pats=await patResp.json(),patId=null;
+    if(Array.isArray(pats)){var nl=nome.toLowerCase().trim();var m=pats.find(function(p){return p.nome.toLowerCase()===nl;})||pats.find(function(p){return p.nome.toLowerCase().includes(nl.split(' ')[0]);});if(m)patId=m.id;}
+    await fetch(SURL+'/rest/v1/checkins',{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'cit_'+Date.now(),patient_id:(window.cpfGetPatientId&&window.cpfGetPatientId())||patId,patient_nome:nome,semana:fvt('f_periodo'),data_envio:new Date().toISOString().slice(0,10),s_dieta:sa>=0?sa:null,s_treino:str>=0?str:null,s_energia:sen>=0?sen:null,s_dificuldade:sdi>=0?sdi:null,s_compromisso:sco>=0?sco:null,score_total:total,score_pct:pct,classificacao:pct>=70?'verde':pct>=45?'amarelo':'vermelho',padroes:padroes,mensagem:fvt('f_mensagem'),interpretacao:interpretacao||'',criado:new Date().toISOString(),tipo:'trimestral',texto_completo:typeof buildMsg==='function'?buildMsg():''})});
+    console.log('HAG OS: check-in trimestral salvo com interpretacao');
   }catch(eTri){console.warn('HAG OS trimestral save:',eTri);}
 }
 
