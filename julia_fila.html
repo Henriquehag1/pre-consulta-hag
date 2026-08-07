@@ -717,7 +717,17 @@ window.ativarAvisos=async function(btn){
       atualizado_em:new Date().toISOString()
     },{onConflict:'endpoint'});
     if(r.error) throw new Error(r.error.message);
-    toast('Avisos ligados neste aparelho');
+    /* HAG_PUSH_JULIA_v1: pede um push de confirmacao para ESTE aparelho, na
+       hora. Se a notificacao chegar, o canal esta provado de ponta a ponta;
+       se nao chegar, a Julia percebe imediatamente, e nao semanas depois. */
+    try{
+      await fetch('https://yutcnphwovqeiwcwzzhs.supabase.co/functions/v1/hag-push',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+((sess&&sess.data&&sess.data.session&&sess.data.session.access_token)||'')},
+        body:JSON.stringify({teste:true, endpoint:j.endpoint})
+      });
+    }catch(e){}
+    toast('Avisos ligados. Uma notificação de teste deve chegar em instantes.');
     _mostrarBotaoPush();
   }catch(e){
     toast('Não consegui ligar: '+(e&&e.message?e.message:e));
