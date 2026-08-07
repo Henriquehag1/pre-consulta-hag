@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fila HAG">
 <title>Fila de Agendamento · HAG</title>
+<!-- HAG_PUSH_JULIA_v1: sem manifest e sem tela de início o iPhone não entrega push -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icone-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -144,6 +147,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 </div>
 <div class="hdr-btns">
 <button class="btn-novas" id="btnNovas" onclick="marcarNovasVistas()">•</button>
+<button class="btn-agenda" id="btnPush" onclick="ativarAvisos(this)" style="display:none">🔔 Ativar avisos</button>
 <button class="btn-agenda" onclick="atualizarFila(this)">🔄 Atualizar</button>
 <button class="btn-agenda" onclick="abrirAgenda()">📆 Agenda do Dr.</button>
 <button class="btn-sair" onclick="sair()">Sair</button>
@@ -247,6 +251,7 @@ document.getElementById('login').classList.remove('show');
 document.getElementById('app').classList.add('show');
 var u=(sess&&sess.user&&sess.user.email)||'';
 document.getElementById('hdrSub').textContent=u?('Logada como '+u):'';
+try{ _mostrarBotaoPush(); }catch(e){}   /* HAG_PUSH_JULIA_v1 */
 carregar();
 }
 
@@ -624,6 +629,101 @@ async function _pollNovidades(){
     }
   }catch(e){}
 }
+
+/* ===== HAG_PUSH_JULIA_v1 · aviso com a página fechada ==================
+   Fluxo: registra o service worker, pede permissão a partir de um toque,
+   assina no serviço de push do navegador e guarda a assinatura no Supabase.
+   O envio é feito depois por uma função no servidor, disparada quando a
+   tabela de tarefas muda.
+
+   No iPhone há uma condição que não dá para contornar por código: a fila
+   precisa estar adicionada à tela de início. Aberta só no Safari, o botão
+   explica isso em vez de falhar calado.
+======================================================================= */
+var VAPID_PUBLICA='BE5Sl8gN_vm7fqCK261RE4eZF0FBmIx0-AseQQxoCEY5U8TkkldzjtewOnj8RwTZ_SnRX7OOCZV5xhBpjSb2R7k';
+
+function _b64ToU8(base64){
+  var pad='='.repeat((4-base64.length%4)%4);
+  var b64=(base64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  var raw=atob(b64), arr=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+function _ehIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+function _estaInstalado(){
+  return (window.navigator.standalone===true) ||
+         (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function _pushSuportado(){
+  return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+}
+
+async function _pushJaAssinado(){
+  try{
+    if(!('serviceWorker' in navigator)) return false;
+    var reg=await navigator.serviceWorker.getRegistration();
+    if(!reg) return false;
+    var s=await reg.pushManager.getSubscription();
+    return !!s;
+  }catch(e){ return false; }
+}
+
+async function _mostrarBotaoPush(){
+  var b=document.getElementById('btnPush'); if(!b) return;
+  if(!_pushSuportado()){ b.style.display='none'; return; }
+  if(Notification.permission==='granted' && await _pushJaAssinado()){
+    b.textContent='🔔 Avisos ligados'; b.style.display='inline-block'; b.disabled=true; b.style.opacity='.6';
+    return;
+  }
+  b.textContent='🔔 Ativar avisos'; b.style.display='inline-block'; b.disabled=false; b.style.opacity='';
+}
+
+window.ativarAvisos=async function(btn){
+  if(!_pushSuportado()){
+    toast('Este navegador não suporta aviso com a página fechada.');
+    return;
+  }
+  if(_ehIOS() && !_estaInstalado()){
+    toast('No iPhone: toque em Compartilhar e em "Adicionar à Tela de Início". Depois abra por esse ícone e ative aqui.');
+    return;
+  }
+  var _o=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Ativando…'; }
+  try{
+    var perm=await Notification.requestPermission();
+    if(perm!=='granted'){
+      toast('Permissão não concedida. Dá para ativar depois em Ajustes.');
+      if(btn){ btn.disabled=false; btn.textContent=_o; }
+      return;
+    }
+    var reg=await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    var sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:_b64ToU8(VAPID_PUBLICA)
+      });
+    }
+    var j=sub.toJSON();
+    var sess=await db.auth.getSession();
+    var email=(sess&&sess.data&&sess.data.session&&sess.data.session.user&&sess.data.session.user.email)||'';
+    var r=await db.from('push_assinaturas').upsert({
+      endpoint:j.endpoint,
+      p256dh:(j.keys&&j.keys.p256dh)||'',
+      auth:(j.keys&&j.keys.auth)||'',
+      quem:email,
+      aparelho:(navigator.userAgent||'').slice(0,180),
+      atualizado_em:new Date().toISOString()
+    },{onConflict:'endpoint'});
+    if(r.error) throw new Error(r.error.message);
+    toast('Avisos ligados neste aparelho');
+    _mostrarBotaoPush();
+  }catch(e){
+    toast('Não consegui ligar: '+(e&&e.message?e.message:e));
+    if(btn){ btn.disabled=false; btn.textContent=_o; }
+  }
+};
 
 document.getElementById('lgSenha').addEventListener('keydown',function(e){if(e.key==='Enter')entrar();});
 boot();
