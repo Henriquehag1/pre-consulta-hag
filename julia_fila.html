@@ -49,6 +49,14 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 .card{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:16px 15px;margin-bottom:12px;box-shadow:0 2px 10px rgba(35,32,26,.04)}
 .card.atrasada{border-color:#E4C6C3;box-shadow:0 2px 12px rgba(179,38,30,.10)}
 .card.proxima{border-color:#E6D9A8}
+/* HAG_AVISO_NOVIDADE_v1 */
+.card.nova{border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)}
+.card.nova::before{content:"NOVO";position:absolute;top:-9px;left:14px;background:#C9AF6E;color:#231F19;font-size:.58rem;font-weight:800;letter-spacing:.09em;border-radius:5px;padding:2px 7px}
+.card{position:relative}
+.btn-novas{border:1px solid #C9AF6E;background:#C9AF6E;color:#231F19;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:800;font-family:inherit;display:none;animation:pulseNovas 1.6s ease-in-out infinite}
+.btn-novas.show{display:inline-block}
+@keyframes pulseNovas{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@media(prefers-reduced-motion:reduce){.btn-novas{animation:none}}
 .urg{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:20px;font-weight:600;margin-left:6px;white-space:nowrap}
 .urg-late{background:#FBE4E1;color:#B3261E}
 .urg-soon{background:#FBF3DA;color:#8A6D00}
@@ -135,6 +143,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color
 <div class="hdr-sub" id="hdrSub">—</div>
 </div>
 <div class="hdr-btns">
+<button class="btn-novas" id="btnNovas" onclick="marcarNovasVistas()">•</button>
 <button class="btn-agenda" onclick="atualizarFila(this)">🔄 Atualizar</button>
 <button class="btn-agenda" onclick="abrirAgenda()">📆 Agenda do Dr.</button>
 <button class="btn-sair" onclick="sair()">Sair</button>
@@ -206,8 +215,8 @@ var SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 var db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
 var STATE={tarefas:[],fones:{},tab:'abertas',agenda:null,agendaAt:null};
-var TIPO_LABEL={retorno:'Retorno',diagnostica:'Consulta diagnóstica',procedimento:'Procedimento',injetavel:'Injetável',geral:'Agendamento'};
-var TIPO_MSG={retorno:'sua consulta de retorno',diagnostica:'sua consulta com o Dr. Henrique',procedimento:'o seu procedimento',injetavel:'a sua aplicação'};
+var TIPO_LABEL={retorno:'Retorno',diagnostica:'Consulta diagnóstica',procedimento:'Procedimento',injetavel:'Injetável',implante:'Implante',geral:'Agendamento'};
+var TIPO_MSG={retorno:'sua consulta de retorno',diagnostica:'sua consulta com o Dr. Henrique',procedimento:'o seu procedimento',injetavel:'a sua aplicação',implante:'o seu procedimento de implante'};
 
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}
 function firstName(n){return String(n||'').trim().split(/\s+/)[0]||'';}
@@ -262,6 +271,9 @@ var ar=await db.from('agenda_cache').select('payload,atualizado_em').eq('id','pr
 if(ar&&ar.data){STATE.agenda=ar.data.payload;STATE.agendaAt=ar.data.atualizado_em;}
 }catch(e){}
 await reconciliarCalendar();
+/* HAG_AVISO_NOVIDADE_v1: na primeira vez neste aparelho, carimba o agora como
+   ponto de partida. Sem isso a fila inteira apareceria como novidade. */
+if(!_vistoEm()) _marcarVisto();
 render();
 }
 
@@ -446,6 +458,7 @@ var feitas=STATE.tarefas.filter(function(t){return t.status==='concluida';});
 document.getElementById('nAbertas').textContent=abertas.length;
 var _ncc=document.getElementById('nComunic'); if(_ncc)_ncc.textContent=comunic.length;
 document.getElementById('nFeitas').textContent=feitas.length;
+_pintarBadge(_contarNovas());   /* HAG_AVISO_NOVIDADE_v1 */
 var lista=(STATE.tab==='comunicado')?comunic:((STATE.tab==='feitas')?feitas:abertas);
 /* ordena pela data do evento mais próxima primeiro; sem data vai para o fim */
 lista.sort(function(a,b){
@@ -462,6 +475,7 @@ return;
 }
 var hoje=hojeISO();
 el.innerHTML=lista.map(function(t){
+var nova=_ehNova(t);   /* HAG_AVISO_NOVIDADE_v1 */
 var late=t.janela_data && t.janela_data<hoje && t.status!=='concluida';
 var _dd=diasAte(t.janela_data);
 var near=(t.status!=='concluida' && _dd!==null && _dd>=0 && _dd<=3);
@@ -476,7 +490,7 @@ var agendadoLinha=(t.status==='concluida'&&t.agendado_data)
     ? '<span class="c-sync ok">✓ Na agenda do Dr.</span>'
     : '<span class="c-sync pend">⏳ Entra na agenda no próximo ciclo</span>')
 : '';
-return '<div class="card'+(late?' atrasada':(near?' proxima':''))+'">'+
+return '<div class="card'+(late?' atrasada':(near?' proxima':''))+(nova?' nova':'')+'">'+
 '<div class="c-top"><div class="c-nome">'+esc(t.patient_nome||'—')+'</div>'+
 '<span class="c-tipo">'+(TIPO_LABEL[t.tipo_evento]||'Agendamento')+'</span></div>'+
 '<div class="c-janela">Janela: <b>'+(t.janela_data?('semana de '+fmtBR(t.janela_data)):'a combinar')+'</b>'+urgPill(t)+'</div>'+
@@ -540,8 +554,80 @@ if(t){t.status='pendente';t.agendado_data=null;t.agendado_hora=null;t.calendar_s
 toast('Tarefa reaberta');
 render();
 }
+/* ===== HAG_AVISO_NOVIDADE_v1 =====================================
+   Avisa a Julia quando entra tarefa nova na fila, com a página aberta.
+   Guarda no próprio aparelho o instante em que ela viu a fila pela última
+   vez; tudo criado depois disso conta como novidade.
+
+   Limite conhecido e assumido: com a página fechada nada chega. Notificação
+   de verdade no iPhone exige adicionar a fila à tela de início, permissão e
+   um serviço de envio; ficou para uma etapa seguinte. Vibração não existe no
+   Safari do iPhone e o som só toca depois de algum toque na tela, então o
+   aviso que sempre funciona é o visual.
+=================================================================== */
+var AVISO_KEY='hag_fila_visto';
+var _avisoUltimoTotal=0;
+
+function _vistoEm(){ try{ return localStorage.getItem(AVISO_KEY)||''; }catch(e){ return ''; } }
+function _marcarVisto(){ try{ localStorage.setItem(AVISO_KEY,new Date().toISOString()); }catch(e){} }
+
+function _ehNova(t){
+  var v=_vistoEm();
+  if(!v) return false;              /* sem marca ainda: nada é "novo" */
+  if(t.status==='concluida') return false;
+  return String(t.criado_em||'') > v;
+}
+function _contarNovas(){
+  return (STATE.tarefas||[]).filter(_ehNova).length;
+}
+function _pintarBadge(n){
+  var b=document.getElementById('btnNovas'); if(!b) return;
+  if(n>0){ b.textContent='● '+n+(n===1?' nova':' novas'); b.classList.add('show'); }
+  else { b.classList.remove('show'); b.textContent='•'; }
+}
+window.marcarNovasVistas=function(){
+  _marcarVisto();
+  _avisoUltimoTotal=0;
+  render();
+  toast('Fila marcada como vista');
+};
+function _avisarChegada(n){
+  try{ if(navigator.vibrate) navigator.vibrate([120,60,120]); }catch(e){}
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(AC){
+      var ctx=new AC(), o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value=880; g.gain.value=.05; o.start();
+      setTimeout(function(){ try{ o.stop(); ctx.close(); }catch(_){ } },180);
+    }
+  }catch(e){}
+  toast(n===1?'Chegou 1 paciente novo na fila':('Chegaram '+n+' pacientes novos na fila'));
+}
+
+/* Consulta leve, só para saber se mudou algo. Não roda a reconciliação com o
+   Calendar, que grava no banco e não deve rodar de minuto em minuto. */
+async function _pollNovidades(){
+  if(document.hidden) return;
+  if(!document.getElementById('app') || !document.getElementById('app').classList.contains('show')) return;
+  try{
+    var r=await db.from('tarefas').select('id,status,criado_em').eq('tipo','agendamento');
+    if(r.error) return;
+    var conhecidas={};
+    (STATE.tarefas||[]).forEach(function(t){ conhecidas[String(t.id)]=1; });
+    var chegou=(r.data||[]).filter(function(t){
+      return t.status!=='concluida' && !conhecidas[String(t.id)];
+    });
+    if(chegou.length){
+      await carregar();
+      _avisarChegada(chegou.length);
+    }
+  }catch(e){}
+}
+
 document.getElementById('lgSenha').addEventListener('keydown',function(e){if(e.key==='Enter')entrar();});
 boot();
+setInterval(_pollNovidades, 60000);
 </script>
 </body>
 </html>
