@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Vídeo · Método HAG</title>
+<!-- HAG_VIDEOS_IMPLANTE_v2: moldura com origem web para o player do YouTube.
+     O montador roda como arquivo local e o YouTube recusa tocar embutido sem
+     um referenciador valido (erro 153). Esta pagina, servida pelo dominio do
+     GitHub Pages, resolve isso: o montador abre ela, e ela abre o video. -->
+<style>html,body{margin:0;height:100%;background:#000}iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+.err{color:#9a917c;font-family:system-ui;font-size:14px;padding:24px}</style>
+</head>
+<body>
+<script>
+(function(){
+  var q = new URLSearchParams(location.search);
+  var id = String(q.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20);
+  if (!id) { document.body.innerHTML = '<div class="err">Vídeo não informado.</div>'; return; }
+  var f = document.createElement('iframe');
+  f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1';
+  f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  f.allowFullscreen = true;
+  f.referrerPolicy = 'origin';
+  document.body.appendChild(f);
+})();
+</script>
+</body>
+</html>
