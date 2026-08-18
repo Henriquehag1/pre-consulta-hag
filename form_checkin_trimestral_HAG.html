@@ -616,6 +616,22 @@ window.HAG_URL_PID = (function(){
       /* Identificado pelo link: dispensa o campo de documento. */
       var dt = document.getElementById('f_doc_tipo');
       if(dt && dt.closest){ var fld = dt.closest('.field'); if(fld) fld.style.display = 'none'; }
+      /* HAG_TRIMESTRAL_LINK_v2: busca o nome por ID (UMA linha, nao lista
+         pacientes, mantem a privacidade do desenho original) e preenche, para
+         a paciente ver que foi reconhecida e nao precisar digitar. */
+      try{
+        fetch(SURL+'/rest/v1/patients?id=eq.'+encodeURIComponent(window.HAG_URL_PID)+'&select=nome&limit=1',
+              {headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}})
+          .then(function(r){ return r.ok?r.json():null; })
+          .then(function(a){
+            if(!a || !a.length || !a[0].nome) return;
+            var n=document.getElementById('f_nome');
+            if(n && !(n.value||'').trim()){
+              n.value=a[0].nome;
+              try{ n.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){}
+            }
+          }).catch(function(){});
+      }catch(e){}
       return;
     }
     /* Sem id no link: nao le pacientes, mostra aviso e oculta o formulario. */
@@ -1486,9 +1502,28 @@ async function enviarCheckin(){
       return;
     }
     if(!cpfGuardSubmit()) return;
-    var _pid = (typeof window.cpfGetPatientId==='function') ? cpfGetPatientId() : null;
-    if(!_pid || fv('f_nome')==='—'){
+    /* HAG_TRIMESTRAL_LINK_v1 (18/08/2026) - BUG CORRIGIDO
+       Quando a paciente abre pelo link com ?patient=, o _gate() ESCONDE o campo
+       de documento, entao a busca por CPF nunca roda e cpfGetPatientId() volta
+       nulo. A trava abaixo derrubava o envio no fim do formulario, depois de a
+       paciente ter respondido tudo. Foi o caso da Jhandira em 18/08/2026, e
+       explica o trimestral estar com 2 respostas desde maio enquanto o semanal
+       tem 154.
+       O cpfGuardSubmit() logo acima ja reconhece o link (retorna true), e o
+       envio la embaixo tambem usa window.HAG_URL_PID. So esta checagem tinha
+       ficado de fora. */
+    var _pid = window.HAG_URL_PID || ((typeof window.cpfGetPatientId==='function') ? cpfGetPatientId() : null);
+    if(!_pid){
       alert('Este check-in não pode ser enviado sem identificação.\n\nInforme seu documento e aguarde aparecer "Paciente localizado". Se precisar, fale com a secretaria.');
+      return;
+    }
+    /* HAG_TRIMESTRAL_LINK_v2: nome em branco e um problema DIFERENTE de
+       identificacao. Mandar a paciente "informar o documento" quando o que
+       falta e o nome foi parte do que deixou a Jhandira sem saida. */
+    if(fv('f_nome')==='—'){
+      alert('Falta preencher o seu nome completo, no inicio do formulario.');
+      var _n=document.getElementById('f_nome');
+      if(_n){ try{ _n.scrollIntoView({behavior:'smooth',block:'center'}); _n.focus(); }catch(e){} }
       return;
     }
 
