@@ -616,22 +616,13 @@ window.HAG_URL_PID = (function(){
       /* Identificado pelo link: dispensa o campo de documento. */
       var dt = document.getElementById('f_doc_tipo');
       if(dt && dt.closest){ var fld = dt.closest('.field'); if(fld) fld.style.display = 'none'; }
-      /* HAG_TRIMESTRAL_LINK_v2: busca o nome por ID (UMA linha, nao lista
-         pacientes, mantem a privacidade do desenho original) e preenche, para
-         a paciente ver que foi reconhecida e nao precisar digitar. */
-      try{
-        fetch(SURL+'/rest/v1/patients?id=eq.'+encodeURIComponent(window.HAG_URL_PID)+'&select=nome&limit=1',
-              {headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}})
-          .then(function(r){ return r.ok?r.json():null; })
-          .then(function(a){
-            if(!a || !a.length || !a[0].nome) return;
-            var n=document.getElementById('f_nome');
-            if(n && !(n.value||'').trim()){
-              n.value=a[0].nome;
-              try{ n.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){}
-            }
-          }).catch(function(){});
-      }catch(e){}
+      /* HAG_TRIMESTRAL_LINK_v3 (18/08/2026): NAO buscar o nome do paciente aqui.
+         A v2 tentava ler public.patients pelo id, mas o papel anon so tem
+         permissao de INSERT nessa tabela (policy hag_anon_insert_patients),
+         entao o SELECT volta vazio e o preenchimento nunca aconteceria.
+         Mais importante: ler a tabela de pacientes do navegador do paciente e
+         justamente o que o commit "Busca de paciente via funcao segura (LGPD)"
+         removeu de proposito. O paciente digita o proprio nome, como sempre. */
       return;
     }
     /* Sem id no link: nao le pacientes, mostra aviso e oculta o formulario. */
