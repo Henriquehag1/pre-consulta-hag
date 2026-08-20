@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260820-1407"></script>
+<script src="hag_auth.js?v=20260820-1438"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -331,6 +331,20 @@ body {
   box-shadow: var(--shadow-sm);
 }
 .task-card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+/* HAG_RESUMO_CARTAO_v1 */
+.task-card { cursor: pointer; }
+.task-card .tc-actions, .task-card .tc-actions * { cursor: default; }
+.tc-resumo { display:none; padding:12px 18px 14px; border-top:1px solid var(--border);
+             background:var(--surface2); font-size:12.5px; line-height:1.5; color:var(--ink2); }
+.task-card.aberto .tc-resumo { display:block; }
+.tc-resumo h5 { margin:0 0 8px; font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+                color:var(--ink3); font-weight:700; }
+.tc-resumo dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 12px; }
+.tc-resumo dt { color:var(--ink3); font-size:11px; white-space:nowrap; }
+.tc-resumo dd { margin:0; color:var(--ink); }
+.tc-resumo .frase { margin:0 0 10px; color:var(--ink); font-size:13px; }
+.tc-resumo .alerta { margin-top:10px; padding:7px 10px; border-radius:6px;
+                     background:#fdf6e3; border:1px solid #e8d5b0; color:#7a5c14; font-size:12px; }
 
 .task-card.st-pendente  { border-left: 3px solid var(--amber); }
 .task-card.st-andamento { border-left: 3px solid var(--blue); }
@@ -687,6 +701,11 @@ body {
   <!-- BANNER URGENTE -->
   <div class="urgente-banner hidden" id="urgenteBanner">
     &#x26a0;&#xfe0f; <span id="urgenteText"></span>
+  </div>
+
+  <!-- HAG_LOCAL_OBRIGATORIO_v1: agendamento sem local vira evento sem lugar na agenda -->
+  <div class="urgente-banner hidden" id="semLocalBanner" style="background:#fdf6e3;border-color:#e8d5b0;color:#7a5c14">
+    &#x1f4cd; <span id="semLocalText"></span>
   </div>
 
   <!-- TOOLBAR -->
@@ -1053,6 +1072,138 @@ function _filaLocalLabel(v){
   var k=String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   return ({online:'💻 Online',pinheiros:'📍 Presencial · Pinheiros',tatuape:'📍 Presencial · Tatuapé'})[k] || ('📍 '+v);
 }
+/* ============================================================================
+   HAG_RESUMO_CARTAO_v1 (20/08/2026)
+   Tocar no cartao abre um resumo em linguagem simples do que aquela tarefa e,
+   em que pe esta e qual e o proximo passo. Fica embaixo do proprio cartao, e
+   nao num modal, para funcionar bem no celular e nao brigar com os botoes.
+   O estado aberto vive num Set, para sobreviver ao render seguinte.
+   ========================================================================== */
+const _resumoAberto = new Set();
+
+function _resEsc(s){
+  return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];
+  });
+}
+function _resLinha(rot, val){
+  if(val===null || val===undefined || val==='') return '';
+  return '<dt>'+_resEsc(rot)+'</dt><dd>'+val+'</dd>';
+}
+function _resDataBR(iso){
+  if(!iso) return '';
+  var p=String(iso).slice(0,10).split('-');
+  return p.length===3 ? (p[2]+'/'+p[1]+'/'+p[0]) : '';
+}
+function _resDias(iso){
+  if(!iso) return '';
+  var hj=new Date(new Date().toISOString().slice(0,10));
+  var d=new Date(String(iso).slice(0,10));
+  var n=Math.round((d-hj)/86400000);
+  if(n===0) return 'hoje';
+  if(n===1) return 'amanhã';
+  if(n===-1) return 'ontem';
+  return n>0 ? ('em '+n+' dias') : ('há '+Math.abs(n)+' dias');
+}
+
+function _resumoFila(t){
+  var ev=FILA_EV_LABEL[t.tipo_evento]||'Agendamento';
+  var nome=String(t.patient_nome||'o paciente');
+  var frase, passo, alerta='';
+
+  if(t.status==='concluida' && t.agendado_data){
+    frase=ev+' de '+nome+', marcado para <b>'+_resDataBR(t.agendado_data)
+         +(t.agendado_hora?(' às '+String(t.agendado_hora).slice(0,5)):'')+'</b> ('+_resDias(t.agendado_data)+').';
+    passo = t.calendar_sync==='criado'
+      ? 'Nada a fazer. Já está na agenda do Dr. Henrique.'
+      : 'Entra na agenda no próximo ciclo do sincronismo, em até dez minutos.';
+    if(!t.local) alerta='Sem local definido. Do jeito que está, o evento entra na agenda sem lugar. Toque no aviso de local no topo da tela para escolher.';
+  } else if(t.status==='pendente'){
+    frase='Ainda não foi marcado. É preciso falar com '+nome+' e combinar data, horário e local do '+ev.toLowerCase()+'.';
+    passo='Toque no ✅ do cartão quando tiver a data fechada.';
+  } else {
+    frase=nome+' já foi procurado, mas a data ainda não fechou.';
+    passo='Assim que combinar, toque no ✅ para registrar data, horário e local.';
+  }
+
+  var hist='';
+  var m=String(t.obs||'').match(/Remarcado: era [^|]+/g);
+  if(m && m.length) hist=m.map(function(x){ return _resEsc(x.trim()); }).join('<br>');
+
+  return '<h5>Resumo</h5>'
+    + '<p class="frase">'+frase+'</p>'
+    + '<dl>'
+      + _resLinha('Tipo', _resEsc(ev))
+      + _resLinha('Janela', t.janela_data ? (_resDataBR(t.janela_data)+' · '+_resEsc(_resDias(t.janela_data))) : 'a combinar')
+      + _resLinha('Local', t.local ? _resEsc(_filaLocalLabel(t.local)) : '<i>ainda não definido</i>')
+      + _resLinha('Na agenda', t.status==='concluida' ? (t.calendar_sync==='criado'?'sim':'ainda não') : null)
+      + _resLinha('Observação', t.obs ? _resEsc(String(t.obs).split('|')[0].trim()) : null)
+      + _resLinha('Remarcações', hist||null)
+      + _resLinha('Próximo passo', _resEsc(passo))
+    + '</dl>'
+    + (alerta ? '<div class="alerta">'+_resEsc(alerta)+'</div>' : '');
+}
+
+function _resumoTarefa(t){
+  var nome=String(t.patient_nome||'o paciente');
+  var rot={pendente:'ainda não começou',andamento:'em andamento',aguardando:'esperando resposta',concluida:'concluída'};
+  var passo={pendente:'Toque em "Iniciar" quando pegar essa tarefa para si.',
+             andamento:'Ao terminar, toque em "Concluir". Se depender do paciente, use "Aguardando".',
+             aguardando:'Está esperando alguém responder. Ao ter retorno, toque em "Concluir".',
+             concluida:'Nada a fazer.'}[t.status]||'';
+  var quem=t.criado_por==='secretaria'?'pela secretaria':'pelo Dr. Henrique';
+  var resp=Array.isArray(t.respostas)?t.respostas:[];
+
+  return '<h5>Resumo</h5>'
+    + '<p class="frase"><b>'+_resEsc(t.tipo||'Tarefa')+'</b> de '+_resEsc(nome)+', '+_resEsc(rot[t.status]||t.status)+'.'
+      + (t.prioridade==='urgente'?' Está marcada como <b>urgente</b>.':'')+'</p>'
+    + '<dl>'
+      + _resLinha('O que é', t.descricao?_resEsc(t.descricao):null)
+      + _resLinha('Observação', t.obs?_resEsc(t.obs):null)
+      + _resLinha('Prazo', t.janela_data ? (_resDataBR(t.janela_data)+' · '+_resEsc(_resDias(t.janela_data))) : null)
+      + _resLinha('Aberta', t.criado_em ? (_resEsc(new Date(t.criado_em).toLocaleDateString('pt-BR'))+' '+quem) : null)
+      + _resLinha('Anotações', resp.length ? (resp.length+(resp.length>1?' registradas':' registrada')) : 'nenhuma')
+      + _resLinha('Próximo passo', _resEsc(passo))
+    + '</dl>';
+}
+
+function _resumoHtml(id, kind){
+  try{
+    if(kind==='fila'){
+      var t=(_fila||[]).find(function(x){return x.id===id;});
+      return t ? _resumoFila(t) : '<p class="frase">Não encontrei essa tarefa.</p>';
+    }
+    var q=(_tasks||[]).find(function(x){return x.id===id;});
+    return q ? _resumoTarefa(q) : '<p class="frase">Não encontrei essa tarefa.</p>';
+  }catch(e){ return '<p class="frase">Não consegui montar o resumo.</p>'; }
+}
+
+function _resumoMontar(card){
+  var id=card.getAttribute('data-rid'), kind=card.getAttribute('data-rkind');
+  var box=card.querySelector('.tc-resumo');
+  if(!box){ box=document.createElement('div'); box.className='tc-resumo'; card.appendChild(box); }
+  box.innerHTML=_resumoHtml(id, kind);
+}
+
+function _resumoRestaurar(){
+  document.querySelectorAll('.task-card[data-rid]').forEach(function(c){
+    if(_resumoAberto.has(c.getAttribute('data-rid'))){ _resumoMontar(c); c.classList.add('aberto'); }
+  });
+}
+
+document.addEventListener('click', function(e){
+  var card=e.target.closest && e.target.closest('.task-card[data-rid]');
+  if(!card) return;
+  /* clique em botao, link ou campo e acao, nao pedido de resumo */
+  if(e.target.closest('button, a, input, select, textarea, .tc-resumo')) return;
+  var id=card.getAttribute('data-rid');
+  if(card.classList.contains('aberto')){
+    card.classList.remove('aberto'); _resumoAberto.delete(id);
+  } else {
+    _resumoMontar(card); card.classList.add('aberto'); _resumoAberto.add(id);
+  }
+});
+
 function buildFilaCard(t){
   const color=gac(t.patient_nome||'?');
   const stMap={pendente:['sb-pendente','&#x1f7e0; A agendar'],andamento:['sb-andamento','&#x1f4ac; Paciente comunicado'],aguardando:['sb-aguardando','&#x1f4ac; Paciente comunicado'],concluida:['sb-concluida','&#x2705; Agendado']};
@@ -1066,7 +1217,7 @@ function buildFilaCard(t){
      .task-card tem overflow:hidden, entao um selo absoluto seria cortado. */
   const _nov=_filaNovidade(t);
   const _selo=_nov?'<span style="display:inline-block;background:#C9AF6E;color:#231F19;font-size:9.5px;font-weight:800;letter-spacing:.09em;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle">NOVIDADE</span>':'';
-  return '<div class="task-card st-'+t.status+'"'+(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':'')+'>'+
+  return '<div class="task-card st-'+t.status+'" data-rid="'+t.id+'" data-rkind="fila"'+(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':'')+'>'+
     '<div class="tc-main">'+
       '<div class="tc-avatar" style="background:'+color+'">'+gin(t.patient_nome||'?')+'</div>'+
       '<div class="tc-info">'+
@@ -1136,11 +1287,16 @@ async function agendarFila(id){
   if(!h)return; h=String(h).trim();
   if(!/^\d{1,2}:\d{2}$/.test(h)){alert('Horario invalido. Use HH:MM, ex: 14:30.');return;}
   if(h.length===4)h='0'+h;
+  /* HAG_LOCAL_OBRIGATORIO_v1: agendar sem local criava evento no calendario sem
+     lugar nenhum, e deixava o retorno do paciente sem local e sem modalidade.
+     Foi o que aconteceu com 14 agendamentos ate 20/08/2026. Agora e obrigatorio. */
+  var loc=_localObrigatorioPrompt(t.local);
+  if(!loc) return;
   try{
-    var body={status:'concluida',agendado_data:iso,agendado_hora:h,calendar_sync:'pendente',atualizado_em:new Date().toISOString()};
+    var body={status:'concluida',agendado_data:iso,agendado_hora:h,local:loc,calendar_sync:'pendente',atualizado_em:new Date().toISOString()};
     if(!t.concluido_em)body.concluido_em=new Date().toISOString();
     await db.from('tarefas').update(body).eq('id',id);
-    await atualizarRetornoPaciente(t.patient_id, iso, h, t.local);
+    await atualizarRetornoPaciente(t.patient_id, iso, h, loc);
     _fila=await loadFila();
     render();
     toast((t.patient_nome||'').split(' ')[0]+' agendado para '+dBR+' '+h+' ✓','ok');
@@ -1157,6 +1313,35 @@ function _remarcarLocalPrompt(atual){
   r=String(r).trim();
   if(r==='') return atual||null;
   return ({'1':'online','2':'pinheiros','3':'tatuape'})[r] || atual || null;
+}
+
+/* HAG_LOCAL_OBRIGATORIO_v1: variante do prompt de local que nao aceita vazio. */
+function _localObrigatorioPrompt(atual){
+  for(var i=0;i<3;i++){
+    var r=prompt('Onde vai ser? Digite 1 para Online, 2 para Pinheiros, 3 para Tatuapé.',
+                 ({online:'1',pinheiros:'2',tatuape:'3'})[atual]||'');
+    if(r===null) return null;
+    var v=({'1':'online','2':'pinheiros','3':'tatuape'})[String(r).trim()];
+    if(v) return v;
+    alert('Escolha 1, 2 ou 3. O local e obrigatorio: sem ele o evento entra na agenda sem lugar.');
+  }
+  return null;
+}
+
+/* HAG_LOCAL_OBRIGATORIO_v1: preenche o local de um agendamento que ja existe e
+   devolve para a fila de sincronismo, para o evento que ja esta no calendario
+   receber o lugar. O sincronismo acha o evento pelo marcador HAG#id, entao ele
+   e atualizado, nao duplicado. */
+async function definirLocalFila(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t){toast('Agendamento nao encontrado','err');return;}
+  var loc=_localObrigatorioPrompt(t.local);
+  if(!loc) return;
+  try{
+    await db.from('tarefas').update({local:loc,calendar_sync:'pendente',atualizado_em:new Date().toISOString()}).eq('id',id);
+    await atualizarRetornoPaciente(t.patient_id, t.agendado_data, t.agendado_hora, loc);
+    _fila=await loadFila(); _patients=await loadPatients(); render();
+    toast(String(t.patient_nome||'').split(' ')[0]+': '+_filaLocalLabel(loc)+' ✓','ok');
+  }catch(e){ toast('Erro: '+e.message,'err'); }
 }
 
 async function remarcarFila(id){
@@ -1259,7 +1444,8 @@ function buildCard(t){
     '</div>';
   }
 
-  return '<div class="task-card '+(t.prioridade==="urgente"?"pri-urgente":stCls)+'">'+
+  /* HAG_RESUMO_CARTAO_v1: data-rid deixa o cartao identificavel no clique */
+  return '<div class="task-card '+(t.prioridade==="urgente"?"pri-urgente":stCls)+'" data-rid="'+t.id+'" data-rkind="tarefa">'+
     '<div class="tc-main">'+
       '<div class="tc-avatar" style="background:'+color+'">'+gin(t.patient_nome)+'</div>'+
       '<div class="tc-info">'+
@@ -1601,11 +1787,32 @@ function updateUrgenteBanner(list){
     banner.classList.add('hidden');
   }
 }
+/* HAG_LOCAL_OBRIGATORIO_v1 */
+function updateSemLocalBanner(){
+  var b=document.getElementById('semLocalBanner'), tx=document.getElementById('semLocalText');
+  if(!b||!tx) return;
+  var hj=new Date().toISOString().slice(0,10);
+  var lista=(_fila||[]).filter(function(t){
+    return t.status==='concluida' && t.agendado_data && t.agendado_data>=hj && !t.local;
+  }).sort(function(a,b2){ return String(a.agendado_data).localeCompare(String(b2.agendado_data)); });
+  if(!lista.length){ b.classList.add('hidden'); tx.innerHTML=''; return; }
+  b.classList.remove('hidden');
+  tx.innerHTML='<b>'+lista.length+' agendamento'+(lista.length>1?'s':'')+' sem local.</b> '
+    + 'Enquanto ficar assim, o evento entra na agenda sem lugar. Toque para escolher: '
+    + lista.map(function(t){
+        return '<button type="button" onclick="definirLocalFila(\''+t.id+'\')" '
+             + 'style="background:#fff;border:1px solid #e8d5b0;border-radius:6px;padding:3px 9px;'
+             + 'margin:2px 3px 0 0;font:600 12px inherit;color:#7a5c14;cursor:pointer">'
+             + String(t.patient_nome||'?').split(' ')[0] + ' · ' + fmtBRf(t.agendado_data) + '</button>';
+      }).join('');
+}
 const _origRender=render;
 render=function(){
   _origRender();
   var _hj=new Date().toISOString().slice(0,10);
   updateUrgenteBanner(_fila.filter(function(t){return t.status!=='concluida'&&t.janela_data&&t.janela_data<_hj;}));
+  updateSemLocalBanner();
+  _resumoRestaurar();
 };
 </script>
 <!-- HAG_AUTOATUALIZA_v1 -->
@@ -1626,7 +1833,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260820-1407';
+  var VERSAO = '20260820-1438';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
