@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
+<script src="hag_auth.js?v=20260820-1407"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HAG OS · Tarefas</title>
+<!-- HAG_APP_TELA_INICIO_v1: faz o "adicionar a tela de inicio" virar app de verdade -->
+<link rel="manifest" href="manifest-tarefas.json">
+<meta name="theme-color" content="#1a1a18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tarefas HAG">
+<link rel="apple-touch-icon" href="icone-192.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #f8f7f4;
+  --bg2:       #f2f0eb;
+  --surface:   #ffffff;
+  --surface2:  #faf9f7;
+  --border:    #e8e4dc;
+  --border2:   #d4cfc4;
+  --ink:       #1a1a18;
+  --ink2:      #5a5a52;
+  --ink3:      #9a9a8e;
+
+  --gold:        #b8922a;
+  --gold-light:  #f5ede0;
+  --gold-border: #e8d5b0;
+
+  --green:        #2d7a45;
+  --green-light:  #edf7f0;
+  --green-border: #b8dfc5;
+
+  --red:        #c0392b;
+  --red-light:  #fdf0ee;
+  --red-border: #f0c4be;
+
+  --amber:        #c07020;
+  --amber-light:  #fef6ec;
+  --amber-border: #f0d4a8;
+
+  --blue:        #2563a8;
+  --blue-light:  #edf4fc;
+  --blue-border: #b8d4f0;
+
+  --purple:        #6b46c1;
+  --purple-light:  #f3f0fc;
+  --purple-border: #c4b8e8;
+
+  --r:   10px;
+  --rsm:  6px;
+  --rxs:  4px;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow:     0 4px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,.1), 0 4px 12px rgba(0,0,0,.05);
+
+  --fd: 'Playfair Display', Georgia, serif;
+  --fb: 'DM Sans', system-ui, sans-serif;
+  --fm: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--fb);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 28px 80px;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+
+.brand-mark {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fd);
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: -.3px;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: var(--fd);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.brand-crm {
+  font-family: var(--fm);
+  font-size: 9px;
+  color: var(--ink3);
+  letter-spacing: .08em;
+  margin-top: 1px;
+}
+
+.topbar-right { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px;
+  border-radius: var(--rsm);
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--ink2);
+  font-family: var(--fb);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all .14s;
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+}
+.btn:hover { background: var(--bg2); color: var(--ink); border-color: var(--border2); }
+
+.btn-primary {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.btn-primary:hover { background: #333; border-color: #333; color: #fff; }
+
+/* SYNC */
+.sync-wrap {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.sync-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--amber);
+  animation: pulse 1.2s ease infinite;
+}
+.sync-dot.ok { background: var(--green); animation: none; }
+.sync-dot.err { background: var(--red); animation: none; }
+.sync-label { font-family: var(--fm); font-size: 9px; color: var(--ink3); letter-spacing: .05em; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+/* ROLE SWITCH */
+.role-switch {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--rsm);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.role-btn {
+  font-family: var(--fb); font-size: 12px; font-weight: 500;
+  padding: 6px 14px; border: none; background: none;
+  color: var(--ink3); cursor: pointer; transition: all .14s;
+}
+.role-btn.active { background: var(--ink); color: #fff; }
+
+/* ── HERO ── */
+.hero {
+  padding: 36px 0 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.hero-left {}
+
+.hero-eyebrow {
+  font-family: var(--fm);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 20px; height: 1px;
+  background: var(--border2);
+}
+
+.hero-title {
+  font-family: var(--fd);
+  font-size: 38px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.1;
+  letter-spacing: -.3px;
+}
+.hero-title em { font-style: italic; color: var(--gold); }
+
+/* ── STATS ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 0 0 24px;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all .14s;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.stat:hover { border-color: var(--border2); box-shadow: var(--shadow); transform: translateY(-1px); }
+.stat::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 0 0 var(--r) var(--r);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.stat:hover::after { opacity: 1; }
+.stat.s-amber::after { background: var(--amber); }
+.stat.s-blue::after { background: var(--blue); }
+.stat.s-gold::after { background: var(--gold); }
+.stat.s-green::after { background: var(--green); }
+
+.stat-lbl {
+  font-family: var(--fm);
+  font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink3);
+  margin-bottom: 8px;
+}
+.stat-val {
+  font-family: var(--fd);
+  font-size: 32px; font-weight: 400;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-val.c-amber { color: var(--amber); }
+.stat-val.c-blue  { color: var(--blue); }
+.stat-val.c-gold  { color: var(--gold); }
+.stat-val.c-green { color: var(--green); }
+.stat-sub { font-size: 11px; color: var(--ink3); }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 16px; flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-tab {
+  font-family: var(--fb); font-size: 12px; font-weight: 500;
+  padding: 6px 12px; border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink3); cursor: pointer;
+  transition: all .12s; white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+.filter-tab:hover { background: var(--bg2); color: var(--ink); }
+.filter-tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.search-wrap { position: relative; margin-left: auto; }
+.si {
+  position: absolute; left: 11px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink3); font-size: 13px; pointer-events: none;
+}
+.search-input {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--rsm); padding: 7px 12px 7px 32px;
+  font-family: var(--fb); font-size: 12.5px; color: var(--ink);
+  outline: none; width: 210px; transition: all .14s;
+  box-shadow: var(--shadow-sm);
+}
+.search-input::placeholder { color: var(--ink3); }
+.search-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,146,42,.1); }
+
+/* ── TASK LIST ── */
+.task-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── TASK CARD ── */
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: all .15s;
+  box-shadow: var(--shadow-sm);
+}
+.task-card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+
+.task-card.st-pendente  { border-left: 3px solid var(--amber); }
+.task-card.st-andamento { border-left: 3px solid var(--blue); }
+.task-card.st-aguardando{ border-left: 3px solid var(--gold); }
+.task-card.st-concluida { border-left: 3px solid var(--green); opacity: .65; }
+.task-card.pri-urgente  { border-left: 3px solid var(--red) !important; }
+
+.tc-main {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px;
+}
+
+.tc-avatar {
+  width: 38px; height: 38px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fd); font-size: 15px; font-weight: 500;
+  color: #fff; flex-shrink: 0;
+}
+
+.tc-info { flex: 1; min-width: 0; }
+.tc-name {
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tc-tipo {
+  font-size: 12px; color: var(--ink2); margin-top: 2px;
+}
+.tc-desc {
+  font-size: 11.5px; color: var(--ink3); margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tc-meta {
+  font-family: var(--fm); font-size: 9.5px; color: var(--ink3); margin-top: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.tc-right {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 8px; flex-shrink: 0;
+}
+
+/* STATUS BADGE */
+.tc-status-badge {
+  font-family: var(--fm); font-size: 9.5px; font-weight: 500;
+  padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+}
+.sb-pendente  { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border); }
+.sb-andamento { background: var(--blue-light);  color: var(--blue);  border: 1px solid var(--blue-border); }
+.sb-aguardando{ background: var(--gold-light);  color: var(--gold);  border: 1px solid var(--gold-border); }
+.sb-concluida { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+.sb-urgente   { background: var(--red-light);   color: var(--red);   border: 1px solid var(--red-border); }
+
+.tc-actions { display: flex; gap: 5px; align-items: center; }
+
+/* ADVANCE BUTTONS */
+.btn-adv {
+  font-family: var(--fb); font-size: 11.5px; font-weight: 500;
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid; cursor: pointer; transition: all .14s;
+  white-space: nowrap;
+}
+.btn-adv.to-andamento {
+  background: var(--blue-light); color: var(--blue); border-color: var(--blue-border);
+}
+.btn-adv.to-andamento:hover { background: var(--blue); color: #fff; }
+.btn-adv.to-aguardando {
+  background: var(--gold-light); color: var(--gold); border-color: var(--gold-border);
+}
+.btn-adv.to-aguardando:hover { background: var(--gold); color: #fff; }
+.btn-adv.to-concluida {
+  background: var(--green-light); color: var(--green); border-color: var(--green-border);
+}
+.btn-adv.to-concluida:hover { background: var(--green); color: #fff; }
+
+.btn-icon {
+  width: 28px; height: 28px; border-radius: var(--rxs);
+  border: 1px solid var(--border); background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--ink3); cursor: pointer;
+  transition: all .12s;
+}
+.btn-icon:hover { background: var(--red-light); color: var(--red); border-color: var(--red-border); }
+.btn-icon.edit:hover { background: var(--bg2); color: var(--ink); border-color: var(--border2); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(26,26,24,.5);
+  z-index: 9000; display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.vis { display: flex; }
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%; max-width: 520px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: mIn .2s ease;
+}
+@keyframes mIn { from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none} }
+
+.modal-hdr {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg2);
+}
+.modal-ttl {
+  font-family: var(--fd); font-size: 20px; font-weight: 400; color: var(--ink);
+}
+.modal-x {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; font-size: 13px; color: var(--ink3);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s; box-shadow: var(--shadow-sm);
+}
+.modal-x:hover { background: var(--red-light); color: var(--red); border-color: var(--red-border); }
+
+.modal-body {
+  padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;
+}
+.modal-foot {
+  padding: 14px 24px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+  background: var(--bg2);
+}
+
+/* FIELDS */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-family: var(--fm); font-size: 9.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .1em; color: var(--ink3);
+}
+.field input, .field select, .field textarea {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--rsm); padding: 9px 12px;
+  font-family: var(--fb); font-size: 13px; color: var(--ink);
+  outline: none; transition: all .13s;
+}
+.field select option { background: #fff; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,146,42,.1);
+}
+.field textarea { resize: vertical; min-height: 64px; }
+
+/* TIPO CHIPS */
+.tipo-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.tipo-chip {
+  font-family: var(--fb); font-size: 12px; font-weight: 500;
+  padding: 7px 13px; border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2); color: var(--ink3);
+  cursor: pointer; transition: all .12s;
+}
+.tipo-chip:hover { border-color: var(--border2); color: var(--ink); background: var(--surface); }
+.tipo-chip.active {
+  background: var(--ink); color: #fff; border-color: var(--ink);
+}
+
+/* AUTOCOMPLETE */
+.pac-wrap { position: relative; }
+.pac-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--rsm);
+  max-height: 220px; overflow-y: auto;
+  z-index: 200; display: none;
+  box-shadow: var(--shadow);
+}
+.pac-dropdown.vis { display: block; }
+.pac-opt {
+  padding: 9px 13px; font-size: 13px;
+  cursor: pointer; color: var(--ink2);
+  transition: background .1s; border-bottom: 1px solid var(--border);
+}
+.pac-opt:last-child { border-bottom: none; }
+.pac-opt:hover { background: var(--bg2); color: var(--ink); }
+.pac-opt-meta { font-size: 10.5px; color: var(--ink3); margin-top: 2px; font-family: var(--fm); }
+
+/* SAVE BUTTON */
+.btn-save {
+  background: var(--ink); color: #fff; border: 1px solid var(--ink);
+  padding: 9px 20px; border-radius: var(--rsm);
+  font-family: var(--fb); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .14s;
+}
+.btn-save:hover { background: #333; }
+
+/* PRIORITY DOT */
+.pri-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  display: inline-block;
+}
+.pri-normal  { background: var(--ink3); }
+.pri-alta    { background: var(--amber); }
+.pri-urgente { background: var(--red); }
+
+/* EMPTY STATE */
+.empty {
+  text-align: center; padding: 72px 24px; color: var(--ink3);
+}
+.empty-icon { font-size: 36px; margin-bottom: 14px; opacity: .2; }
+.empty-title {
+  font-family: var(--fd); font-size: 20px; color: var(--ink2); margin-bottom: 6px;
+}
+.empty-sub { font-size: 12.5px; }
+
+/* LOADING */
+.loading-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; z-index: 9999; gap: 14px;
+  transition: opacity .4s;
+}
+.loading-screen.hidden { opacity: 0; pointer-events: none; }
+.loading-logo {
+  font-family: var(--fd); font-size: 32px; font-weight: 400; color: var(--ink);
+}
+.loading-sub {
+  font-family: var(--fm); font-size: 9px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--ink3);
+}
+.loading-bar {
+  width: 160px; height: 1px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.loading-bar-fill {
+  height: 100%; background: var(--gold); animation: lf 1.8s ease infinite;
+}
+@keyframes lf { 0%{width:0;opacity:1}80%{width:100%;opacity:1}100%{width:100%;opacity:0} }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 22px; right: 22px;
+  background: var(--ink); color: #fff;
+  padding: 10px 16px; border-radius: var(--rsm);
+  font-size: 12.5px; font-weight: 500;
+  box-shadow: var(--shadow-lg); z-index: 99999;
+  opacity: 0; transform: translateY(6px);
+  transition: all .2s; display: flex; align-items: center; gap: 7px;
+}
+.toast.vis { opacity: 1; transform: none; }
+.toast.ok  { background: var(--green); }
+.toast.err { background: var(--red); }
+
+/* SECTION DIVIDER */
+.section-head {
+  display: flex; align-items: center; gap: 10px;
+  margin: 24px 0 12px;
+}
+.section-head-label {
+  font-family: var(--fm); font-size: 9.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .12em; color: var(--ink3);
+  white-space: nowrap;
+}
+.section-head-line { flex: 1; height: 1px; background: var(--border); }
+.section-head-count {
+  font-family: var(--fm); font-size: 9.5px; color: var(--ink3);
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 2px 8px; border-radius: 20px;
+}
+
+/* URGENTE BANNER */
+.urgente-banner {
+  background: var(--red-light);
+  border: 1px solid var(--red-border);
+  border-radius: var(--r);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+  font-size: 12.5px; color: var(--red);
+  font-weight: 500;
+}
+.urgente-banner.hidden { display: none; }
+
+@media(max-width:720px){
+  .stats { grid-template-columns: 1fr 1fr; }
+  .shell { padding: 0 16px 60px; }
+  .tc-main { flex-wrap: wrap; }
+  .search-input { width: 160px; }
+  .hero-title { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="ls">
+  <div class="loading-logo">HAG OS</div>
+  <div class="loading-sub">Carregando tarefas</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">HG</div>
+      <div>
+        <div class="brand-name">Dr. Henrique Gonzaga</div>
+        <div class="brand-crm">CRM/SP 226530 &middot; METODO HAG</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="sync-wrap">
+        <div class="sync-dot" id="syncDot"></div>
+        <span class="sync-label" id="syncLabel">conectando</span>
+      </div>
+      <a class="btn" href="index_HAG.html" style="text-decoration:none">&#8592; Painel</a>
+      <button class="btn btn-primary" onclick="openModal()">+ Nova Tarefa</button>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Gestao operacional</div>
+      <div class="hero-title">Fila de <em>agendamento</em></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat s-amber" onclick="verFila('agendar')">
+      <div class="stat-lbl">A agendar</div>
+      <div class="stat-val c-amber" id="st-fa">0</div>
+      <div class="stat-sub">aguardando agendamento</div>
+    </div>
+    <div class="stat s-blue" onclick="verFila('comunicado')">
+      <div class="stat-lbl">Comunicados</div>
+      <div class="stat-val c-blue" id="st-fc">0</div>
+      <div class="stat-sub">aguardando retorno</div>
+    </div>
+    <div class="stat s-green" onclick="verFila('agendados')">
+      <div class="stat-lbl">Agendados</div>
+      <div class="stat-val c-green" id="st-fg">0</div>
+      <div class="stat-sub">ultimos 14 dias</div>
+    </div>
+    <div class="stat s-gold" onclick="verFila('agendar')">
+      <div class="stat-lbl">Atrasados</div>
+      <div class="stat-val" id="st-fx" style="color:#c11e1e">0</div>
+      <div class="stat-sub">janela vencida</div>
+    </div>
+  </div>
+
+  <!-- BANNER URGENTE -->
+  <div class="urgente-banner hidden" id="urgenteBanner">
+    &#x26a0;&#xfe0f; <span id="urgenteText"></span>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="si">&#8981;</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar paciente..." oninput="render()">
+    </div>
+  </div>
+
+  <!-- TASK LIST -->
+  <div class="task-list" id="taskList"></div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-ttl" id="modalTtl">Nova Tarefa</div>
+      <button class="modal-x" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Paciente</label>
+        <div class="pac-wrap">
+          <input id="f-pac" type="text" placeholder="Digite o nome do paciente..." autocomplete="off" oninput="filterPac(this.value)">
+          <div class="pac-dropdown" id="pacDrop"></div>
+        </div>
+        <input type="hidden" id="f-pac-id">
+      </div>
+      <div class="field">
+        <label>Tipo de tarefa</label>
+        <div class="tipo-chips" id="tipoChips">
+          <div class="tipo-chip" onclick="selectTipo(this,'Agendar consulta')">&#x1f4c5; Agendar consulta</div>
+          <div class="tipo-chip" onclick="selectTipo(this,'Confirmar presenca')">&#x1f4de; Confirmar presenca</div>
+          <div class="tipo-chip" onclick="selectTipo(this,'Cobrar pagamento')">&#x1f4b0; Cobrar pagamento</div>
+          <div class="tipo-chip" onclick="selectTipo(this,'Enviar link de formulario')">&#x1f517; Enviar formulario</div>
+          <div class="tipo-chip" onclick="selectTipo(this,'Remarcar consulta')">&#x1f504; Remarcar</div>
+          <div class="tipo-chip" onclick="selectTipo(this,'Enviar resultado de exame')">&#x1f9ea; Resultado de exame</div>
+          <div class="tipo-chip" onclick="selectTipo(this,'Ligar para paciente')">&#x260e; Ligar</div>
+          <div class="tipo-chip" onclick="selectTipo(this,'Enviar mensagem WhatsApp')">&#x1f4ac; WhatsApp</div>
+          <div class="tipo-chip" data-outro onclick="selectTipo(this,'outro')">&#x270f; Outro...</div>
+        </div>
+        <input id="f-tipo-outro" type="text" placeholder="Descreva a tarefa..." style="display:none;margin-top:8px">
+      </div>
+      <!-- HAG_FILA_JULIA_v1: campos extras quando a tarefa vai para a fila de agendamento da Julia -->
+      <div class="field" id="filaExtra" style="display:none">
+        <label>Enviar para a fila da Julia &middot; tipo de evento</label>
+        <div class="tipo-chips" id="eventoChips">
+          <div class="tipo-chip active" onclick="selectEvento(this,'retorno')">&#x1f501; Retorno</div>
+          <div class="tipo-chip" onclick="selectEvento(this,'diagnostica')">&#x1fa7a; Diagn&oacute;stica</div>
+          <div class="tipo-chip" onclick="selectEvento(this,'procedimento')">&#x1f9d1;&#x200d;&#x2695;&#xfe0f; Procedimento</div>
+          <div class="tipo-chip" onclick="selectEvento(this,'injetavel')">&#x1f489; Injet&aacute;vel</div>
+          <div class="tipo-chip" onclick="selectEvento(this,'implante')">&#x1f9ec; Implante</div>
+        </div>
+        <label style="margin-top:10px;display:block">Janela desejada <span style="font-size:10px;font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--ink3)">(opcional, semana alvo)</span></label>
+        <input id="f-janela" type="date" style="margin-top:4px">
+        <label style="margin-top:10px;display:block">Local do atendimento</label>
+        <div class="tipo-chips" id="localChips">
+          <div class="tipo-chip active" onclick="selectLocal(this,'online')">&#x1f4bb; Online</div>
+          <div class="tipo-chip" onclick="selectLocal(this,'pinheiros')">&#x1f4cd; Pinheiros</div>
+          <div class="tipo-chip" onclick="selectLocal(this,'tatuape')">&#x1f4cd; Tatuap&eacute;</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Observacao <span style="font-size:10px;font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--ink3)">(opcional)</span></label>
+        <textarea id="f-obs" placeholder="Ex: Ligar depois das 14h, confirmar horario das 10h..."></textarea>
+      </div>
+      <div class="field">
+        <label>Prioridade</label>
+        <select id="f-pri">
+          <option value="normal">&#x26aa; Normal</option>
+          <option value="alta">&#x1f7e0; Alta</option>
+          <option value="urgente">&#x1f534; Urgente</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveTask()">Criar tarefa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Anotação -->
+<div class="modal-overlay" id="anotModal" style="position:fixed;inset:0;background:rgba(26,26,24,.5);z-index:9100;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:480px;box-shadow:0 14px 50px rgba(0,0,0,.16);overflow:hidden;display:flex;flex-direction:column;max-height:85vh">
+    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:var(--fd);font-size:18px;color:var(--ink)">💬 Adicionar anotação</div>
+        <div id="anotPaciente" style="font-size:11px;color:var(--ink3);margin-top:2px"></div>
+      </div>
+      <button onclick="closeAnotModal()" style="background:none;border:1px solid var(--border);border-radius:50%;width:30px;height:30px;font-size:13px;cursor:pointer;color:var(--ink2)">×</button>
+    </div>
+    <div style="padding:18px 22px;overflow-y:auto;flex:1">
+      <div id="anotHistorico" style="margin-bottom:14px"></div>
+      <label style="font-family:var(--fm,monospace);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);display:block;margin-bottom:6px">Nova anotação</label>
+      <textarea id="anotTexto" placeholder="Ex: Liguei mas não atendeu. Ela vai retornar amanhã." style="width:100%;background:#fff;font-family:var(--fb);font-size:13px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-height:90px;resize:vertical;outline:none"></textarea>
+    </div>
+    <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:7px">
+      <button class="btn" onclick="closeAnotModal()">Cancelar</button>
+      <button class="btn-save" onclick="addAnotacao()">Adicionar anotação</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+const SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+const SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+const {createClient}=window.supabase;
+const db=createClient(SURL,SKEY);
+const AC=['#1a5fa8','#2d7a3a','#7c3a8a','#b45309','#1a7a6a','#8a3a1a','#3a5a8a','#5a3a7a','#2a6a4a','#6a2a4a'];
+function gac(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);return AC[Math.abs(h)%AC.length];}
+function gin(n){const p=n.trim().split(' ').filter(Boolean);return p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();}
+
+let _tasks=[], _patients=[], _filter='fila', _filaSub='agendar', _role=localStorage.getItem('hag_role')||'medico';
+let _selectedTipo='', _editId=null;
+
+// ── ROLE ──
+function setRole(r){
+  _role=r;
+  localStorage.setItem('hag_role',r);
+  var _bm=document.getElementById('btnMedico'); if(_bm)_bm.classList.toggle('active',r==='medico');
+  var _bs=document.getElementById('btnSecretaria'); if(_bs)_bs.classList.toggle('active',r==='secretaria');
+  render();
+}
+function verFila(sub){ _filaSub=sub||'agendar'; setFilter('fila'); }
+
+/* ===== HAG_AVISO_NOVIDADE_v1 =========================================
+   Marca o que a Julia mexeu desde a ultima vez que o Dr. olhou a fila.
+
+   Guarda por tarefa o carimbo de atualizacao ja visto, e nao um horario
+   unico. Assim a propria edicao do Dr. nao vira "novidade" (saveTask
+   carimba na hora) e uma tarefa que a Julia mexeu ontem continua marcada
+   ate ele de fato olhar.
+
+   O painel ja recebe as mudancas em tempo real pelo canal 'tarefas-rt';
+   o que faltava era avisar que mudou.
+====================================================================== */
+var FILA_VISTO_KEY='hag_painel_fila_visto';
+function _filaVistoMap(){ try{ return JSON.parse(localStorage.getItem(FILA_VISTO_KEY)||'{}'); }catch(e){ return {}; } }
+function _filaVistoSalvar(m){ try{ localStorage.setItem(FILA_VISTO_KEY, JSON.stringify(m)); }catch(e){} }
+function _filaCarimbo(t){ return String(t.atualizado_em||t.criado_em||''); }
+/* HAG_AVISO_DETALHE_v1: o visto guarda um retrato da tarefa (carimbo, status,
+   data agendada), nao so o carimbo. E o que permite dizer O QUE mudou.
+   Compatibilidade: registros antigos eram strings; sao aceitos e regravados
+   no formato novo na proxima marcacao. */
+function _filaSnap(t){ return { c:_filaCarimbo(t), s:String(t.status||''), ad:t.agendado_data||null, ah:t.agendado_hora||null }; }
+function _filaVistoDe(id){
+  var v=_filaVistoMap()[id];
+  if(v==null) return null;
+  if(typeof v==='string') return { c:v, s:null, ad:null, ah:null };
+  return v;
+}
+function _filaNovidade(t){
+  var m=_filaVistoMap();
+  if(!Object.keys(m).length) return false;   /* primeira vez neste navegador */
+  var v=_filaVistoDe(t.id);
+  if(!v) return true;                        /* tarefa que este navegador nunca viu */
+  return v.c !== _filaCarimbo(t);
+}
+function _filaDataBR(d){ if(!d) return ''; var p=String(d).slice(0,10).split('-'); return p.length===3?(p[2]+'/'+p[1]):String(d); }
+/* Descreve, em uma frase, o que aconteceu com a tarefa desde a ultima olhada. */
+function _filaDescreve(t){
+  var v=_filaVistoDe(t.id);
+  var quando=(t.agendado_data?(_filaDataBR(t.agendado_data)+(t.agendado_hora?(' às '+String(t.agendado_hora).slice(0,5)):'')):'');
+  if(!v) return 'entrou na fila';
+  var de=v.s, para=String(t.status||'');
+  if(de!==para){
+    if(para==='concluida') return quando?('agendada para '+quando):'marcada como agendada';
+    if(para==='andamento'||para==='aguardando') return 'paciente comunicado, aguardando retorno';
+    if(para==='pendente') return 'reaberta para novo agendamento';
+  }
+  if(para==='concluida' && (v.ad!==(t.agendado_data||null) || v.ah!==(t.agendado_hora||null))){
+    return quando?('reagendada para '+quando):'data de agendamento alterada';
+  }
+  return 'atualizada';
+}
+function _filaNovidades(){ return (_fila||[]).filter(_filaNovidade); }
+function _filaSemear(){
+  if(Object.keys(_filaVistoMap()).length) return;
+  var m={}; (_fila||[]).forEach(function(t){ m[t.id]=_filaSnap(t); });
+  _filaVistoSalvar(m);
+}
+window.filaMarcarVisto=function(){
+  var m={}; (_fila||[]).forEach(function(t){ m[t.id]=_filaSnap(t); });
+  _filaVistoSalvar(m); render(); toast('Fila marcada como vista','ok');
+};
+function _filaCarimbarUma(id){
+  var m=_filaVistoMap();
+  var t=(_fila||[]).filter(function(x){ return String(x.id)===String(id); })[0];
+  if(t){ m[t.id]=_filaSnap(t); _filaVistoSalvar(m); }
+}
+
+// ── FILTER ──
+function setFilter(f){
+  _filter=f;
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.toggle('active',t.dataset.f===f));
+  render();
+}
+
+function setFilaSub(s){ _filaSub=s; render(); }
+
+// ── RENDER ──
+/* HAG_BUSCA_PACIENTE_v1 (20/08/2026)
+   A busca so filtrava tarefas ja existentes: paciente sem tarefa nenhuma
+   simplesmente sumia da tela, e nao dava para saber se ele tinha ou nao
+   pendencia. Agora, digitando o nome, aparece o paciente mesmo sem tarefa,
+   com plano, etapa, proxima consulta e a contagem do que esta em aberto. */
+function _bpLocal(t){
+  var k=String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return ({online:'💻 Online',pinheiros:'📍 Pinheiros',tatuape:'📍 Tatuapé'})[k] || (t?('📍 '+t):'');
+}
+function _bpNorm(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function _buscaPacientesHtml(q){
+  q=_bpNorm(q).trim();
+  if(q.length<2) return '';
+  var achados=(_patients||[]).filter(function(p){ return _bpNorm(p.nome).includes(q); }).slice(0,6);
+  if(!achados.length){
+    return '<div class="empty" style="padding:18px;margin-bottom:14px;border:1px dashed var(--border);border-radius:12px">'
+      +'<div class="empty-title" style="font-size:.95rem">Nenhum paciente com esse nome</div>'
+      +'<div class="empty-sub">Confira a grafia ou procure por parte do sobrenome.</div></div>';
+  }
+  var cards=achados.map(function(p){
+    var abertas=(_tasks||[]).filter(function(t){ return t.patient_id===p.id && t.status!=='concluida'; });
+    var naFila=(_fila||[]).filter(function(t){ return t.patient_id===p.id && t.status!=='concluida'; });
+    var agend=(_fila||[]).filter(function(t){ return t.patient_id===p.id && t.status==='concluida' && t.agendado_data; })
+                          .sort(function(a,b){ return String(b.agendado_data).localeCompare(String(a.agendado_data)); })[0];
+    var linhas=[];
+    if(p.plano) linhas.push(p.plano);
+    if(p.consulta) linhas.push('etapa '+p.consulta);
+    if(p.status && p.status!=='ativo') linhas.push(p.status);
+
+    var sit='';
+    if(abertas.length||naFila.length){
+      var partes=[];
+      if(abertas.length) partes.push('<b>'+abertas.length+'</b> tarefa'+(abertas.length>1?'s':'')+' em aberto');
+      if(naFila.length)  partes.push('<b>'+naFila.length+'</b> na fila da Julia');
+      sit='<div style="font-size:12px;color:#8a5a2b;margin-top:4px">⚠ '+partes.join(' · ')+'</div>';
+    } else {
+      sit='<div style="font-size:12px;color:#2d7a45;margin-top:4px">✓ Sem tarefa em aberto</div>';
+    }
+    var prox='';
+    if(agend){
+      prox='<div style="font-size:12px;color:#2d7a45;font-weight:600;margin-top:3px">📅 '+fmtBRf(agend.agendado_data)
+          +(agend.agendado_hora?(' às '+agend.agendado_hora):'')
+          +(agend.local?(' · '+_bpLocal(agend.local)):'')
+          +'</div>'
+          +'<div class="tc-actions" style="margin-top:6px">'
+          +'<button class="btn-icon" onclick="remarcarFila(\''+agend.id+'\')" title="Remarcar data, hora ou local" style="color:#8a5a2b">🔁</button>'
+          +'<button class="btn-icon" onclick="marcarRealizada(\''+agend.id+'\')" title="Marcar como realizada" style="color:#2d7a45">✔</button>'
+          +'</div>';
+    } else if(p.proxima){
+      prox='<div style="font-size:12px;color:var(--ink3);margin-top:3px">Próxima prevista: '+fmtBRf(p.proxima)+'</div>';
+    }
+    return '<div class="task-card" style="border-left:3px solid '+gac(p.nome)+'">'
+      +'<div class="tc-main">'
+        +'<div class="tc-avatar" style="background:'+gac(p.nome)+'">'+gin(p.nome)+'</div>'
+        +'<div class="tc-info">'
+          +'<div class="tc-name">'+p.nome+'</div>'
+          +'<div class="tc-desc">'+(linhas.join(' · ')||'—')+'</div>'
+          +sit+prox
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+  return '<div style="margin:0 0 14px">'
+    +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b6b63;margin-bottom:8px">Paciente encontrado</div>'
+    +cards+'</div>';
+}
+
+function render(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const _bp=_buscaPacientesHtml(q);
+  const today=new Date().toISOString().slice(0,10);
+  const weekStart=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+
+  // Stats
+  var _corteF=new Date(Date.now()-14*86400000).toISOString();
+  var _setTxt=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  _setTxt('st-fa', _fila.filter(t=>t.status==='pendente').length);
+  _setTxt('st-fc', _fila.filter(t=>t.status==='andamento'||t.status==='aguardando').length);
+  _setTxt('st-fg', _fila.filter(t=>t.status==='concluida'&&(t.concluido_em||t.atualizado_em||t.criado_em||'')>=_corteF).length);
+  _setTxt('st-fx', _fila.filter(t=>t.status!=='concluida'&&t.janela_data&&t.janela_data<today).length);
+
+  /* HAG_FILA_JULIA_v1: contador e visao da fila dentro do painel do Dr. */
+  const fc=document.getElementById('filaCount');
+  /* HAG_AVISO_NOVIDADE_v1 */
+  var _nNov=_filaNovidades().length;
+  if(fc)fc.textContent='('+_fila.filter(t=>t.status!=='concluida').length+')'+(_nNov?(' · '+_nNov+(_nNov===1?' nova':' novas')):'');
+  if(_filter==='fila'){
+    const el=document.getElementById('taskList');
+    var corte=new Date(Date.now()-14*86400000).toISOString();
+    var baseF=_fila.filter(t=>!q||String(t.patient_nome||'').toLowerCase().includes(q));
+    var g_agendar=baseF.filter(t=>t.status==='pendente');
+    var g_comunic=baseF.filter(t=>t.status==='andamento'||t.status==='aguardando');
+    /* HAG_REMARCAR_v1: procurando por nome, o corte de 14 dias sai do caminho.
+       Era ele que fazia parecer que agendamento antigo nao tinha mais como mexer. */
+    var g_agendados=baseF.filter(t=>t.status==='concluida'&&(!!q||(t.concluido_em||t.atualizado_em||t.criado_em||'')>=corte));
+    if(_filaSub!=='comunicado'&&_filaSub!=='agendados')_filaSub='agendar';
+    var _ordCol=(_filaSub==='agendados')?'agendado_data':'janela_data';
+    var lf=(_filaSub==='agendados'?g_agendados:(_filaSub==='comunicado'?g_comunic:g_agendar)).slice();
+    lf.sort(function(a,b){ var da=(a[_ordCol])||''; var db2=(b[_ordCol])||''; if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1; return da<db2?-1:(da>db2?1:0); });
+    var _stab=function(key,label,n){return '<button onclick="setFilaSub(\''+key+'\')" style="flex:1;padding:9px 6px;border:1px solid '+(_filaSub===key?'#1a1a18':'#e5e2da')+';background:'+(_filaSub===key?'#1a1a18':'#fff')+';color:'+(_filaSub===key?'#fff':'#6b6b63')+';border-radius:10px;font-size:.76rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'+label+' '+n+'</button>';};
+    var subtabs='<div style="display:flex;gap:8px;margin:0 0 12px">'+_stab('agendar','A agendar',g_agendar.length)+_stab('comunicado','Comunicado',g_comunic.length)+_stab('agendados','Agendados',g_agendados.length)+'</div>';
+    /* HAG_AVISO_DETALHE_v1: lista o que aconteceu, tarefa por tarefa. */
+    if(_nNov){
+      var _novLista=_filaNovidades().slice(0,6).map(function(t){
+        var nome=String(t.patient_nome||'—').split(' ').slice(0,3).join(' ');
+        return '<div style="font-size:.78rem;color:#4a4436;padding:2px 0">• <b>'+nome+'</b>: '+_filaDescreve(t)+'</div>';
+      }).join('');
+      var _novMais=(_nNov>6)?('<div style="font-size:.72rem;color:#7D6F42;padding:2px 0">e mais '+(_nNov-6)+'…</div>'):'';
+      subtabs+='<div style="margin:0 0 12px;padding:10px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px">'+
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'+
+          '<span style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42">Desde a sua última olhada</span>'+
+          '<button onclick="filaMarcarVisto()" style="margin-left:auto;border:1px solid #ddd0a8;background:#fff;border-radius:8px;padding:6px 11px;font-size:.72rem;font-weight:600;font-family:inherit;cursor:pointer;color:#7D6F42">Marcar como visto</button>'+
+        '</div>'+_novLista+_novMais+'</div>';
+    }
+    if(!lf.length){
+      var _emTt=(_filaSub==='agendados')?'Nada agendado nos ultimos 14 dias':(_filaSub==='comunicado'?'Ninguem aguardando retorno':'Nenhum paciente aguardando agendamento');
+      var _emSb=(_filaSub==='agendados')?'As agendadas sao removidas daqui apos 14 dias.':(_filaSub==='comunicado'?'Pacientes ja contatados pela Julia aparecem aqui.':'Crie uma tarefa "Agendar consulta" que ela aparece aqui e na tela da Julia.');
+      el.innerHTML=_bp+subtabs+'<div class="empty"><div class="empty-icon">&#x1f4c5;</div><div class="empty-title">'+_emTt+'</div><div class="empty-sub">'+_emSb+'</div></div>';
+      return;
+    }
+    el.innerHTML=_bp+subtabs+lf.map(t=>buildFilaCard(t)).join('');
+    return;
+  }
+
+  let list=_tasks.filter(t=>{
+    if(q&&!t.patient_nome.toLowerCase().includes(q))return false;
+    if(_filter==='all') return t.status!=='concluida';
+    if(_filter==='concluida'){ var corteC=new Date(Date.now()-14*86400000).toISOString(); return t.status==='concluida'&&(t.concluido_em||t.atualizado_em||t.criado_em||'')>=corteC; }
+    return t.status===_filter;
+  });
+
+  // Sort: urgente first, then by criado_em desc
+  list.sort((a,b)=>{
+    const pa=a.prioridade==='urgente'?0:a.prioridade==='alta'?1:2;
+    const pb=b.prioridade==='urgente'?0:b.prioridade==='alta'?1:2;
+    if(pa!==pb)return pa-pb;
+    return (b.criado_em||'').localeCompare(a.criado_em||'');
+  });
+
+  const el=document.getElementById('taskList');
+  if(!list.length){
+    var emptyMsg=_filter==='all'?'Tudo em ordem por aqui':'Nenhuma tarefa nesta categoria';
+    el.innerHTML=_bp+'<div class="empty"><div class="empty-icon">&#x2714;</div><div class="empty-title">'+emptyMsg+'</div><div class="empty-sub">Crie uma nova tarefa clicando em "+ Nova Tarefa".</div></div>';
+    return;
+  }
+  el.innerHTML=_bp+list.map(t=>buildCard(t)).join('');
+}
+
+/* HAG_FILA_JULIA_v1: cartao somente leitura da fila de agendamento */
+const FILA_EV_LABEL={retorno:'Retorno',diagnostica:'Consulta diagnostica',procedimento:'Procedimento',injetavel:'Injetavel',implante:'Implante'};
+function fmtBRf(iso){if(!iso)return '';const p=String(iso).slice(0,10).split('-');return p[2]+'/'+p[1];}
+/* HAG_REMARCAR_v1: local vindo com maiuscula caia fora do mapa e o cartao
+   mostrava "undefined". Agora normaliza e, no pior caso, mostra o proprio valor. */
+function _filaLocalLabel(v){
+  var k=String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return ({online:'💻 Online',pinheiros:'📍 Presencial · Pinheiros',tatuape:'📍 Presencial · Tatuapé'})[k] || ('📍 '+v);
+}
+function buildFilaCard(t){
+  const color=gac(t.patient_nome||'?');
+  const stMap={pendente:['sb-pendente','&#x1f7e0; A agendar'],andamento:['sb-andamento','&#x1f4ac; Paciente comunicado'],aguardando:['sb-aguardando','&#x1f4ac; Paciente comunicado'],concluida:['sb-concluida','&#x2705; Agendado']};
+  const st=stMap[t.status]||['sb-pendente',t.status];
+  const janela=t.janela_data?('Janela: semana de '+fmtBRf(t.janela_data)):'Janela: a combinar';
+  const agendado=(t.status==='concluida'&&t.agendado_data)
+    ?'<div style="font-size:12px;color:var(--green,#2d7a45);font-weight:600;margin-top:3px">&#x1f4c5; '+fmtBRf(t.agendado_data)+(t.agendado_hora?(' as '+t.agendado_hora):'')+
+      (t.calendar_sync==='criado'?' &middot; na agenda':' &middot; entra na agenda no proximo ciclo')+'</div>'
+    :'';
+  /* HAG_AVISO_NOVIDADE_v1: selo em linha, e nao posicionado por cima. O
+     .task-card tem overflow:hidden, entao um selo absoluto seria cortado. */
+  const _nov=_filaNovidade(t);
+  const _selo=_nov?'<span style="display:inline-block;background:#C9AF6E;color:#231F19;font-size:9.5px;font-weight:800;letter-spacing:.09em;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle">NOVIDADE</span>':'';
+  return '<div class="task-card st-'+t.status+'"'+(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':'')+'>'+
+    '<div class="tc-main">'+
+      '<div class="tc-avatar" style="background:'+color+'">'+gin(t.patient_nome||'?')+'</div>'+
+      '<div class="tc-info">'+
+        '<div class="tc-name">'+_selo+t.patient_nome+'</div>'+
+        '<div class="tc-desc">'+(FILA_EV_LABEL[t.tipo_evento]||'Agendamento')+' &middot; '+janela+'</div>'+
+        (t.local?'<div class="tc-desc" style="color:var(--ink3)">'+_filaLocalLabel(t.local)+'</div>':'')+
+        (t.obs?'<div class="tc-desc" style="color:var(--ink3)">'+t.obs+'</div>':'')+
+        agendado+
+      '</div>'+
+      '<div class="tc-side">'+
+        '<span class="tc-status-badge '+st[0]+'">'+st[1]+'</span>'+
+        '<div class="tc-actions">'
+          +(t.status!=='concluida'
+              ? '<button class="btn-icon" onclick="agendarFila(\''+t.id+'\')" title="Marcar como agendado" style="color:#2d7a45">&#x2705;</button>'
+              /* HAG_REMARCAR_v1: ja agendado ganha remarcar e marcar como realizada. */
+              : '<button class="btn-icon" onclick="remarcarFila(\''+t.id+'\')" title="Remarcar data, hora ou local" style="color:#8a5a2b">&#x1f501;</button>'
+               +'<button class="btn-icon" onclick="marcarRealizada(\''+t.id+'\')" title="Marcar como realizada" style="color:#2d7a45">&#x2714;</button>')
+          +'<button class="btn-icon" onclick="editFila(\''+t.id+'\')" title="Editar tarefa">&#x270f;</button><button class="btn-icon" onclick="delFila(\''+t.id+'\')" title="Remover da fila">&#x2715;</button></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+function editFila(id){ openModal(id); }
+/* HAG_REMARCAR_v1: a cascata agora leva tambem local e modalidade. Sem isso, um
+   retorno remarcado de presencial para online continuava gravado como presencial,
+   que foi exatamente o que aconteceu com o Luiz Fernando em 19/08/2026. */
+const _RET_LOCAL={online:['Online','online'],pinheiros:['Pinheiros','presencial'],tatuape:['Tatuapé','presencial']};
+async function atualizarRetornoPaciente(pid, data, hora, local){
+  if(!pid) return;
+  try{ await db.from('patients').update({proxima:data}).eq('id',pid); }catch(e){}
+  try{
+    var cr=await db.from('ciclos').select('id,status').eq('patient_id',pid);
+    var todos=((cr&&cr.data)||[]);
+    var ativos=todos.filter(function(c){return c.status==='ativo';});
+    if(ativos.length){
+      var cids=ativos.map(function(c){return c.id;});
+      var rr=await db.from('retornos').select('id,status,nome_retorno,ordem').in('ciclo_id',cids).order('ordem',{ascending:true});
+      var rets=(rr&&rr.data)||[];
+      var alvo=rets.find(function(x){ return x.status!=='realizada' && !/quest/i.test(String(x.nome_retorno||'')); });
+      if(alvo){
+        var _upd={status:'agendada',data_planejada:data,data_realizada:null,horario:hora,edicao_manual:true};
+        var _L=_RET_LOCAL[local];
+        if(_L){ _upd.local=_L[0]; _upd.modalidade=_L[1]; }
+        await db.from('retornos').update(_upd).eq('id',alvo.id);
+      }
+      return;
+    }
+    if(todos.length===0){
+      var hojeC=new Date().toISOString().slice(0,10);
+      var cc=await db.from('ciclos').insert({patient_id:pid,tipo_ciclo:'aguardando_diagnostica',ordem_renovacao:1,ciclo_anterior_id:null,status:'ativo',inicio:hojeC,fim_previsto:null,modalidade:null,source_label:'agendamento_fila_'+hojeC}).select();
+      var novo=(cc&&cc.data&&cc.data[0])||null;
+      if(novo){ await db.from('retornos').insert({ciclo_id:novo.id,ordem:1,nome_retorno:'Consulta diagnóstica',data_planejada:data,data_realizada:null,status:'agendada',modalidade:null,horario:hora,tem_inconsistencia:false}); }
+    }
+  }catch(e){}
+}
+async function agendarFila(id){
+  var t=_fila.find(function(x){return x.id===id;}); if(!t)return;
+  function isoParaBR(iso){ if(!iso)return ''; var p=String(iso).slice(0,10).split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):''; }
+  var sug=isoParaBR(t.agendado_data||t.janela_data||new Date().toISOString().slice(0,10));
+  var d=prompt('Data do agendamento (DD/MM/AAAA):', sug);
+  if(!d)return;
+  var m=String(d).trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(!m){alert('Data invalida. Use o formato DD/MM/AAAA, ex: 29/07/2026.');return;}
+  var iso=m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2);
+  var dBR=('0'+m[1]).slice(-2)+'/'+('0'+m[2]).slice(-2)+'/'+m[3];
+  var h=prompt('Horario (HH:MM):', t.agendado_hora||'');
+  if(!h)return; h=String(h).trim();
+  if(!/^\d{1,2}:\d{2}$/.test(h)){alert('Horario invalido. Use HH:MM, ex: 14:30.');return;}
+  if(h.length===4)h='0'+h;
+  try{
+    var body={status:'concluida',agendado_data:iso,agendado_hora:h,calendar_sync:'pendente',atualizado_em:new Date().toISOString()};
+    if(!t.concluido_em)body.concluido_em=new Date().toISOString();
+    await db.from('tarefas').update(body).eq('id',id);
+    await atualizarRetornoPaciente(t.patient_id, iso, h, t.local);
+    _fila=await loadFila();
+    render();
+    toast((t.patient_nome||'').split(' ')[0]+' agendado para '+dBR+' '+h+' ✓','ok');
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+/* HAG_REMARCAR_v1 (20/08/2026)
+   Antes, agendamento so podia ser criado. Mudou de data, de horario ou de
+   presencial para online, nao havia por onde corrigir, e o retorno, o painel do
+   paciente e a agenda ficavam com a informacao velha. */
+function _remarcarLocalPrompt(atual){
+  var r=prompt('Local: digite 1 para Online, 2 para Pinheiros, 3 para Tatuapé.\nEnter mantém o atual.',
+               ({online:'1',pinheiros:'2',tatuape:'3'})[atual]||'');
+  if(r===null) return undefined;
+  r=String(r).trim();
+  if(r==='') return atual||null;
+  return ({'1':'online','2':'pinheiros','3':'tatuape'})[r] || atual || null;
+}
+
+async function remarcarFila(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t){toast('Agendamento nao encontrado','err');return;}
+  function isoParaBR(iso){ if(!iso)return ''; var p=String(iso).slice(0,10).split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):''; }
+  var d=prompt('Nova data (DD/MM/AAAA):', isoParaBR(t.agendado_data||t.janela_data));
+  if(!d) return;
+  var m=String(d).trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(!m){ alert('Data invalida. Use DD/MM/AAAA.'); return; }
+  var iso=m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2);
+  var h=prompt('Novo horario (HH:MM):', t.agendado_hora||'');
+  if(!h) return; h=String(h).trim();
+  if(!/^\d{1,2}:\d{2}$/.test(h)){ alert('Horario invalido. Use HH:MM.'); return; }
+  if(h.length===4) h='0'+h;
+  var loc=_remarcarLocalPrompt(t.local);
+  if(loc===undefined) return;
+  var antes=(t.agendado_data?(isoParaBR(t.agendado_data)+' '+(t.agendado_hora||'')):'sem data')+(t.local?(' '+t.local):'');
+  try{
+    await db.from('tarefas').update({
+      status:'concluida', agendado_data:iso, agendado_hora:h, local:loc,
+      calendar_sync:'pendente',
+      obs:String((t.obs||'')+' | Remarcado: era '+antes).trim().slice(0,900),
+      atualizado_em:new Date().toISOString()
+    }).eq('id',id);
+    await atualizarRetornoPaciente(t.patient_id, iso, h, loc);
+    _fila=await loadFila(); _patients=await loadPatients(); render();
+    toast(String(t.patient_nome||'').split(' ')[0]+' remarcado para '+('0'+m[1]).slice(-2)+'/'+('0'+m[2]).slice(-2)+' '+h+' ✓','ok');
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+
+async function marcarRealizada(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t){toast('Agendamento nao encontrado','err');return;}
+  if(!t.agendado_data){ alert('Esse agendamento ainda nao tem data.'); return; }
+  var p=String(t.agendado_data).slice(0,10).split('-');
+  if(!confirm('Confirmar que a consulta de '+t.patient_nome+' aconteceu em '+p[2]+'/'+p[1]+'/'+p[0]+(t.agendado_hora?(' as '+t.agendado_hora):'')+'?')) return;
+  try{
+    var cr=await db.from('ciclos').select('id').eq('patient_id',t.patient_id).eq('status','ativo');
+    var cids=((cr&&cr.data)||[]).map(function(c){return c.id;});
+    if(cids.length){
+      var rr=await db.from('retornos').select('id,status,nome_retorno,ordem').in('ciclo_id',cids).order('ordem',{ascending:true});
+      var alvo=((rr&&rr.data)||[]).find(function(x){ return x.status!=='realizada' && !/quest/i.test(String(x.nome_retorno||'')); });
+      if(alvo){
+        await db.from('retornos').update({status:'realizada',data_realizada:t.agendado_data,data_planejada:t.agendado_data,horario:t.agendado_hora||null}).eq('id',alvo.id);
+      }
+    }
+    await db.from('patients').update({proxima:null}).eq('id',t.patient_id);
+    await db.from('tarefas').update({obs:String((t.obs||'')+' | Consulta realizada.').trim().slice(0,900),atualizado_em:new Date().toISOString()}).eq('id',id);
+    _fila=await loadFila(); _patients=await loadPatients(); render();
+    toast('Marcado como realizada ✓','ok');
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+
+async function delFila(id){
+  const t=_fila.find(x=>x.id===id);
+  if(!t||!confirm('Remover '+t.patient_nome+' da fila da Julia?'))return;
+  try{
+    await db.from('tarefas').delete().eq('id',id);
+    _fila=await loadFila();
+    render();
+    toast('Removido da fila','');
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+function buildCard(t){
+  const color=gac(t.patient_nome);
+  const stCls='st-'+(t.prioridade==='urgente'?'urgente':t.status);
+  const stLabels={pendente:'&#x1f7e0; Pendente',andamento:'&#x1f535; Em andamento',aguardando:'&#x23f3; Aguardando confirm.',concluida:'&#x2705; Concluida'};
+  const stBadge={pendente:'sb-pendente',andamento:'sb-andamento',aguardando:'sb-aguardando',concluida:'sb-concluida'};
+  const badgeCls=t.prioridade==='urgente'?'sb-urgente':(stBadge[t.status]||'sb-pendente');
+  const badgeLabel=t.prioridade==='urgente'?'&#x26a0; URGENTE':(stLabels[t.status]||t.status);
+  const criado=t.criado_em?new Date(t.criado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'--';
+  const criadoPor=t.criado_por==='secretaria'?'&#x1f4cb; Secretaria':'&#x1f9ba; Medico';
+
+  // Advance button based on current status
+  let advBtn='';
+  const tid=t.id;
+  if(t.status==='pendente')
+    advBtn='<button class="btn-adv to-andamento" data-tid="'+tid+'" data-ns="andamento">Iniciar &#8594;</button>';
+  else if(t.status==='andamento')
+    advBtn='<button class="btn-adv to-aguardando" data-tid="'+tid+'" data-ns="aguardando">Aguardando &#8594;</button>'+
+           ' <button class="btn-adv to-concluida" data-tid="'+tid+'" data-ns="concluida" style="margin-left:4px">&#x2714; Concluir</button>';
+  else if(t.status==='aguardando')
+    advBtn='<button class="btn-adv to-concluida" data-tid="'+tid+'" data-ns="concluida">&#x2714; Concluir</button>';
+
+    const editBtn='<button class="btn-icon edit" data-edit="'+t.id+'" title="Editar">&#x270f;</button>';
+  const delBtn='<button class="btn-icon" data-del="'+t.id+'" title="Remover">&#x2715;</button>';
+  const anotBtn='<button class="btn-icon" data-anot="'+t.id+'" title="Adicionar anotação" style="color:var(--gold,#b8922a)">&#x1f4ac;</button>';
+
+  // Renderizar anotações existentes
+  const respostas=Array.isArray(t.respostas)?t.respostas:[];
+  let respostasHtml='';
+  if(respostas.length>0){
+    respostasHtml='<div style="margin-top:6px;padding:6px 9px;background:rgba(184,146,42,.08);border-left:2px solid var(--gold,#b8922a);border-radius:4px">'+
+      respostas.slice(-3).map(function(r){
+        const data=r.data?new Date(r.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+        const autor=r.autor==='medico'?'&#x1f9ba;':'&#x1f4cb;';
+        return '<div style="font-size:10.5px;color:var(--ink2);margin-bottom:2px">'+autor+' '+r.texto+' <span style="color:var(--ink3);font-size:9.5px">&middot; '+data+'</span></div>';
+      }).join('')+
+      (respostas.length>3?'<div style="font-size:9.5px;color:var(--ink3);font-style:italic">e mais '+(respostas.length-3)+'…</div>':'')+
+    '</div>';
+  }
+
+  return '<div class="task-card '+(t.prioridade==="urgente"?"pri-urgente":stCls)+'">'+
+    '<div class="tc-main">'+
+      '<div class="tc-avatar" style="background:'+color+'">'+gin(t.patient_nome)+'</div>'+
+      '<div class="tc-info">'+
+        '<div class="tc-name">'+t.patient_nome+'</div>'+
+        '<div class="tc-tipo">'+t.tipo+'</div>'+
+        (t.descricao?'<div class="tc-desc">'+t.descricao+'</div>':'')+(t.obs?'<div class="tc-desc" style="color:var(--ink3)">'+t.obs+'</div>':'')+
+        respostasHtml+
+        '<div class="tc-meta">'+criadoPor+' &middot; '+criado+'</div>'+
+      '</div>'+
+      '<div class="tc-right">'+
+        '<span class="tc-status-badge '+badgeCls+'">'+badgeLabel+'</span>'+
+        '<div class="tc-actions">'+advBtn+anotBtn+editBtn+delBtn+'</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── MODAL ──
+function openModal(editId=null){
+  _editId=editId;
+  _selectedTipo='';
+  document.getElementById('modalTtl').textContent=editId?'Editar Tarefa':'Nova Tarefa';
+  document.querySelectorAll('.tipo-chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('f-pac').value='';
+  document.getElementById('f-pac-id').value='';
+  document.getElementById('f-obs').value='';
+  document.getElementById('f-pri').value='normal';
+  document.getElementById('f-tipo-outro').style.display='none';
+  document.getElementById('f-tipo-outro').value='';
+  /* HAG_FILA_JULIA_v1: reset dos campos da fila */
+  document.getElementById('filaExtra').style.display='none';
+  document.getElementById('f-janela').value='';
+  _selectedEvento='retorno';
+  document.querySelectorAll('#eventoChips .tipo-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  _selectedLocal='online';
+  document.querySelectorAll('#localChips .tipo-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  if(editId){
+    const t=_tasks.find(x=>x.id===editId)||_fila.find(x=>x.id===editId);
+    if(t){
+      document.getElementById('f-pac').value=t.patient_nome;
+      document.getElementById('f-pac-id').value=t.patient_id||'';
+      document.getElementById('f-obs').value=t.obs||'';
+      document.getElementById('f-pri').value=t.prioridade||'normal';
+      if(t.tipo==='agendamento'){
+        /* HAG_FILA_JULIA_v1: edicao de tarefa da fila (tipo de evento + janela) */
+        _selectedTipo=FILA_TIPOS.includes(t.descricao)?t.descricao:'Agendar consulta';
+        document.querySelectorAll('#tipoChips .tipo-chip').forEach(function(c){ c.classList.toggle('active', c.textContent.indexOf('Agendar')>=0); });
+        document.getElementById('f-tipo-outro').style.display='none';
+        document.getElementById('filaExtra').style.display='block';
+        _selectedEvento=t.tipo_evento||'retorno';
+        var _evOrder=['retorno','diagnostica','procedimento','injetavel','implante'];
+        document.querySelectorAll('#eventoChips .tipo-chip').forEach(function(c,i){ c.classList.toggle('active', i===Math.max(0,_evOrder.indexOf(_selectedEvento))); });
+        document.getElementById('f-janela').value=t.janela_data||'';
+        _selectedLocal=t.local||'online';
+        var _locOrder=['online','pinheiros','tatuape'];
+        document.querySelectorAll('#localChips .tipo-chip').forEach(function(c,i){ c.classList.toggle('active', i===Math.max(0,_locOrder.indexOf(_selectedLocal))); });
+      } else {
+        // Select tipo chip
+        const chip=[...document.querySelectorAll('#tipoChips .tipo-chip')].find(c=>c.textContent.includes(t.tipo));
+        if(chip){chip.classList.add('active');_selectedTipo=t.tipo;}
+        else{
+          const outroChip=document.querySelector('.tipo-chip[data-outro]');
+          if(outroChip)outroChip.classList.add('active');
+          document.getElementById('f-tipo-outro').style.display='block';
+          document.getElementById('f-tipo-outro').value=t.tipo;
+          _selectedTipo='outro';
+        }
+      }
+    }
+  }
+  document.getElementById('modal').classList.add('vis');
+  setTimeout(()=>document.getElementById('f-pac').focus(),100);
+}
+function closeModal(){document.getElementById('modal').classList.remove('vis');_editId=null;}
+
+function selectTipo(el,tipo){
+  document.querySelectorAll('#tipoChips .tipo-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  _selectedTipo=tipo;
+  const outroInput=document.getElementById('f-tipo-outro');
+  outroInput.style.display=tipo==='outro'?'block':'none';
+  if(tipo!=='outro')outroInput.value='';
+  /* HAG_FILA_JULIA_v1: Agendar/Remarcar vao para a fila da Julia */
+  document.getElementById('filaExtra').style.display=FILA_TIPOS.includes(tipo)?'block':'none';
+}
+/* HAG_FILA_JULIA_v1 */
+const FILA_TIPOS=['Agendar consulta','Remarcar consulta'];
+let _selectedEvento='retorno';
+function selectEvento(el,ev){
+  document.querySelectorAll('#eventoChips .tipo-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  _selectedEvento=ev;
+}
+var HAG_LOCAIS={online:{label:'Online',end:''},pinheiros:{label:'Pinheiros',end:'Livance Pinheiros, Av. Brig. Faria Lima, 1461, 6º andar, Pinheiros, São Paulo/SP, 01452-002'},tatuape:{label:'Tatuapé',end:'Livance Tatuapé, R. Vilela, 665, 8º andar, Tatuapé, São Paulo/SP, 03314-000'}};
+let _selectedLocal='online';
+function selectLocal(el,lc){ document.querySelectorAll('#localChips .tipo-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); _selectedLocal=lc; }
+
+// ── PATIENT AUTOCOMPLETE ──
+function filterPac(q){
+  const drop=document.getElementById('pacDrop');
+  if(!q||q.length<2){drop.classList.remove('vis');return;}
+  const matches=_patients.filter(p=>p.nome.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  if(!matches.length){drop.classList.remove('vis');return;}
+  drop.innerHTML=matches.map(p=>{
+    const meta=p.plano||p.consulta||'';
+    return '<div class="pac-opt" data-pid="'+p.id+'" data-pnome="'+p.nome.replace(/"/g,"&quot;")+'">'+
+      p.nome+'<div class="pac-opt-meta">'+meta+'</div></div>';
+  }).join('');
+  drop.classList.add('vis');
+}
+function selectPac(id,nome){
+  document.getElementById('f-pac').value=nome;
+  document.getElementById('f-pac-id').value=id;
+  document.getElementById('pacDrop').classList.remove('vis');
+}
+document.addEventListener('click',function(e){
+  const po=e.target.closest('.pac-opt');
+  if(po&&po.dataset.pid){selectPac(po.dataset.pid,po.dataset.pnome);return;}
+  if(!e.target.closest('.pac-wrap'))document.getElementById('pacDrop').classList.remove('vis');
+});
+
+// ── SAVE TASK ──
+async function saveTask(){
+  const nome=document.getElementById('f-pac').value.trim();
+  const patId=document.getElementById('f-pac-id').value.trim();
+  if(!nome){toast('Selecione um paciente','err');return;}
+  const tipoFinal=_selectedTipo==='outro'?document.getElementById('f-tipo-outro').value.trim():_selectedTipo;
+  if(!tipoFinal){toast('Selecione o tipo de tarefa','err');return;}
+  const obs=document.getElementById('f-obs').value.trim();
+  const pri=document.getElementById('f-pri').value;
+  const now=new Date().toISOString();
+  /* HAG_FILA_JULIA_v1: Agendar/Remarcar viram tarefa de agendamento e caem na fila da Julia */
+  const paraFila=FILA_TIPOS.includes(tipoFinal);
+  const task={
+    id:_editId||'t_'+Date.now(),
+    patient_id:patId||null,
+    patient_nome:nome,
+    tipo:paraFila?'agendamento':tipoFinal,
+    descricao:tipoFinal,
+    obs,
+    prioridade:pri,
+    status:_editId?((_tasks.find(x=>x.id===_editId)||_fila.find(x=>x.id===_editId)||{}).status||'pendente'):'pendente',
+    criado_por:_role,
+    criado_em:_editId?((_tasks.find(x=>x.id===_editId)||_fila.find(x=>x.id===_editId)||{}).criado_em||now):now,
+    atualizado_em:now,
+  };
+  if(paraFila){
+    task.tipo_evento=_selectedEvento;
+    task.janela_data=document.getElementById('f-janela').value||null;
+    task.local=_selectedLocal||'online';
+  }
+  try{
+    await db.from('tarefas').upsert(task,{onConflict:'id'});
+    _tasks=await loadTasks(); _fila=await loadFila();
+    _filaSemear();
+    _filaCarimbarUma(task.id);   /* HAG_AVISO_NOVIDADE_v1 */
+    render();
+    closeModal();
+    toast(_editId?'Tarefa atualizada ✓':(paraFila?'Enviado para a fila da Julia ✓':'Tarefa criada com sucesso'),'ok');
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+// ── ADVANCE STATUS ──
+async function advTask(id,newStatus){
+  const t=_tasks.find(x=>x.id===id);
+  if(!t)return;
+  const now=new Date().toISOString();
+  const update={status:newStatus,atualizado_em:now};
+  if(newStatus==='concluida')update.concluido_em=now;
+  try{
+    await db.from('tarefas').update(update).eq('id',id);
+    _tasks=await loadTasks();
+    render();
+    const labels={andamento:'Em andamento',aguardando:'Aguardando confirmacao',concluida:'Concluida'};
+    toast((t.patient_nome.split(' ')[0])+' → '+(labels[newStatus]||newStatus),'ok');
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+// ── ANOTAÇÕES ──
+let _anotTaskId=null;
+function openAnotModal(taskId){
+  _anotTaskId=taskId;
+  const t=_tasks.find(x=>x.id===taskId);
+  if(!t)return;
+  document.getElementById('anotPaciente').textContent=t.patient_nome+' · '+t.tipo;
+  // Renderiza histórico de anotações dessa tarefa
+  const respostas=Array.isArray(t.respostas)?t.respostas:[];
+  const histEl=document.getElementById('anotHistorico');
+  if(respostas.length>0){
+    histEl.innerHTML='<div style="font-weight:600;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">Anotações anteriores ('+respostas.length+')</div>'+
+      respostas.map(function(r){
+        const data=r.data?new Date(r.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+        const autor=r.autor==='medico'?'&#x1f9ba; Médico':'&#x1f4cb; Secretária';
+        return '<div style="background:rgba(184,146,42,.06);border-left:2px solid var(--gold,#b8922a);padding:8px 10px;margin-bottom:6px;border-radius:4px;font-size:12px"><div style="font-weight:600;font-size:10px;color:var(--ink3);margin-bottom:3px">'+autor+' &middot; '+data+'</div>'+r.texto+'</div>';
+      }).join('');
+  } else {
+    histEl.innerHTML='<div style="font-size:11px;color:var(--ink3);font-style:italic;text-align:center;padding:6px">Nenhuma anotação ainda</div>';
+  }
+  document.getElementById('anotTexto').value='';
+  document.getElementById('anotModal').classList.add('vis');
+  setTimeout(()=>document.getElementById('anotTexto').focus(),100);
+}
+
+function closeAnotModal(){
+  document.getElementById('anotModal').classList.remove('vis');
+  _anotTaskId=null;
+}
+
+async function addAnotacao(){
+  if(!_anotTaskId){closeAnotModal();return;}
+  const txt=(document.getElementById('anotTexto').value||'').trim();
+  if(!txt){toast('Escreva uma anotação','err');return;}
+  if(txt.length>500){toast('Máximo 500 caracteres','err');return;}
+  const t=_tasks.find(x=>x.id===_anotTaskId);
+  if(!t)return;
+  const respostas=Array.isArray(t.respostas)?[...t.respostas]:[];
+  respostas.push({texto:txt,autor:_role,data:new Date().toISOString()});
+  try{
+    const{error}=await db.from('tarefas').update({respostas:respostas,atualizado_em:new Date().toISOString()}).eq('id',_anotTaskId);
+    if(error)throw error;
+    _tasks=await loadTasks();
+    render();
+    closeAnotModal();
+    toast('Anotação adicionada ✓','ok');
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+// ── EDIT/DELETE ──
+function editTask(id){openModal(id);}
+async function deleteTask(id){
+  const t=_tasks.find(x=>x.id===id);
+  if(!t||!confirm('Remover tarefa de '+t.patient_nome+'?'))return;
+  try{
+    await db.from('tarefas').delete().eq('id',id);
+    _tasks=await loadTasks();
+    render();
+    toast('Tarefa removida','');
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+// ── DATA ──
+async function loadTasks(){
+  const{data}=await db.from('tarefas').select('*').neq('tipo','agendamento').order('criado_em',{ascending:false})   /* HAG_FILA_JULIA_v1: agendamentos vivem na fila da Julia */;
+  return data||[];
+}
+async function loadPatients(){
+  const{data}=await db.from('patients').select('id,nome,plano,consulta,status,proxima,whatsapp').order('nome');
+  return data||[];
+}
+/* HAG_FILA_JULIA_v1 */
+let _fila=[];
+async function loadFila(){
+  const{data}=await db.from('tarefas').select('*').eq('tipo','agendamento').order('janela_data',{ascending:true,nullsFirst:false});
+  return data||[];
+}
+
+// ── SYNC INDICATOR ──
+function sSync(s,l){
+  const d=document.getElementById('syncDot'),lb=document.getElementById('syncLabel');
+  d.className='sync-dot '+s;lb.textContent=l;
+}
+
+// ── REAL-TIME ──
+db.channel('tarefas-rt')
+  .on('postgres_changes',{event:'*',schema:'public',table:'tarefas'},async()=>{
+    /* HAG_AVISO_NOVIDADE_v1: compara antes e depois para avisar so quando
+       de fato apareceu coisa nova, e nao a cada evento do canal. */
+    var _antes=_filaNovidades().length;
+    _tasks=await loadTasks();_fila=await loadFila();
+    _filaSemear();
+    render();
+    var _depois=_filaNovidades().length;
+    if(_depois>_antes){
+      var _d=_depois-_antes;
+      /* HAG_AVISO_DETALHE_v1: quando da para dizer exatamente o que foi, diz. */
+      var _novas=_filaNovidades();
+      if(_d===1 && _novas.length){
+        var _t=_novas[_novas.length-1];
+        toast('Julia · '+String(_t.patient_nome||'').split(' ')[0]+': '+_filaDescreve(_t),'ok');
+      } else {
+        toast('A Julia mexeu em '+_d+' tarefas da fila','ok');
+      }
+    }
+  })
+  .subscribe(s=>{
+    if(s==='SUBSCRIBED')sSync('ok','sincronizado');
+    else if(s==='CLOSED'||s==='CHANNEL_ERROR')sSync('err','offline');
+  });
+
+// ── TOAST ──
+let _tt;
+function toast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast vis'+(type?' '+type:'');
+  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('vis'),3200);
+}
+
+// ── INIT ──
+async function init(){
+  try{
+    [_tasks,_patients,_fila]=await Promise.all([loadTasks(),loadPatients(),loadFila()]);
+    _filaSemear();   /* HAG_AVISO_NOVIDADE_v1: primeira carga vira o marco zero */
+    sSync('ok','sincronizado');
+    setRole(_role,true);
+    render();
+  }catch(e){
+    sSync('err','erro');
+    document.getElementById('taskList').innerHTML='<div class="empty"><div class="empty-icon">&#x26a0;</div><div class="empty-title">Erro ao carregar</div><div class="empty-sub">'+e.message+'</div></div>';
+  }finally{
+    const ls=document.getElementById('ls');
+    ls.classList.add('hidden');
+    setTimeout(()=>ls.style.display='none',500);
+  }
+}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+document.getElementById('anotModal').addEventListener('click',e=>{if(e.target.id==='anotModal')closeAnotModal();});
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('[data-tid]');
+  if(btn&&btn.dataset.tid){advTask(btn.dataset.tid,btn.dataset.ns);return;}
+  const eb=e.target.closest('[data-edit]');
+  if(eb&&eb.dataset.edit){editTask(eb.dataset.edit);return;}
+  const db2=e.target.closest('[data-del]');
+  if(db2&&db2.dataset.del){deleteTask(db2.dataset.del);return;}
+  const ab=e.target.closest('[data-anot]');
+  if(ab&&ab.dataset.anot){openAnotModal(ab.dataset.anot);}
+});
+document.addEventListener('DOMContentLoaded',init);
+
+
+// Update urgente banner
+function updateUrgenteBanner(list){
+  const banner=document.getElementById('urgenteBanner');
+  const text=document.getElementById('urgenteText');
+  if(!banner||!text)return;
+  if(list.length){
+    banner.classList.remove('hidden');
+    text.textContent=list.length+' agendamento'+(list.length>1?'s':'')+' atrasado'+(list.length>1?'s':'')+': '+list.map(t=>String(t.patient_nome||'').split(' ')[0]).join(', ');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+const _origRender=render;
+render=function(){
+  _origRender();
+  var _hj=new Date().toISOString().slice(0,10);
+  updateUrgenteBanner(_fila.filter(function(t){return t.status!=='concluida'&&t.janela_data&&t.janela_data<_hj;}));
+};
+</script>
+<!-- HAG_AUTOATUALIZA_v1 -->
+<script>
+(function(){
+  'use strict';
+  /* ==========================================================================
+     Auto-atualizacao ao abrir.
+     A pagina publicada carrega carimbada com uma versao. Ao abrir, e toda vez
+     que volta para a frente, ela pergunta ao site qual e a versao atual. Se
+     mudou, ela se recarrega com a versao nova na URL, o que obriga o navegador
+     a buscar o arquivo novo em vez de servir o que ficou guardado.
+
+     Duas travas:
+     . nao recarrega com um modal aberto, para nao apagar o que esta sendo
+       preenchido no meio de um agendamento;
+     . se ja tentou recarregar para a mesma versao e voltou velho de novo (CDN
+       ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
+       recarregando em laco.
+     ====================================================================== */
+  var VERSAO = '20260820-1407';
+  var ARQ = 'versao.json';
+  var ultimaChecagem = 0;
+  var pendente = null;
+
+  function ocupado(){ return !!document.querySelector('.modal-overlay.vis'); }
+
+  function jaTentou(v){
+    try { return sessionStorage.getItem('hag_versao_tentada') === v; } catch(e){ return false; }
+  }
+  function marcaTentativa(v){
+    try { sessionStorage.setItem('hag_versao_tentada', v); } catch(e){}
+  }
+
+  function tarja(v){
+    if (document.getElementById('hagAtzTarja')) return;
+    var d = document.createElement('div');
+    d.id = 'hagAtzTarja';
+    d.setAttribute('style', 'position:fixed;left:0;right:0;bottom:0;z-index:99999;'
+      + 'background:#1a1a18;color:#f8f7f4;font:500 13px/1.4 system-ui,-apple-system,sans-serif;'
+      + 'padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between');
+    d.innerHTML = '<span>Versao nova disponivel.</span>'
+      + '<button type="button" style="background:#b8922a;color:#fff;border:0;border-radius:6px;'
+      + 'padding:8px 14px;font:600 13px system-ui,sans-serif;cursor:pointer">Atualizar</button>';
+    d.querySelector('button').addEventListener('click', function(){
+      try { sessionStorage.removeItem('hag_versao_tentada'); } catch(e){}
+      recarrega(v);
+    });
+    document.body.appendChild(d);
+  }
+
+  function recarrega(v){
+    var base = location.pathname.split('/').pop() || 'tarefas_HAG.html';
+    location.replace(base + '?v=' + encodeURIComponent(v));
+  }
+
+  function aplicar(v){
+    if (jaTentou(v)) { tarja(v); return; }
+    marcaTentativa(v);
+    recarrega(v);
+  }
+
+  function conferir(forcar){
+    if (document.visibilityState === 'hidden') return;
+    var agora = Date.now();
+    if (!forcar && agora - ultimaChecagem < 5000) return;
+    ultimaChecagem = agora;
+    fetch(ARQ + '?cb=' + agora, { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if (!j || !j.versao || j.versao === VERSAO) return;
+        if (ocupado()) { pendente = j.versao; return; }
+        aplicar(j.versao);
+      })
+      .catch(function(){});
+  }
+
+  /* quando o modal fecha, aplica o que ficou pendente */
+  document.addEventListener('click', function(){
+    if (pendente && !ocupado()) { var v = pendente; pendente = null; aplicar(v); }
+  }, true);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', conferir);
+  } else { conferir(); }
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'visible') conferir();
+  });
+  window.addEventListener('pageshow', function(e){ if (e.persisted) conferir(); });
+
+  window.HAG_VERSAO = VERSAO;
+  /* gancho de verificacao, usado nos testes e util para conferir na mao */
+  window.HAG_VERIFICAR_ATUALIZACAO = function(){ conferir(true); };
+})();
+</script>
+</body>
+</html>

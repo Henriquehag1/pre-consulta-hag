@@ -1,0 +1,4 @@
+_backups_locais/
+_to_delete/
+.DS_Store
+*.bak-*
