@@ -106,6 +106,17 @@ textarea.finput{min-height:82px}
 .scale-btn{flex:1;min-width:33px;height:42px;border:1px solid var(--border);border-radius:var(--r);font-size:13.5px;font-weight:400;color:var(--ink3);cursor:pointer;background:var(--surface);transition:all .14s;font-family:'Jost',sans-serif}
 .scale-btn:hover{border-color:var(--gold-border);color:var(--ink)}
 .scale-btn.on{background:var(--navy);color:var(--gold-pale);border-color:var(--navy)}
+/* HAG_ESCALAS_v1 · 27/08/2026 · escalas clínicas validadas */
+.esc-bloco{margin-top:1.4rem;border:1px solid var(--border);border-radius:6px;padding:1.1rem 1.15rem;background:var(--surface)}
+.esc-tit{font-family:'Jost',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2,#9A7B3F);margin-bottom:.3rem}
+.esc-sub{font-size:12.5px;color:var(--ink3,#6E6A60);line-height:1.55;margin-bottom:.9rem}
+.esc-item{margin-bottom:.95rem}
+.esc-q{font-size:13.5px;line-height:1.45;margin-bottom:.35rem}
+.esc-opts{display:flex;gap:.3rem;flex-wrap:wrap}
+.esc-opts .scale-btn{min-width:44px;height:38px;font-size:12.5px;flex:0 1 auto;padding:0 .7rem}
+.esc-legenda{font-size:11.5px;color:var(--ink3,#6E6A60);margin-bottom:.7rem;line-height:1.5}
+.bristol-row .b-svg{flex:none;width:64px;height:24px}
+.bristol-row .radio-label{line-height:1.4}
 .scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--ink4);margin-top:.4rem;padding:0 2px;letter-spacing:.05em;font-weight:400;text-transform:uppercase}
 
 /* GRID */
@@ -1267,6 +1278,33 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     </div>
   </div>
 
+
+  <!-- HAG_ESCALAS_v1 · Epworth e STOP-Bang. Opcionais de propósito: escala
+       incompleta é declarada incompleta no escore, nunca pontuada pela metade. -->
+  <div class="esc-bloco">
+    <div class="esc-tit">Escala de sonolência (Epworth)</div>
+    <div class="esc-sub">Qual a chance de você <b>cochilar</b> nas situações abaixo, na sua rotina recente? Não é sentir cansaço, é cochilar de fato.</div>
+    <div class="esc-legenda">0 = nenhuma chance &nbsp;·&nbsp; 1 = pequena &nbsp;·&nbsp; 2 = moderada &nbsp;·&nbsp; 3 = alta</div>
+<div class="esc-item"><div class="esc-q">Sentado(a) e lendo</div><div class="esc-opts scale-row" id="esc_ep_1"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_1')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_1')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_1')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_1')">3</button></div></div>
+<div class="esc-item"><div class="esc-q">Vendo televisão</div><div class="esc-opts scale-row" id="esc_ep_2"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_2')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_2')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_2')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_2')">3</button></div></div>
+<div class="esc-item"><div class="esc-q">Sentado(a) quieto(a) em lugar público (sala de espera, reunião)</div><div class="esc-opts scale-row" id="esc_ep_3"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_3')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_3')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_3')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_3')">3</button></div></div>
+<div class="esc-item"><div class="esc-q">Como passageiro(a) de carro, andando 1 hora sem parar</div><div class="esc-opts scale-row" id="esc_ep_4"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_4')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_4')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_4')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_4')">3</button></div></div>
+<div class="esc-item"><div class="esc-q">Deitado(a) para descansar à tarde, quando as circunstâncias permitem</div><div class="esc-opts scale-row" id="esc_ep_5"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_5')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_5')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_5')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_5')">3</button></div></div>
+<div class="esc-item"><div class="esc-q">Sentado(a) conversando com alguém</div><div class="esc-opts scale-row" id="esc_ep_6"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_6')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_6')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_6')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_6')">3</button></div></div>
+<div class="esc-item"><div class="esc-q">Sentado(a) quieto(a) após o almoço, sem ter bebido álcool</div><div class="esc-opts scale-row" id="esc_ep_7"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_7')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_7')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_7')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_7')">3</button></div></div>
+<div class="esc-item"><div class="esc-q">No carro parado no trânsito por alguns minutos</div><div class="esc-opts scale-row" id="esc_ep_8"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ep_8')">0</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ep_8')">1</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ep_8')">2</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ep_8')">3</button></div></div>
+  </div>
+
+  <div class="esc-bloco">
+    <div class="esc-tit">Sono e respiração (STOP-Bang)</div>
+    <div class="esc-sub">Cinco perguntas rápidas; o restante eu calculo com os dados que você já preencheu.</div>
+<div class="esc-item"><div class="esc-q">Você ronca alto (dá para ouvir de outro cômodo, ou mais alto que uma conversa)?</div><div class="esc-opts scale-row" id="esc_sb_ronco"><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sb_ronco')">Sim</button><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sb_ronco')">Não</button></div></div>
+<div class="esc-item"><div class="esc-q">Sente cansaço, fadiga ou sonolência durante o dia com frequência?</div><div class="esc-opts scale-row" id="esc_sb_cansaco"><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sb_cansaco')">Sim</button><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sb_cansaco')">Não</button></div></div>
+<div class="esc-item"><div class="esc-q">Alguém já observou você parar de respirar ou engasgar dormindo?</div><div class="esc-opts scale-row" id="esc_sb_apneia"><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sb_apneia')">Sim</button><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sb_apneia')">Não</button></div></div>
+<div class="esc-item"><div class="esc-q">Tem pressão alta ou trata hipertensão?</div><div class="esc-opts scale-row" id="esc_sb_pressao"><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sb_pressao')">Sim</button><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sb_pressao')">Não</button></div></div>
+<div class="esc-item"><div class="esc-q">A circunferência do seu pescoço é maior que 40 cm (colarinho apertado)?</div><div class="esc-opts scale-row" id="esc_sb_pescoco"><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sb_pescoco')">Sim</button><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sb_pescoco')">Não</button><button type="button" class="scale-btn" data-v="ns" onclick="setScale(this,'esc_sb_pescoco')">Não sei</button></div></div>
+  </div>
+
   <div class="nav-row">
     <button class="btn-back" onclick="goBack(5)">Voltar</button>
     <button class="btn-next" onclick="goNext(5)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -1373,6 +1411,33 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     </div>
   </div>
 
+
+  <!-- HAG_ESCALAS_v1 · SARC-F conversa com o dinamômetro do consultório:
+       rastreio positivo + preensão baixa fecham o raciocínio de sarcopenia. -->
+  <div class="esc-bloco">
+    <div class="esc-tit">Força e mobilidade (SARC-F)</div>
+    <div class="esc-sub">Como você se sai nas situações abaixo, hoje?</div>
+<div class="esc-item"><div class="esc-q">Carregar 4 a 5 kg (uma sacola de mercado cheia)</div><div class="esc-opts scale-row" id="esc_sf_1"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sf_1')">Nenhuma dificuldade</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sf_1')">Alguma</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_sf_1')">Muita ou não consigo</button></div></div>
+<div class="esc-item"><div class="esc-q">Atravessar um cômodo caminhando</div><div class="esc-opts scale-row" id="esc_sf_2"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sf_2')">Nenhuma dificuldade</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sf_2')">Alguma</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_sf_2')">Muita, uso apoio ou não consigo</button></div></div>
+<div class="esc-item"><div class="esc-q">Levantar da cama ou da cadeira</div><div class="esc-opts scale-row" id="esc_sf_3"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sf_3')">Nenhuma dificuldade</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sf_3')">Alguma</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_sf_3')">Muita ou preciso de ajuda</button></div></div>
+<div class="esc-item"><div class="esc-q">Subir um lance de 10 degraus</div><div class="esc-opts scale-row" id="esc_sf_4"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sf_4')">Nenhuma dificuldade</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sf_4')">Alguma</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_sf_4')">Muita ou não consigo</button></div></div>
+<div class="esc-item"><div class="esc-q">Quedas no último ano</div><div class="esc-opts scale-row" id="esc_sf_5"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_sf_5')">Nenhuma</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_sf_5')">1 a 3 quedas</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_sf_5')">4 ou mais</button></div></div>
+  </div>
+
+  <div class="esc-bloco">
+    <div class="esc-tit">Padrão intestinal (escala de Bristol)</div>
+    <div class="esc-sub">Qual desenho mais parece com o seu padrão <b>mais frequente</b> nas últimas semanas?</div>
+    <div class="radio-group" id="esc_bristol">
+<div class="radio-row bristol-row" data-v="1" onclick="toggleRadio(this,'esc_bristol')"><svg class="b-svg" viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg"><g fill="#A78B6F"><circle cx="10" cy="12" r="5"/><circle cx="25" cy="10" r="4.5"/><circle cx="39" cy="13" r="5"/><circle cx="53" cy="11" r="4"/></g></svg><span class="radio-label"><b>Tipo 1</b> · Bolinhas duras e separadas, difíceis de sair</span></div>
+<div class="radio-row bristol-row" data-v="2" onclick="toggleRadio(this,'esc_bristol')"><svg class="b-svg" viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg"><g fill="#A78B6F"><rect x="6" y="7" width="52" height="11" rx="5.5"/><circle cx="14" cy="7.5" r="3"/><circle cx="26" cy="17" r="3"/><circle cx="38" cy="7.5" r="3"/><circle cx="50" cy="17" r="3"/></g></svg><span class="radio-label"><b>Tipo 2</b> · Em forma de linguiça, mas grumosa e dura</span></div>
+<div class="radio-row bristol-row" data-v="3" onclick="toggleRadio(this,'esc_bristol')"><svg class="b-svg" viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="7" width="52" height="11" rx="5.5" fill="#A78B6F"/><g stroke="#8B7052" stroke-width="1.4"><line x1="18" y1="8" x2="16" y2="17"/><line x1="31" y1="8" x2="29" y2="17"/><line x1="44" y1="8" x2="42" y2="17"/></g></svg><span class="radio-label"><b>Tipo 3</b> · Como uma linguiça, com rachaduras na superfície</span></div>
+<div class="radio-row bristol-row" data-v="4" onclick="toggleRadio(this,'esc_bristol')"><svg class="b-svg" viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="7.5" width="52" height="10" rx="5" fill="#A78B6F"/></svg><span class="radio-label"><b>Tipo 4</b> · Lisa e macia, em forma de linguiça</span></div>
+<div class="radio-row bristol-row" data-v="5" onclick="toggleRadio(this,'esc_bristol')"><svg class="b-svg" viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg"><g fill="#A78B6F"><ellipse cx="14" cy="12" rx="8" ry="5.5"/><ellipse cx="33" cy="11" rx="7.5" ry="5"/><ellipse cx="51" cy="13" rx="7" ry="5"/></g></svg><span class="radio-label"><b>Tipo 5</b> · Pedaços macios com bordas bem definidas</span></div>
+<div class="radio-row bristol-row" data-v="6" onclick="toggleRadio(this,'esc_bristol')"><svg class="b-svg" viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg"><g fill="#B89B7E"><path d="M8 13c-2-4 3-8 7-6 2-3 8-2 8 1 4-1 6 4 3 6-1 3-7 4-9 2-3 2-8 0-9-3z"/><path d="M36 12c-1-4 4-7 7-4 3-2 8 0 7 3 3 1 2 6-2 6-1 2-6 3-8 1-3 1-5-3-4-6z"/></g></svg><span class="radio-label"><b>Tipo 6</b> · Pedaços aerados, bordas irregulares, pastosa</span></div>
+<div class="radio-row bristol-row" data-v="7" onclick="toggleRadio(this,'esc_bristol')"><svg class="b-svg" viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg"><g fill="#C4A98C"><path d="M6 15c6-4 14 3 20-1 7-4 14 3 20-1 5-3 10 1 12 2 1 2-1 4-4 4H10c-4 0-6-3-4-4z"/><circle cx="18" cy="7" r="2"/><circle cx="43" cy="6" r="1.7"/></g></svg><span class="radio-label"><b>Tipo 7</b> · Totalmente líquida, sem pedaços sólidos</span></div>
+    </div>
+  </div>
+
   <div class="nav-row">
     <button class="btn-back" onclick="goBack(7)">Voltar</button>
     <button class="btn-next" onclick="goNext(7)">Próximo <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -1401,6 +1466,18 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   <div class="field">
     <label class="fl">Alguma informação adicional relevante que queira me contar?</label>
     <textarea class="finput" id="f_extra" placeholder="Situação de vida, contexto específico, algo que considera importante que eu saiba antes da consulta..."></textarea>
+  </div>
+
+
+  <!-- HAG_ESCALAS_v1 · PSS-4. Os itens 2 e 3 são invertidos NA CONTA, nunca
+       no texto mostrado ao paciente. -->
+  <div class="esc-bloco">
+    <div class="esc-tit">Estresse no último mês (PSS-4)</div>
+    <div class="esc-sub">No último mês, com que frequência você...</div>
+<div class="esc-item"><div class="esc-q">...sentiu que não conseguia controlar as coisas importantes da sua vida?</div><div class="esc-opts scale-row" id="esc_ps_1"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ps_1')">Nunca</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ps_1')">Quase nunca</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ps_1')">Às vezes</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ps_1')">Frequente</button><button type="button" class="scale-btn" data-v="4" onclick="setScale(this,'esc_ps_1')">Muito frequente</button></div></div>
+<div class="esc-item"><div class="esc-q">...se sentiu confiante na sua capacidade de lidar com seus problemas pessoais?</div><div class="esc-opts scale-row" id="esc_ps_2"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ps_2')">Nunca</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ps_2')">Quase nunca</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ps_2')">Às vezes</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ps_2')">Frequente</button><button type="button" class="scale-btn" data-v="4" onclick="setScale(this,'esc_ps_2')">Muito frequente</button></div></div>
+<div class="esc-item"><div class="esc-q">...sentiu que as coisas estavam indo do seu jeito?</div><div class="esc-opts scale-row" id="esc_ps_3"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ps_3')">Nunca</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ps_3')">Quase nunca</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ps_3')">Às vezes</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ps_3')">Frequente</button><button type="button" class="scale-btn" data-v="4" onclick="setScale(this,'esc_ps_3')">Muito frequente</button></div></div>
+<div class="esc-item"><div class="esc-q">...sentiu que as dificuldades se acumulavam tanto que você não conseguiria superá-las?</div><div class="esc-opts scale-row" id="esc_ps_4"><button type="button" class="scale-btn" data-v="0" onclick="setScale(this,'esc_ps_4')">Nunca</button><button type="button" class="scale-btn" data-v="1" onclick="setScale(this,'esc_ps_4')">Quase nunca</button><button type="button" class="scale-btn" data-v="2" onclick="setScale(this,'esc_ps_4')">Às vezes</button><button type="button" class="scale-btn" data-v="3" onclick="setScale(this,'esc_ps_4')">Frequente</button><button type="button" class="scale-btn" data-v="4" onclick="setScale(this,'esc_ps_4')">Muito frequente</button></div></div>
   </div>
 
   <div class="nav-row">
@@ -1704,6 +1781,86 @@ function scale(id){ var g=document.getElementById(id); if(!g) return '—'; var 
 // e substitua 'SEU_ACCESS_KEY_AQUI' pela chave recebida no email.
 var WEB3FORMS_KEY = 'd826e37c-a868-4bc1-b0d3-e6c8fce06246';
 
+/* ── HAG_ESCALAS_v1 · 27/08/2026 · escore determinístico das escalas ────
+   Regra de honestidade: escala incompleta não ganha escore (vira "não
+   respondida por completo"). A exceção é o STOP-Bang, que declara quantos
+   dos 8 itens avaliou; parcial só pode SUBESTIMAR o risco, então risco
+   intermediário/alto em parcial já é informação segura. */
+function _escOn(gid){
+  var g=document.getElementById(gid); if(!g) return null;
+  return g.querySelector('.scale-btn.on') || g.querySelector('.radio-row.on');
+}
+function escVal(gid){
+  var el=_escOn(gid);
+  if(!el || el.getAttribute('data-v')==null || el.getAttribute('data-v')==='ns') return null;
+  var n=parseInt(el.getAttribute('data-v'),10);
+  return isNaN(n)?null:n;
+}
+function _escNum(s){
+  if(!s || s==='—') return null;
+  var m=String(s).replace(',','.').match(/\d+\.?\d*/);
+  return m?parseFloat(m[0]):null;
+}
+function escalasColeta(){
+  var out={};
+  var i,v;
+  /* Epworth 0-24 */
+  var ep=[],epOk=true;
+  for(i=1;i<=8;i++){ v=escVal('esc_ep_'+i); ep.push(v); if(v==null) epOk=false; }
+  var epTot=epOk?ep.reduce(function(a,b){return a+b;},0):null;
+  out.epworth={ itens:ep, completa:epOk, total:epTot, max:24,
+    classe: epTot==null?null: epTot<=10?'dentro do esperado': epTot<=15?'sonolência diurna excessiva':'sonolência diurna grave' };
+  /* SARC-F 0-10, >=4 sugestivo */
+  var sf=[],sfOk=true;
+  for(i=1;i<=5;i++){ v=escVal('esc_sf_'+i); sf.push(v); if(v==null) sfOk=false; }
+  var sfTot=sfOk?sf.reduce(function(a,b){return a+b;},0):null;
+  out.sarcf={ itens:sf, completa:sfOk, total:sfTot, max:10,
+    classe: sfTot==null?null: sfTot>=4?'rastreio positivo para sarcopenia (conferir com dinamômetro)':'rastreio negativo' };
+  /* PSS-4 0-16, itens 2 e 3 invertidos NA CONTA */
+  var ps=[escVal('esc_ps_1'),escVal('esc_ps_2'),escVal('esc_ps_3'),escVal('esc_ps_4')];
+  var psOk=ps.every(function(x){return x!=null;});
+  var psTot=psOk?(ps[0]+(4-ps[1])+(4-ps[2])+ps[3]):null;
+  out.pss4={ itens:ps, completa:psOk, total:psTot, max:16,
+    nota:'maior = mais estresse percebido; sem ponto de corte validado, usar evolutivamente' };
+  /* STOP-Bang 0-8: 5 perguntados + IMC>35, idade>50 e sexo M automáticos */
+  var comp={ ronco:escVal('esc_sb_ronco'), cansaco:escVal('esc_sb_cansaco'),
+             apneia:escVal('esc_sb_apneia'), pressao:escVal('esc_sb_pressao'),
+             pescoco:escVal('esc_sb_pescoco') };
+  var peso=_escNum(fv('f_peso')), alt=_escNum(fv('f_altura'));
+  if(alt!=null && alt<3) alt=alt*100;   /* 1,72 m -> 172 cm */
+  var imc=(peso!=null && alt!=null && alt>=100 && alt<=230)?(peso/Math.pow(alt/100,2)):null;
+  comp.imc_maior_35 = imc==null?null:(imc>35?1:0);
+  var idade=_escNum(fv('f_idade'));
+  comp.idade_maior_50 = idade==null?null:(idade>50?1:0);
+  var sx=fv('f_sexo');
+  comp.sexo_masculino = (sx && sx!=='—')?(/^m/i.test(sx)?1:0):null;
+  var chaves=Object.keys(comp);
+  var resp=chaves.filter(function(k){return comp[k]!=null;});
+  var sbTot=resp.reduce(function(a,k){return a+comp[k];},0);
+  var sbClasse;
+  if(sbTot>=5) sbClasse='risco alto de apneia do sono';
+  else if(sbTot>=3) sbClasse='risco intermediário de apneia do sono';
+  else sbClasse = resp.length===8 ? 'risco baixo' : 'sem sinal de risco nos itens avaliados';
+  out.stopbang={ componentes:comp, avaliados:resp.length, de:8, total:sbTot,
+    imc: imc!=null?Math.round(imc*10)/10:null, classe:sbClasse };
+  /* Bristol 1-7 */
+  var bEl=_escOn('esc_bristol');
+  var bTipo=bEl?parseInt(bEl.getAttribute('data-v'),10):null;
+  out.bristol={ tipo:(isNaN(bTipo)?null:bTipo),
+    classe: bTipo==null||isNaN(bTipo)?null: bTipo<=2?'tende a constipação': bTipo<=5?'faixa habitual':'tende a diarreia' };
+  return out;
+}
+function escalasTexto(){
+  var e=escalasColeta(), l=[];
+  l.push('Epworth (sonolência): '+(e.epworth.total!=null ? e.epworth.total+'/24 · '+e.epworth.classe : 'não respondida por completo'));
+  l.push('STOP-Bang (apneia): '+e.stopbang.total+' ponto(s) em '+e.stopbang.avaliados+' de 8 itens avaliados · '+e.stopbang.classe
+        +(e.stopbang.imc!=null?' · IMC calculado '+String(e.stopbang.imc).replace('.',','):''));
+  l.push('SARC-F (sarcopenia): '+(e.sarcf.total!=null ? e.sarcf.total+'/10 · '+e.sarcf.classe : 'não respondida por completo'));
+  l.push('PSS-4 (estresse percebido): '+(e.pss4.total!=null ? e.pss4.total+'/16 ('+e.pss4.nota+')' : 'não respondida por completo'));
+  l.push('Bristol (intestino): '+(e.bristol.tipo!=null ? 'tipo '+e.bristol.tipo+' · '+e.bristol.classe : 'não respondida'));
+  return l.join('\n');
+}
+
 function buildSoapText(){
   var L='─'.repeat(50);
   var lines=[
@@ -1765,6 +1922,9 @@ function buildSoapText(){
     '',L,
     'BARREIRAS',
     chips('c_barreiras')+(fv('f_barreiras_outro')!=='—'?' — '+fv('f_barreiras_outro'):''),
+    '',L,
+    'ESCALAS CLÍNICAS (respondidas pelo paciente, escore automático)',
+    escalasTexto(),
     '',L,
     'MOTIVAÇÃO',
     'Escala 0-10: '+scale('r_motivacao')+'/10',
@@ -1880,7 +2040,8 @@ async function submitForm(){
       if(estadoVal) _pac.endereco_uf=estadoVal;
       var _chk = { patient_nome:nomeP, semana:'Pre-consulta', data_envio:new Date().toISOString().slice(0,10),
         padroes:[], peso:fvp('f_peso'), mensagem:(fvp('f_mensagem')||fvp('f_uma_coisa')), interpretacao:interpretacao||'',
-        texto_completo:soapTxt||'', tipo:'pre-consulta' };
+        texto_completo:soapTxt||'', tipo:'pre-consulta',
+        respostas:(function(){ try{ return { escalas: escalasColeta() }; }catch(e){ return null; } })() };   /*HAG_ESCALAS_v1*/
       try{
         var _rpc = await fetch(SURL+'/rest/v1/rpc/upsert_pre_consulta', {
           method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
@@ -2007,7 +2168,9 @@ async function submitForm(){
       interpretacao: interpretacao || '',
       texto_completo: soapTxt || '',
       criado: new Date().toISOString(),
-      tipo: 'pre-consulta'
+      tipo: 'pre-consulta',
+      /*HAG_ESCALAS_v1: escore estruturado, para automacao futura ler sem parse*/
+      respostas: (function(){ try{ return { escalas: escalasColeta() }; }catch(e){ return null; } })()
     };
     // _HAG_PATCH_BLINDAGEM_v1 : so grava checkin se o paciente existe de fato
     // (a tabela checkins tem FK para patients; sem paciente, o checkin e rejeitado)
