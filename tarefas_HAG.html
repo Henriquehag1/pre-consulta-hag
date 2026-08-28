@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260828-1928"></script>
+<script src="hag_auth.js?v=20260828-1945"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1420,14 +1420,29 @@ async function marcarRealizada(id){
   }catch(e){ toast('Erro: '+e.message,'err'); }
 }
 
+/* HAG_CAL_REMOVER_v1 (28/08/2026)
+   Antes, isto era um DELETE seco. Quando o agendamento ja tinha virado evento
+   no calendario do Dr. Henrique, a linha sumia do banco e o evento ficava la
+   para sempre: ele abria a agenda e via paciente que tinha cancelado. Nao era
+   caso de borda, era toda desmarcacao desde julho.
+   Agora chama hag_remover_agendamento, que cancela a reserva do paciente,
+   devolve o retorno do ciclo para 'agendar' e, havendo evento, marca a tarefa
+   para o robo apagar do calendario no proximo ciclo em vez de apagar a linha e
+   perder o rastro. */
 async function delFila(id){
   const t=_fila.find(x=>x.id===id);
-  if(!t||!confirm('Remover '+t.patient_nome+' da fila da Julia?'))return;
+  if(!t)return;
+  const temEvento = (t.calendar_sync==='criado');
+  const aviso = temEvento
+    ? ('Cancelar o agendamento de '+t.patient_nome+'?\n\nO horario volta a ficar livre e o evento sai da sua agenda em ate 10 minutos.')
+    : ('Remover '+t.patient_nome+' da fila da Julia?');
+  if(!confirm(aviso))return;
   try{
-    await db.from('tarefas').delete().eq('id',id);
+    const {data,error}=await db.rpc('hag_remover_agendamento',{p_tarefa_id:id,p_motivo:'removido pela fila'});
+    if(error) throw error;
     _fila=await loadFila();
     render();
-    toast('Removido da fila','');
+    toast((data&&data.mensagem)||'Removido da fila','ok');
   }catch(e){toast('Erro: '+e.message,'err');}
 }
 
@@ -1725,7 +1740,9 @@ async function loadPatients(){
 let _fila=[];
 async function loadFila(){
   const{data}=await db.from('tarefas').select('*').eq('tipo','agendamento').order('janela_data',{ascending:true,nullsFirst:false});
-  return data||[];
+  /* HAG_CAL_REMOVER_v1: cancelada continua no banco ate o robo confirmar que o
+     evento saiu do calendario, mas nao deve aparecer para a Julia. */
+  return (data||[]).filter(t=>t.status!=='cancelada');
 }
 
 // ── SYNC INDICATOR ──
@@ -1859,7 +1876,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260828-1928';
+  var VERSAO = '20260828-1945';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
