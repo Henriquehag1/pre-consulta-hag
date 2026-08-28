@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260828-1945"></script>
+<script src="hag_auth.js?v=20260828-1958"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1239,7 +1239,10 @@ function buildFilaCard(t){
                  conversava com o paciente e a tarefa continuava em "a agendar",
                  sem memoria de que o contato ja tinha sido feito. E alternador
                  de proposito, para um toque errado nao virar beco sem saida. */
-              ? '<button class="btn-icon" onclick="comunicadoFila(\''+t.id+'\')" title="'
+              ? '<button class="btn-icon" onclick="whatsFila(\''+t.id+'\')" title="'
+                +(t.tipo_evento==='retorno'?'Enviar o link para o paciente agendar sozinho':'Chamar no WhatsApp para combinar o horário')
+                +'" style="color:#1a8f4a">&#x1f4f2;</button>'
+               +'<button class="btn-icon" onclick="comunicadoFila(\''+t.id+'\')" title="'
                 +(t.status==='pendente'?'Falei com o paciente, aguardando retorno':'Desfazer: voltar para a agendar')
                 +'" style="color:'+(t.status==='pendente'?'#8a6d3b':'#b8922a')+'">&#x1f4ac;</button>'
                +'<button class="btn-icon" onclick="agendarFila(\''+t.id+'\')" title="Marcar como agendado" style="color:#2d7a45">&#x2705;</button>'
@@ -1250,6 +1253,65 @@ function buildFilaCard(t){
       '</div>'+
     '</div>'+
   '</div>';
+}
+/* HAG_FILA_LINK_AGENDAR_v1 (28/08/2026)
+   AQUI E ONDE O LINK DE AUTO-AGENDAMENTO GANHA CASA.
+   Ate agora a pagina clinicahag.com/agendar existia e funcionava, mas nao havia
+   lugar nenhum no HAG OS de onde tirar o link com o id do paciente. Na pratica
+   ninguem conseguiria usar: a Julia teria que descobrir o id na mao.
+   O botao de WhatsApp da fila tambem tinha se perdido na migracao de 20/08
+   (a julia_fila.html antiga mandava mensagem pronta). Os dois voltam juntos.
+
+   Regra de quando o link entra: so em RETORNO. A pagina publica serve o proximo
+   retorno pendente do ciclo ativo. Primeira consulta e procedimento ainda passam
+   pela Julia (pagamento e fase 2), entao nesses casos a mensagem vai sem link,
+   como era antes, e ela combina o horario a mao. Mandar link para quem a pagina
+   nao atende so geraria "nao encontrei consulta aguardando agendamento". */
+const HAG_LINK_AGENDAR='https://clinicahag.com/agendar?patient=';
+function _filaFone(pid){
+  var p=(_patients||[]).find(function(x){return x.id===pid;});
+  var f=String((p&&p.whatsapp)||'').replace(/\D/g,'');
+  if(f.length<10) return '';
+  if(f.length===10) f=f.slice(0,2)+'9'+f.slice(2);
+  if(!f.startsWith('55')) f='55'+f;
+  return f;
+}
+function _filaMsgAgendar(t){
+  var primeiro=(t.patient_nome||'').split(' ')[0];
+  if(t.tipo_evento==='retorno'){
+    return 'Oi, '+primeiro+'! Aqui é a Julia, do consultório do Dr. Henrique. 😊\n\n'
+      +'A sua próxima consulta já pode ser agendada. Agora você mesmo escolhe o melhor '
+      +'horário, direto por este link:\n'+HAG_LINK_AGENDAR+t.patient_id+'\n\n'
+      +'Leva menos de um minuto. Qualquer dúvida, é só me chamar por aqui.';
+  }
+  var oque = t.tipo_evento==='diagnostica' ? 'a sua consulta'
+           : (t.tipo_evento==='injetavel' ? 'a sua aplicação' : 'o seu procedimento');
+  return 'Oi, '+primeiro+'! Aqui é a Julia, do consultório do Dr. Henrique. 😊\n\n'
+    +'Estou entrando em contato para agendarmos '+oque+'. '
+    +'Me conta qual período costuma ser melhor para você que eu verifico a agenda do Dr. Henrique.';
+}
+async function whatsFila(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t) return;
+  var fone=_filaFone(t.patient_id);
+  var msg=_filaMsgAgendar(t);
+  if(!fone){
+    try{ await navigator.clipboard.writeText(msg);
+      toast('Sem WhatsApp no cadastro. Mensagem copiada.','ok');
+    }catch(e){ prompt('Sem WhatsApp no cadastro. Copie a mensagem:', msg); }
+    return;
+  }
+  window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+  /* marca comunicado na mesma acao, como a fila antiga fazia. Se ela desistir de
+     enviar, o proprio botao 💬 desfaz. */
+  if(t.status==='pendente'){
+    try{
+      await db.from('tarefas').update({status:'aguardando',atualizado_em:new Date().toISOString()}).eq('id',id);
+      _fila=await loadFila(); render();
+      toast('WhatsApp aberto · '+(t.patient_nome||'').split(' ')[0]+' marcado como comunicado','ok');
+    }catch(e){ toast('WhatsApp aberto, mas nao consegui marcar: '+e.message,'err'); }
+  } else {
+    toast('WhatsApp aberto','ok');
+  }
 }
 /* HAG_FILA_COMUNICADO_v1 (28/08/2026)
    Alterna entre "a agendar" e "paciente comunicado, aguardando retorno".
@@ -1876,7 +1938,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260828-1945';
+  var VERSAO = '20260828-1958';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
