@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260820-1438"></script>
+<script src="hag_auth.js?v=20260828-1928"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1231,7 +1231,18 @@ function buildFilaCard(t){
         '<span class="tc-status-badge '+st[0]+'">'+st[1]+'</span>'+
         '<div class="tc-actions">'
           +(t.status!=='concluida'
-              ? '<button class="btn-icon" onclick="agendarFila(\''+t.id+'\')" title="Marcar como agendado" style="color:#2d7a45">&#x2705;</button>'
+              /* HAG_FILA_COMUNICADO_v1 (28/08/2026): a Julia nao tinha como
+                 registrar que falou com o paciente. A aba "Comunicado", o
+                 contador e o selo existiam desde a migracao da fila para o
+                 Tarefas em 20/08, mas o BOTAO que muda o status ficou para
+                 tras junto com a julia_fila.html aposentada. Resultado: ela
+                 conversava com o paciente e a tarefa continuava em "a agendar",
+                 sem memoria de que o contato ja tinha sido feito. E alternador
+                 de proposito, para um toque errado nao virar beco sem saida. */
+              ? '<button class="btn-icon" onclick="comunicadoFila(\''+t.id+'\')" title="'
+                +(t.status==='pendente'?'Falei com o paciente, aguardando retorno':'Desfazer: voltar para a agendar')
+                +'" style="color:'+(t.status==='pendente'?'#8a6d3b':'#b8922a')+'">&#x1f4ac;</button>'
+               +'<button class="btn-icon" onclick="agendarFila(\''+t.id+'\')" title="Marcar como agendado" style="color:#2d7a45">&#x2705;</button>'
               /* HAG_REMARCAR_v1: ja agendado ganha remarcar e marcar como realizada. */
               : '<button class="btn-icon" onclick="remarcarFila(\''+t.id+'\')" title="Remarcar data, hora ou local" style="color:#8a5a2b">&#x1f501;</button>'
                +'<button class="btn-icon" onclick="marcarRealizada(\''+t.id+'\')" title="Marcar como realizada" style="color:#2d7a45">&#x2714;</button>')
@@ -1239,6 +1250,21 @@ function buildFilaCard(t){
       '</div>'+
     '</div>'+
   '</div>';
+}
+/* HAG_FILA_COMUNICADO_v1 (28/08/2026)
+   Alterna entre "a agendar" e "paciente comunicado, aguardando retorno".
+   Usa 'aguardando' porque e o status que a aba Comunicado ja conta (junto de
+   'andamento', herdado da fila antiga) e que o selo do cartao ja sabe pintar. */
+async function comunicadoFila(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t) return;
+  var novo = (t.status==='pendente') ? 'aguardando' : 'pendente';
+  try{
+    await db.from('tarefas').update({status:novo, atualizado_em:new Date().toISOString()}).eq('id',id);
+    _fila=await loadFila();
+    render();
+    var quem=(t.patient_nome||'').split(' ')[0];
+    toast(novo==='aguardando' ? (quem+' comunicado, aguardando retorno ✓') : (quem+' voltou para a agendar'),'ok');
+  }catch(e){ toast('Erro: '+e.message,'err'); }
 }
 function editFila(id){ openModal(id); }
 /* HAG_REMARCAR_v1: a cascata agora leva tambem local e modalidade. Sem isso, um
@@ -1833,7 +1859,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260820-1438';
+  var VERSAO = '20260828-1928';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
