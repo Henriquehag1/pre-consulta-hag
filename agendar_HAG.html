@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agendamento · Dr. Henrique Alves Gonzaga</title>
+<!-- HAG_AGENDAR_PACIENTE_v1 (28/08/2026)
+     Tela publica de auto-agendamento de retornos. Identificacao pelo link
+     (?patient=<id>), como os check-ins. A oferta de horarios e calculada pelo
+     motor HAG_AGENDA_SLOTS embutido abaixo; a reserva e atomica no banco via
+     RPC hag_reservar_horario. Esta pagina NUNCA decide sozinha: tudo que ela
+     mostra o servidor valida de novo na gravacao. -->
+<style>
+:root{--navy:#1B2745;--gold:#C9A55E;--gold2:#9A7B3F;--cream:#F8F4EA;--cream2:#FBFAF6;
+--line:#E4DECB;--ink:#2B2A26;--ink3:#6E6A60;--ink4:#98917F}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream2);color:var(--ink);
+font:16px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:28px 20px 70px}
+.marca{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold2);text-align:center}
+h1{font-size:22px;color:var(--navy);text-align:center;margin:8px 0 2px}
+.sub{color:var(--ink3);text-align:center;font-size:14px;margin:0 0 22px}
+.cartao{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px;margin:0 0 14px;
+box-shadow:0 1px 4px rgba(27,39,69,.05)}
+.cartao h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold2);margin:0 0 10px}
+.destaque{background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:15px}
+.abas{display:flex;gap:8px;margin:0 0 14px}
+.aba{flex:1;text-align:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;
+cursor:pointer;font-size:14px;color:var(--ink3)}
+.aba.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.dia{margin:0 0 14px}
+.dia-t{font-size:15px;font-weight:600;color:var(--navy);margin:0 0 8px;text-transform:capitalize}
+.dia-s{font-size:12.5px;color:var(--ink4);font-weight:400;margin-left:6px;text-transform:none}
+.slots{display:flex;flex-wrap:wrap;gap:8px}
+.slot{padding:11px 18px;border:1.5px solid var(--gold);border-radius:10px;background:#fff;color:var(--navy);
+font-size:16px;font-weight:600;cursor:pointer;min-width:84px;text-align:center}
+.slot:active{background:var(--cream)}
+.aviso{background:var(--cream);border-left:3px solid var(--gold);padding:11px 14px;border-radius:0 8px 8px 0;
+font-size:14px;color:var(--ink3);margin:12px 0}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;background:var(--navy);color:#fff;
+font-size:16px;font-weight:600;cursor:pointer;margin-top:6px}
+.btn.claro{background:#fff;color:var(--ink3);border:1px solid var(--line);font-weight:400;font-size:14px}
+.oculto{display:none}
+.conf-linha{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.conf-linha:last-child{border-bottom:none}
+.conf-linha b{color:var(--navy)}
+.ok-selo{width:56px;height:56px;border-radius:50%;background:var(--cream);border:2px solid var(--gold);
+display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--gold2);margin:6px auto 12px}
+textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit;font-size:14.5px;
+min-height:70px;resize:vertical;background:#fff}
+.rodape{color:var(--ink4);font-size:12.5px;text-align:center;margin-top:26px}
+.spin{text-align:center;color:var(--ink4);padding:34px 0;font-size:14.5px}
+a.zap{color:var(--gold2)}
+</style></head><body><div class="wrap">
+
+<div class="marca">Método HAG</div>
+<h1>Agendar consulta</h1>
+<p class="sub">Dr. Henrique Alves Gonzaga · CRM/SP 226530</p>
+
+<div id="tela"><div class="spin">Carregando os horários…</div></div>
+
+<div class="rodape">Qualquer dúvida, fale com a equipe pelo WhatsApp<br>
+<a class="zap" href="https://wa.me/5511977962914">(11) 97796-2914</a></div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   HAG_AGENDA_SLOTS_v1 · 28/08/2026
+   Motor de horarios do auto-agendamento do Metodo HAG.
+
+   Puro: sem DOM, sem rede, sem IA. Recebe a regra do dia e o que ja esta
+   marcado, devolve quais horarios o paciente pode ver. Toda a politica de
+   agenda vive aqui e em lugar nenhum mais.
+
+   A REGRA CENTRAL, definida pelo Dr. Henrique:
+   o paciente nunca escolhe um horario que abra buraco na agenda. O conjunto
+   de consultas de um dia e sempre CONTIGUO. Por isso, com o dia ja iniciado,
+   so existem dois horarios possiveis, o que encosta antes do bloco e o que
+   encosta depois. Com o dia vazio, mostra os tres primeiros da janela.
+
+   Exemplo dele, sabado, janela a partir das 12:00, retornos de 1h:
+     dia vazio        -> 12:00  13:00  14:00
+     pegou 13:00      -> 12:00  14:00
+     pegou 14:00      -> 12:00  15:00
+     pegou 12:00      -> 15:00
+     pegou 15:00      -> 16:00
+
+   DURACOES (ver claude/modelo-de-duracao-e-sala-livance-28-08-2026.md):
+   bloco de sala = tempo do paciente + arrumacao. A arrumacao e de 15 min e so
+   existe no PRIMEIRO atendimento do dia, ficando ANTES do horario do paciente,
+   por isso nao custa nada entre um paciente e outro. O implante e a excecao:
+   30 min de arrumacao SEMPRE, entao quando ele nao e o primeiro do dia esses
+   30 min ficam no meio do dia e precisam entrar no calculo do horario ofertado.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function (raiz) {
+  'use strict';
+
+  /* ---------- tabela de tipos ---------- */
+  var TIPOS = {
+    diagnostica: { rotulo: 'Consulta diagnóstica', paciente: 75, arrumacao: 15, arrumacaoSempre: false, sala: true },
+    retorno:     { rotulo: 'Retorno presencial',   paciente: 60, arrumacao: 15, arrumacaoSempre: false, sala: true },
+    injetavel:   { rotulo: 'Procedimento injetável', paciente: 30, arrumacao: 15, arrumacaoSempre: false, sala: true },
+    implante:    { rotulo: 'Implante',             paciente: 60, arrumacao: 30, arrumacaoSempre: true,  sala: true },
+    online:      { rotulo: 'Consulta online',      paciente: 45, arrumacao: 0,  arrumacaoSempre: false, sala: false }
+  };
+
+  /* ---------- tempo em minutos, para nao errar com fuso nem com data ---------- */
+  function paraMin(hhmm) {
+    if (hhmm == null) return null;
+    if (typeof hhmm === 'number') return hhmm;
+    var m = String(hhmm).match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return (+m[1]) * 60 + (+m[2]);
+  }
+  function paraHora(min) {
+    if (min == null) return null;
+    var h = Math.floor(min / 60), m = min % 60;
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+
+  /* ---------- ocupacao do dia ---------- */
+  /* Cada marcado e {inicio, fim, tipo}. 'inicio' e 'fim' sao do PACIENTE, nao
+     do bloco de sala. O bloco de sala e derivado na hora de lancar na Livance,
+     por blocoDeSala(). Manter as duas coisas separadas evita o erro classico de
+     somar arrumacao duas vezes. */
+  function normalizaMarcados(marcados) {
+    return (marcados || [])
+      .map(function (a) {
+        var ini = paraMin(a.inicio), fim = paraMin(a.fim);
+        if (ini == null) return null;
+        if (fim == null) {
+          var t = TIPOS[a.tipo] || TIPOS.retorno;
+          fim = ini + t.paciente;
+        }
+        return { inicio: ini, fim: fim, tipo: a.tipo || 'retorno' };
+      })
+      .filter(Boolean)
+      .sort(function (x, y) { return x.inicio - y.inicio; });
+  }
+
+  /* ---------- bloco de sala de um atendimento ---------- */
+  function blocoDeSala(tipo, horaPaciente, ehPrimeiroDoDia) {
+    var t = TIPOS[tipo];
+    if (!t) return null;
+    var ini = paraMin(horaPaciente);
+    if (ini == null) return null;
+    if (!t.sala) return { usaSala: false, inicio: null, fim: null, minutos: 0 };
+    var arruma = t.arrumacaoSempre ? t.arrumacao : (ehPrimeiroDoDia ? t.arrumacao : 0);
+    return {
+      usaSala: true,
+      inicio: paraHora(ini - arruma),
+      fim: paraHora(ini + t.paciente),
+      minutos: arruma + t.paciente,
+      arrumacao: arruma
+    };
+  }
+
+  /* ---------- o motor ----------
+     regra: { inicio:'12:00', fim:'17:00', limite:5, local:'tatuape', modalidade:'presencial' }
+     opcoes: { semente:3 }
+     Devolve { horarios:[{hora, posicao, blocoSala}], motivo, dia:{...} }        */
+  function horariosOfertados(regra, marcados, tipo, opcoes) {
+    opcoes = opcoes || {};
+    var semente = opcoes.semente == null ? 3 : opcoes.semente;
+    var t = TIPOS[tipo];
+    var vazio = { horarios: [], motivo: null, dia: null };
+
+    if (!t) { vazio.motivo = 'tipo desconhecido: ' + tipo; return vazio; }
+    if (!regra) { vazio.motivo = 'dia sem regra de atendimento'; return vazio; }
+
+    var jIni = paraMin(regra.inicio), jFim = paraMin(regra.fim);
+    if (jIni == null || jFim == null) { vazio.motivo = 'janela invalida'; return vazio; }
+
+    var ocup = normalizaMarcados(marcados);
+    var limite = regra.limite == null ? Infinity : regra.limite;
+
+    var dia = {
+      janela: { inicio: paraHora(jIni), fim: paraHora(jFim) },
+      marcados: ocup.length,
+      limite: limite === Infinity ? null : limite,
+      blocoInicio: ocup.length ? paraHora(ocup[0].inicio) : null,
+      blocoFim: ocup.length ? paraHora(ocup[ocup.length - 1].fim) : null
+    };
+    vazio.dia = dia;
+
+    if (ocup.length >= limite) { vazio.motivo = 'limite de ' + limite + ' atendimentos atingido'; return vazio; }
+
+    /* A REGRA DE ESPACAMENTO, que e mais sutil do que parece.
+       Cada atendimento ocupa a sala de (horario do paciente menos arrumacao) ate
+       (horario do paciente mais duracao). A sala do seguinte nao pode comecar
+       antes de a do anterior terminar. Logo o intervalo entre dois pacientes e
+       igual a arrumacao DO SEGUNDO, nao do primeiro.
+
+       Para quase todos os tipos a arrumacao so existe no primeiro do dia, e ela
+       fica antes da abertura, entao o intervalo entre pacientes e zero e eles
+       encadeiam colados. O implante quebra isso: como exige 30 min SEMPRE, dois
+       implantes seguidos precisam de 30 min entre o fim de um e a entrada do
+       proximo paciente.
+
+       A v1 errava aqui e o teste pegou: com o dia vazio ela ofertava implantes
+       de hora em hora, 11:00 12:00 13:00, e as salas ficavam sobrepostas
+       (10:30-12:00 e 11:30-13:00). Ninguem notaria ate o dia do procedimento. */
+    var passo = t.paciente + (t.arrumacaoSempre ? t.arrumacao : 0);
+    var folgaAntes = t.arrumacaoSempre ? t.arrumacao : 0;
+
+    var cand = [];
+
+    if (!ocup.length) {
+      /* dia vazio: semente a partir do inicio da janela, no passo do tipo */
+      for (var i = 0; i < semente; i++) {
+        var h = jIni + i * passo;
+        if (h + t.paciente > jFim) break;
+        cand.push({ hora: paraHora(h), posicao: 'semente', primeiroDoDia: i === 0 });
+      }
+      if (!cand.length) vazio.motivo = 'janela curta demais para um ' + t.rotulo.toLowerCase();
+    } else {
+      var bIni = ocup[0].inicio, bFim = ocup[ocup.length - 1].fim;
+
+      /* Encaixe ANTES do bloco. O novo atendimento passa a ser o primeiro do
+         dia, e tem que terminar quando a SALA do atual primeiro abre. Se o
+         atual primeiro for implante, a sala dele ja abre 30 min antes do
+         paciente, entao o novo precisa terminar 30 min mais cedo. Se for de
+         outro tipo, ele deixa de ser o primeiro do dia, perde a arrumacao, e o
+         novo pode terminar colado. */
+      var pri = TIPOS[ocup[0].tipo] || TIPOS.retorno;
+      var recuoDoAtual = pri.arrumacaoSempre ? pri.arrumacao : 0;
+      var antes = bIni - recuoDoAtual - t.paciente;
+      /* Compara o HORARIO DO PACIENTE com o inicio da janela, nao a abertura da
+         sala. 'inicio' da regra e o primeiro paciente; a sala abre antes dele de
+         proposito, e a semente ja fazia assim. A v1 comparava a sala aqui e a
+         janela ali, entao recusava encaixes validos so no caso do implante. */
+      if (antes >= jIni) {
+        /* EFEITO COLATERAL que precisa ser dito em voz alta. Ao entrar antes do
+           bloco, este atendimento vira o primeiro do dia e o que era primeiro
+           DEIXA DE SER. Na Livance isso muda o tipo do agendamento dele, que
+           tem preco e duracao proprios, e libera 15 min de sala que estavam
+           reservados para a arrumacao. Sem avisar, a Julia lanca o novo e
+           esquece de corrigir o antigo: a sala fica presa 15 min a mais e o
+           premio de primeira do dia e cobrado duas vezes no mesmo dia. */
+        var c = { hora: paraHora(antes), posicao: 'antes', primeiroDoDia: true };
+        if (!pri.arrumacaoSempre && pri.arrumacao > 0) {
+          c.efeitoColateral = {
+            tipo: 'deixa_de_ser_primeiro_do_dia',
+            atendimento: { inicio: paraHora(bIni), tipo: ocup[0].tipo },
+            acao: 'trocar o tipo na Livance para a variante que não é primeira do dia',
+            minutosLiberados: pri.arrumacao
+          };
+        }
+        cand.push(c);
+      }
+
+      /* Encaixe DEPOIS do bloco: o paciente entra no fim do bloco mais a
+         arrumacao do proprio tipo que esta entrando. */
+      var depois = bFim + folgaAntes;
+      if (depois + t.paciente <= jFim) {
+        cand.push({ hora: paraHora(depois), posicao: 'depois', primeiroDoDia: false });
+      }
+
+      if (!cand.length) vazio.motivo = 'sem encaixe contíguo dentro da janela';
+    }
+
+    /* nunca ofertar horario que colida com algo ja marcado */
+    cand = cand.filter(function (c) {
+      var ci = paraMin(c.hora), cf = ci + t.paciente;
+      return !ocup.some(function (o) { return ci < o.fim && cf > o.inicio; });
+    });
+
+    cand.forEach(function (c) {
+      c.fim = paraHora(paraMin(c.hora) + t.paciente);
+      c.blocoSala = blocoDeSala(tipo, c.hora, c.primeiroDoDia);
+    });
+
+    return { horarios: cand, motivo: cand.length ? null : (vazio.motivo || 'sem horário disponível'), dia: dia };
+  }
+
+  /* ---------- janela clinica: so oferece dias perto da data planejada ---------- */
+  function diasElegiveis(dataPlanejada, hoje, opcoes) {
+    opcoes = opcoes || {};
+    var antes = opcoes.antes == null ? 7 : opcoes.antes;   /* dias antes da data planejada */
+    var depois = opcoes.depois == null ? 14 : opcoes.depois; /* dias depois */
+    var tetoDias = opcoes.teto == null ? 35 : opcoes.teto;  /* nunca alem de 5 semanas */
+    if (!dataPlanejada) return null;
+    var d = new Date(dataPlanejada + 'T12:00:00');
+    var h = new Date((hoje || new Date().toISOString().slice(0, 10)) + 'T12:00:00');
+    var ini = new Date(d); ini.setDate(ini.getDate() - antes);
+    var fim = new Date(d); fim.setDate(fim.getDate() + depois);
+    var teto = new Date(h); teto.setDate(teto.getDate() + tetoDias);
+    /* HAG_AGENDA_SLOTS_v1: separar 'ainda longe' de 'ja passou'. Sao situacoes
+       clinicas e operacionais opostas. Retorno planejado para dezembro nao esta
+       atrasado, so ainda nao abriu; a Julia nao deve ser acionada. Retorno cuja
+       janela inteira ficou para tras esta atrasado e precisa de acao humana. */
+    if (fim < h) return { inicio: null, fim: null, motivo: 'janela clínica já passou', situacao: 'atrasado' };
+    if (ini > teto) return { inicio: null, fim: null, motivo: 'ainda fora das ' + tetoDias + ' semanas de antecedência', situacao: 'ainda_nao_abriu' };
+    if (ini < h) ini = h;
+    if (fim > teto) fim = teto;
+    if (fim < ini) return { inicio: null, fim: null, motivo: 'janela clínica sem dia disponível', situacao: 'sem_dia' };
+    var iso = function (x) { return x.toISOString().slice(0, 10); };
+    return { inicio: iso(ini), fim: iso(fim), motivo: null, situacao: 'aberta' };
+  }
+
+  /* ---------- janela efetiva de uma regra dependente ----------
+     A raia online da quarta so pode comecar depois que o Dr. Henrique sai de
+     Pinheiros e chega ao escritorio, 1h30 de deslocamento. O fim do presencial
+     nao e conhecido de antemao, porque depende de quantos pacientes marcarem.
+
+     ARMADILHA que isto resolve: se a raia online abrisse cedo com base no que
+     ja esta marcado, um paciente marcaria online as 14:30 pensando que o
+     presencial acaba as 13:00, e depois outro paciente encheria Pinheiros ate
+     as 15:00. O Dr. Henrique estaria em dois lugares ao mesmo tempo.
+
+     Por isso o padrao e CONSERVADOR: enquanto o dia presencial estiver aberto,
+     a raia online so abre depois do FIM DA JANELA presencial mais o
+     deslocamento. Fechando o dia presencial, o fim real passa a valer e a
+     tarde inteira e liberada. Fechar o dia e ato do medico, nao do paciente. */
+  function janelaEfetiva(regra, ctx) {
+    ctx = ctx || {};
+    if (!regra) return null;
+    var base = { inicio: regra.inicio, fim: regra.fim, ajustada: false, motivo: null };
+    if (!regra.dependeDeLocal) return base;
+
+    var dep = ctx.dependencia || {};
+    var desloc = regra.intervaloAposMin || 0;
+    var jFimDep = paraMin(dep.janelaFim);
+    var bFimDep = paraMin(dep.blocoFim);
+
+    if (dep.diaFechado && bFimDep != null) {
+      var cedo = bFimDep + desloc;
+      return {
+        inicio: paraHora(Math.min(paraMin(regra.inicio), cedo) === cedo ? cedo : cedo),
+        fim: regra.fim, ajustada: true,
+        motivo: 'dia presencial fechado às ' + dep.blocoFim + ', liberado ' + desloc + ' min depois'
+      };
+    }
+    if (dep.diaFechado && bFimDep == null) {
+      return { inicio: regra.inicio, fim: regra.fim, ajustada: false,
+               motivo: 'dia presencial fechado e vazio, mantida a janela padrão' };
+    }
+    /* dia presencial aberto: assume o pior caso, o presencial indo ate o fim.
+       Usa >= de proposito: quando o horario gravado JA e o seguro, a janela nao
+       muda, mas o motivo ainda precisa ser dito. Sem isso a tela mostraria
+       18:30 sem explicar por que nao ha nada antes, e o Dr. Henrique nao teria
+       como saber que basta fechar o dia presencial para liberar a tarde. */
+    if (jFimDep != null) {
+      var seguro = jFimDep + desloc;
+      if (seguro >= paraMin(regra.inicio)) {
+        return { inicio: paraHora(seguro), fim: regra.fim,
+                 ajustada: seguro !== paraMin(regra.inicio),
+                 motivo: 'dia presencial ainda aberto, reservado o deslocamento de '
+                         + desloc + ' min a partir do fim da janela de ' + regra.dependeDeLocal };
+      }
+    }
+    return base;
+  }
+
+  /* ---------- ordem de oferta: centraliza nos dias preferidos ----------
+     O Dr. Henrique quer concentrar em sabado e quarta. Regras de prioridade
+     maior (segunda, sexta) so aparecem quando as de prioridade 1 nao tem
+     encaixe. Sexta ainda depende de ser liberada sob demanda.               */
+  function ordenarRegras(regras, opcoes) {
+    opcoes = opcoes || {};
+    return (regras || [])
+      .filter(function (r) {
+        if (r.ativo === false) return false;
+        if (r.sobDemanda && !((opcoes.liberados || []).indexOf(r.local) >= 0)) return false;
+        return true;
+      })
+      .slice()
+      .sort(function (a, b) {
+        return (a.prioridade || 1) - (b.prioridade || 1);
+      });
+  }
+
+  var API = {
+    versao: 'HAG_AGENDA_SLOTS_v1',
+    janelaEfetiva: janelaEfetiva,
+    ordenarRegras: ordenarRegras,
+    TIPOS: TIPOS,
+    paraMin: paraMin,
+    paraHora: paraHora,
+    blocoDeSala: blocoDeSala,
+    horariosOfertados: horariosOfertados,
+    diasElegiveis: diasElegiveis
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  else raiz.HAGAgendaSlots = API;
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+<script>
+(function(){
+'use strict';
+var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+var SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+var S=window.HAGAgendaSlots;
+var H={'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'};
+
+var PID=(function(){try{var q=new URLSearchParams(location.search);
+  return q.get('patient')||q.get('pid')||q.get('id')||'';}catch(e){return '';}})();
+
+var LOCAIS={tatuape:'Tatuapé',pinheiros:'Pinheiros',online:'Online'};
+var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function hojeSP(){
+  /* HAG_AGENDAR_PACIENTE_v1: 'hoje' no fuso do consultorio, nao do aparelho.
+     Paciente viajando nao pode deslocar a janela. */
+  var f=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'});
+  return f.format(new Date());
+}
+function dataBR(iso){var d=new Date(iso+'T12:00:00');
+  return DIAS[d.getDay()]+', '+d.getDate()+' de '+MESES[d.getMonth()];}
+function hhmm(t){return String(t||'').slice(0,5);}
+function el(html){var t=document.getElementById('tela');t.innerHTML=html;return t;}
+function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+
+function rpc(nome,args){
+  return fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:H,body:JSON.stringify(args)})
+    .then(function(r){return r.json();});
+}
+function rest(caminho){
+  return fetch(SURL+'/rest/v1/'+caminho,{headers:H}).then(function(r){return r.json();});
+}
+
+var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null;
+
+function falha(msg){
+  el('<div class="cartao"><div class="destaque">'+msg+'</div></div>');
+}
+
+function iniciar(){
+  if(!PID){ falha('Este link de agendamento está incompleto. Peça um novo link para a equipe pelo WhatsApp.'); return; }
+  rpc('hag_agendamento_contexto',{p_patient_id:PID}).then(function(c){
+    if(!c||!c.ok){ falha('Não encontrei o seu cadastro por este link. Fale com a equipe pelo WhatsApp que resolvemos rapidinho.'); return; }
+    CTX=c;
+    if(c.agendamento){ telaJaAgendado(); return; }
+    if(!c.retorno){ falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Não encontrei nenhuma consulta aguardando agendamento para você. Se acha que deveria haver, fale com a equipe pelo WhatsApp.'); return; }
+    JANELA=S.diasElegiveis(c.retorno.data_planejada, hojeSP());
+    if(!JANELA || JANELA.situacao==='ainda_nao_abriu'){
+      falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") está prevista para perto de '+dataBR(c.retorno.data_planejada)+'. O agendamento abre mais perto da data, e avisaremos você.');
+      return;
+    }
+    if(JANELA.situacao==='atrasado'){
+      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! A janela ideal da sua consulta ("'+esc(c.retorno.nome)+'") já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Julia entra em contato.');
+      return;
+    }
+    carregarAgenda();
+  }).catch(function(){ falha('Não consegui carregar agora. Verifique a internet e tente de novo em instantes.'); });
+}
+
+function carregarAgenda(){
+  Promise.all([
+    rest('agenda_regras?ativo=eq.true&select=dia_semana,local,modalidade,hora_inicio,hora_fim,limite,prioridade&order=prioridade'),
+    rest('v_agenda_ocupacao?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,hora_inicio,hora_fim,tipo')
+  ]).then(function(rs){
+    REGRAS=rs[0]||[]; OCUP={};
+    (rs[1]||[]).forEach(function(o){
+      (OCUP[o.data]=OCUP[o.data]||[]).push({inicio:hhmm(o.hora_inicio),fim:hhmm(o.hora_fim),tipo:o.tipo||'retorno'});
+    });
+    var m=CTX.retorno.modalidade;
+    TAB = m==='online' ? 'online' : 'presencial';
+    telaEscolha();
+  }).catch(function(){ falha('Não consegui carregar a agenda agora. Tente de novo em instantes.'); });
+}
+
+function diasOfertados(modalidade){
+  /* Do primeiro ao ultimo dia da janela clinica, casa cada data com a regra do
+     dia da semana. A prioridade concentra: so desce para prioridade 2 ou 3
+     quando os dias preferidos nao tem NENHUM horario na janela. A vespera e o
+     proprio dia ficam de fora: a Julia precisa de um dia util para garantir a
+     sala na Livance. */
+  var minData=(function(){var d=new Date(hojeSP()+'T12:00:00');d.setDate(d.getDate()+2);
+    return d.toISOString().slice(0,10);})();
+  var porPrio={};
+  var d=new Date(JANELA.inicio+'T12:00:00'), fim=new Date(JANELA.fim+'T12:00:00');
+  while(d<=fim){
+    var iso=d.toISOString().slice(0,10);
+    if(iso>=minData){
+      var dow=d.getDay();
+      for(var i=0;i<REGRAS.length;i++){
+        var rg=REGRAS[i];
+        if(rg.dia_semana!==dow || rg.modalidade!==modalidade) continue;
+        var tipo = modalidade==='online' ? 'online' : 'retorno';
+        var r=S.horariosOfertados(
+          {inicio:hhmm(rg.hora_inicio),fim:hhmm(rg.hora_fim),limite:rg.limite},
+          OCUP[iso]||[], tipo);
+        if(r.horarios.length){
+          (porPrio[rg.prioridade]=porPrio[rg.prioridade]||[]).push(
+            {data:iso, local:rg.local, tipo:tipo, horarios:r.horarios.slice(0,3)});
+        }
+      }
+    }
+    d.setDate(d.getDate()+1);
+  }
+  var prios=Object.keys(porPrio).map(Number).sort(function(a,b){return a-b;});
+  if(!prios.length) return [];
+  var lista=porPrio[prios[0]];
+  if(lista.length<2 && prios.length>1) lista=lista.concat(porPrio[prios[1]]);
+  return lista.sort(function(a,b){return a.data<b.data?-1:1;}).slice(0,4);
+}
+
+function telaEscolha(nota){
+  var c=CTX, hibrido=c.retorno.modalidade==='hibrido';
+  var dias=diasOfertados(TAB);
+  var h='<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>! '
+    +'Sua próxima consulta é <b>'+esc(c.retorno.nome)+'</b>, prevista para perto de '
+    +'<b>'+dataBR(c.retorno.data_planejada)+'</b>. Escolha abaixo o melhor horário.</div></div>';
+  if(nota) h+='<div class="aviso">'+nota+'</div>';
+  if(hibrido){
+    h+='<div class="abas">'
+      +'<div class="aba'+(TAB==='presencial'?' on':'')+'" onclick="HAGpg.tab(\'presencial\')">Presencial</div>'
+      +'<div class="aba'+(TAB==='online'?' on':'')+'" onclick="HAGpg.tab(\'online\')">Online</div></div>';
+  }
+  h+='<div class="cartao"><h2>'+(TAB==='online'?'Consulta online':'No consultório')+'</h2>';
+  if(!dias.length){
+    h+='<p style="font-size:14.5px;color:var(--ink3)">Não há horários '+(TAB==='online'?'online':'presenciais')+' disponíveis dentro do período ideal da sua consulta.</p>';
+  } else {
+    dias.forEach(function(dia,di){
+      h+='<div class="dia"><div class="dia-t">'+dataBR(dia.data)
+        +(TAB!=='online'?'<span class="dia-s">'+LOCAIS[dia.local]+'</span>':'')+'</div><div class="slots">';
+      dia.horarios.forEach(function(s,si){
+        h+='<button class="slot" onclick="HAGpg.escolher('+di+','+si+')">'+s.hora+'</button>';
+      });
+      h+='</div></div>';
+    });
+  }
+  h+='</div><button class="btn claro" onclick="HAGpg.ajuda()">Nenhum destes horários funciona para mim</button>';
+  el(h);
+  window.HAGpg._dias=dias;
+}
+
+function telaConfirma(dia,slot){
+  var c=CTX;
+  el('<div class="cartao"><h2>Confirmar horário</h2>'
+    +'<div class="conf-linha"><span>Consulta</span><b>'+esc(c.retorno.nome)+'</b></div>'
+    +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(dia.data)+'</b></div>'
+    +'<div class="conf-linha"><span>Horário</span><b>'+slot.hora+'</b></div>'
+    +'<div class="conf-linha"><span>Onde</span><b>'+(TAB==='online'?'Online, o link chega pelo WhatsApp':LOCAIS[dia.local])+'</b></div>'
+    +'</div>'
+    +'<button class="btn" onclick="HAGpg.reservar()">Confirmar este horário</button>'
+    +'<button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>');
+  window.HAGpg._sel={dia:dia,slot:slot};
+}
+
+function telaSucesso(ag){
+  el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
+    +'<h2 style="text-align:center">Horário reservado</h2>'
+    +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(ag.data)+'</b></div>'
+    +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(ag.inicio)+'</b></div>'
+    +'<div class="conf-linha"><span>Onde</span><b>'+(ag.tipo==='online'?'Online':LOCAIS[ag.local])+'</b></div>'
+    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Você vai receber a confirmação e os lembretes pelo WhatsApp. Para remarcar, é só chamar a equipe.</p></div>');
+}
+
+function telaJaAgendado(){
+  var a=CTX.agendamento;
+  el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
+    +'<h2 style="text-align:center">Você já tem horário marcado</h2>'
+    +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(a.data)+'</b></div>'
+    +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(a.inicio)+'</b></div>'
+    +'<div class="conf-linha"><span>Onde</span><b>'+(a.modalidade==='online'?'Online':LOCAIS[a.local]||'')+'</b></div>'
+    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Para remarcar, fale com a equipe pelo WhatsApp.</p></div>');
+}
+
+function telaAjuda(txt){
+  el('<div class="cartao"><div class="destaque">'+txt+'</div>'
+    +'<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 6px">Se quiser, conte qual período costuma ser melhor para você:</p>'
+    +'<textarea id="obsAjuda" placeholder="Ex.: só consigo depois das 18h, ou aos sábados de manhã"></textarea></div>'
+    +'<button class="btn" onclick="HAGpg.enviarAjuda()">Pedir ajuda para agendar</button>'
+    +(JANELA&&JANELA.situacao==='aberta'?'<button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>':''));
+}
+
+window.HAGpg={
+  _dias:[], _sel:null,
+  tab:function(m){TAB=m;telaEscolha();},
+  escolher:function(di,si){var d=this._dias[di];telaConfirma(d,d.horarios[si]);},
+  voltar:function(){telaEscolha();},
+  ajuda:function(){telaAjuda('Sem problema. Deixe com a Julia: ela encontra com você um horário que encaixe.');},
+  reservar:function(){
+    var s=this._sel; if(!s) return;
+    el('<div class="spin">Reservando o seu horário…</div>');
+    rpc('hag_reservar_horario',{
+      p_patient_id:PID, p_data:s.dia.data, p_local:(TAB==='online'?'online':s.dia.local),
+      p_tipo:s.dia.tipo, p_hora_inicio:s.slot.hora,
+      p_retorno_id:CTX.retorno.id, p_origem:'paciente'
+    }).then(function(r){
+      if(r&&r.ok){ telaSucesso(r.agendamento); return; }
+      if(r&&(r.erro==='horario_ocupado'||r.erro==='abriria_buraco'||r.erro==='limite_do_dia')){
+        carregarAgendaENotificar('Esse horário acabou de ser preenchido. A lista foi atualizada, escolha outro.');
+        return;
+      }
+      if(r&&r.erro==='ja_agendado'){ iniciar(); return; }
+      falha((r&&r.mensagem)||'Não consegui concluir agora. Tente de novo em instantes.');
+    }).catch(function(){ falha('Não consegui concluir agora. Verifique a internet e tente de novo.'); });
+  },
+  enviarAjuda:function(){
+    var obs=(document.getElementById('obsAjuda')||{}).value||'';
+    el('<div class="spin">Enviando…</div>');
+    rpc('hag_pedir_ajuda_agendamento',{p_patient_id:PID,
+      p_retorno_id:(CTX.retorno?CTX.retorno.id:null), p_obs:obs.slice(0,400)})
+    .then(function(r){
+      el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
+        +'<h2 style="text-align:center">Recado enviado</h2>'
+        +'<p style="font-size:14.5px;color:var(--ink3)">'+esc((r&&r.mensagem)||'A Julia vai falar com você pelo WhatsApp para encontrar o melhor horário.')+'</p></div>');
+    }).catch(function(){ falha('Não consegui enviar agora. Tente de novo em instantes.'); });
+  }
+};
+
+function carregarAgendaENotificar(nota){
+  rest('v_agenda_ocupacao?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,hora_inicio,hora_fim,tipo')
+  .then(function(oc){
+    OCUP={};(oc||[]).forEach(function(o){(OCUP[o.data]=OCUP[o.data]||[]).push({inicio:hhmm(o.hora_inicio),fim:hhmm(o.hora_fim),tipo:o.tipo||'retorno'});});
+    telaEscolha(nota);
+  });
+}
+
+iniciar();
+})();
+</script>
+</body></html>
