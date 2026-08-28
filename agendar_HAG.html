@@ -29,6 +29,10 @@ cursor:pointer;font-size:14px;color:var(--ink3)}
 .dia{margin:0 0 14px}
 .dia-t{font-size:15px;font-weight:600;color:var(--navy);margin:0 0 8px;text-transform:capitalize}
 .dia-s{font-size:12.5px;color:var(--ink4);font-weight:400;margin-left:6px;text-transform:none}
+.dia-tag{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--gold2);border:1px solid var(--gold);border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:2px}
+.dia.sug{background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:12px 12px 4px}
+.sub-t{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink4);margin:18px 0 10px}
 .slots{display:flex;flex-wrap:wrap;gap:8px}
 .slot{padding:11px 18px;border:1.5px solid var(--gold);border-radius:10px;background:#fff;color:var(--navy);
 font-size:16px;font-weight:600;cursor:pointer;min-width:84px;text-align:center}
@@ -420,7 +424,7 @@ function rest(caminho){
   return fetch(SURL+'/rest/v1/'+caminho,{headers:H}).then(function(r){return r.json();});
 }
 
-var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null;
+var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null, ALVO=null, ALVOMED=false;
 
 function falha(msg){
   el('<div class="cartao"><div class="destaque">'+msg+'</div></div>');
@@ -433,9 +437,22 @@ function iniciar(){
     CTX=c;
     if(c.agendamento){ telaJaAgendado(); return; }
     if(!c.retorno){ falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Não encontrei nenhuma consulta aguardando agendamento para você. Se acha que deveria haver, fale com a equipe pelo WhatsApp.'); return; }
-    JANELA=S.diasElegiveis(c.retorno.data_planejada, hojeSP());
+    /* HAG_ALVO_MEDICO_v1 (28/08/2026): a janela passa a girar em volta do dia
+       que o Dr. Henrique mandou para a fila da Julia, e nao mais da data
+       teorica do plano. PORQUE: consulta antecipada por decisao clinica (o
+       questionario mensal acusou necessidade de suporte) tinha a data teorica
+       como centro, entao o dia escolhido pelo medico ficava FORA da lista e o
+       paciente so via os dias em volta. Quando o alvo vem do medico a janela e
+       simetrica, 7 dias para cada lado: a data ja e decisao, nao estimativa. */
+    ALVO=c.retorno.data_alvo||c.retorno.data_planejada;
+    ALVOMED=(c.retorno.alvo_origem==='medico'&&!!c.retorno.data_alvo);
+    if(!ALVO){
+      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") ainda não tem data definida. Toque no botão abaixo e a Julia organiza isso com você.');
+      return;
+    }
+    JANELA=S.diasElegiveis(ALVO, hojeSP(), ALVOMED?{antes:7,depois:7}:null);
     if(!JANELA || JANELA.situacao==='ainda_nao_abriu'){
-      falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") está prevista para perto de '+dataBR(c.retorno.data_planejada)+'. O agendamento abre mais perto da data, e avisaremos você.');
+      falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
       return;
     }
     if(JANELA.situacao==='atrasado'){
@@ -497,10 +514,31 @@ function diasOfertados(modalidade){
     d.setDate(d.getDate()+1);
   }
   var prios=Object.keys(porPrio).map(Number).sort(function(a,b){return a-b;});
-  if(!prios.length) return [];
-  var lista=porPrio[prios[0]];
+
+  /* HAG_ALVO_MEDICO_v1: o dia indicado pelo medico sai de QUALQUER prioridade
+     antes da concentracao e vai para a frente da lista, marcado.
+     DUAS ARMADILHAS que isto resolve, as duas apagavam justamente o dia
+     escolhido pelo medico:
+     1) a concentracao so desce para a prioridade 2 quando a 1 tem menos de dois
+        dias, entao um alvo numa segunda-feira sumia se houvesse duas quartas na
+        janela;
+     2) a lista e cronologica e o alvo fica no MEIO da janela, entao o teto de
+        4 dias cortava o alvo quando havia 4 dias uteis antes dele. */
+  var sug=null;
+  if(ALVOMED){
+    for(var pi=0; pi<prios.length && !sug; pi++){
+      var bal=porPrio[prios[pi]];
+      for(var k=0;k<bal.length;k++){ if(bal[k].data===ALVO){ sug=bal[k]; bal.splice(k,1); break; } }
+    }
+    prios=prios.filter(function(pp){ return porPrio[pp].length; });
+  }
+  if(!prios.length && !sug) return [];
+
+  var lista=prios.length ? porPrio[prios[0]] : [];
   if(lista.length<2 && prios.length>1) lista=lista.concat(porPrio[prios[1]]);
-  return lista.sort(function(a,b){return a.data<b.data?-1:1;}).slice(0,4);
+  lista=lista.sort(function(a,b){return a.data<b.data?-1:1;}).slice(0, sug?3:4);
+  if(sug){ sug.sugerido=true; lista.unshift(sug); }
+  return lista;
 }
 
 function telaEscolha(nota){
@@ -510,12 +548,24 @@ function telaEscolha(nota){
      Reset nem pedir presencial num plano que e so online. */
   var travada = !hibrido;
   var dias=diasOfertados(TAB);
+  /* HAG_ALVO_MEDICO_v1: janela apertada pode nao ter nenhum dia util. Antes de
+     dizer 'nao ha horarios', alarga uma vez para o padrao do plano. */
+  var alargou=false;
+  if(!dias.length && ALVOMED){
+    var jOrig=JANELA, j2=S.diasElegiveis(ALVO, hojeSP());
+    if(j2 && j2.situacao==='aberta'){
+      JANELA=j2; dias=diasOfertados(TAB);
+      if(dias.length) alargou=true; else JANELA=jOrig;
+    }
+  }
   var h='<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>! '
     +'Sua próxima consulta é <b>'+esc(c.retorno.nome)+'</b>, '
-    +(c.retorno.data_estimada ? 'prevista para <b>meados de '+dataBR(c.retorno.data_planejada).split(', ')[1]+'</b>'
-                              : 'prevista para perto de <b>'+dataBR(c.retorno.data_planejada)+'</b>')
+    +(ALVOMED ? 'e o Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> como o melhor dia'
+     : c.retorno.data_estimada ? 'prevista para <b>meados de '+dataBR(ALVO).split(', ')[1]+'</b>'
+                              : 'prevista para perto de <b>'+dataBR(ALVO)+'</b>')
     +'. Escolha abaixo o melhor horário.</div></div>';
   if(nota) h+='<div class="aviso">'+nota+'</div>';
+  if(alargou) h+='<div class="aviso">Não sobrou horário livre exatamente na semana do dia indicado, então abrimos os dias seguintes.</div>';
   if(travada){
     h+='<div class="aviso">'+(c.retorno.modalidade==='online'
         ? 'Esta consulta do seu plano é <b>online</b>.'
@@ -534,8 +584,13 @@ function telaEscolha(nota){
   if(!dias.length){
     h+='<p style="font-size:14.5px;color:var(--ink3)">Não há horários '+(TAB==='online'?'online':'presenciais')+' disponíveis dentro do período ideal da sua consulta.</p>';
   } else {
+    var abriuOutros=false;
     dias.forEach(function(dia,di){
-      h+='<div class="dia"><div class="dia-t">'+dataBR(dia.data)
+      if(!dia.sugerido && !abriuOutros && dias[0] && dias[0].sugerido){
+        abriuOutros=true; h+='<div class="sub-t">Outros dias por perto</div>';
+      }
+      h+='<div class="dia'+(dia.sugerido?' sug':'')+'"><div class="dia-t">'+dataBR(dia.data)
+        +(dia.sugerido?'<span class="dia-tag">dia indicado</span>':'')
         +(TAB!=='online'?'<span class="dia-s">'+LOCAIS[dia.local]+'</span>':'')+'</div><div class="slots">';
       dia.horarios.forEach(function(s,si){
         h+='<button class="slot" onclick="HAGpg.escolher('+di+','+si+')">'+s.hora+'</button>';
