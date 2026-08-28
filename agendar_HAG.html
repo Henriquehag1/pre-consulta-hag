@@ -455,8 +455,14 @@ function carregarAgenda(){
     (rs[1]||[]).forEach(function(o){
       (OCUP[o.data]=OCUP[o.data]||[]).push({inicio:hhmm(o.hora_inicio),fim:hhmm(o.hora_fim),tipo:o.tipo||'retorno'});
     });
+    /* HAG_MODALIDADE_CICLO_v1: a modalidade vem RESOLVIDA do servidor, ja
+       aplicando a regra do plano (Reset alterna, Smart 90 e online, Transforma
+       e presencial por padrao, Manutencao e livre) e a decisao da equipe gravada
+       no retorno, que vence tudo. A tela so obedece. */
     var m=CTX.retorno.modalidade;
-    TAB = m==='online' ? 'online' : 'presencial';
+    TAB = (m==='online') ? 'online'
+        : (m==='presencial') ? 'presencial'
+        : (CTX.retorno.preferida==='presencial' ? 'presencial' : 'presencial');
     telaEscolha();
   }).catch(function(){ falha('Não consegui carregar a agenda agora. Tente de novo em instantes.'); });
 }
@@ -499,15 +505,30 @@ function diasOfertados(modalidade){
 
 function telaEscolha(nota){
   var c=CTX, hibrido=c.retorno.modalidade==='hibrido';
+  /* Trava: quando o plano define a modalidade, nao existe aba para escolher.
+     O paciente nao ve o que nao pode ter, e nao ha como furar a alternancia do
+     Reset nem pedir presencial num plano que e so online. */
+  var travada = !hibrido;
   var dias=diasOfertados(TAB);
   var h='<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>! '
-    +'Sua próxima consulta é <b>'+esc(c.retorno.nome)+'</b>, prevista para perto de '
-    +'<b>'+dataBR(c.retorno.data_planejada)+'</b>. Escolha abaixo o melhor horário.</div></div>';
+    +'Sua próxima consulta é <b>'+esc(c.retorno.nome)+'</b>, '
+    +(c.retorno.data_estimada ? 'prevista para <b>meados de '+dataBR(c.retorno.data_planejada).split(', ')[1]+'</b>'
+                              : 'prevista para perto de <b>'+dataBR(c.retorno.data_planejada)+'</b>')
+    +'. Escolha abaixo o melhor horário.</div></div>';
   if(nota) h+='<div class="aviso">'+nota+'</div>';
+  if(travada){
+    h+='<div class="aviso">'+(c.retorno.modalidade==='online'
+        ? 'Esta consulta do seu plano é <b>online</b>.'
+        : 'Esta consulta do seu plano é <b>presencial</b>, no consultório.')
+      +'</div>';
+  }
   if(hibrido){
     h+='<div class="abas">'
       +'<div class="aba'+(TAB==='presencial'?' on':'')+'" onclick="HAGpg.tab(\'presencial\')">Presencial</div>'
       +'<div class="aba'+(TAB==='online'?' on':'')+'" onclick="HAGpg.tab(\'online\')">Online</div></div>';
+    if(c.retorno.preferida==='presencial'){
+      h+='<div class="aviso">No seu plano o padrão é <b>presencial</b>. Se preferir online desta vez, é só escolher na aba ao lado.</div>';
+    }
   }
   h+='<div class="cartao"><h2>'+(TAB==='online'?'Consulta online':'No consultório')+'</h2>';
   if(!dias.length){
