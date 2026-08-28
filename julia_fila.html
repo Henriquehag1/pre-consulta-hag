@@ -1,36 +1,46 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Fila de Agendamento · mudou de lugar</title>
 <meta name="robots" content="noindex">
-<title>Fila de Agendamento · HAG</title>
-<!-- HAG_FILA_REDIRECT_v1 (28/08/2026)
-     Esta pagina era a fila de agendamento da Julia. Ela foi substituida pela aba
-     Fila da Julia do tarefas_HAG.html, que tem o botao de WhatsApp com o link de
-     auto-agendamento, o botao de marcar paciente comunicado e a remocao do
-     evento do calendario ao cancelar. Nada disso existe aqui.
-
-     NAO foi apagada de proposito: tres caminhos ainda apontam para este endereco
-     e todos passam a cair no lugar certo por causa deste redirecionamento.
-       1. o link salvo no celular da Julia;
-       2. o manifest.json antigo, cujo start_url e julia_fila.html, ou seja o
-          icone da PWA instalada na tela de inicio dela;
-       3. o sw.js, que ao tocar numa notificacao abre julia_fila.html por padrao.
-     Apagar o arquivo transformaria os tres em pagina de erro. -->
-<meta http-equiv="refresh" content="2; url=tarefas_HAG.html">
-<script>location.replace('tarefas_HAG.html'+location.search+location.hash);</script>
 <style>
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:#1B2745;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
-  text-align:center;padding:24px;line-height:1.55}
-.c{max-width:340px}
-h1{font-size:17px;margin:0 0 10px;font-weight:700}
-p{font-size:14px;color:#C9C4B8;margin:0 0 18px}
-a{display:inline-block;background:#C9A55E;color:#1B2745;text-decoration:none;font-weight:700;
-  font-size:14px;border-radius:10px;padding:11px 22px}
-</style></head><body>
-<div class="c">
-  <h1>A fila mudou de lugar</h1>
-  <p>Agora ela fica dentro do painel de Tarefas, na aba Fila da Julia. Estamos levando você para lá.</p>
-  <a href="tarefas_HAG.html">Abrir o painel de Tarefas</a>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#1e2233;color:#f7f5f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;padding:24px}
+  .cx{max-width:420px;text-align:center}
+  .k{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#b8922a;font-weight:700;margin-bottom:14px}
+  h1{font-size:24px;line-height:1.2;margin:0 0 12px;font-weight:600}
+  p{font-size:15px;line-height:1.5;color:#c9c5bc;margin:0 0 22px}
+  a{display:inline-block;background:#b8922a;color:#fff;text-decoration:none;border-radius:8px;
+    padding:13px 26px;font-weight:600;font-size:15px}
+</style>
+</head>
+<body>
+<div class="cx">
+  <div class="k">Método HAG</div>
+  <h1>A fila agora vive dentro do Tarefas</h1>
+  <p>Esta página saiu do ar. Tudo o que ficava aqui, mais a busca de paciente e o remarcar,
+     está no aplicativo de Tarefas. Você vai ser levado para lá.</p>
+  <a href="tarefas_HAG.html" id="ir">Ir para o Tarefas</a>
 </div>
-</body></html>
+<script>
+/* HAG_FILA_APOSENTADA_v1 (20/08/2026)
+   A fila foi substituida pelo Tarefas. Em vez de devolver 404, que deixaria um
+   icone morto na tela de inicio de quem instalou, esta pagina redireciona.
+   Tambem remove o service worker antigo, senao ele fica registrado para sempre
+   num endereco que nao existe mais. */
+(function(){
+  'use strict';
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(rs){
+        rs.forEach(function(r){ r.unregister(); });
+      }).catch(function(){});
+    }
+  } catch(e){}
+  setTimeout(function(){ location.replace('tarefas_HAG.html'); }, 2200);
+})();
+</script>
+</body>
+</html>
