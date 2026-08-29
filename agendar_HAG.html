@@ -236,7 +236,7 @@ a.zap{color:var(--gold2)}
            bloco, este atendimento vira o primeiro do dia e o que era primeiro
            DEIXA DE SER. Na Livance isso muda o tipo do agendamento dele, que
            tem preco e duracao proprios, e libera 15 min de sala que estavam
-           reservados para a arrumacao. Sem avisar, a Julia lanca o novo e
+           reservados para a arrumacao. Sem avisar, a Daniela lanca o novo e
            esquece de corrigir o antigo: a sala fica presa 15 min a mais e o
            premio de primeira do dia e cobrado duas vezes no mesmo dia. */
         var c = { hora: paraHora(antes), posicao: 'antes', primeiroDoDia: true };
@@ -289,7 +289,7 @@ a.zap{color:var(--gold2)}
     var teto = new Date(h); teto.setDate(teto.getDate() + tetoDias);
     /* HAG_AGENDA_SLOTS_v1: separar 'ainda longe' de 'ja passou'. Sao situacoes
        clinicas e operacionais opostas. Retorno planejado para dezembro nao esta
-       atrasado, so ainda nao abriu; a Julia nao deve ser acionada. Retorno cuja
+       atrasado, so ainda nao abriu; a Daniela nao deve ser acionada. Retorno cuja
        janela inteira ficou para tras esta atrasado e precisa de acao humana. */
     if (fim < h) return { inicio: null, fim: null, motivo: 'janela clínica já passou', situacao: 'atrasado' };
     if (ini > teto) return { inicio: null, fim: null, motivo: 'ainda fora das ' + tetoDias + ' semanas de antecedência', situacao: 'ainda_nao_abriu' };
@@ -438,7 +438,7 @@ function iniciar(){
     if(c.agendamento){ telaJaAgendado(); return; }
     if(!c.retorno){ falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Não encontrei nenhuma consulta aguardando agendamento para você. Se acha que deveria haver, fale com a equipe pelo WhatsApp.'); return; }
     /* HAG_ALVO_MEDICO_v1 (28/08/2026): a janela passa a girar em volta do dia
-       que o Dr. Henrique mandou para a fila da Julia, e nao mais da data
+       que o Dr. Henrique mandou para a fila da Daniela, e nao mais da data
        teorica do plano. PORQUE: consulta antecipada por decisao clinica (o
        questionario mensal acusou necessidade de suporte) tinha a data teorica
        como centro, entao o dia escolhido pelo medico ficava FORA da lista e o
@@ -447,7 +447,7 @@ function iniciar(){
     ALVO=c.retorno.data_alvo||c.retorno.data_planejada;
     ALVOMED=(c.retorno.alvo_origem==='medico'&&!!c.retorno.data_alvo);
     if(!ALVO){
-      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") ainda não tem data definida. Toque no botão abaixo e a Julia organiza isso com você.');
+      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") ainda não tem data definida. Toque no botão abaixo e a Daniela organiza isso com você.');
       return;
     }
     JANELA=S.diasElegiveis(ALVO, hojeSP(), ALVOMED?{antes:7,depois:7}:null);
@@ -456,7 +456,7 @@ function iniciar(){
       return;
     }
     if(JANELA.situacao==='atrasado'){
-      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! A janela ideal da sua consulta ("'+esc(c.retorno.nome)+'") já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Julia entra em contato.');
+      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! A janela ideal da sua consulta ("'+esc(c.retorno.nome)+'") já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Daniela entra em contato.');
       return;
     }
     carregarAgenda();
@@ -488,7 +488,7 @@ function diasOfertados(modalidade){
   /* Do primeiro ao ultimo dia da janela clinica, casa cada data com a regra do
      dia da semana. A prioridade concentra: so desce para prioridade 2 ou 3
      quando os dias preferidos nao tem NENHUM horario na janela. A vespera e o
-     proprio dia ficam de fora: a Julia precisa de um dia util para garantir a
+     proprio dia ficam de fora: a Daniela precisa de um dia util para garantir a
      sala na Livance. */
   var minData=(function(){var d=new Date(hojeSP()+'T12:00:00');d.setDate(d.getDate()+2);
     return d.toISOString().slice(0,10);})();
@@ -648,7 +648,7 @@ window.HAGpg={
   tab:function(m){TAB=m;telaEscolha();},
   escolher:function(di,si){var d=this._dias[di];telaConfirma(d,d.horarios[si]);},
   voltar:function(){telaEscolha();},
-  ajuda:function(){telaAjuda('Sem problema. Deixe com a Julia: ela encontra com você um horário que encaixe.');},
+  ajuda:function(){telaAjuda('Sem problema. Deixe com a Daniela: ela encontra com você um horário que encaixe.');},
   reservar:function(){
     var s=this._sel; if(!s) return;
     el('<div class="spin">Reservando o seu horário…</div>');
@@ -674,7 +674,7 @@ window.HAGpg={
     .then(function(r){
       el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
         +'<h2 style="text-align:center">Recado enviado</h2>'
-        +'<p style="font-size:14.5px;color:var(--ink3)">'+esc((r&&r.mensagem)||'A Julia vai falar com você pelo WhatsApp para encontrar o melhor horário.')+'</p></div>');
+        +'<p style="font-size:14.5px;color:var(--ink3)">'+esc((r&&r.mensagem)||'A Daniela vai falar com você pelo WhatsApp para encontrar o melhor horário.')+'</p></div>');
     }).catch(function(){ falha('Não consegui enviar agora. Tente de novo em instantes.'); });
   }
 };

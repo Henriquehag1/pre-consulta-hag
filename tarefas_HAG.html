@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260828-1958"></script>
+<script src="hag_auth.js?v=20260829-1134"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -661,6 +661,8 @@ body {
         <div class="sync-dot" id="syncDot"></div>
         <span class="sync-label" id="syncLabel">conectando</span>
       </div>
+      <!-- HAG_PUSH_TAREFAS_v1 -->
+      <button class="btn" id="btnPush" style="display:none" onclick="ativarAvisos(this)">&#128276; Ativar avisos</button>
       <a class="btn" href="index_HAG.html" style="text-decoration:none">&#8592; Painel</a>
       <button class="btn btn-primary" onclick="openModal()">+ Nova Tarefa</button>
     </div>
@@ -752,9 +754,9 @@ body {
         </div>
         <input id="f-tipo-outro" type="text" placeholder="Descreva a tarefa..." style="display:none;margin-top:8px">
       </div>
-      <!-- HAG_FILA_JULIA_v1: campos extras quando a tarefa vai para a fila de agendamento da Julia -->
+      <!-- HAG_FILA_JULIA_v1: campos extras quando a tarefa vai para a fila de agendamento da Daniela -->
       <div class="field" id="filaExtra" style="display:none">
-        <label>Enviar para a fila da Julia &middot; tipo de evento</label>
+        <label>Enviar para a fila da Daniela &middot; tipo de evento</label>
         <div class="tipo-chips" id="eventoChips">
           <div class="tipo-chip active" onclick="selectEvento(this,'retorno')">&#x1f501; Retorno</div>
           <div class="tipo-chip" onclick="selectEvento(this,'diagnostica')">&#x1fa7a; Diagn&oacute;stica</div>
@@ -839,11 +841,11 @@ function setRole(r){
 function verFila(sub){ _filaSub=sub||'agendar'; setFilter('fila'); }
 
 /* ===== HAG_AVISO_NOVIDADE_v1 =========================================
-   Marca o que a Julia mexeu desde a ultima vez que o Dr. olhou a fila.
+   Marca o que a Daniela mexeu desde a ultima vez que o Dr. olhou a fila.
 
    Guarda por tarefa o carimbo de atualizacao ja visto, e nao um horario
    unico. Assim a propria edicao do Dr. nao vira "novidade" (saveTask
-   carimba na hora) e uma tarefa que a Julia mexeu ontem continua marcada
+   carimba na hora) e uma tarefa que a Daniela mexeu ontem continua marcada
    ate ele de fato olhar.
 
    O painel ja recebe as mudancas em tempo real pelo canal 'tarefas-rt';
@@ -948,7 +950,7 @@ function _buscaPacientesHtml(q){
     if(abertas.length||naFila.length){
       var partes=[];
       if(abertas.length) partes.push('<b>'+abertas.length+'</b> tarefa'+(abertas.length>1?'s':'')+' em aberto');
-      if(naFila.length)  partes.push('<b>'+naFila.length+'</b> na fila da Julia');
+      if(naFila.length)  partes.push('<b>'+naFila.length+'</b> na fila da Daniela');
       sit='<div style="font-size:12px;color:#8a5a2b;margin-top:4px">⚠ '+partes.join(' · ')+'</div>';
     } else {
       sit='<div style="font-size:12px;color:#2d7a45;margin-top:4px">✓ Sem tarefa em aberto</div>';
@@ -1031,7 +1033,7 @@ function render(){
     }
     if(!lf.length){
       var _emTt=(_filaSub==='agendados')?'Nada agendado nos ultimos 14 dias':(_filaSub==='comunicado'?'Ninguem aguardando retorno':'Nenhum paciente aguardando agendamento');
-      var _emSb=(_filaSub==='agendados')?'As agendadas sao removidas daqui apos 14 dias.':(_filaSub==='comunicado'?'Pacientes ja contatados pela Julia aparecem aqui.':'Crie uma tarefa "Agendar consulta" que ela aparece aqui e na tela da Julia.');
+      var _emSb=(_filaSub==='agendados')?'As agendadas sao removidas daqui apos 14 dias.':(_filaSub==='comunicado'?'Pacientes ja contatados pela Daniela aparecem aqui.':'Crie uma tarefa "Agendar consulta" que ela aparece aqui e na tela da Daniela.');
       el.innerHTML=_bp+subtabs+'<div class="empty"><div class="empty-icon">&#x1f4c5;</div><div class="empty-title">'+_emTt+'</div><div class="empty-sub">'+_emSb+'</div></div>';
       return;
     }
@@ -1231,7 +1233,7 @@ function buildFilaCard(t){
         '<span class="tc-status-badge '+st[0]+'">'+st[1]+'</span>'+
         '<div class="tc-actions">'
           +(t.status!=='concluida'
-              /* HAG_FILA_COMUNICADO_v1 (28/08/2026): a Julia nao tinha como
+              /* HAG_FILA_COMUNICADO_v1 (28/08/2026): a Daniela nao tinha como
                  registrar que falou com o paciente. A aba "Comunicado", o
                  contador e o selo existiam desde a migracao da fila para o
                  Tarefas em 20/08, mas o BOTAO que muda o status ficou para
@@ -1258,13 +1260,13 @@ function buildFilaCard(t){
    AQUI E ONDE O LINK DE AUTO-AGENDAMENTO GANHA CASA.
    Ate agora a pagina clinicahag.com/agendar existia e funcionava, mas nao havia
    lugar nenhum no HAG OS de onde tirar o link com o id do paciente. Na pratica
-   ninguem conseguiria usar: a Julia teria que descobrir o id na mao.
+   ninguem conseguiria usar: a Daniela teria que descobrir o id na mao.
    O botao de WhatsApp da fila tambem tinha se perdido na migracao de 20/08
    (a julia_fila.html antiga mandava mensagem pronta). Os dois voltam juntos.
 
    Regra de quando o link entra: so em RETORNO. A pagina publica serve o proximo
    retorno pendente do ciclo ativo. Primeira consulta e procedimento ainda passam
-   pela Julia (pagamento e fase 2), entao nesses casos a mensagem vai sem link,
+   pela Daniela (pagamento e fase 2), entao nesses casos a mensagem vai sem link,
    como era antes, e ela combina o horario a mao. Mandar link para quem a pagina
    nao atende so geraria "nao encontrei consulta aguardando agendamento". */
 const HAG_LINK_AGENDAR='https://clinicahag.com/agendar?patient=';
@@ -1279,14 +1281,14 @@ function _filaFone(pid){
 function _filaMsgAgendar(t){
   var primeiro=(t.patient_nome||'').split(' ')[0];
   if(t.tipo_evento==='retorno'){
-    return 'Oi, '+primeiro+'! Aqui é a Julia, do consultório do Dr. Henrique. 😊\n\n'
+    return 'Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
       +'A sua próxima consulta já pode ser agendada. Agora você mesmo escolhe o melhor '
       +'horário, direto por este link:\n'+HAG_LINK_AGENDAR+t.patient_id+'\n\n'
       +'Leva menos de um minuto. Qualquer dúvida, é só me chamar por aqui.';
   }
   var oque = t.tipo_evento==='diagnostica' ? 'a sua consulta'
            : (t.tipo_evento==='injetavel' ? 'a sua aplicação' : 'o seu procedimento');
-  return 'Oi, '+primeiro+'! Aqui é a Julia, do consultório do Dr. Henrique. 😊\n\n'
+  return 'Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
     +'Estou entrando em contato para agendarmos '+oque+'. '
     +'Me conta qual período costuma ser melhor para você que eu verifico a agenda do Dr. Henrique.';
 }
@@ -1497,7 +1499,7 @@ async function delFila(id){
   const temEvento = (t.calendar_sync==='criado');
   const aviso = temEvento
     ? ('Cancelar o agendamento de '+t.patient_nome+'?\n\nO horario volta a ficar livre e o evento sai da sua agenda em ate 10 minutos.')
-    : ('Remover '+t.patient_nome+' da fila da Julia?');
+    : ('Remover '+t.patient_nome+' da fila da Daniela?');
   if(!confirm(aviso))return;
   try{
     const {data,error}=await db.rpc('hag_remover_agendamento',{p_tarefa_id:id,p_motivo:'removido pela fila'});
@@ -1631,7 +1633,7 @@ function selectTipo(el,tipo){
   const outroInput=document.getElementById('f-tipo-outro');
   outroInput.style.display=tipo==='outro'?'block':'none';
   if(tipo!=='outro')outroInput.value='';
-  /* HAG_FILA_JULIA_v1: Agendar/Remarcar vao para a fila da Julia */
+  /* HAG_FILA_JULIA_v1: Agendar/Remarcar vao para a fila da Daniela */
   document.getElementById('filaExtra').style.display=FILA_TIPOS.includes(tipo)?'block':'none';
 }
 /* HAG_FILA_JULIA_v1 */
@@ -1680,7 +1682,7 @@ async function saveTask(){
   const obs=document.getElementById('f-obs').value.trim();
   const pri=document.getElementById('f-pri').value;
   const now=new Date().toISOString();
-  /* HAG_FILA_JULIA_v1: Agendar/Remarcar viram tarefa de agendamento e caem na fila da Julia */
+  /* HAG_FILA_JULIA_v1: Agendar/Remarcar viram tarefa de agendamento e caem na fila da Daniela */
   const paraFila=FILA_TIPOS.includes(tipoFinal);
   const task={
     id:_editId||'t_'+Date.now(),
@@ -1707,7 +1709,7 @@ async function saveTask(){
     _filaCarimbarUma(task.id);   /* HAG_AVISO_NOVIDADE_v1 */
     render();
     closeModal();
-    toast(_editId?'Tarefa atualizada ✓':(paraFila?'Enviado para a fila da Julia ✓':'Tarefa criada com sucesso'),'ok');
+    toast(_editId?'Tarefa atualizada ✓':(paraFila?'Enviado para a fila da Daniela ✓':'Tarefa criada com sucesso'),'ok');
   }catch(e){toast('Erro: '+e.message,'err');}
 }
 
@@ -1791,7 +1793,7 @@ async function deleteTask(id){
 
 // ── DATA ──
 async function loadTasks(){
-  const{data}=await db.from('tarefas').select('*').neq('tipo','agendamento').order('criado_em',{ascending:false})   /* HAG_FILA_JULIA_v1: agendamentos vivem na fila da Julia */;
+  const{data}=await db.from('tarefas').select('*').neq('tipo','agendamento').order('criado_em',{ascending:false})   /* HAG_FILA_JULIA_v1: agendamentos vivem na fila da Daniela */;
   return data||[];
 }
 async function loadPatients(){
@@ -1803,7 +1805,7 @@ let _fila=[];
 async function loadFila(){
   const{data}=await db.from('tarefas').select('*').eq('tipo','agendamento').order('janela_data',{ascending:true,nullsFirst:false});
   /* HAG_CAL_REMOVER_v1: cancelada continua no banco ate o robo confirmar que o
-     evento saiu do calendario, mas nao deve aparecer para a Julia. */
+     evento saiu do calendario, mas nao deve aparecer para a Daniela. */
   return (data||[]).filter(t=>t.status!=='cancelada');
 }
 
@@ -1829,9 +1831,9 @@ db.channel('tarefas-rt')
       var _novas=_filaNovidades();
       if(_d===1 && _novas.length){
         var _t=_novas[_novas.length-1];
-        toast('Julia · '+String(_t.patient_nome||'').split(' ')[0]+': '+_filaDescreve(_t),'ok');
+        toast('Daniela · '+String(_t.patient_nome||'').split(' ')[0]+': '+_filaDescreve(_t),'ok');
       } else {
-        toast('A Julia mexeu em '+_d+' tarefas da fila','ok');
+        toast('A Daniela mexeu em '+_d+' tarefas da fila','ok');
       }
     }
   })
@@ -1848,6 +1850,115 @@ function toast(msg,type){
   clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('vis'),3200);
 }
 
+
+/* ===== HAG_PUSH_TAREFAS_v1 (28/08/2026) · aviso com a pagina fechada ========
+   PORQUE ESTE BLOCO EXISTE AQUI: o push nasceu em 08/2026 na julia_fila.html.
+   Quando a fila virou esta tela, o lado do servidor veio junto (o gatilho
+   hag_push_tarefa_nova na tabela tarefas e a Edge Function hag-push continuam
+   ativos e disparando), mas o lado do aparelho ficou para tras. Resultado: o
+   telefone tocava numa casa vazia. Isto e o transplante do que faltava.
+
+   Fluxo: registra o service worker, pede permissao a partir de um TOQUE,
+   assina no servico de push do navegador e guarda a assinatura no Supabase.
+
+   No iPhone ha uma condicao que nao da para contornar por codigo: a tela
+   precisa estar adicionada a tela de inicio. Aberta so no Safari, o botao
+   explica isso em vez de falhar calado.
+
+   A chave VAPID publica pode ficar aqui: ela e publica por definicao. A
+   privada vive nos secrets do Supabase e nunca sai de la.
+=========================================================================== */
+var VAPID_PUBLICA='BE5Sl8gN_vm7fqCK261RE4eZF0FBmIx0-AseQQxoCEY5U8TkkldzjtewOnj8RwTZ_SnRX7OOCZV5xhBpjSb2R7k';
+
+function _b64ToU8(base64){
+  var pad='='.repeat((4-base64.length%4)%4);
+  var b64=(base64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  var raw=atob(b64), arr=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+function _ehIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+function _estaInstalado(){
+  return (window.navigator.standalone===true) ||
+         (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function _pushSuportado(){
+  return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+}
+async function _pushJaAssinado(){
+  try{
+    if(!('serviceWorker' in navigator)) return false;
+    var reg=await navigator.serviceWorker.getRegistration();
+    if(!reg) return false;
+    return !!(await reg.pushManager.getSubscription());
+  }catch(e){ return false; }
+}
+async function _mostrarBotaoPush(){
+  var b=document.getElementById('btnPush'); if(!b) return;
+  if(!_pushSuportado()){ b.style.display='none'; return; }
+  if(Notification.permission==='granted' && await _pushJaAssinado()){
+    b.innerHTML='&#128276; Avisos ligados';
+    b.style.display='inline-block'; b.disabled=true; b.style.opacity='.6';
+    return;
+  }
+  b.innerHTML='&#128276; Ativar avisos';
+  b.style.display='inline-block'; b.disabled=false; b.style.opacity='';
+}
+
+window.ativarAvisos=async function(btn){
+  if(!_pushSuportado()){ toast('Este navegador nao entrega aviso com a pagina fechada.','err'); return; }
+  if(_ehIOS() && !_estaInstalado()){
+    toast('No iPhone: toque em Compartilhar e em "Adicionar a Tela de Inicio". Depois abra por esse icone e ative aqui.');
+    return;
+  }
+  var _o=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.textContent='Ativando...'; }
+  try{
+    var perm=await Notification.requestPermission();
+    if(perm!=='granted'){
+      toast('Permissao nao concedida. Da para ativar depois em Ajustes.','err');
+      if(btn){ btn.disabled=false; btn.innerHTML=_o; }
+      return;
+    }
+    var reg=await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    var sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:_b64ToU8(VAPID_PUBLICA)
+      });
+    }
+    var j=sub.toJSON();
+    var sess=await db.auth.getSession();
+    var email=(sess&&sess.data&&sess.data.session&&sess.data.session.user&&sess.data.session.user.email)||'';
+    var r=await db.from('push_assinaturas').upsert({
+      endpoint:j.endpoint,
+      p256dh:(j.keys&&j.keys.p256dh)||'',
+      auth:(j.keys&&j.keys.auth)||'',
+      quem:email,
+      aparelho:(navigator.userAgent||'').slice(0,180),
+      atualizado_em:new Date().toISOString()
+    },{onConflict:'endpoint'});
+    if(r.error) throw new Error(r.error.message);
+    toast('Avisos ligados neste aparelho','ok');
+    _mostrarBotaoPush();
+    /* aviso de confirmacao, para ela ver que funcionou sem precisar esperar
+       uma tarefa nova. So chega neste aparelho. */
+    try{
+      var tok=(sess&&sess.data&&sess.data.session&&sess.data.session.access_token)||'';
+      if(tok) await fetch(SURL+'/functions/v1/hag-push',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
+        body:JSON.stringify({teste:true, endpoint:j.endpoint})
+      });
+    }catch(e){}
+  }catch(e){
+    toast('Nao consegui ligar: '+(e&&e.message?e.message:e),'err');
+    if(btn){ btn.disabled=false; btn.innerHTML=_o; }
+  }
+};
+
 // ── INIT ──
 async function init(){
   try{
@@ -1856,6 +1967,7 @@ async function init(){
     sSync('ok','sincronizado');
     setRole(_role,true);
     render();
+    try{ _mostrarBotaoPush(); }catch(e){}   /* HAG_PUSH_TAREFAS_v1 */
   }catch(e){
     sSync('err','erro');
     document.getElementById('taskList').innerHTML='<div class="empty"><div class="empty-icon">&#x26a0;</div><div class="empty-title">Erro ao carregar</div><div class="empty-sub">'+e.message+'</div></div>';
@@ -1938,7 +2050,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260828-1958';
+  var VERSAO = '20260829-1134';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;

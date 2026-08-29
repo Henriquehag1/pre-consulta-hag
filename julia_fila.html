@@ -25,20 +25,19 @@
   <a href="tarefas_HAG.html" id="ir">Ir para o Tarefas</a>
 </div>
 <script>
-/* HAG_FILA_APOSENTADA_v1 (20/08/2026)
+/* HAG_FILA_APOSENTADA_v2 (28/08/2026)
    A fila foi substituida pelo Tarefas. Em vez de devolver 404, que deixaria um
    icone morto na tela de inicio de quem instalou, esta pagina redireciona.
-   Tambem remove o service worker antigo, senao ele fica registrado para sempre
-   num endereco que nao existe mais. */
+
+   O QUE MUDOU EM 28/08: a v1 tambem desregistrava o service worker aqui. Fazia
+   sentido quando nada mais usava push. Agora o Tarefas voltou a usar o MESMO
+   service worker (sw.js, mesmo escopo), e o icone instalado da secretaria ainda
+   abre por este endereco por causa do manifest.json antigo. Ou seja: cada vez
+   que ela abrisse o aplicativo, esta linha mataria a assinatura de push que o
+   Tarefas acabou de criar, e o aviso pararia de chegar sem ninguem entender por
+   que. O desregistro saiu. */
 (function(){
   'use strict';
-  try {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(rs){
-        rs.forEach(function(r){ r.unregister(); });
-      }).catch(function(){});
-    }
-  } catch(e){}
   setTimeout(function(){ location.replace('tarefas_HAG.html'); }, 2200);
 })();
 </script>
