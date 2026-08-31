@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260831-1843"></script>
+<script src="hag_auth.js?v=20260831-1929"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1298,7 +1298,31 @@ function buildFilaCard(t){
    pela Daniela (pagamento e fase 2), entao nesses casos a mensagem vai sem link,
    como era antes, e ela combina o horario a mao. Mandar link para quem a pagina
    nao atende so geraria "nao encontrei consulta aguardando agendamento". */
-const HAG_LINK_AGENDAR='https://clinicahag.com/agendar?patient=';
+/* HAG_LINK_TOKEN_v1 (31/08/2026)
+   O link deixou de carregar o id do paciente e passou a carregar um token
+   aleatorio com validade de 30 dias. PORQUE: os ids sao sequenciais, entao
+   qualquer pessoa podia trocar o numero na barra de endereco e abrir a agenda de
+   outro paciente, com nome, plano e proxima consulta. Dado de saude exposto por
+   link adivinhavel, exatamente o que a LGPD trata como incidente.
+   Os tokens sao emitidos em lote quando a fila carrega, e NAO no clique do
+   botao: uma chamada assincrona dentro do clique quebraria o gesto do usuario e
+   o Safari do iPhone bloquearia a janela do WhatsApp. */
+const HAG_LINK_AGENDAR='https://clinicahag.com/agendar?t=';
+var _linksAgendar={};
+async function _carregaLinksAgendar(fila){
+  try{
+    var ids=[];
+    (fila||[]).forEach(function(t){
+      if((t.tipo_evento||'retorno')!=='retorno') return;
+      if(['pendente','aguardando','andamento'].indexOf(t.status)<0) return;
+      if(!t.patient_id || _linksAgendar[t.patient_id]) return;
+      if(ids.indexOf(t.patient_id)<0) ids.push(t.patient_id);
+    });
+    if(!ids.length) return;
+    var r=await db.rpc('hag_links_agendamento',{p_patient_ids:ids});
+    if(r&&r.data) Object.keys(r.data).forEach(function(k){ _linksAgendar[k]=r.data[k]; });
+  }catch(e){ console.warn('[HAG] nao consegui emitir os links de agendamento:',e); }
+}
 function _filaFone(pid){
   var p=(_patients||[]).find(function(x){return x.id===pid;});
   var f=String((p&&p.whatsapp)||'').replace(/\D/g,'');
@@ -1309,13 +1333,15 @@ function _filaFone(pid){
 }
 function _filaMsgAgendar(t){
   var primeiro=(t.patient_nome||'').split(' ')[0];
-  if(t.tipo_evento==='retorno'){
+  /* HAG_LINK_TOKEN_v1: sem token emitido nao vai link nenhum. Link quebrado na
+     mao do paciente e pior do que combinar o horario pelo WhatsApp. */
+  if(t.tipo_evento==='retorno' && _linksAgendar[t.patient_id]){
     return 'Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
       +'A sua próxima consulta já pode ser agendada. Agora você mesmo escolhe o melhor '
-      +'horário, direto por este link:\n'+HAG_LINK_AGENDAR+t.patient_id+'\n\n'
+      +'horário, direto por este link:\n'+HAG_LINK_AGENDAR+_linksAgendar[t.patient_id]+'\n\n'
       +'Leva menos de um minuto. Qualquer dúvida, é só me chamar por aqui.';
   }
-  var oque = t.tipo_evento==='diagnostica' ? 'a sua consulta'
+  var oque = (t.tipo_evento==='diagnostica'||t.tipo_evento==='retorno') ? 'a sua consulta'
            : (t.tipo_evento==='injetavel' ? 'a sua aplicação' : 'o seu procedimento');
   return 'Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
     +'Estou entrando em contato para agendarmos '+oque+'. '
@@ -1835,7 +1861,9 @@ async function loadFila(){
   const{data}=await db.from('tarefas').select('*').eq('tipo','agendamento').order('janela_data',{ascending:true,nullsFirst:false});
   /* HAG_CAL_REMOVER_v1: cancelada continua no banco ate o robo confirmar que o
      evento saiu do calendario, mas nao deve aparecer para a Daniela. */
-  return (data||[]).filter(t=>t.status!=='cancelada');
+  const fila=(data||[]).filter(t=>t.status!=='cancelada');
+  await _carregaLinksAgendar(fila); /* HAG_LINK_TOKEN_v1 */
+  return fila;
 }
 
 // ── SYNC INDICATOR ──
@@ -2079,7 +2107,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260831-1843';
+  var VERSAO = '20260831-1929';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;

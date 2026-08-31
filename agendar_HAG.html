@@ -397,8 +397,16 @@ var SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 var S=window.HAGAgendaSlots;
 var H={'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'};
 
-var PID=(function(){try{var q=new URLSearchParams(location.search);
+/* HAG_LINK_TOKEN_v1 (31/08/2026): o link do paciente passa a carregar um token
+   aleatorio (?t=...) em vez do id do cadastro. PORQUE: os ids sao sequenciais,
+   entao trocar o numero na barra de endereco abria a agenda de outro paciente,
+   com nome, plano e proxima consulta. Dado de saude por link adivinhavel.
+   PID_LEGADO existe so para reconhecer link antigo e dar recado decente. */
+var TOKEN=(function(){try{var q=new URLSearchParams(location.search);
+  return q.get('t')||q.get('token')||'';}catch(e){return '';}})();
+var PID_LEGADO=(function(){try{var q=new URLSearchParams(location.search);
   return q.get('patient')||q.get('pid')||q.get('id')||'';}catch(e){return '';}})();
+var LINK_VENCIDO='Este link de agendamento não vale mais. Peça um novo para a equipe pelo WhatsApp que enviamos na hora.';
 
 var LOCAIS={tatuape:'Tatuapé',pinheiros:'Pinheiros',online:'Online'};
 var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
@@ -431,8 +439,9 @@ function falha(msg){
 }
 
 function iniciar(){
-  if(!PID){ falha('Este link de agendamento está incompleto. Peça um novo link para a equipe pelo WhatsApp.'); return; }
-  rpc('hag_agendamento_contexto',{p_patient_id:PID}).then(function(c){
+  if(!TOKEN){ falha(PID_LEGADO ? LINK_VENCIDO : 'Este link de agendamento está incompleto. Peça um novo link para a equipe pelo WhatsApp.'); return; }
+  rpc('hag_agendamento_contexto_link',{p_token:TOKEN}).then(function(c){
+    if(c&&c.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
     if(!c||!c.ok){ falha('Não encontrei o seu cadastro por este link. Fale com a equipe pelo WhatsApp que resolvemos rapidinho.'); return; }
     CTX=c;
     if(c.agendamento){ telaJaAgendado(); return; }
@@ -652,12 +661,13 @@ window.HAGpg={
   reservar:function(){
     var s=this._sel; if(!s) return;
     el('<div class="spin">Reservando o seu horário…</div>');
-    rpc('hag_reservar_horario',{
-      p_patient_id:PID, p_data:s.dia.data, p_local:(TAB==='online'?'online':s.dia.local),
+    rpc('hag_reservar_horario_link',{
+      p_token:TOKEN, p_data:s.dia.data, p_local:(TAB==='online'?'online':s.dia.local),
       p_tipo:s.dia.tipo, p_hora_inicio:s.slot.hora,
-      p_retorno_id:CTX.retorno.id, p_origem:'paciente'
+      p_retorno_id:CTX.retorno.id
     }).then(function(r){
       if(r&&r.ok){ telaSucesso(r.agendamento); return; }
+      if(r&&r.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
       if(r&&(r.erro==='horario_ocupado'||r.erro==='abriria_buraco'||r.erro==='limite_do_dia')){
         carregarAgendaENotificar('Esse horário acabou de ser preenchido. A lista foi atualizada, escolha outro.');
         return;
@@ -669,9 +679,10 @@ window.HAGpg={
   enviarAjuda:function(){
     var obs=(document.getElementById('obsAjuda')||{}).value||'';
     el('<div class="spin">Enviando…</div>');
-    rpc('hag_pedir_ajuda_agendamento',{p_patient_id:PID,
+    rpc('hag_pedir_ajuda_agendamento_link',{p_token:TOKEN,
       p_retorno_id:(CTX.retorno?CTX.retorno.id:null), p_obs:obs.slice(0,400)})
     .then(function(r){
+      if(r&&r.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
       el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
         +'<h2 style="text-align:center">Recado enviado</h2>'
         +'<p style="font-size:14.5px;color:var(--ink3)">'+esc((r&&r.mensagem)||'A Daniela vai falar com você pelo WhatsApp para encontrar o melhor horário.')+'</p></div>');
