@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260829-1134"></script>
+<script src="hag_auth.js?v=20260831-1843"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -397,7 +397,32 @@ body {
 .sb-concluida { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
 .sb-urgente   { background: var(--red-light);   color: var(--red);   border: 1px solid var(--red-border); }
 
-.tc-actions { display: flex; gap: 5px; align-items: center; }
+/* HAG_FILA_ROTULOS_v1 (31/08/2026): os botoes da fila eram cinco icones em
+   sequencia, sem texto. No iPhone nao existe o tooltip do title, entao a
+   secretaria nao tinha NENHUMA pista do que cada um fazia, e dois deles eram
+   praticamente o mesmo desenho (✅ agendado e ✔ realizada). Os tres botoes
+   principais passam a ter palavra, e a COR de cada um e a mesma do selo de
+   status que ele produz: clicou no dourado, o cartao fica dourado. Editar e
+   remover continuam icones, separados por um risco, porque sao secundarios. */
+.tc-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.btn-acao {
+  font-family: var(--fb); font-size: 11.5px; font-weight: 600;
+  padding: 5px 11px; border-radius: 20px; border: 1px solid;
+  cursor: pointer; transition: all .14s; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.btn-acao .g { font-size: 12px; line-height: 1 }
+.ba-contato { background: var(--blue-light); color: var(--blue); border-color: var(--blue-border) }
+.ba-contato:hover { background: var(--blue); color: #fff }
+.ba-falei { background: var(--gold-light); color: var(--gold); border-color: var(--gold-border) }
+.ba-falei:hover { background: var(--gold); color: #fff }
+.ba-agendei { background: var(--green-light); color: var(--green); border-color: var(--green-border) }
+.ba-agendei:hover { background: var(--green); color: #fff }
+.ba-remarcar { background: var(--amber-light); color: var(--amber); border-color: var(--amber-border) }
+.ba-remarcar:hover { background: var(--amber); color: #fff }
+.tc-sep { width: 1px; height: 18px; background: var(--border); margin: 0 2px }
+/* os dois secundarios quebram de linha JUNTOS, nunca um solto embaixo do outro */
+.tc-menos { display: inline-flex; align-items: center; gap: 6px; flex: none }
 
 /* ADVANCE BUTTONS */
 .btn-adv {
@@ -1241,17 +1266,21 @@ function buildFilaCard(t){
                  conversava com o paciente e a tarefa continuava em "a agendar",
                  sem memoria de que o contato ja tinha sido feito. E alternador
                  de proposito, para um toque errado nao virar beco sem saida. */
-              ? '<button class="btn-icon" onclick="whatsFila(\''+t.id+'\')" title="'
-                +(t.tipo_evento==='retorno'?'Enviar o link para o paciente agendar sozinho':'Chamar no WhatsApp para combinar o horário')
-                +'" style="color:#1a8f4a">&#x1f4f2;</button>'
-               +'<button class="btn-icon" onclick="comunicadoFila(\''+t.id+'\')" title="'
-                +(t.status==='pendente'?'Falei com o paciente, aguardando retorno':'Desfazer: voltar para a agendar')
-                +'" style="color:'+(t.status==='pendente'?'#8a6d3b':'#b8922a')+'">&#x1f4ac;</button>'
-               +'<button class="btn-icon" onclick="agendarFila(\''+t.id+'\')" title="Marcar como agendado" style="color:#2d7a45">&#x2705;</button>'
+              /* HAG_FILA_ROTULOS_v1: palavra + cor do selo que a acao produz. */
+              ? '<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\')" title="'
+                +(t.tipo_evento==='retorno'?'Abre o WhatsApp com o link para o paciente agendar sozinho':'Abre o WhatsApp para combinar o horário')
+                +'"><span class="g">&#x1f4f2;</span>'+(t.tipo_evento==='retorno'?'Enviar link':'WhatsApp')+'</button>'
+               +'<button class="btn-acao ba-falei" onclick="comunicadoFila(\''+t.id+'\')" title="'
+                +(t.status==='pendente'?'Registra que você já falou com o paciente e está aguardando a resposta dele':'Desfazer: volta o cartão para a agendar')
+                +'"><span class="g">'+(t.status==='pendente'?'&#x1f4ac;':'&#x21a9;')+'</span>'
+                +(t.status==='pendente'?'Falei':'Desfazer')+'</button>'
+               +'<button class="btn-acao ba-agendei" onclick="agendarFila(\''+t.id+'\')" title="A consulta está marcada: informe a data, a hora e o local"><span class="g">&#x1f4c5;</span>Agendei</button>'
               /* HAG_REMARCAR_v1: ja agendado ganha remarcar e marcar como realizada. */
-              : '<button class="btn-icon" onclick="remarcarFila(\''+t.id+'\')" title="Remarcar data, hora ou local" style="color:#8a5a2b">&#x1f501;</button>'
-               +'<button class="btn-icon" onclick="marcarRealizada(\''+t.id+'\')" title="Marcar como realizada" style="color:#2d7a45">&#x2714;</button>')
-          +'<button class="btn-icon" onclick="editFila(\''+t.id+'\')" title="Editar tarefa">&#x270f;</button><button class="btn-icon" onclick="delFila(\''+t.id+'\')" title="Remover da fila">&#x2715;</button></div>'+
+              : '<button class="btn-acao ba-remarcar" onclick="remarcarFila(\''+t.id+'\')" title="Mudar a data, a hora ou o local desta consulta"><span class="g">&#x1f501;</span>Remarcar</button>'
+               +'<button class="btn-acao ba-agendei" onclick="marcarRealizada(\''+t.id+'\')" title="O paciente compareceu e a consulta aconteceu"><span class="g">&#x2714;</span>Realizada</button>')
+          +'<span class="tc-menos"><span class="tc-sep"></span>'
+          +'<button class="btn-icon edit" onclick="editFila(\''+t.id+'\')" title="Editar os dados desta tarefa">&#x270f;&#xfe0f;</button>'
+          +'<button class="btn-icon" onclick="delFila(\''+t.id+'\')" title="Cancelar: tira da fila e remove o evento da agenda">&#x2715;</button></span></div>'+
       '</div>'+
     '</div>'+
   '</div>';
@@ -2050,7 +2079,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260829-1134';
+  var VERSAO = '20260831-1843';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
