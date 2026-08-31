@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260831-1929"></script>
+<script src="hag_auth.js?v=20260831-2130"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1042,7 +1042,8 @@ function render(){
     var lf=(_filaSub==='agendados'?g_agendados:(_filaSub==='comunicado'?g_comunic:g_agendar)).slice();
     lf.sort(function(a,b){ var da=(a[_ordCol])||''; var db2=(b[_ordCol])||''; if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1; return da<db2?-1:(da>db2?1:0); });
     var _stab=function(key,label,n){return '<button onclick="setFilaSub(\''+key+'\')" style="flex:1;padding:9px 6px;border:1px solid '+(_filaSub===key?'#1a1a18':'#e5e2da')+';background:'+(_filaSub===key?'#1a1a18':'#fff')+';color:'+(_filaSub===key?'#fff':'#6b6b63')+';border-radius:10px;font-size:.76rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'+label+' '+n+'</button>';};
-    var subtabs='<div style="display:flex;gap:8px;margin:0 0 12px">'+_stab('agendar','A agendar',g_agendar.length)+_stab('comunicado','Comunicado',g_comunic.length)+_stab('agendados','Agendados',g_agendados.length)+'</div>';
+    var subtabs=blocoSinais() /* HAG_DIAG_SINAL_v1 */
+      +'<div style="display:flex;gap:8px;margin:0 0 12px">'+_stab('agendar','A agendar',g_agendar.length)+_stab('comunicado','Comunicado',g_comunic.length)+_stab('agendados','Agendados',g_agendados.length)+'</div>';
     /* HAG_AVISO_DETALHE_v1: lista o que aconteceu, tarefa por tarefa. */
     if(_nNov){
       var _novLista=_filaNovidades().slice(0,6).map(function(t){
@@ -1268,8 +1269,8 @@ function buildFilaCard(t){
                  de proposito, para um toque errado nao virar beco sem saida. */
               /* HAG_FILA_ROTULOS_v1: palavra + cor do selo que a acao produz. */
               ? '<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\')" title="'
-                +(t.tipo_evento==='retorno'?'Abre o WhatsApp com o link para o paciente agendar sozinho':'Abre o WhatsApp para combinar o horário')
-                +'"><span class="g">&#x1f4f2;</span>'+(t.tipo_evento==='retorno'?'Enviar link':'WhatsApp')+'</button>'
+                +(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Abre o WhatsApp com o link para o paciente agendar sozinho':'Abre o WhatsApp para combinar o horário')
+                +'"><span class="g">&#x1f4f2;</span>'+(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Enviar link':'WhatsApp')+'</button>' /* HAG_DIAG_SINAL_v1 */
                +'<button class="btn-acao ba-falei" onclick="comunicadoFila(\''+t.id+'\')" title="'
                 +(t.status==='pendente'?'Registra que você já falou com o paciente e está aguardando a resposta dele':'Desfazer: volta o cartão para a agendar')
                 +'"><span class="g">'+(t.status==='pendente'?'&#x1f4ac;':'&#x21a9;')+'</span>'
@@ -1307,13 +1308,95 @@ function buildFilaCard(t){
    Os tokens sao emitidos em lote quando a fila carrega, e NAO no clique do
    botao: uma chamada assincrona dentro do clique quebraria o gesto do usuario e
    o Safari do iPhone bloquearia a janela do WhatsApp. */
+/* HAG_DIAG_SINAL_v1 (31/08/2026)
+   Cartao "Sinal a confirmar". A consulta diagnostica agendada pelo link nasce
+   como reserva PROVISORIA: o horario esta preso, mas so vira compromisso quando
+   o sinal e confirmado aqui. Se ninguem confirmar, a reserva cai sozinha na hora
+   marcada e o horario volta para a agenda, por isso a fila roda a expiracao ao
+   carregar: horario preso por quem desistiu e horario perdido. */
+var _sinais=[];
+async function _carregaSinais(){
+  try{
+    await db.rpc('hag_expirar_reservas');
+    var r=await db.rpc('hag_sinais_pendentes');
+    _sinais=(r&&r.data)?r.data:[];
+  }catch(e){ console.warn('[HAG] nao consegui ler os sinais pendentes:',e); _sinais=[]; }
+}
+function _sinalFone(f){
+  var n=String(f||'').replace(/\D/g,'');
+  if(n.length<10) return '';
+  if(n.length===10) n=n.slice(0,2)+'9'+n.slice(2);
+  if(!n.startsWith('55')) n='55'+n;
+  return n;
+}
+function _sinalPrazo(iso){
+  if(!iso) return '';
+  try{
+    var d=new Date(iso);
+    var f=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    var p={}; f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});
+    return p.hour+':'+p.minute+' de '+p.day+'/'+p.month;
+  }catch(e){ return ''; }
+}
+function _brl(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function blocoSinais(){
+  if(!_sinais.length) return '';
+  var linhas=_sinais.map(function(x){
+    var nome=String(x.patient_nome||'—').split(' ').slice(0,3).join(' ');
+    var quando=(x.data||'').split('-').reverse().slice(0,2).join('/')+' às '+(x.hora||'');
+    var onde=(x.modalidade==='online')?'online':(x.local||'');
+    var prazo=_sinalPrazo(x.expira_em);
+    return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #ecd9a8">'
+      +'<div style="flex:1;min-width:190px">'
+        +'<div style="font-size:.86rem;font-weight:700;color:#2b2a26">'+nome+'</div>'
+        +'<div style="font-size:.76rem;color:#6b6b63">'+quando+' · '+onde+' · sinal de '+_brl(x.sinal_valor)+'</div>'
+        +'<div style="font-size:.74rem;color:'+(x.vencida?'#a3392f':'#7D6F42')+'">'
+          +(x.vencida?'prazo vencido, o horário já foi liberado':('guardado até '+prazo))+'</div>'
+      +'</div>'
+      +'<button onclick="whatsSinal(\''+x.id+'\')" title="Abre o WhatsApp para pedir o comprovante" style="border:1px solid #ddd0a8;background:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;color:#7D6F42">Cobrar comprovante</button>'
+      +'<button onclick="confirmarSinal(\''+x.id+'\')" title="O comprovante chegou: confirma o agendamento e cria a tarefa de lançar na Livance" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer">Sinal recebido</button>'
+      +'</div>';
+  }).join('');
+  return '<div style="margin:0 0 12px;padding:10px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px">'
+    +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42;margin-bottom:2px">'
+    +'Sinal a confirmar · '+_sinais.length+'</div>'
+    +'<div style="font-size:.74rem;color:#6b6b63;margin-bottom:2px">Horário guardado. Vira agendamento quando o comprovante chegar.</div>'
+    +linhas+'</div>';
+}
+async function whatsSinal(id){
+  var x=(_sinais||[]).find(function(y){return String(y.id)===String(id);}); if(!x) return;
+  var primeiro=String(x.patient_nome||'').split(' ')[0];
+  var quando=(x.data||'').split('-').reverse().slice(0,2).join('/')+' às '+(x.hora||'');
+  var msg='Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
+    +'Seu horário de '+quando+' está guardado. Assim que você me mandar o comprovante do sinal de '
+    +_brl(x.sinal_valor)+', eu confirmo a sua consulta.';
+  var fone=_sinalFone(x.whatsapp);
+  if(!fone){
+    try{ await navigator.clipboard.writeText(msg); toast('Sem WhatsApp no cadastro. Mensagem copiada.','ok'); }
+    catch(e){ prompt('Sem WhatsApp no cadastro. Copie a mensagem:', msg); }
+    return;
+  }
+  window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+  toast('WhatsApp aberto','ok');
+}
+async function confirmarSinal(id){
+  var x=(_sinais||[]).find(function(y){return String(y.id)===String(id);}); if(!x) return;
+  if(!confirm('Confirmar que o sinal de '+_brl(x.sinal_valor)+' de '+(x.patient_nome||'')+' chegou?\n\nO agendamento passa a valer e entra a tarefa de lançar na Livance.')) return;
+  try{
+    var r=await db.rpc('hag_confirmar_sinal',{p_agendamento_id:x.id,p_por:_role||'secretaria'});
+    var d=r&&r.data;
+    if(d&&d.ok===false){ toast('Nao consegui: '+(d.mensagem||d.erro||'erro'),'err'); return; }
+    _tasks=await loadTasks(); _fila=await loadFila(); render();
+    toast('Sinal confirmado · '+String(x.patient_nome||'').split(' ')[0]+' agendado','ok');
+  }catch(e){ toast('Nao consegui confirmar: '+e.message,'err'); }
+}
 const HAG_LINK_AGENDAR='https://clinicahag.com/agendar?t=';
 var _linksAgendar={};
 async function _carregaLinksAgendar(fila){
   try{
     var ids=[];
     (fila||[]).forEach(function(t){
-      if((t.tipo_evento||'retorno')!=='retorno') return;
+      if(['retorno','diagnostica'].indexOf(t.tipo_evento||'retorno')<0) return; /* HAG_DIAG_SINAL_v1 */
       if(['pendente','aguardando','andamento'].indexOf(t.status)<0) return;
       if(!t.patient_id || _linksAgendar[t.patient_id]) return;
       if(ids.indexOf(t.patient_id)<0) ids.push(t.patient_id);
@@ -1335,7 +1418,7 @@ function _filaMsgAgendar(t){
   var primeiro=(t.patient_nome||'').split(' ')[0];
   /* HAG_LINK_TOKEN_v1: sem token emitido nao vai link nenhum. Link quebrado na
      mao do paciente e pior do que combinar o horario pelo WhatsApp. */
-  if(t.tipo_evento==='retorno' && _linksAgendar[t.patient_id]){
+  if(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0 && _linksAgendar[t.patient_id]){
     return 'Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
       +'A sua próxima consulta já pode ser agendada. Agora você mesmo escolhe o melhor '
       +'horário, direto por este link:\n'+HAG_LINK_AGENDAR+_linksAgendar[t.patient_id]+'\n\n'
@@ -1863,6 +1946,7 @@ async function loadFila(){
      evento saiu do calendario, mas nao deve aparecer para a Daniela. */
   const fila=(data||[]).filter(t=>t.status!=='cancelada');
   await _carregaLinksAgendar(fila); /* HAG_LINK_TOKEN_v1 */
+  await _carregaSinais();           /* HAG_DIAG_SINAL_v1 */
   return fila;
 }
 
@@ -2107,7 +2191,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260831-1929';
+  var VERSAO = '20260831-2130';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;

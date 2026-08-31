@@ -103,7 +103,11 @@ a.zap{color:var(--gold2)}
     retorno:     { rotulo: 'Retorno presencial',   paciente: 60, arrumacao: 15, arrumacaoSempre: false, sala: true },
     injetavel:   { rotulo: 'Procedimento injetável', paciente: 30, arrumacao: 15, arrumacaoSempre: false, sala: true },
     implante:    { rotulo: 'Implante',             paciente: 60, arrumacao: 30, arrumacaoSempre: true,  sala: true },
-    online:      { rotulo: 'Consulta online',      paciente: 45, arrumacao: 0,  arrumacaoSempre: false, sala: false }
+    online:      { rotulo: 'Consulta online',      paciente: 45, arrumacao: 0,  arrumacaoSempre: false, sala: false },
+    /* HAG_DIAG_ONLINE_v1 (31/08/2026): a diagnostica online tem os MESMOS 75 min
+       da presencial. O material publicado promete "presencial ou online, com a
+       mesma profundidade clinica", e o tipo 'online' de 45 min e de retorno. */
+    diagnostica_online: { rotulo: 'Consulta diagnóstica online', paciente: 75, arrumacao: 0, arrumacaoSempre: false, sala: false }
   };
 
   /* ---------- tempo em minutos, para nao errar com fuso nem com data ---------- */
@@ -408,6 +412,33 @@ var PID_LEGADO=(function(){try{var q=new URLSearchParams(location.search);
   return q.get('patient')||q.get('pid')||q.get('id')||'';}catch(e){return '';}})();
 var LINK_VENCIDO='Este link de agendamento não vale mais. Peça um novo para a equipe pelo WhatsApp que enviamos na hora.';
 
+/* HAG_DIAG_SINAL_v1 (31/08/2026)
+   Pix copia e cola para o sinal da consulta diagnostica. Nao usa QR de
+   proposito: esta pagina abre no CELULAR do paciente, e ler um QR na propria
+   tela em que ele esta e impossivel. Copia e cola e o padrao certo aqui.
+   O payload EMV e o mesmo do montador de propostas, ja validado campo a campo
+   e com o CRC16 conferido de forma independente. */
+var PIX_KEY='59088764000123';
+var PIX_NAME='HENRIQUE A GONZAGA';
+var PIX_CITY='SAO PAULO';
+function _crc16(s){ var c=0xFFFF; for(var i=0;i<s.length;i++){ c^=s.charCodeAt(i)<<8; for(var j=0;j<8;j++){ c=(c&0x8000)?((c<<1)^0x1021):(c<<1); c&=0xFFFF; } } return c.toString(16).toUpperCase().padStart(4,'0'); }
+function pixCode(valor){
+  var f=function(id,v){ return id+String(v.length).padStart(2,'0')+v; };
+  var mai=f('26', f('00','br.gov.bcb.pix')+f('01',PIX_KEY));
+  var p=f('00','01')+mai+f('52','0000')+f('53','986')+f('54',Number(valor).toFixed(2))+f('58','BR')+f('59',PIX_NAME)+f('60',PIX_CITY)+f('62',f('05','***'));
+  p+='6304'; return p+_crc16(p);
+}
+function brl(v){ return 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function quandoBR(iso){
+  try{
+    var d=new Date(iso);
+    var f=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    var p={}; f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});
+    return p.hour+':'+p.minute+' de '+p.day+'/'+p.month;
+  }catch(e){ return ''; }
+}
+/* tipo da consulta que esta sendo agendada. Vem do contexto, nao e mais fixo. */
+var TIPOCON='retorno';
 var LOCAIS={tatuape:'Tatuapé',pinheiros:'Pinheiros',online:'Online'};
 var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -444,6 +475,7 @@ function iniciar(){
     if(c&&c.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
     if(!c||!c.ok){ falha('Não encontrei o seu cadastro por este link. Fale com a equipe pelo WhatsApp que resolvemos rapidinho.'); return; }
     CTX=c;
+    TIPOCON=(c.tipo==='diagnostica')?'diagnostica':'retorno'; /* HAG_DIAG_SINAL_v1 */
     if(c.agendamento){ telaJaAgendado(); return; }
     if(!c.retorno){ falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Não encontrei nenhuma consulta aguardando agendamento para você. Se acha que deveria haver, fale com a equipe pelo WhatsApp.'); return; }
     /* HAG_ALVO_MEDICO_v1 (28/08/2026): a janela passa a girar em volta do dia
@@ -510,7 +542,11 @@ function diasOfertados(modalidade){
       for(var i=0;i<REGRAS.length;i++){
         var rg=REGRAS[i];
         if(rg.dia_semana!==dow || rg.modalidade!==modalidade) continue;
-        var tipo = modalidade==='online' ? 'online' : 'retorno';
+        /* HAG_DIAG_SINAL_v1: o tipo deixa de ser fixo. Diagnostica online usa
+           o tipo proprio de 75 min, e nao o 'online' de 45 min do retorno. */
+        var tipo = modalidade==='online'
+                     ? (TIPOCON==='diagnostica' ? 'diagnostica_online' : 'online')
+                     : TIPOCON;
         var r=S.horariosOfertados(
           {inicio:hhmm(rg.hora_inicio),fim:hhmm(rg.hora_fim),limite:rg.limite},
           OCUP[iso]||[], tipo);
@@ -619,13 +655,56 @@ function telaConfirma(dia,slot){
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(dia.data)+'</b></div>'
     +'<div class="conf-linha"><span>Horário</span><b>'+slot.hora+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+(TAB==='online'?'Online, o link chega pelo WhatsApp':LOCAIS[dia.local])+'</b></div>'
+    +((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)
+        ? '<div class="conf-linha"><span>Para confirmar</span><b>sinal de '+brl(c.sinal.valor)+'</b></div>'
+          +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Guardamos o horário para você e mostramos o Pix na tela seguinte.</p>'
+        : '')
     +'</div>'
-    +'<button class="btn" onclick="HAGpg.reservar()">Confirmar este horário</button>'
+    +'<button class="btn" onclick="HAGpg.reservar()">'+((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)?'Reservar este horário':'Confirmar este horário')+'</button>'
     +'<button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>');
   window.HAGpg._sel={dia:dia,slot:slot};
 }
 
+/* HAG_DIAG_SINAL_v1 (31/08/2026)
+   Tela da reserva provisoria. O horario ja esta preso; falta o sinal.
+   Escolha de UX: Pix copia e cola, nao QR, porque o paciente esta no celular e
+   nao consegue ler um QR da propria tela. E o prazo aparece com hora e dia, para
+   ele saber exatamente ate quando o horario esta guardado. */
+function telaSinal(info){
+  var sn=(CTX&&CTX.sinal)?CTX.sinal:{};
+  var valor=info.sinal_valor||sn.valor;
+  var codigo=''; try{ codigo=pixCode(valor); }catch(e){ codigo=''; }
+  var prazo=info.expira_em?quandoBR(info.expira_em):'';
+  var onde=(info.modalidade==='online'||info.tipo==='online'||info.tipo==='diagnostica_online')
+             ? 'Online, o link chega pelo WhatsApp' : (LOCAIS[info.local]||'');
+  el('<div class="cartao">'
+    +'<div class="destaque">Horário guardado para você'+(prazo?' até as '+prazo:'')+'. Para confirmar, falta o sinal.</div>'
+    +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(info.data)+'</b></div>'
+    +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(info.inicio)+'</b></div>'
+    +'<div class="conf-linha"><span>Onde</span><b>'+esc(onde)+'</b></div>'
+    +'<div class="conf-linha"><span>Sinal agora</span><b>'+brl(valor)+'</b></div>'
+    +(sn.valor_total?'<div class="conf-linha"><span>No dia da consulta</span><b>'+brl(sn.valor_total-valor)+'</b></div>':'')
+    +'</div>'
+    +(codigo
+      ? '<div class="cartao"><p style="font-size:13.5px;color:var(--ink3);margin:0 0 10px">'
+        +'Copie o código abaixo e cole no Pix do seu banco. O valor já vai junto.</p>'
+        +'<div id="pixCod" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;'
+        +'word-break:break-all;background:#F3EFE6;border:1px solid var(--linha,#E4DECB);border-radius:10px;padding:12px">'
+        +esc(codigo)+'</div>'
+        +'<button class="btn" style="margin-top:12px" onclick="HAGpg.copiarPix()">Copiar código Pix</button>'
+        +'<p id="pixAviso" style="font-size:13px;color:var(--ink4);margin:10px 0 0"></p></div>'
+      : '')
+    +'<div class="cartao"><p style="font-size:14px;color:var(--ink3);margin:0">'
+    +'Depois de pagar, mande o comprovante para o WhatsApp do consultório. A Daniela confirma e o seu horário fica garantido.'
+    +(prazo?' Se o comprovante não chegar até as '+prazo+', o horário volta para a agenda.':'')
+    +'</p></div>');
+  window.HAGpg._pix=codigo;
+}
+
 function telaSucesso(ag){
+  /* HAG_DIAG_SINAL_v1: reserva provisoria nao e sucesso ainda, e um horario
+     guardado esperando o sinal. */
+  if(ag && ag.status==='pre_reservado'){ telaSinal(ag); return; }
   el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
     +'<h2 style="text-align:center">Horário reservado</h2>'
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(ag.data)+'</b></div>'
@@ -636,6 +715,7 @@ function telaSucesso(ag){
 
 function telaJaAgendado(){
   var a=CTX.agendamento;
+  if(a && a.status==='pre_reservado'){ telaSinal(a); return; } /* HAG_DIAG_SINAL_v1 */
   el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
     +'<h2 style="text-align:center">Você já tem horário marcado</h2>'
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(a.data)+'</b></div>'
@@ -658,6 +738,20 @@ window.HAGpg={
   escolher:function(di,si){var d=this._dias[di];telaConfirma(d,d.horarios[si]);},
   voltar:function(){telaEscolha();},
   ajuda:function(){telaAjuda('Sem problema. Deixe com a Daniela: ela encontra com você um horário que encaixe.');},
+  _pix:'',
+  copiarPix:function(){
+    var cod=this._pix||'', aviso=document.getElementById('pixAviso');
+    function ok(){ if(aviso) aviso.textContent='Código copiado. Agora é só colar no Pix do seu banco.'; }
+    function falhou(){
+      var el2=document.getElementById('pixCod');
+      if(el2&&window.getSelection){ var r=document.createRange(); r.selectNodeContents(el2);
+        var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+      if(aviso) aviso.textContent='Selecionei o código para você copiar.';
+    }
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(cod).then(ok).catch(falhou);
+    } else { falhou(); }
+  },
   reservar:function(){
     var s=this._sel; if(!s) return;
     el('<div class="spin">Reservando o seu horário…</div>');
