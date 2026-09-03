@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260903-1614"></script>
+<script src="hag_auth.js?v=20260903-1626"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -946,7 +946,7 @@ var DAN_TPL=[
   {id:'pos_pagamento',cat:'pre_consulta',nome:'Pagamento confirmado',sub:'Confirma o recebimento e segue',texto:'Olá [nome], recebi a confirmação do seu pagamento inicial e a sua vaga está garantida.\n\nJá vou te enviar o formulário e as orientações, para o Dr. Henrique conseguir analisar o seu caso com antecedência.'},
   {id:'cadastro_form',cat:'pre_consulta',nome:'Formulário pré-consulta',sub:'Link único, sem dado sensível no chat',texto:'Olá [nome], para personalizar o seu atendimento, preciso que você preencha o formulário pré-consulta. Ele já recolhe os seus dados de cadastro, então nada sensível precisa circular por aqui:\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_pre_consulta_HAG.html\n\nSe você tiver exames recentes, de preferência dos últimos 6 meses, pode me enviar em PDF por aqui. Se não tiver, não se preocupe: isso não impede a consulta, e o Dr. Henrique define o melhor momento para exames adicionais.'},
   {id:'opcoes_horario',cat:'pre_consulta',nome:'Opções de horário',sub:'Depois do pagamento e do formulário',texto:'Olá [nome], perfeito. Com o pagamento confirmado e o formulário recebido, já posso organizar a sua consulta. Vou te passar os horários disponíveis agora.'},
-  {id:'diretrizes',cat:'confirmacao',nome:'Diretrizes do consultório',sub:'Atraso, remarcação e confirmação',texto:'Olá [nome], para manter a organização e a qualidade do atendimento, seguimos algumas diretrizes:\n\n• Atrasos acima de 15 minutos podem inviabilizar a consulta.\n• Reagendamentos pedidos com até 72 horas de antecedência eu organizo sem problema. Depois desse prazo, depende da agenda.\n• Consultas não confirmadas até 3 horas antes têm a vaga liberada para a lista de espera.\n\nIsso existe para garantir pontualidade e atenção total ao seu atendimento.'},
+  {id:'diretrizes',cat:'confirmacao',nome:'Diretrizes do consultório',sub:'Espelha a cláusula 4 do contrato',texto:'Olá [nome], para manter a organização e a qualidade do atendimento, seguimos as diretrizes que estão no seu contrato:\n\n• Reagendamento pedido com até 72 horas de antecedência eu organizo sem custo. Fora desse prazo pode incidir taxa de reserva de agenda, porque o horário fica bloqueado.\n• Atraso acima de 15 minutos pode reduzir ou inviabilizar a consulta. Nesse caso, eu remarco uma vez sem custo.\n• Consulta não confirmada até 3 horas antes tem a vaga liberada para a lista de espera.\n• Falta sem aviso pode implicar a retenção do sinal, também a título de reserva de agenda.\n\nImprevisto acontece: situação comprovada é analisada sem penalidade.\n\nIsso existe para garantir pontualidade e atenção total ao seu atendimento.'},
   {id:'avaliacao_google',cat:'pos_consulta',nome:'Avaliação no Google',sub:'Só na primeira consulta, 1h depois',texto:'Olá [nome], espero que a sua experiência tenha sido positiva. Se você quiser, a sua avaliação no Google ajuda muito:\nhttps://g.page/r/CVaxd8nwbLMaEAI/review'},
   {id:'boas_vindas_ciclo',cat:'onboarding',nome:'Boas-vindas ao ciclo',sub:'Paciente contratou',texto:'Olá [nome], seja muito bem-vindo(a) ao seu ciclo dentro do Método HAG.\n\nA partir de agora começa oficialmente o seu acompanhamento. Nos próximos dias eu te envio o seu planejamento e a gente organiza os primeiros passos juntos.\n\nQualquer dúvida, é só me chamar por aqui.'},
   {id:'checkin_semanal',cat:'check_ins',nome:'Check-in semanal',sub:'Segunda de manhã, Essencial, Reset e Transforma',texto:'Olá [nome], bom dia. Chegou a hora do seu check-in da semana.\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_checkin_semanal_HAG.html\n\nÉ ele que permite ao Dr. Henrique acompanhar a sua semana e ajustar a estratégia sem esperar a próxima consulta. Não esqueça das fotos, seguindo o manual que você recebeu.\n\nSe puder responder ainda hoje, melhor. Quando terminar, me avisa.'},
@@ -2327,7 +2327,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260903-1614';
+  var VERSAO = '20260903-1626';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
