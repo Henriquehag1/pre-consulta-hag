@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260831-2130"></script>
+<script src="hag_auth.js?v=20260903-1614"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -741,6 +741,8 @@ body {
       <span class="si">&#8981;</span>
       <input class="search-input" id="searchInput" type="text" placeholder="Buscar paciente..." oninput="render()">
     </div>
+    <!-- HAG_MENSAGENS_TAREFAS_v1 -->
+    <button id="btnMensagens" onclick="verMensagens()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4ac; Mensagens</button>
   </div>
 
   <!-- TASK LIST -->
@@ -931,6 +933,128 @@ function _filaCarimbarUma(id){
   if(t){ m[t.id]=_filaSnap(t); _filaVistoSalvar(m); }
 }
 
+/* ══ HAG_MENSAGENS_TAREFAS_v1 · 03/09/2026 ═══════════════════════════════
+   As mensagens prontas da Daniela. Ficam aqui, e não no painel do paciente,
+   porque quem manda mensagem é ela, do celular dela, e o Tarefas é a única
+   tela que os dois abrem de qualquer aparelho.
+   Escolhe-se o paciente UMA vez no topo; daí todas as mensagens já saem com o
+   primeiro nome dele e abrem o WhatsApp certo. [data] continua manual de
+   propósito: é a única coisa que muda por caso e que o sistema não sabe. */
+var DAN_TPL=[
+  {id:'saudacao_inicial',cat:'pre_consulta',nome:'Saudação inicial',sub:'Paciente novo entra no WhatsApp',texto:'Olá [nome], seja muito bem-vindo(a). Meu nome é Daniela e sou eu que vou te atender por aqui.\n\nO Dr. Henrique trabalha com o Método HAG, um acompanhamento médico estruturado para transformar metabolismo, composição corporal e saúde de forma individualizada.\n\nVocê conseguiu acessar o material com as informações da consulta diagnóstica? Se ficou alguma dúvida, me fala que eu te oriento nos próximos passos.'},
+  {id:'sinal_50',cat:'pre_consulta',nome:'Sinal de 50%',sub:'Reserva da vaga da diagnóstica',texto:'Olá [nome], para garantir a sua vaga, o primeiro passo é o pagamento inicial de 50%, que é R$ 350 no Pix.\n\nEsse valor inicia o ato médico: organização prévia do caso, análise do questionário pré-consulta e reserva da agenda.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nSe preferir cartão, me avisa que eu te envio o link. No cartão o valor da consulta é R$ 750, em até 3x de R$ 250 sem juros.\n\nAssim que o pagamento entrar, eu te mando o formulário pré-consulta e as orientações.'},
+  {id:'pos_pagamento',cat:'pre_consulta',nome:'Pagamento confirmado',sub:'Confirma o recebimento e segue',texto:'Olá [nome], recebi a confirmação do seu pagamento inicial e a sua vaga está garantida.\n\nJá vou te enviar o formulário e as orientações, para o Dr. Henrique conseguir analisar o seu caso com antecedência.'},
+  {id:'cadastro_form',cat:'pre_consulta',nome:'Formulário pré-consulta',sub:'Link único, sem dado sensível no chat',texto:'Olá [nome], para personalizar o seu atendimento, preciso que você preencha o formulário pré-consulta. Ele já recolhe os seus dados de cadastro, então nada sensível precisa circular por aqui:\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_pre_consulta_HAG.html\n\nSe você tiver exames recentes, de preferência dos últimos 6 meses, pode me enviar em PDF por aqui. Se não tiver, não se preocupe: isso não impede a consulta, e o Dr. Henrique define o melhor momento para exames adicionais.'},
+  {id:'opcoes_horario',cat:'pre_consulta',nome:'Opções de horário',sub:'Depois do pagamento e do formulário',texto:'Olá [nome], perfeito. Com o pagamento confirmado e o formulário recebido, já posso organizar a sua consulta. Vou te passar os horários disponíveis agora.'},
+  {id:'diretrizes',cat:'confirmacao',nome:'Diretrizes do consultório',sub:'Atraso, remarcação e confirmação',texto:'Olá [nome], para manter a organização e a qualidade do atendimento, seguimos algumas diretrizes:\n\n• Atrasos acima de 15 minutos podem inviabilizar a consulta.\n• Reagendamentos pedidos com até 72 horas de antecedência eu organizo sem problema. Depois desse prazo, depende da agenda.\n• Consultas não confirmadas até 3 horas antes têm a vaga liberada para a lista de espera.\n\nIsso existe para garantir pontualidade e atenção total ao seu atendimento.'},
+  {id:'avaliacao_google',cat:'pos_consulta',nome:'Avaliação no Google',sub:'Só na primeira consulta, 1h depois',texto:'Olá [nome], espero que a sua experiência tenha sido positiva. Se você quiser, a sua avaliação no Google ajuda muito:\nhttps://g.page/r/CVaxd8nwbLMaEAI/review'},
+  {id:'boas_vindas_ciclo',cat:'onboarding',nome:'Boas-vindas ao ciclo',sub:'Paciente contratou',texto:'Olá [nome], seja muito bem-vindo(a) ao seu ciclo dentro do Método HAG.\n\nA partir de agora começa oficialmente o seu acompanhamento. Nos próximos dias eu te envio o seu planejamento e a gente organiza os primeiros passos juntos.\n\nQualquer dúvida, é só me chamar por aqui.'},
+  {id:'checkin_semanal',cat:'check_ins',nome:'Check-in semanal',sub:'Segunda de manhã, Essencial, Reset e Transforma',texto:'Olá [nome], bom dia. Chegou a hora do seu check-in da semana.\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_checkin_semanal_HAG.html\n\nÉ ele que permite ao Dr. Henrique acompanhar a sua semana e ajustar a estratégia sem esperar a próxima consulta. Não esqueça das fotos, seguindo o manual que você recebeu.\n\nSe puder responder ainda hoje, melhor. Quando terminar, me avisa.'},
+  {id:'checkin_trimestral',cat:'check_ins',nome:'Check-in trimestral',sub:'Manutenção, a cada 90 dias',texto:'Olá [nome], tudo bem? Chegou o seu check-in trimestral de manutenção.\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_checkin_trimestral_HAG.html\n\nEle serve para o Dr. Henrique identificar cedo qualquer desvio e decidir se precisa ajustar algo antes da sua próxima consulta.\n\nResponda com calma e me avisa quando concluir.'},
+  {id:'faltou_sem_aviso',cat:'remarcacao',nome:'Faltou sem avisar',sub:'Vaga liberada, oferece reorganizar',texto:'Olá [nome], vi que não deu para você comparecer à consulta hoje. Imprevisto acontece, e eu entendo.\n\nComo o horário ficou vago, ele já foi para a lista de espera, que é o combinado do consultório.\n\nSe quiser, eu vejo as próximas datas disponíveis e a gente reorganiza.'},
+  {id:'nao_confirmou',cat:'remarcacao',nome:'Não confirmou no prazo',sub:'3 horas antes, vaga liberada',texto:'Olá [nome], como eu não recebi a sua confirmação dentro do prazo, precisei liberar a sua vaga para a lista de espera, conforme as diretrizes do consultório.\n\nSe você quiser, eu verifico uma nova data agora.'},
+  {id:'atraso_paciente',cat:'remarcacao',nome:'Paciente atrasado',sub:'Pode inviabilizar a consulta',texto:'Olá [nome], vi que você está atrasado(a) para a consulta. Vou verificar com o Dr. Henrique se ainda há janela para te atender hoje.\n\nSe não der, eu já organizo o reagendamento. Me aguarda um instante que eu te retorno.'},
+  {id:'sumiu_2sem',cat:'resgate',nome:'Sumiu por duas semanas',sub:'Regra de ouro do método',texto:'Oi [nome], tudo bem por aí? Senti a sua falta nos últimos check-ins.\n\nO Dr. Henrique pediu para eu te lembrar de uma regra do Método HAG: não buscamos perfeição, buscamos repetição.\n\nSe os últimos dias foram difíceis ou fora do plano, tudo bem. O que não pode é abandonar o processo.\n\nComo eu posso te ajudar a retomar hoje?'},
+  {id:'voltou_envergonhado',cat:'resgate',nome:'Voltou constrangido',sub:'Acolhimento, sem lição de moral',texto:'Fica tranquilo(a), [nome]. Isso acontece, e faz parte do processo.\n\nA diferença aqui é que você não precisa resolver sozinho(a): é justamente para isso que existe o acompanhamento.\n\nEu vejo com o Dr. Henrique uma data para vocês alinharem a rota. Quais dias e horários funcionam melhor para você?'},
+  {id:'retomada_apos_alta',cat:'resgate',nome:'Quer voltar depois do encerramento',sub:'Recebe bem, sem cobrar o atraso',texto:'Oi [nome]! Que bom te ver de volta.\n\nJá falei com o Dr. Henrique e ele pode seguir com você.\n\nComo o ciclo anterior foi encerrado, a gente monta o novo a partir da sua última consulta, e eu já verifico as datas disponíveis na agenda e as condições atuais para te passar hoje ainda.\n\nSó uma coisa que ele pediu para eu confirmar: você chegou a ficar sem alguma medicação nesse período?'},
+  {id:'fechamento_aviso',cat:'finalizacao',nome:'Aviso da consulta de fechamento',sub:'Antes da última consulta do ciclo',texto:'Oi [nome], tudo bem?\n\nA sua próxima consulta com o Dr. Henrique é a consulta de fechamento do seu ciclo. Ela é diferente das outras: além de avaliar a sua evolução do período inteiro, é nela que o Dr. define com você o próximo passo, seguir com um novo ciclo ou encerrar com orientações de alta.\n\nPara essa conversa render, o questionário que te enviei precisa estar respondido antes. É ele que permite ao Dr. chegar na consulta com o seu ciclo inteiro à vista.\n\nQualquer dúvida, estou por aqui.'},
+  {id:'renov_toque1',cat:'finalizacao',nome:'Renovação · toque 1 (24h)',sub:'Proposta apresentada, sem resposta',texto:'Oi [nome]! Passando para saber se ficou alguma dúvida sobre o planejamento que o Dr. Henrique montou para você.\n\nSe for sobre forma de pagamento, me fala que eu te ajudo a organizar. Temos Pix e cartão em até 3x sem juros, e eu vejo com você o que se encaixa melhor.\n\nA proposta é válida até [data], e a sua vaga na agenda está reservada até lá.'},
+  {id:'renov_toque2',cat:'finalizacao',nome:'Renovação · toque 2 (véspera)',sub:'Um dia antes do prazo vencer',texto:'Oi [nome], tudo bem?\n\nA sua proposta vence amanhã, [data]. Estou te avisando com antecedência para você não perder as condições e o horário que separamos.\n\nSe precisar de algum ajuste na forma de pagamento, me fala hoje que eu vejo o que dá para fazer.'},
+  {id:'renov_toque3',cat:'finalizacao',nome:'Renovação · toque 3 (venceu)',sub:'Prazo vencido, vaga liberada, sem aspereza',texto:'Oi [nome]! Como não recebi a confirmação até [data], a sua reserva na agenda foi liberada e o planejamento anterior se encerrou.\n\nIsso não fecha nenhuma porta. Quando você quiser retomar, é só me avisar: eu verifico as datas disponíveis e as condições vigentes no momento e organizo tudo com você.\n\nFoi um prazer acompanhar o seu ciclo até aqui. O Dr. Henrique segue à disposição.'},
+  {id:'alta_entrega',cat:'finalizacao',nome:'Entrega da carta de alta',sub:'Encerramento, sem receita',texto:'Oi [nome], tudo bem?\n\nComo combinado, estou te enviando o documento de encerramento do seu acompanhamento com o Dr. Henrique. Vale guardar: ele reúne o que foi feito no período, como você está hoje e o que precisa de atenção daqui para frente. Foi escrito para que outro médico consiga ler e dar continuidade.\n\nDois pontos que o Dr. pediu para eu reforçar:\n\n1. não interrompa por conta própria nada do que você está usando;\n2. procure um médico da sua confiança e leve esse relatório, antes de acabar o que você tem em casa.\n\nFoi um prazer te acompanhar. A porta continua aberta, é só me chamar.'}
+];
+var DAN_CAT=[{id:'pre_consulta',nome:'Pré-consulta',ic:'📨'},{id:'confirmacao',nome:'Confirmação',ic:'✅'},{id:'pos_consulta',nome:'Pós-consulta',ic:'📞'},{id:'onboarding',nome:'Onboarding',ic:'🎯'},{id:'check_ins',nome:'Check-ins',ic:'📊'},{id:'remarcacao',nome:'Remarcação',ic:'❌'},{id:'resgate',nome:'Resgate',ic:'🆘'},{id:'finalizacao',nome:'Finalização',ic:'📅'}];
+var _msgCat='todas', _msgPacId=null, _msgAberta=null;
+function _msgEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _msgPac(){ return (_patients||[]).find(function(p){ return String(p.id)===String(_msgPacId); }) || null; }
+function _msgTexto(t){
+  var p=_msgPac();
+  var primeiro = p ? String(p.nome||'').trim().split(' ')[0] : '';
+  return primeiro ? t.texto.split('[nome]').join(primeiro) : t.texto;
+}
+function verMensagens(){ setFilter('mensagens'); }
+function setMsgCat(c){ _msgCat=c; _msgAberta=null; render(); }
+function abrirMsg(id){ _msgAberta = (_msgAberta===id) ? null : id; render(); }
+function escolherMsgPac(id){ _msgPacId=id||null; render(); }
+function limparMsgPac(){ _msgPacId=null; var b=document.getElementById('msgBusca'); if(b) b.value=''; render(); }
+async function copiarMsg(id){
+  var t=DAN_TPL.find(function(x){return x.id===id;}); if(!t) return;
+  var txt=_msgTexto(t);
+  try{ await navigator.clipboard.writeText(txt); toast('Mensagem copiada','ok'); }
+  catch(e){ prompt('Copie a mensagem:', txt); }
+}
+function whatsMsg(id){
+  var t=DAN_TPL.find(function(x){return x.id===id;}); if(!t) return;
+  var p=_msgPac();
+  if(!p){ toast('Escolha o paciente primeiro','err'); return; }
+  var fone=_sinalFone(p.whatsapp);
+  var txt=_msgTexto(t);
+  if(!fone){
+    copiarMsg(id);
+    toast('Sem WhatsApp no cadastro de '+String(p.nome||'').split(' ')[0]+'. Mensagem copiada.','err');
+    return;
+  }
+  window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(txt),'_blank');
+  toast('WhatsApp aberto','ok');
+}
+function _msgPainelHtml(q){
+  var p=_msgPac();
+  /* topo: quem vai receber */
+  var topo='';
+  if(p){
+    topo='<div style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:#EEF6F0;border:1px solid #cfe4d7;border-radius:10px;margin-bottom:12px">'
+      +'<div class="tc-avatar" style="background:'+gac(p.nome)+';width:34px;height:34px;font-size:.75rem">'+gin(p.nome)+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:.86rem;font-weight:700;color:#2b2a26">'+_msgEsc(p.nome)+'</div>'
+      +'<div style="font-size:.74rem;color:#6b6b63">'+(_sinalFone(p.whatsapp)?'WhatsApp no cadastro':'sem WhatsApp no cadastro, dá para copiar')+'</div></div>'
+      +'<button onclick="limparMsgPac()" style="border:1px solid #cfe4d7;background:#fff;border-radius:9px;padding:7px 11px;font-size:.74rem;font-family:inherit;cursor:pointer;color:#2F6B48">trocar</button></div>';
+  } else {
+    var achados=[];
+    var qq=_bpNorm(q).trim();
+    if(qq.length>=2) achados=(_patients||[]).filter(function(x){ return _bpNorm(x.nome).includes(qq); }).slice(0,6);
+    var lista=achados.map(function(x){
+      return '<button onclick="escolherMsgPac(\''+x.id+'\')" style="display:block;width:100%;text-align:left;border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:9px 11px;margin-top:6px;font-size:.84rem;font-family:inherit;cursor:pointer;color:#2b2a26">'+_msgEsc(x.nome)+'</button>';
+    }).join('');
+    topo='<div style="padding:11px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px;margin-bottom:12px">'
+      +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42;margin-bottom:7px">Para quem é a mensagem</div>'
+      +'<input id="msgBusca" type="text" value="'+_msgEsc(q)+'" oninput="render()" placeholder="Digite o nome do paciente..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit">'
+      +lista
+      +(qq.length>=2&&!achados.length?'<div style="font-size:.78rem;color:#6b6b63;margin-top:7px">Nenhum paciente com esse nome.</div>':'')
+      +'<div style="font-size:.72rem;color:#8a8578;margin-top:7px">Sem escolher, dá para copiar o texto do mesmo jeito.</div></div>';
+  }
+  /* categorias */
+  var cats=[{id:'todas',nome:'Todas',ic:'📋'}].concat(DAN_CAT);
+  var chips=cats.map(function(c){
+    var n=(c.id==='todas')?DAN_TPL.length:DAN_TPL.filter(function(t){return t.cat===c.id;}).length;
+    if(!n) return '';
+    var on=(_msgCat===c.id);
+    return '<button onclick="setMsgCat(\''+c.id+'\')" style="border:1px solid '+(on?'#1a1a18':'#e5e2da')+';background:'+(on?'#1a1a18':'#fff')+';color:'+(on?'#fff':'#6b6b63')+';border-radius:999px;padding:7px 13px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'+c.ic+' '+c.nome+' '+n+'</button>';
+  }).join('');
+  var barra='<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">'+chips+'</div>';
+  /* lista */
+  var lista=DAN_TPL.filter(function(t){ return _msgCat==='todas'||t.cat===_msgCat; }).map(function(t){
+    var aberta=(_msgAberta===t.id);
+    var corpo='';
+    if(aberta){
+      var txt=_msgTexto(t);
+      var aviso=(txt.indexOf('[data]')>=0)
+        ? '<div style="font-size:.74rem;color:#8a5a2b;margin-top:7px">⚠ Troque <b>[data]</b> antes de enviar.</div>' : '';
+      corpo='<div style="margin-top:9px;padding:11px 13px;background:#faf9f5;border:1px solid #ecebe4;border-radius:9px;font-size:.84rem;line-height:1.55;color:#2b2a26;white-space:pre-wrap">'+_msgEsc(txt)+'</div>'
+        +aviso
+        +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+        +'<button onclick="whatsMsg(\''+t.id+'\')" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer">Abrir WhatsApp</button>'
+        +'<button onclick="copiarMsg(\''+t.id+'\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436">Copiar</button>'
+        +'</div>';
+    }
+    return '<div class="task-card" style="cursor:pointer">'
+      +'<div onclick="abrirMsg(\''+t.id+'\')">'
+        +'<div style="font-size:.9rem;font-weight:700;color:#2b2a26">'+_msgEsc(t.nome)+'</div>'
+        +'<div style="font-size:.78rem;color:#6b6b63;margin-top:2px">'+_msgEsc(t.sub)+'</div>'
+      +'</div>'+corpo+'</div>';
+  }).join('');
+  var voltar='<button onclick="setFilter(\'fila\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:8px 13px;font-size:.78rem;font-family:inherit;cursor:pointer;color:#6b6b63;margin-bottom:12px">&#8592; Voltar para a fila</button>';
+  return voltar+topo+barra+lista;
+}
+
 // ── FILTER ──
 function setFilter(f){
   _filter=f;
@@ -1028,6 +1152,16 @@ function render(){
   /* HAG_AVISO_NOVIDADE_v1 */
   var _nNov=_filaNovidades().length;
   if(fc)fc.textContent='('+_fila.filter(t=>t.status!=='concluida').length+')'+(_nNov?(' · '+_nNov+(_nNov===1?' nova':' novas')):'');
+  /* HAG_MENSAGENS_TAREFAS_v1: a busca do topo não vale aqui; o painel tem a
+     dele, para procurar paciente sem mexer no filtro da fila. */
+  if(_filter==='mensagens'){
+    var _elM=document.getElementById('taskList');
+    var _qm=(document.getElementById('msgBusca')||{}).value||'';
+    _elM.innerHTML=_msgPainelHtml(_qm);
+    var _bm=document.getElementById('msgBusca');
+    if(_bm && _qm){ _bm.focus(); try{ _bm.setSelectionRange(_qm.length,_qm.length); }catch(e){} }
+    return;
+  }
   if(_filter==='fila'){
     const el=document.getElementById('taskList');
     var corte=new Date(Date.now()-14*86400000).toISOString();
@@ -2107,6 +2241,8 @@ async function init(){
     _filaSemear();   /* HAG_AVISO_NOVIDADE_v1: primeira carga vira o marco zero */
     sSync('ok','sincronizado');
     setRole(_role,true);
+    /* HAG_MENSAGENS_TAREFAS_v1: o botão do painel do paciente abre direto aqui */
+    if(String(location.hash||'').toLowerCase()==='#mensagens'){ _filter='mensagens'; }
     render();
     try{ _mostrarBotaoPush(); }catch(e){}   /* HAG_PUSH_TAREFAS_v1 */
   }catch(e){
@@ -2191,7 +2327,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260831-2130';
+  var VERSAO = '20260903-1614';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
