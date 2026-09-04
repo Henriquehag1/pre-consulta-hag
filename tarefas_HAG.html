@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260903-1738"></script>
+<script src="hag_auth.js?v=20260904-1058"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -964,7 +964,17 @@ var DAN_TPL=[
   {id:'fechamento_aviso',cat:'finalizacao',nome:'Aviso da consulta de fechamento',sub:'Antes da última consulta do ciclo',texto:'Oi [nome], tudo bem?\n\nA sua próxima consulta com o Dr. Henrique é a consulta de fechamento do seu ciclo. Ela é diferente das outras: além de avaliar a sua evolução do período inteiro, é nela que o Dr. define com você o próximo passo, seguir com um novo ciclo ou encerrar com orientações de alta.\n\nSe quiser, vá pensando no que funcionou e no que travou nesse período. Ajuda muito a conversa render.\n\nQualquer dúvida, estou por aqui.'},
   {id:'proposta_toque1',cat:'finalizacao',nome:'Proposta sem resposta · toque 1',sub:'24h, metade do prazo · vale para nova e renovação',texto:'Oi [nome]! Passando para saber se ficou alguma dúvida sobre o planejamento que o Dr. Henrique montou para você.\n\nSe for sobre forma de pagamento, me fala que eu te ajudo a organizar. Temos Pix e cartão em até 3x sem juros, e eu vejo com você o que se encaixa melhor.\n\nA proposta é válida até [data], e a sua vaga na agenda está reservada até lá.'},
   {id:'proposta_toque2',cat:'finalizacao',nome:'Proposta sem resposta · toque 2',sub:'Prazo vencido, vaga liberada, sem aspereza',texto:'Oi [nome]! Como não recebi a confirmação até [data], a sua reserva na agenda foi liberada e o planejamento anterior se encerrou.\n\nIsso não fecha nenhuma porta. Quando você quiser retomar, é só me avisar: eu verifico as datas disponíveis e as condições vigentes no momento e organizo tudo com você.\n\nFoi um prazer acompanhar o seu ciclo até aqui. O Dr. Henrique segue à disposição.'},
-  {id:'alta_entrega',cat:'finalizacao',nome:'Entrega da carta de alta',sub:'Encerramento, sem receita',texto:'Oi [nome], tudo bem?\n\nComo combinado, estou te enviando o documento de encerramento do seu acompanhamento com o Dr. Henrique. Vale guardar: ele reúne o que foi feito no período, como você está hoje e o que precisa de atenção daqui para frente. Foi escrito para que outro médico consiga ler e dar continuidade.\n\nDois pontos que o Dr. pediu para eu reforçar:\n\n1. não interrompa por conta própria nada do que você está usando;\n2. procure um médico da sua confiança e leve esse relatório, antes de acabar o que você tem em casa.\n\nFoi um prazer te acompanhar. A porta continua aberta, é só me chamar.'}
+  /* HAG_ALTA_ENTREGA_v2 (04/09/2026): tres correcoes.
+     1. "Como combinado" afirmava um acordo que muitas vezes nao existiu: o caso mais
+        comum desta carta e o paciente que sumiu sem responder.
+     2. "procure um medico da sua confianca" vinha seco e lia como o Dr. empurrando o
+        paciente para fora. Agora e alternativa, nao despacho.
+     3. Faltava o prazo. A carta traz data concreta para retomar sem nova diagnostica;
+        sem esse aviso o paciente descobria sozinho no PDF, ou perdia a janela. Prazo e
+        condicoes sao dominio da Daniela, nunca do medico.
+     Mantido o "o Dr. pediu para eu reforcar", que deixa a Daniela recado e nao fonte
+     clinica. E "foi um prazer ter voce com a gente", porque quem acompanhou foi o medico. */
+  {id:'alta_entrega',cat:'finalizacao',anexo:'plano_tratamento',nome:'Entrega da carta de encerramento',sub:'Encerramento, sem receita',texto:'Oi [nome], tudo bem?\n\nEstou te enviando o documento de encerramento do seu ciclo com o Dr. Henrique. Vale guardar: ele reúne o que foi feito no período, como você está hoje e os pontos que seguem em aberto.\n\nDois pontos que o Dr. pediu para eu reforçar:\n\n1. não interrompa por conta própria nada do que você está usando;\n2. não fique sem acompanhamento. Se preferir seguir com outro médico da sua confiança, leve esse relatório, e procure antes de acabar o que você tem em casa.\n\nA porta continua aberta aqui também. Existe um prazo para retomar o seu planejamento sem precisar de uma nova consulta diagnóstica, então se tiver qualquer intenção de continuar me chame que eu te explico como funciona e cuido de todos os passos.\n\nFoi um prazer ter você com a gente neste ciclo.'}
 ];
 var DAN_CAT=[{id:'pre_consulta',nome:'Pré-consulta',ic:'📨'},{id:'confirmacao',nome:'Confirmação',ic:'✅'},{id:'pos_consulta',nome:'Pós-consulta',ic:'📞'},{id:'onboarding',nome:'Onboarding',ic:'🎯'},{id:'check_ins',nome:'Check-ins',ic:'📊'},{id:'clinico',nome:'Dúvida clínica',ic:'🩺'},{id:'remarcacao',nome:'Remarcação',ic:'❌'},{id:'resgate',nome:'Resgate',ic:'🆘'},{id:'finalizacao',nome:'Finalização',ic:'📅'}];
 var _msgCat='todas', _msgPacId=null, _msgAberta=null;
@@ -1000,6 +1010,84 @@ function whatsMsg(id){
   window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(txt),'_blank');
   toast('WhatsApp aberto','ok');
 }
+/* ═══ HAG_MSG_ANEXO_v1 (04/09/2026) ═══════════════════════════════════════
+   POR QUE: a carta de encerramento so existia no Mac do Dr. O painel abre os
+   documentos com file://, que nao sai daquela maquina, entao a Daniela nao
+   tinha como anexar nada no WhatsApp. Agora o PDF vive no bucket privado
+   documentos-paciente e a coluna documentos.caminho_storage aponta para ele.
+   COMO: o WhatsApp NAO aceita anexo por link, o wa.me leva so texto. O caminho
+   real e o compartilhamento nativo do celular (navigator.share com files), que
+   abre o WhatsApp com o arquivo de verdade. O paciente fica com o arquivo, que
+   e o ponto de uma carta de transferencia de cuidado: ela pode ser entregue a
+   outro medico meses depois, e um link que expira destruiria isso.
+   Se o aparelho nao suportar compartilhar arquivo, cai no plano B: baixa o PDF
+   e copia o texto, para ela anexar a mao. Nunca fica sem saida. */
+var _anexoBusy = false;
+
+/* acha o documento certo do paciente: prefere o que tem cara de encerramento,
+   senao o mais recente da categoria. So considera o que ja esta no Storage. */
+async function _anexoDoPaciente(patientId, patientNome, categoria){
+  var r = await db.from('documentos')
+    .select('id,nome_arquivo,caminho_storage,data_ingestao')
+    .eq('categoria', categoria)
+    .not('caminho_storage','is',null)
+    .or('patient_id.eq.'+patientId+',patient_nome.eq.'+patientNome)
+    .order('data_ingestao',{ascending:false})
+    .limit(50);
+  var docs = (r && r.data) || [];
+  if(!docs.length) return null;
+  var fecho = docs.find(function(d){ return /encerra|alta/i.test(d.nome_arquivo||''); });
+  return fecho || docs[0];
+}
+
+async function _anexoArquivo(doc){
+  var a = await db.storage.from('documentos-paciente').createSignedUrl(doc.caminho_storage, 300);
+  if(a.error || !a.data || !a.data.signedUrl) throw new Error('nao consegui gerar o link do arquivo');
+  var resp = await fetch(a.data.signedUrl);
+  if(!resp.ok) throw new Error('download HTTP '+resp.status);
+  var blob = await resp.blob();
+  return new File([blob], doc.nome_arquivo || 'documento.pdf', {type:'application/pdf'});
+}
+
+async function enviarComAnexo(id){
+  if(_anexoBusy) return;
+  var t=DAN_TPL.find(function(x){return x.id===id;}); if(!t || !t.anexo) return;
+  var p=_msgPac();
+  if(!p){ toast('Escolha o paciente primeiro','err'); return; }
+  _anexoBusy = true;
+  var txt=_msgTexto(t);
+  try{
+    toast('Buscando o documento...','');
+    var doc = await _anexoDoPaciente(p.id, p.nome, t.anexo);
+    if(!doc){
+      toast('Nenhum documento no arquivo digital para '+String(p.nome||'').split(' ')[0],'err');
+      return;
+    }
+    var arq = await _anexoArquivo(doc);
+    if(navigator.canShare && navigator.canShare({files:[arq]})){
+      try{
+        await navigator.share({files:[arq], text:txt});
+        toast('Compartilhamento aberto','ok');
+        return;
+      }catch(e){
+        if(e && e.name==='AbortError'){ toast('Cancelado',''); return; }
+        /* iOS as vezes recusa o share depois do await: cai no plano B */
+      }
+    }
+    /* plano B: baixa o arquivo e copia o texto, ela anexa a mao */
+    var u=URL.createObjectURL(arq);
+    var a2=document.createElement('a'); a2.href=u; a2.download=arq.name;
+    document.body.appendChild(a2); a2.click(); a2.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 60000);
+    try{ await navigator.clipboard.writeText(txt); }catch(e){}
+    toast('PDF baixado e mensagem copiada. Anexe no WhatsApp.','ok');
+  }catch(e){
+    toast('Nao deu para preparar o anexo: '+(e && e.message ? e.message : e),'err');
+  }finally{
+    _anexoBusy = false;
+  }
+}
+
 function _msgPainelHtml(q){
   var p=_msgPac();
   /* topo: quem vai receber */
@@ -1051,6 +1139,7 @@ function _msgPainelHtml(q){
         +aviso
         +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
         +'<button onclick="whatsMsg(\''+t.id+'\')" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer">Abrir WhatsApp</button>'
+        +(t.anexo ? '<button onclick="enviarComAnexo(\''+t.id+'\')" style="border:1px solid #2F6B48;background:#2F6B48;color:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer">&#128206; Enviar com a carta</button>' : '')
         +'<button onclick="copiarMsg(\''+t.id+'\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436">Copiar</button>'
         +'</div>';
     }
@@ -2336,7 +2425,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260903-1738';
+  var VERSAO = '20260904-1058';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
