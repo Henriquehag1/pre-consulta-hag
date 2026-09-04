@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260904-1119"></script>
+<script src="hag_auth.js?v=20260904-1131"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1057,6 +1057,31 @@ async function _anexoArquivo(doc){
   return new File([blob], doc.nome_arquivo || 'documento.pdf', {type:'application/pdf'});
 }
 
+/* HAG_MSG_ANEXO_v3: mostra o PDF pronto logo abaixo dos botoes, para arrastar
+   direto para a conversa do WhatsApp. Um link normal, sem popup e sem download
+   automatico, entao nada cai na pasta Downloads sem o Dr. mandar. */
+function _anexoPainel(arq, temConversa){
+  var alvo=document.getElementById('anexoPronto');
+  if(!alvo){
+    alvo=document.createElement('div'); alvo.id='anexoPronto';
+    var barra=document.getElementById('msgAcoes');
+    if(barra && barra.parentNode) barra.parentNode.insertBefore(alvo, barra.nextSibling);
+    else document.body.appendChild(alvo);
+  }
+  if(alvo._url){ try{ URL.revokeObjectURL(alvo._url); }catch(e){} }
+  var u=URL.createObjectURL(arq); alvo._url=u;
+  alvo.style.cssText='margin:10px 0 2px;padding:11px 13px;border:1px solid #cfe4d7;'
+    +'background:#f4faf6;border-radius:11px;font-size:.8rem;color:#2b2a26;line-height:1.5';
+  alvo.innerHTML='<div style="font-weight:600;color:#2F6B48;margin-bottom:4px">&#128206; Carta pronta para anexar</div>'
+    +'<a href="'+u+'" download="'+_msgEsc(arq.name)+'" draggable="true" '
+    +'style="color:#2F6B48;font-weight:600;text-decoration:underline;word-break:break-all">'
+    +_msgEsc(arq.name)+'</a>'
+    +'<div style="margin-top:5px;color:#6b6b63">'
+    +(temConversa ? 'A conversa abriu em outra aba com a mensagem escrita. Arraste este arquivo para lá, ou clique para salvar.'
+                  : 'Clique para salvar e anexe no WhatsApp.')
+    +'</div>';
+}
+
 async function enviarComAnexo(id){
   if(_anexoBusy) return;
   var t=DAN_TPL.find(function(x){return x.id===id;}); if(!t || !t.anexo) return;
@@ -1085,13 +1110,23 @@ async function enviarComAnexo(id){
         /* iOS as vezes recusa o share depois do await: cai no plano B */
       }
     }
-    /* plano B: baixa o arquivo e copia o texto, ela anexa a mao */
-    var u=URL.createObjectURL(arq);
-    var a2=document.createElement('a'); a2.href=u; a2.download=arq.name;
-    document.body.appendChild(a2); a2.click(); a2.remove();
-    setTimeout(function(){ URL.revokeObjectURL(u); }, 60000);
+    /* HAG_MSG_ANEXO_v3 (04/09/2026): plano B, que no Mac e o caminho unico.
+       O WhatsApp do Mac NAO se registra como destino de compartilhamento do
+       Safari: naquele menu so aparecem AirDrop, Mail, Mensagens, Notas e
+       Freeform. Entao ali o compartilhar nao tem para onde ir.
+       O wa.me tambem nao resolve sozinho: ele aceita UM parametro, o ?text=,
+       e nao existe parametro de anexo em versao nenhuma. Juntar conversa,
+       mensagem e arquivo num clique so e impossivel por link.
+       O melhor possivel entao e: abrir a conversa certa ja com a mensagem
+       escrita, e deixar o PDF a um clique para arrastar.
+       NAO baixamos o arquivo: a automacao de arquivamento vigia a pasta
+       Downloads e criaria um duplicado do documento no arsenal do paciente. */
+    var fone=_sinalFone(p.whatsapp);
     try{ await navigator.clipboard.writeText(txt); }catch(e){}
-    toast('PDF baixado e mensagem copiada. Anexe no WhatsApp.','ok');
+    if(fone) window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(txt),'_blank');
+    _anexoPainel(arq, !!fone);
+    toast(fone ? 'Conversa aberta com a mensagem. Arraste o PDF abaixo.'
+               : 'Sem WhatsApp no cadastro. Mensagem copiada.', 'ok');
   }catch(e){
     toast('Nao deu para preparar o anexo: '+(e && e.message ? e.message : e),'err');
   }finally{
@@ -1148,7 +1183,7 @@ function _msgPainelHtml(q){
         ? '<div style="font-size:.74rem;color:#8a5a2b;margin-top:7px">⚠ Troque '+_pend.join(' e ')+' antes de enviar.</div>' : '';
       corpo='<div style="margin-top:9px;padding:11px 13px;background:#faf9f5;border:1px solid #ecebe4;border-radius:9px;font-size:.84rem;line-height:1.55;color:#2b2a26;white-space:pre-wrap">'+_msgEsc(txt)+'</div>'
         +aviso
-        +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+        +'<div id="msgAcoes" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
         +'<button onclick="whatsMsg(\''+t.id+'\')" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer">Abrir WhatsApp</button>'
         +(t.anexo ? '<button onclick="enviarComAnexo(\''+t.id+'\')" style="border:1px solid #2F6B48;background:#2F6B48;color:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer">&#128206; Enviar com a carta</button>' : '')
         +'<button onclick="copiarMsg(\''+t.id+'\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:9px 14px;font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436">Copiar</button>'
@@ -2436,7 +2471,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260904-1119';
+  var VERSAO = '20260904-1131';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
