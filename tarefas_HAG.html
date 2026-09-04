@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260904-1058"></script>
+<script src="hag_auth.js?v=20260904-1119"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1024,20 +1024,28 @@ function whatsMsg(id){
    e copia o texto, para ela anexar a mao. Nunca fica sem saida. */
 var _anexoBusy = false;
 
-/* acha o documento certo do paciente: prefere o que tem cara de encerramento,
-   senao o mais recente da categoria. So considera o que ja esta no Storage. */
-async function _anexoDoPaciente(patientId, patientNome, categoria){
+/* HAG_MSG_ANEXO_v2 (04/09/2026): duas correcoes antes de isto chegar em paciente.
+   1. A busca usava .or() com patient_nome junto. Nome com virgula ou caractere
+      especial quebra o filtro do PostgREST e a consulta volta errada ou vazia.
+      Os 92 documentos tem patient_id preenchido, entao filtrar por id basta e
+      nao tem como quebrar.
+   2. Antes, se o paciente NAO tivesse carta de encerramento, caia no plano de
+      tratamento mais recente. Isso mandaria o documento errado para o paciente,
+      que e o pior defeito possivel aqui. Agora, se nao existe carta, nao envia
+      nada e diz o motivo. O Andre, por exemplo, tem tres documentos nessa
+      categoria (encerramento, plano e plano de viagem): so o primeiro serve. */
+async function _anexoDoPaciente(patientId, categoria){
+  if(!patientId) return null;
   var r = await db.from('documentos')
     .select('id,nome_arquivo,caminho_storage,data_ingestao')
     .eq('categoria', categoria)
+    .eq('patient_id', patientId)
     .not('caminho_storage','is',null)
-    .or('patient_id.eq.'+patientId+',patient_nome.eq.'+patientNome)
     .order('data_ingestao',{ascending:false})
     .limit(50);
   var docs = (r && r.data) || [];
   if(!docs.length) return null;
-  var fecho = docs.find(function(d){ return /encerra|alta/i.test(d.nome_arquivo||''); });
-  return fecho || docs[0];
+  return docs.find(function(d){ return /encerra|alta/i.test(d.nome_arquivo||''); }) || null;
 }
 
 async function _anexoArquivo(doc){
@@ -1058,11 +1066,14 @@ async function enviarComAnexo(id){
   var txt=_msgTexto(t);
   try{
     toast('Buscando o documento...','');
-    var doc = await _anexoDoPaciente(p.id, p.nome, t.anexo);
+    var doc = await _anexoDoPaciente(p.id, t.anexo);
     if(!doc){
-      toast('Nenhum documento no arquivo digital para '+String(p.nome||'').split(' ')[0],'err');
+      toast('Nao ha carta de encerramento no arquivo digital de '
+            +String(p.nome||'').split(' ')[0]+'. Fale com o Dr. Henrique antes de enviar.','err');
       return;
     }
+    /* mostra QUAL arquivo vai, para ela conferir antes de mandar */
+    toast('Preparando: '+String(doc.nome_arquivo||'').slice(0,44),'');
     var arq = await _anexoArquivo(doc);
     if(navigator.canShare && navigator.canShare({files:[arq]})){
       try{
@@ -2425,7 +2436,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260904-1058';
+  var VERSAO = '20260904-1119';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
