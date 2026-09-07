@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260904-1131"></script>
+<script src="hag_auth.js?v=20260907-0950"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -424,6 +424,54 @@ body {
 /* os dois secundarios quebram de linha JUNTOS, nunca um solto embaixo do outro */
 .tc-menos { display: inline-flex; align-items: center; gap: 6px; flex: none }
 
+/* HAG_FILA_CARD_SIDE_v1 (04/09/2026)
+   O cartao da fila (buildFilaCard) usa .tc-side, e .tc-side NUNCA existiu no
+   CSS: so existia .tc-right, de outro construtor de cartao. Sem regra nenhuma,
+   a coluna da direita virava um <div> de bloco solto dentro de um flex row, sem
+   alinhamento, sem gap e sem flex-shrink. No iPhone, onde .tc-main quebra
+   linha, o selo e os botoes desabavam desalinhados e os dois icones
+   secundarios caiam sozinhos numa linha propria, justamente o que o comentario
+   do .tc-menos diz que nao pode acontecer. Aparecia pior na aba Agendados
+   porque ali os rotulos sao os mais largos. */
+.tc-side {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 8px; flex-shrink: 0; margin-left: auto; min-width: 0;
+}
+@media(max-width:720px){
+  .tc-side { width: 100%; align-items: stretch; margin-left: 0; }
+  .tc-side > .tc-status-badge { align-self: flex-start; }
+  .tc-side .tc-actions { justify-content: flex-start; }
+  /* o risco separa os dois icones DENTRO da linha; quando eles caem numa linha
+     so deles, ele vira um traco solto no comeco. */
+  .tc-side .tc-sep { display: none; }
+}
+
+/* HAG_CADASTRO_LIVANCE_v1 (04/09/2026): ficha de cadastro do paciente, com
+   botao de copiar por campo, para lancar na Livance sem digitar. */
+.cad-card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px 16px; margin-bottom: 10px;
+  box-shadow: var(--shadow-sm); }
+.cad-topo { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cad-nome { font-size: 14px; font-weight: 700; color: var(--ink); flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cad-linha { display: flex; align-items: center; gap: 8px; padding: 7px 0;
+  border-top: 1px solid var(--border); }
+.cad-rot { font-family: var(--fm); font-size: 9.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink3); width: 96px; flex: none; }
+.cad-val { flex: 1; min-width: 0; font-size: 13px; color: var(--ink);
+  word-break: break-word; }
+.cad-val.falta { color: #c11e1e; font-style: italic; }
+.cad-cp { flex: none; border: 1px solid var(--border); background: #fff;
+  border-radius: 8px; padding: 6px 12px; font-family: inherit; font-size: 11.5px;
+  font-weight: 600; color: var(--ink2); cursor: pointer; }
+.cad-cp:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.cad-cp.ok { background: var(--green-light); color: var(--green); border-color: var(--green-border); }
+@media(max-width:720px){
+  .cad-linha { flex-wrap: wrap; }
+  .cad-rot { width: 100%; }
+  .cad-val { flex: 1 1 auto; }
+}
+
 /* ADVANCE BUTTONS */
 .btn-adv {
   font-family: var(--fb); font-size: 11.5px; font-weight: 500;
@@ -743,6 +791,8 @@ body {
     </div>
     <!-- HAG_MENSAGENS_TAREFAS_v1 -->
     <button id="btnMensagens" onclick="verMensagens()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4ac; Mensagens</button>
+    <!-- HAG_CADASTRO_LIVANCE_v1 -->
+    <button id="btnCadastro" onclick="verCadastro()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f5c2;&#xfe0f; Cadastro</button>
   </div>
 
   <!-- TASK LIST -->
@@ -1199,6 +1249,138 @@ function _msgPainelHtml(q){
   return voltar+topo+barra+lista;
 }
 
+/* ══════════════ HAG_CADASTRO_LIVANCE_v1 (04/09/2026) ══════════════
+   Pedido do Dr. Henrique: a Daniela cadastra paciente na Livance e precisava
+   caçar nome, telefone e documento em telas diferentes, digitando na mao. Cada
+   digitacao a mao e um CPF errado em potencial. Aqui cada campo tem o seu botao
+   de copiar, e o que falta no cadastro aparece em vermelho, porque saber que
+   falta e tao util quanto ter o dado.
+   A ficha nao inventa nada: le o mesmo _patients que a busca ja carrega. */
+var _cadVals = {};   /* chave -> valor cru, para o clique nao depender de escape */
+
+function verCadastro(){ setFilter('cadastro'); }
+
+function _cadDataBR(iso){
+  var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||''));
+  return m ? (m[3]+'/'+m[2]+'/'+m[1]) : '';
+}
+
+function _cadEndereco(p){
+  var rua=p.endereco_rua||p.endereco||'';
+  var partes=[];
+  if(rua) partes.push(rua+(p.endereco_numero?(', '+p.endereco_numero):''));
+  if(p.endereco_complemento) partes.push(p.endereco_complemento);
+  if(p.endereco_bairro) partes.push(p.endereco_bairro);
+  var cid=[p.endereco_cidade,p.endereco_uf].filter(Boolean).join('/');
+  if(cid) partes.push(cid);
+  return partes.join(', ');
+}
+
+async function copiarCad(k, el){
+  var v=_cadVals[k];
+  if(!v) return;
+  try{
+    await navigator.clipboard.writeText(v);
+  }catch(e){
+    /* iOS antigo e contexto sem permissao: cai no textarea temporario. */
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=v; ta.setAttribute('readonly','');
+      ta.style.position='fixed'; ta.style.top='-1000px';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }catch(e2){ toast('Não consegui copiar','err'); return; }
+  }
+  if(el){
+    var antes=el.textContent;
+    el.textContent='copiado'; el.classList.add('ok');
+    setTimeout(function(){ el.textContent=antes; el.classList.remove('ok'); }, 1400);
+  }
+}
+
+function _cadCampo(id, rotulo, valor, dica){
+  var k=id;
+  if(valor){
+    _cadVals[k]=String(valor);
+    return '<div class="cad-linha"><span class="cad-rot">'+rotulo+'</span>'
+      +'<span class="cad-val">'+_msgEsc(valor)+'</span>'
+      +'<button class="cad-cp" onclick="copiarCad(\''+k+'\',this)">copiar</button></div>';
+  }
+  return '<div class="cad-linha"><span class="cad-rot">'+rotulo+'</span>'
+    +'<span class="cad-val falta">'+(dica||'não cadastrado')+'</span></div>';
+}
+
+function _cadFicha(p, i){
+  var pre='c'+i+'_';
+  var cep=p.endereco_cep||p.cep||'';
+  var end=_cadEndereco(p);
+  var doc=p.cpf||'';
+  var tudo=[
+    p.nome||'',
+    doc?('CPF: '+doc):'',
+    p.data_nascimento?('Nascimento: '+_cadDataBR(p.data_nascimento)):'',
+    p.whatsapp?('Telefone: '+p.whatsapp):'',
+    p.email?('E-mail: '+p.email):'',
+    cep?('CEP: '+cep):'',
+    end?('Endereço: '+end):''
+  ].filter(Boolean).join('\n');
+  _cadVals[pre+'tudo']=tudo;
+  var cor=(typeof gac==='function')?gac(p.nome||'?'):'#7A8B99';
+  var ini=(typeof gin==='function')?gin(p.nome||'?'):'?';
+  return '<div class="cad-card">'
+    +'<div class="cad-topo">'
+      +'<div class="tc-avatar" style="background:'+cor+'">'+ini+'</div>'
+      +'<div class="cad-nome">'+_msgEsc(p.nome||'')+'</div>'
+      +'<button class="cad-cp" onclick="copiarCad(\''+pre+'tudo\',this)">copiar tudo</button>'
+    +'</div>'
+    +_cadCampo(pre+'nome','Nome', p.nome)
+    +_cadCampo(pre+'cpf','CPF', p.cpf)
+    +_cadCampo(pre+'nasc','Nascimento', _cadDataBR(p.data_nascimento))
+    +_cadCampo(pre+'tel','Telefone', p.whatsapp)
+    +_cadCampo(pre+'mail','E-mail', p.email)
+    +(p.sexo?_cadCampo(pre+'sexo','Sexo', p.sexo):'')
+    +_cadCampo(pre+'cep','CEP', cep)
+    +_cadCampo(pre+'end','Endereço', end)
+    +(p.rg?_cadCampo(pre+'rg','RG', p.rg):'')
+    +'</div>';
+}
+
+function _cadPainelHtml(q){
+  _cadVals={};
+  var voltar='<button onclick="setFilter(\'fila\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:8px 13px;font-size:.78rem;font-family:inherit;cursor:pointer;color:#6b6b63;margin-bottom:12px">&#8592; Voltar para a fila</button>';
+  var topo='<div style="margin:0 0 10px"><div style="font-size:1rem;font-weight:700;color:#2b2a26">Cadastro dos pacientes</div>'
+    +'<div style="font-size:.78rem;color:#6b6b63;margin-top:2px">Cada campo tem o seu botão de copiar, para lançar na Livance sem digitar.</div></div>';
+  var barra='<div style="margin:0 0 12px"><input id="cadBusca" type="text" value="'+_msgEsc(q||'')
+    +'" oninput="render()" placeholder="Digite o nome do paciente..." '
+    +'style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit"></div>';
+
+  var termo=_bpNorm(q||'').trim();
+  var lista, aviso='';
+  if(termo.length>=2){
+    lista=(_patients||[]).filter(function(p){ return _bpNorm(p.nome).includes(termo); }).slice(0,12);
+  } else {
+    /* Sem busca, mostra quem tem consulta marcada: e exatamente quem ela vai
+       lancar na Livance. Lista aberta com a base inteira nao ajuda ninguem e
+       ainda espalha CPF pela tela sem motivo. */
+    var vistos={}, ids=[];
+    (_fila||[]).filter(function(t){ return t.status==='concluida' && t.agendado_data; })
+      .sort(function(a,b){ return String(a.agendado_data).localeCompare(String(b.agendado_data)); })
+      .forEach(function(t){ if(t.patient_id && !vistos[t.patient_id]){ vistos[t.patient_id]=1; ids.push(t.patient_id); } });
+    lista=ids.map(function(id){ return (_patients||[]).find(function(p){ return p.id===id; }); }).filter(Boolean).slice(0,12);
+    aviso='<div style="font-size:.78rem;color:#6b6b63;margin:0 0 10px">Mostrando quem já tem consulta marcada. Para qualquer outro paciente, digite o nome acima.</div>';
+  }
+
+  if(!lista.length){
+    var vazio='<div class="empty" style="padding:22px"><div class="empty-title">'
+      +(termo.length>=2?'Nenhum paciente com esse nome':'Ninguém com consulta marcada agora')
+      +'</div><div class="empty-sub">'
+      +(termo.length>=2?'Confira a grafia ou procure por parte do sobrenome.':'Digite o nome do paciente na busca acima.')
+      +'</div></div>';
+    return voltar+topo+barra+vazio;
+  }
+  return voltar+topo+barra+aviso+lista.map(function(p,i){ return _cadFicha(p,i); }).join('');
+}
+
 // ── FILTER ──
 function setFilter(f){
   _filter=f;
@@ -1304,6 +1486,16 @@ function render(){
     _elM.innerHTML=_msgPainelHtml(_qm);
     var _bm=document.getElementById('msgBusca');
     if(_bm && _qm){ _bm.focus(); try{ _bm.setSelectionRange(_qm.length,_qm.length); }catch(e){} }
+    return;
+  }
+  /* HAG_CADASTRO_LIVANCE_v1: mesmo desenho do painel de mensagens, com busca
+     propria, para nao brigar com o filtro do topo. */
+  if(_filter==='cadastro'){
+    var _elC=document.getElementById('taskList');
+    var _qc=(document.getElementById('cadBusca')||{}).value||'';
+    _elC.innerHTML=_cadPainelHtml(_qc);
+    var _bc=document.getElementById('cadBusca');
+    if(_bc && _qc){ _bc.focus(); try{ _bc.setSelectionRange(_qc.length,_qc.length); }catch(e){} }
     return;
   }
   if(_filter==='fila'){
@@ -2213,7 +2405,9 @@ async function loadTasks(){
   return data||[];
 }
 async function loadPatients(){
-  const{data}=await db.from('patients').select('id,nome,plano,consulta,status,proxima,whatsapp').order('nome');
+  /* HAG_CADASTRO_LIVANCE_v1: os campos de cadastro entram aqui porque a ficha
+     da Daniela le do mesmo _patients que a busca ja usa, sem segunda consulta. */
+  const{data}=await db.from('patients').select('id,nome,plano,consulta,status,proxima,whatsapp,cpf,rg,data_nascimento,email,sexo,cep,endereco_cep,endereco,endereco_rua,endereco_numero,endereco_complemento,endereco_bairro,endereco_cidade,endereco_uf').order('nome');
   return data||[];
 }
 /* HAG_FILA_JULIA_v1 */
@@ -2471,7 +2665,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260904-1131';
+  var VERSAO = '20260907-0950';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
