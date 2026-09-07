@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260907-0950"></script>
+<script src="hag_auth.js?v=20260907-1000"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -472,6 +472,27 @@ body {
   .cad-val { flex: 1 1 auto; }
 }
 
+/* HAG_CADASTRO_LISTA_v2 (07/09/2026): a lista mostra TODOS os pacientes, uma
+   linha recolhida cada. Os campos so nascem quando ela abre a ficha. */
+.cad-card { padding: 0; }
+.cad-cab { display: flex; align-items: center; gap: 10px; padding: 11px 14px; cursor: pointer; }
+.cad-cab:hover { background: var(--surface2, #faf9f7); }
+.cad-cab .tc-avatar { width: 30px; height: 30px; border-radius: 8px; font-size: 12px; }
+.cad-tit { flex: 1; min-width: 0; }
+.cad-tit .n { font-size: 13.5px; font-weight: 600; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cad-tit .s { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+.cad-tit .s .falta1 { color: #c11e1e; }
+.cad-tag { font-family: var(--fm); font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+  border-radius: 20px; padding: 2px 8px; white-space: nowrap; flex: none; }
+.cad-tag.marcada { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+.cad-tag.inativo { background: var(--bg2, #f2f0ec); color: var(--ink3); border: 1px solid var(--border); }
+.cad-seta { flex: none; color: var(--ink3); font-size: 12px; transition: transform .15s; }
+.cad-card.aberto .cad-seta { transform: rotate(90deg); }
+.cad-corpo { display: none; padding: 0 14px 12px; }
+.cad-card.aberto .cad-corpo { display: block; }
+.cad-corpo .cad-linha:first-child { border-top: 1px solid var(--border); }
+
 /* ADVANCE BUTTONS */
 .btn-adv {
   font-family: var(--fb); font-size: 11.5px; font-weight: 500;
@@ -736,6 +757,10 @@ body {
       </div>
       <!-- HAG_PUSH_TAREFAS_v1 -->
       <button class="btn" id="btnPush" style="display:none" onclick="ativarAvisos(this)">&#128276; Ativar avisos</button>
+      <!-- HAG_ATUALIZAR_v1 (07/09/2026): o app dependia so do tempo real do
+           Supabase. Quando o canal cai (tela bloqueada, rede trocando), a lista
+           envelhece calada e nao havia nada para clicar. -->
+      <button class="btn" id="btnAtualizar" onclick="atualizarTudo(this)">&#8635; Atualizar</button>
       <a class="btn" href="index_HAG.html" style="text-decoration:none">&#8592; Painel</a>
       <button class="btn btn-primary" onclick="openModal()">+ Nova Tarefa</button>
     </div>
@@ -1257,8 +1282,29 @@ function _msgPainelHtml(q){
    falta e tao util quanto ter o dado.
    A ficha nao inventa nada: le o mesmo _patients que a busca ja carrega. */
 var _cadVals = {};   /* chave -> valor cru, para o clique nao depender de escape */
+var _cadAberto = new Set();   /* HAG_CADASTRO_LISTA_v2: fichas abertas, sobrevive ao render */
 
 function verCadastro(){ setFilter('cadastro'); }
+
+/* HAG_ATUALIZAR_v1: recarrega tudo o que a tela mostra, sem recarregar a
+   pagina, para nao perder o filtro nem a busca em que ela estava. */
+async function atualizarTudo(btn){
+  var antes = btn ? btn.innerHTML : null;
+  if(btn){ btn.disabled=true; btn.innerHTML='atualizando...'; }
+  try{
+    _tasks = await loadTasks();
+    _fila  = await loadFila();
+    _patients = await loadPatients();
+    render();
+    sSync('ok','sincronizado');
+    toast('Atualizado','ok');
+  }catch(e){
+    sSync('err','offline');
+    toast('Nao consegui atualizar: '+(e && e.message ? e.message : e),'err');
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML=antes; }
+  }
+}
 
 function _cadDataBR(iso){
   var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||''));
@@ -1310,14 +1356,26 @@ function _cadCampo(id, rotulo, valor, dica){
     +'<span class="cad-val falta">'+(dica||'não cadastrado')+'</span></div>';
 }
 
-function _cadFicha(p, i){
-  var pre='c'+i+'_';
+function _cadFaltando(p){
+  var f=[];
+  if(!p.cpf) f.push('CPF');
+  if(!p.data_nascimento) f.push('nascimento');
+  if(!p.whatsapp) f.push('telefone');
+  if(!p.email) f.push('e-mail');
+  if(!(p.endereco_cep||p.cep)) f.push('CEP');
+  if(!_cadEndereco(p)) f.push('endereço');
+  return f;
+}
+
+/* Corpo da ficha. So e montado quando ela abre, entao _cadVals guarda apenas os
+   pacientes abertos, e a lista de 141 nao vira 141 blocos de CPF na tela. */
+function _cadCorpoHtml(p){
+  var pre='c_'+p.id+'_';
   var cep=p.endereco_cep||p.cep||'';
   var end=_cadEndereco(p);
-  var doc=p.cpf||'';
   var tudo=[
     p.nome||'',
-    doc?('CPF: '+doc):'',
+    p.cpf?('CPF: '+p.cpf):'',
     p.data_nascimento?('Nascimento: '+_cadDataBR(p.data_nascimento)):'',
     p.whatsapp?('Telefone: '+p.whatsapp):'',
     p.email?('E-mail: '+p.email):'',
@@ -1325,15 +1383,7 @@ function _cadFicha(p, i){
     end?('Endereço: '+end):''
   ].filter(Boolean).join('\n');
   _cadVals[pre+'tudo']=tudo;
-  var cor=(typeof gac==='function')?gac(p.nome||'?'):'#7A8B99';
-  var ini=(typeof gin==='function')?gin(p.nome||'?'):'?';
-  return '<div class="cad-card">'
-    +'<div class="cad-topo">'
-      +'<div class="tc-avatar" style="background:'+cor+'">'+ini+'</div>'
-      +'<div class="cad-nome">'+_msgEsc(p.nome||'')+'</div>'
-      +'<button class="cad-cp" onclick="copiarCad(\''+pre+'tudo\',this)">copiar tudo</button>'
-    +'</div>'
-    +_cadCampo(pre+'nome','Nome', p.nome)
+  return _cadCampo(pre+'nome','Nome', p.nome)
     +_cadCampo(pre+'cpf','CPF', p.cpf)
     +_cadCampo(pre+'nasc','Nascimento', _cadDataBR(p.data_nascimento))
     +_cadCampo(pre+'tel','Telefone', p.whatsapp)
@@ -1342,43 +1392,79 @@ function _cadFicha(p, i){
     +_cadCampo(pre+'cep','CEP', cep)
     +_cadCampo(pre+'end','Endereço', end)
     +(p.rg?_cadCampo(pre+'rg','RG', p.rg):'')
+    +'<div style="padding-top:10px"><button class="cad-cp" onclick="copiarCad(\''+pre+'tudo\',this)">copiar tudo</button></div>';
+}
+
+function _cadLinhaHtml(p, marcada, aberta){
+  var cor=(typeof gac==='function')?gac(p.nome||'?'):'#7A8B99';
+  var ini=(typeof gin==='function')?gin(p.nome||'?'):'?';
+  var f=_cadFaltando(p);
+  var sub = f.length
+    ? '<span class="falta1">falta '+_msgEsc(f.join(', '))+'</span>'
+    : 'cadastro completo';
+  return '<div class="cad-card'+(aberta?' aberto':'')+'" data-pid="'+_msgEsc(p.id)+'">'
+    +'<div class="cad-cab" onclick="toggleCad(\''+_msgEsc(p.id)+'\')">'
+      +'<span class="cad-seta">&#9656;</span>'
+      +'<div class="tc-avatar" style="background:'+cor+'">'+ini+'</div>'
+      +'<div class="cad-tit"><div class="n">'+_msgEsc(p.nome||'')+'</div><div class="s">'+sub+'</div></div>'
+      +(marcada?'<span class="cad-tag marcada">consulta marcada</span>':'')
+      +(p.status==='inativo'?'<span class="cad-tag inativo">inativo</span>':'')
+    +'</div>'
+    +'<div class="cad-corpo">'+(aberta?_cadCorpoHtml(p):'')+'</div>'
     +'</div>';
+}
+
+/* Abrir e fechar mexe so naquele cartao. Um render() inteiro a cada toque
+   jogaria a rolagem para o topo de uma lista de 141 nomes. */
+function toggleCad(pid){
+  var card=document.querySelector('.cad-card[data-pid="'+pid+'"]');
+  if(!card) return;
+  var corpo=card.querySelector('.cad-corpo');
+  if(card.classList.contains('aberto')){
+    card.classList.remove('aberto'); corpo.innerHTML=''; _cadAberto.delete(pid);
+    return;
+  }
+  var p=(_patients||[]).find(function(x){ return x.id===pid; });
+  if(!p) return;
+  corpo.innerHTML=_cadCorpoHtml(p);
+  card.classList.add('aberto'); _cadAberto.add(pid);
 }
 
 function _cadPainelHtml(q){
   _cadVals={};
   var voltar='<button onclick="setFilter(\'fila\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:8px 13px;font-size:.78rem;font-family:inherit;cursor:pointer;color:#6b6b63;margin-bottom:12px">&#8592; Voltar para a fila</button>';
-  var topo='<div style="margin:0 0 10px"><div style="font-size:1rem;font-weight:700;color:#2b2a26">Cadastro dos pacientes</div>'
-    +'<div style="font-size:.78rem;color:#6b6b63;margin-top:2px">Cada campo tem o seu botão de copiar, para lançar na Livance sem digitar.</div></div>';
-  var barra='<div style="margin:0 0 12px"><input id="cadBusca" type="text" value="'+_msgEsc(q||'')
-    +'" oninput="render()" placeholder="Digite o nome do paciente..." '
-    +'style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit"></div>';
+
+  /* quem tem consulta marcada sobe para o topo: e quem ela vai lancar agora */
+  var marcadas={};
+  (_fila||[]).forEach(function(t){
+    if(t.status==='concluida' && t.agendado_data && t.patient_id) marcadas[t.patient_id]=1;
+  });
 
   var termo=_bpNorm(q||'').trim();
-  var lista, aviso='';
-  if(termo.length>=2){
-    lista=(_patients||[]).filter(function(p){ return _bpNorm(p.nome).includes(termo); }).slice(0,12);
-  } else {
-    /* Sem busca, mostra quem tem consulta marcada: e exatamente quem ela vai
-       lancar na Livance. Lista aberta com a base inteira nao ajuda ninguem e
-       ainda espalha CPF pela tela sem motivo. */
-    var vistos={}, ids=[];
-    (_fila||[]).filter(function(t){ return t.status==='concluida' && t.agendado_data; })
-      .sort(function(a,b){ return String(a.agendado_data).localeCompare(String(b.agendado_data)); })
-      .forEach(function(t){ if(t.patient_id && !vistos[t.patient_id]){ vistos[t.patient_id]=1; ids.push(t.patient_id); } });
-    lista=ids.map(function(id){ return (_patients||[]).find(function(p){ return p.id===id; }); }).filter(Boolean).slice(0,12);
-    aviso='<div style="font-size:.78rem;color:#6b6b63;margin:0 0 10px">Mostrando quem já tem consulta marcada. Para qualquer outro paciente, digite o nome acima.</div>';
-  }
+  var todos=(_patients||[]).slice();
+  var lista=termo?todos.filter(function(p){ return _bpNorm(p.nome).includes(termo); }):todos;
+  lista.sort(function(a,b){
+    var ma=marcadas[a.id]?0:1, mb=marcadas[b.id]?0:1;
+    if(ma!==mb) return ma-mb;
+    return String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR');
+  });
+
+  var topo='<div style="margin:0 0 10px"><div style="font-size:1rem;font-weight:700;color:#2b2a26">Cadastro dos pacientes</div>'
+    +'<div style="font-size:.78rem;color:#6b6b63;margin-top:2px">Toque no nome para abrir a ficha. Cada campo tem o seu botão de copiar, para lançar na Livance sem digitar.</div></div>';
+  var barra='<div style="margin:0 0 10px"><input id="cadBusca" type="text" value="'+_msgEsc(q||'')
+    +'" oninput="render()" placeholder="Digite o nome do paciente..." '
+    +'style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit"></div>';
+  var conta='<div style="font-size:.76rem;color:#6b6b63;margin:0 0 10px">'
+    +(termo?(lista.length+' de '+todos.length+' pacientes'):(todos.length+' pacientes cadastrados'))
+    +'</div>';
 
   if(!lista.length){
-    var vazio='<div class="empty" style="padding:22px"><div class="empty-title">'
-      +(termo.length>=2?'Nenhum paciente com esse nome':'Ninguém com consulta marcada agora')
-      +'</div><div class="empty-sub">'
-      +(termo.length>=2?'Confira a grafia ou procure por parte do sobrenome.':'Digite o nome do paciente na busca acima.')
-      +'</div></div>';
-    return voltar+topo+barra+vazio;
+    return voltar+topo+barra+'<div class="empty" style="padding:22px">'
+      +'<div class="empty-title">Nenhum paciente com esse nome</div>'
+      +'<div class="empty-sub">Confira a grafia ou procure por parte do sobrenome.</div></div>';
   }
-  return voltar+topo+barra+aviso+lista.map(function(p,i){ return _cadFicha(p,i); }).join('');
+  return voltar+topo+barra+conta
+    +lista.map(function(p){ return _cadLinhaHtml(p, !!marcadas[p.id], _cadAberto.has(p.id)); }).join('');
 }
 
 // ── FILTER ──
@@ -2665,7 +2751,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260907-0950';
+  var VERSAO = '20260907-1000';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
