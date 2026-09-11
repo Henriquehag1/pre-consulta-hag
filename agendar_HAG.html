@@ -649,7 +649,7 @@ function diasOfertados(modalidade){
      sala na Livance. */
   var minData=(function(){var d=new Date(hojeSP()+'T12:00:00');d.setDate(d.getDate()+2);
     return d.toISOString().slice(0,10);})();
-  var porPrio={}, lotados={};
+  var porPrio={};
   var d=new Date(JANELA.inicio+'T12:00:00'), fim=new Date(JANELA.fim+'T12:00:00');
   while(d<=fim){
     var iso=d.toISOString().slice(0,10);
@@ -677,12 +677,7 @@ function diasOfertados(modalidade){
           (porPrio[rg.prioridade]=porPrio[rg.prioridade]||[]).push(
             {data:iso, local:rg.local, tipo:tipo, horarios:hs.slice(0,3)});
         }
-        /* HAG_QUINTA_SO_COM_QUARTA_CHEIA_v5 (11/09/2026): dia que existe na regra,
-           ja tem atendimento e nao coube mais nada e um dia LOTADO. E diferente de
-           um dia que simplesmente nao existe na janela. So o primeiro caso abre a
-           quinta, que e a regra do Dr. Henrique: quinta e valvula para quando
-           sabado e quarta enchem, nao para completar a lista. */
-        else if(r.dia && r.dia.marcados > 0){ lotados[rg.prioridade]=true; }
+
       }
     }
     d.setDate(d.getDate()+1);
@@ -740,27 +735,24 @@ function diasOfertados(modalidade){
     if(da !== db) return da - db;
     return a.data < b.data ? 1 : -1;
   };
+  /* HAG_ESCADA_ESTRITA_v6 (11/09/2026)
+     A escada desce UM degrau de cada vez, e só quando o degrau de cima não deu
+     NENHUM dia. Regra do Dr. Henrique, nas palavras dele: encheu sábado e
+     quarta, libera quinta; encheu sábado, quarta e quinta, libera segunda.
+     A v5 descia quando ALGUM dia de cima estava lotado, mesmo com outros dias
+     livres no mesmo degrau, e isso apareceu na primeira remarcação real: o
+     sábado não tinha o que oferecer, porque o único encaixe contíguo era o
+     horário que a própria paciente já tinha, e a quinta foi liberada com as duas
+     quartas ainda com três horários cada. Dia que existe e tem vaga segura o
+     degrau sozinho. Descer por outro motivo é oferecer Pinheiros na quinta a
+     quem ainda cabia na quarta. */
   var lim = sug ? 3 : 4;
-  var lista = [], lotouAcima = false;
-  for(var pj=0; pj<prios.length && lista.length<lim; pj++){
-    /* HAG_QUINTA_SO_COM_QUARTA_CHEIA_v5: so desce de prioridade se algum dia das
-       prioridades de cima estava LOTADO. Faltar dia na janela nao abre a quinta. */
-    if(pj>0 && !lotouAcima) break;
+  var lista = [];
+  for(var pj=0; pj<prios.length; pj++){
     var grupo = porPrio[prios[pj]].slice().sort(porPerto);
-    for(var gk=0; gk<grupo.length && lista.length<lim; gk++) lista.push(grupo[gk]);
-    if(lotados[prios[pj]]) lotouAcima = true;
-  }
-  /* O nivel indicado pelo medico saiu de porPrio ao virar 'sug', mas se ELE era o
-     unico dia daquele nivel a prioridade some da lista e o lotado dela precisa
-     continuar valendo. */
-  if(!lotouAcima){ for(var lp in lotados){ if(lotados[lp]){ lotouAcima = true; break; } } }
-  if(lotouAcima && lista.length < lim){
-    for(var pk=0; pk<prios.length && lista.length<lim; pk++){
-      var g2 = porPrio[prios[pk]].slice().sort(porPerto);
-      for(var gm=0; gm<g2.length && lista.length<lim; gm++){
-        if(lista.indexOf(g2[gm])<0) lista.push(g2[gm]);
-      }
-    }
+    if(!grupo.length) continue;
+    lista = grupo.slice(0, lim);
+    break;
   }
   lista.sort(porData);
   if(sug){ sug.sugerido=true; lista.unshift(sug); }
