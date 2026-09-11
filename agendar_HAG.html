@@ -52,6 +52,17 @@ textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px
 min-height:70px;resize:vertical;background:#fff}
 .rodape{color:var(--ink4);font-size:12.5px;text-align:center;margin-top:26px}
 .spin{text-align:center;color:var(--ink4);padding:34px 0;font-size:14.5px}
+/* HAG_ESPERA_VISIVEL_v1 (11/09/2026): a reserva levava alguns segundos mostrando
+   so uma linha de texto cinza. Numa tela de celular isso passa por "nada
+   aconteceu", e o paciente toca de novo ou sai da pagina antes de a confirmacao
+   aparecer, achando que falhou. Anel girando, frase pedindo para nao fechar, e
+   trava no proprio botao para o segundo toque nao virar segunda reserva. */
+.spin .anel{width:30px;height:30px;margin:0 auto 14px;border-radius:50%;
+  border:2.5px solid var(--linha,#E4DECB);border-top-color:var(--ink3);
+  animation:hagGira .9s linear infinite}
+@keyframes hagGira{to{transform:rotate(360deg)}}
+.spin small{display:block;margin-top:9px;font-size:12.5px;color:var(--ink4)}
+@media (prefers-reduced-motion:reduce){.spin .anel{animation-duration:2.6s}}
 a.zap{color:var(--gold2)}
 </style></head><body><div class="wrap">
 
@@ -59,7 +70,7 @@ a.zap{color:var(--gold2)}
 <h1>Agendar consulta</h1>
 <p class="sub">Dr. Henrique Alves Gonzaga · CRM/SP 226530</p>
 
-<div id="tela"><div class="spin">Carregando os horários…</div></div>
+<div id="tela"><div class="spin"><div class="anel"></div>Carregando os horários</div></div>
 
 <div class="rodape">Qualquer dúvida, fale com a equipe pelo WhatsApp<br>
 <a class="zap" href="https://wa.me/5511977962914">(11) 97796-2914</a></div>
@@ -778,14 +789,21 @@ window.HAGpg={
       navigator.clipboard.writeText(cod).then(ok).catch(falhou);
     } else { falhou(); }
   },
+  _enviando:false,
   reservar:function(){
     var s=this._sel; if(!s) return;
-    el('<div class="spin">Reservando o seu horário…</div>');
+    /* HAG_ESPERA_VISIVEL_v1: trava de toque duplo. A tela e trocada logo abaixo,
+       mas um toque duplo rapido dispara duas chamadas antes da troca. */
+    if(this._enviando) return;
+    this._enviando=true;
+    el('<div class="spin"><div class="anel"></div>Reservando o seu horário'
+      + '<small>Leva alguns segundos. Não feche esta tela até aparecer a confirmação.</small></div>');
     rpc('hag_reservar_horario_link',{
       p_token:TOKEN, p_data:s.dia.data, p_local:(TAB==='online'?'online':s.dia.local),
       p_tipo:s.dia.tipo, p_hora_inicio:s.slot.hora,
       p_retorno_id:CTX.retorno.id
     }).then(function(r){
+      window.HAGpg._enviando=false;
       if(r&&r.ok){ telaSucesso(r.agendamento); return; }
       if(r&&r.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
       if(r&&(r.erro==='horario_ocupado'||r.erro==='abriria_buraco'||r.erro==='limite_do_dia')){
@@ -794,11 +812,13 @@ window.HAGpg={
       }
       if(r&&r.erro==='ja_agendado'){ iniciar(); return; }
       falha((r&&r.mensagem)||'Não consegui concluir agora. Tente de novo em instantes.');
-    }).catch(function(){ falha('Não consegui concluir agora. Verifique a internet e tente de novo.'); });
+    }).catch(function(){ window.HAGpg._enviando=false;
+      falha('Não consegui concluir agora. Verifique a internet e tente de novo.'); });
   },
   enviarAjuda:function(){
     var obs=(document.getElementById('obsAjuda')||{}).value||'';
-    el('<div class="spin">Enviando…</div>');
+    el('<div class="spin"><div class="anel"></div>Enviando o seu recado'
+      + '<small>Só um instante, não feche esta tela.</small></div>');
     rpc('hag_pedir_ajuda_agendamento_link',{p_token:TOKEN,
       p_retorno_id:(CTX.retorno?CTX.retorno.id:null), p_obs:obs.slice(0,400)})
     .then(function(r){
