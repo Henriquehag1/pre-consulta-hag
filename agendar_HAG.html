@@ -478,8 +478,9 @@ function blocoComoChegar(local, ehOnline){
   if(ehOnline){
     return '<div class="cartao"><h2>Como vai funcionar</h2>'
       +'<p style="font-size:14px;color:var(--ink3);margin:0">A sua consulta é online. O link da sala '
-      +'chega pelo WhatsApp antes do horário. Procure um lugar tranquilo, com boa internet, e deixe '
-      +'seus exames por perto.</p></div>';
+      +'chega pelo WhatsApp antes do horário. Procure um lugar tranquilo, com boa internet. Se tiver '
+      +'exames para entregar, envie em PDF pelo WhatsApp: a equipe anexa no sistema do Dr. Henrique '
+      +'para que ele tenha os resultados durante a sua consulta.</p></div>';
   }
   var e=ENDERECOS[local]; if(!e) return '';
   var mapa='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(e.nome+', '+e.end);
@@ -489,8 +490,9 @@ function blocoComoChegar(local, ehOnline){
     +'<a class="btn claro" style="display:block;text-align:center;text-decoration:none" '
     +'target="_blank" rel="noopener" href="'+mapa+'">Abrir no mapa</a>'
     +'<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 0">Chegue cerca de 10 minutos antes, '
-    +'para a recepção. Se tiver exames recentes, leve com você. Qualquer imprevisto, é só avisar a '
-    +'equipe pelo WhatsApp.</p></div>';
+    +'para a recepção. Se tiver exames para entregar, envie em PDF pelo WhatsApp: a equipe anexa no '
+    +'sistema do Dr. Henrique para que ele tenha os resultados durante a sua consulta. Qualquer '
+    +'imprevisto, é só avisar a equipe pelo WhatsApp.</p></div>';
 }
 var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -548,16 +550,16 @@ function iniciar(){
     LOCALMED=(c.retorno.local_origem==='medico' && c.retorno.local
               && c.retorno.local!=='online') ? c.retorno.local : null;
     if(!ALVO){
-      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") ainda não tem data definida. Toque no botão abaixo e a Daniela organiza isso com você.');
+      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima consulta ainda não tem data definida. Toque no botão abaixo e a Daniela organiza isso com você.');
       return;
     }
     JANELA=S.diasElegiveis(ALVO, hojeSP(), ALVOMED?{antes:7,depois:7}:null);
     if(!JANELA || JANELA.situacao==='ainda_nao_abriu'){
-      falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
+      falha('Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima consulta está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
       return;
     }
     if(JANELA.situacao==='atrasado'){
-      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! A janela ideal da sua consulta ("'+esc(c.retorno.nome)+'") já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Daniela entra em contato.');
+      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'. A data ideal da sua próxima consulta já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Daniela entra em contato.');
       return;
     }
     carregarAgenda();
@@ -726,15 +728,19 @@ function telaEscolha(nota){
      depois da escolha. Faltava o essencial das duas pontas: a razão clínica da data,
      que é manter a periodicidade do acompanhamento, e a segurança de que nada está
      sendo cobrado ou reservado antes de o paciente decidir. */
+  /* HAG_SEM_NUMERO_DE_ETAPA_v6 (11/09/2026): saiu o nome da etapa do texto do
+     paciente. "Controle 30 dias" carrega um número que nem sempre bate com o
+     intervalo real, porque há ciclo com retorno de 45 e de 60 dias, e o paciente
+     lia o número ao lado de uma data que não fechava a conta. O nome da etapa é
+     vocabulário interno, serve ao prontuário, não à tela dele. */
   var h='<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>. '
-    +'A sua próxima consulta é o <b>'+esc(c.retorno.nome)+'</b>. '
     +(ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
-                +'para manter a periodicidade do seu acompanhamento. Se esse dia não encaixar na sua '
-                +'agenda, logo abaixo estão as datas mais próximas.'
-     : c.retorno.data_estimada ? 'A previsão é para <b>meados de '+dataBR(ALVO).split(', ')[1]+'</b>, '
-                +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
-                +'melhor se encaixam na sua agenda.'
-                              : 'A previsão é para perto de <b>'+dataBR(ALVO)+'</b>, '
+                +'para a sua próxima consulta, para manter a periodicidade do seu acompanhamento. '
+                +'Se esse dia não encaixar na sua agenda, logo abaixo estão as datas mais próximas.'
+     : c.retorno.data_estimada ? 'A sua próxima consulta está prevista para <b>meados de '
+                +dataBR(ALVO).split(', ')[1]+'</b>, para manter a periodicidade do seu acompanhamento. '
+                +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
+                              : 'A sua próxima consulta está prevista para perto de <b>'+dataBR(ALVO)+'</b>, '
                 +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
                 +'melhor se encaixam na sua agenda.')
     +'</div></div>';
@@ -787,7 +793,6 @@ function telaEscolha(nota){
 function telaConfirma(dia,slot){
   var c=CTX;
   el('<div class="cartao"><h2>Confirmar horário</h2>'
-    +'<div class="conf-linha"><span>Consulta</span><b>'+esc(c.retorno.nome)+'</b></div>'
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(dia.data)+'</b></div>'
     +'<div class="conf-linha"><span>Horário</span><b>'+slot.hora+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+(TAB==='online'?'Online, o link chega pelo WhatsApp':LOCAIS[dia.local])+'</b></div>'
