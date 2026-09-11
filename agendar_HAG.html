@@ -465,6 +465,33 @@ function quandoBR(iso){
 /* tipo da consulta que esta sendo agendada. Vem do contexto, nao e mais fixo. */
 var TIPOCON='retorno';
 var LOCAIS={tatuape:'Tatuapé',pinheiros:'Pinheiros',online:'Online'};
+/* HAG_ONDE_E_COMO_v5 (11/09/2026): a tela de sucesso dizia só "você vai receber a
+   confirmação pelo WhatsApp" e não dizia ONDE. O paciente acabava de marcar e saía
+   sem o endereço, que é justamente a informação que ele vai procurar depois. O
+   endereço é o mesmo cadastrado em HAG_LOCAIS no app de tarefas; se um dia mudar,
+   muda nos dois. */
+var ENDERECOS={
+  tatuape:{nome:'Livance Tatuapé', end:'R. Vilela, 665, 8º andar, Tatuapé, São Paulo/SP, 03314-000'},
+  pinheiros:{nome:'Livance Pinheiros', end:'Av. Brig. Faria Lima, 1461, 6º andar, Pinheiros, São Paulo/SP, 01452-002'}
+};
+function blocoComoChegar(local, ehOnline){
+  if(ehOnline){
+    return '<div class="cartao"><h2>Como vai funcionar</h2>'
+      +'<p style="font-size:14px;color:var(--ink3);margin:0">A sua consulta é online. O link da sala '
+      +'chega pelo WhatsApp antes do horário. Procure um lugar tranquilo, com boa internet, e deixe '
+      +'seus exames por perto.</p></div>';
+  }
+  var e=ENDERECOS[local]; if(!e) return '';
+  var mapa='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(e.nome+', '+e.end);
+  return '<div class="cartao"><h2>Onde e como chegar</h2>'
+    +'<div class="conf-linha"><span>Unidade</span><b>'+esc(e.nome)+'</b></div>'
+    +'<p style="font-size:14px;color:var(--ink3);margin:10px 0 12px">'+esc(e.end)+'</p>'
+    +'<a class="btn claro" style="display:block;text-align:center;text-decoration:none" '
+    +'target="_blank" rel="noopener" href="'+mapa+'">Abrir no mapa</a>'
+    +'<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 0">Chegue cerca de 10 minutos antes, '
+    +'para a recepção. Se tiver exames recentes, leve com você. Qualquer imprevisto, é só avisar a '
+    +'equipe pelo WhatsApp.</p></div>';
+}
 var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
@@ -566,7 +593,7 @@ function diasOfertados(modalidade){
      sala na Livance. */
   var minData=(function(){var d=new Date(hojeSP()+'T12:00:00');d.setDate(d.getDate()+2);
     return d.toISOString().slice(0,10);})();
-  var porPrio={};
+  var porPrio={}, lotados={};
   var d=new Date(JANELA.inicio+'T12:00:00'), fim=new Date(JANELA.fim+'T12:00:00');
   while(d<=fim){
     var iso=d.toISOString().slice(0,10);
@@ -587,6 +614,12 @@ function diasOfertados(modalidade){
           (porPrio[rg.prioridade]=porPrio[rg.prioridade]||[]).push(
             {data:iso, local:rg.local, tipo:tipo, horarios:r.horarios.slice(0,3)});
         }
+        /* HAG_QUINTA_SO_COM_QUARTA_CHEIA_v5 (11/09/2026): dia que existe na regra,
+           ja tem atendimento e nao coube mais nada e um dia LOTADO. E diferente de
+           um dia que simplesmente nao existe na janela. So o primeiro caso abre a
+           quinta, que e a regra do Dr. Henrique: quinta e valvula para quando
+           sabado e quarta enchem, nao para completar a lista. */
+        else if(r.dia && r.dia.marcados > 0){ lotados[rg.prioridade]=true; }
       }
     }
     d.setDate(d.getDate()+1);
@@ -645,10 +678,26 @@ function diasOfertados(modalidade){
     return a.data < b.data ? 1 : -1;
   };
   var lim = sug ? 3 : 4;
-  var lista = [];
+  var lista = [], lotouAcima = false;
   for(var pj=0; pj<prios.length && lista.length<lim; pj++){
+    /* HAG_QUINTA_SO_COM_QUARTA_CHEIA_v5: so desce de prioridade se algum dia das
+       prioridades de cima estava LOTADO. Faltar dia na janela nao abre a quinta. */
+    if(pj>0 && !lotouAcima) break;
     var grupo = porPrio[prios[pj]].slice().sort(porPerto);
     for(var gk=0; gk<grupo.length && lista.length<lim; gk++) lista.push(grupo[gk]);
+    if(lotados[prios[pj]]) lotouAcima = true;
+  }
+  /* O nivel indicado pelo medico saiu de porPrio ao virar 'sug', mas se ELE era o
+     unico dia daquele nivel a prioridade some da lista e o lotado dela precisa
+     continuar valendo. */
+  if(!lotouAcima){ for(var lp in lotados){ if(lotados[lp]){ lotouAcima = true; break; } } }
+  if(lotouAcima && lista.length < lim){
+    for(var pk=0; pk<prios.length && lista.length<lim; pk++){
+      var g2 = porPrio[prios[pk]].slice().sort(porPerto);
+      for(var gm=0; gm<g2.length && lista.length<lim; gm++){
+        if(lista.indexOf(g2[gm])<0) lista.push(g2[gm]);
+      }
+    }
   }
   lista.sort(porData);
   if(sug){ sug.sugerido=true; lista.unshift(sug); }
@@ -672,12 +721,23 @@ function telaEscolha(nota){
       if(dias.length) alargou=true; else JANELA=jOrig;
     }
   }
-  var h='<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>! '
-    +'Sua próxima consulta é <b>'+esc(c.retorno.nome)+'</b>, '
-    +(ALVOMED ? 'e o Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> como o melhor dia'
-     : c.retorno.data_estimada ? 'prevista para <b>meados de '+dataBR(ALVO).split(', ')[1]+'</b>'
-                              : 'prevista para perto de <b>'+dataBR(ALVO)+'</b>')
-    +'. Escolha abaixo o melhor horário.</div></div>';
+  /* HAG_TOM_PACIENTE_v5 (11/09/2026): o texto dizia "o Dr. Henrique indicou tal dia
+     como o melhor dia", sem dizer POR QUE, e não dizia que o horário só fica preso
+     depois da escolha. Faltava o essencial das duas pontas: a razão clínica da data,
+     que é manter a periodicidade do acompanhamento, e a segurança de que nada está
+     sendo cobrado ou reservado antes de o paciente decidir. */
+  var h='<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>. '
+    +'A sua próxima consulta é o <b>'+esc(c.retorno.nome)+'</b>. '
+    +(ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
+                +'para manter a periodicidade do seu acompanhamento. Se esse dia não encaixar na sua '
+                +'agenda, logo abaixo estão as datas mais próximas.'
+     : c.retorno.data_estimada ? 'A previsão é para <b>meados de '+dataBR(ALVO).split(', ')[1]+'</b>, '
+                +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
+                +'melhor se encaixam na sua agenda.'
+                              : 'A previsão é para perto de <b>'+dataBR(ALVO)+'</b>, '
+                +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
+                +'melhor se encaixam na sua agenda.')
+    +'</div></div>';
   if(nota) h+='<div class="aviso">'+nota+'</div>';
   if(alargou) h+='<div class="aviso">Não sobrou horário livre exatamente na semana do dia indicado, então abrimos os dias seguintes.</div>';
   if(travada){
@@ -698,7 +758,10 @@ function telaEscolha(nota){
       h+='<div class="aviso">No seu plano o padrão é <b>presencial</b>. Se preferir online desta vez, é só escolher na aba ao lado.</div>';
     }
   }
-  h+='<div class="cartao"><h2>'+(TAB==='online'?'Consulta online':'No consultório')+'</h2>';
+  h+='<div class="cartao"><h2>'+(TAB==='online'?'Consulta online':'No consultório')+'</h2>'
+    /* HAG_TOM_PACIENTE_v5: dito ao lado dos horários, que é onde a dúvida aparece. */
+    +'<p style="font-size:13px;color:var(--ink4);margin:-4px 0 12px">'
+    +'O horário fica reservado no seu nome assim que você escolher e confirmar. Até lá, ele segue disponível.</p>';
   if(!dias.length){
     h+='<p style="font-size:14.5px;color:var(--ink3)">Não há horários '+(TAB==='online'?'online':'presenciais')+' disponíveis dentro do período ideal da sua consulta.</p>';
   } else {
@@ -778,23 +841,28 @@ function telaSucesso(ag){
   /* HAG_DIAG_SINAL_v1: reserva provisoria nao e sucesso ainda, e um horario
      guardado esperando o sinal. */
   if(ag && ag.status==='pre_reservado'){ telaSinal(ag); return; }
+  var ehOn=(ag.tipo==='online'||ag.tipo==='diagnostica_online'||ag.local==='online');
   el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
     +'<h2 style="text-align:center">Horário reservado</h2>'
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(ag.data)+'</b></div>'
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(ag.inicio)+'</b></div>'
-    +'<div class="conf-linha"><span>Onde</span><b>'+(ag.tipo==='online'?'Online':LOCAIS[ag.local])+'</b></div>'
-    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Você vai receber a confirmação e os lembretes pelo WhatsApp. Para remarcar, é só chamar a equipe.</p></div>');
+    +'<div class="conf-linha"><span>Onde</span><b>'+(ehOn?'Online':LOCAIS[ag.local])+'</b></div>'
+    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Está reservado no seu nome. '
+    +'Você vai receber a confirmação e os lembretes pelo WhatsApp, e para remarcar é só chamar a equipe.</p></div>'
+    + blocoComoChegar(ag.local, ehOn));
 }
 
 function telaJaAgendado(){
   var a=CTX.agendamento;
   if(a && a.status==='pre_reservado'){ telaSinal(a); return; } /* HAG_DIAG_SINAL_v1 */
+  var ehOn2=(a.modalidade==='online'||a.local==='online');
   el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
     +'<h2 style="text-align:center">Você já tem horário marcado</h2>'
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(a.data)+'</b></div>'
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(a.inicio)+'</b></div>'
-    +'<div class="conf-linha"><span>Onde</span><b>'+(a.modalidade==='online'?'Online':LOCAIS[a.local]||'')+'</b></div>'
-    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Para remarcar, fale com a equipe pelo WhatsApp.</p></div>');
+    +'<div class="conf-linha"><span>Onde</span><b>'+(ehOn2?'Online':LOCAIS[a.local]||'')+'</b></div>'
+    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Para remarcar, fale com a equipe pelo WhatsApp.</p></div>'
+    + blocoComoChegar(a.local, ehOn2));
 }
 
 function telaAjuda(txt){
