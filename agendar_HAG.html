@@ -177,7 +177,18 @@ a.zap{color:var(--gold2)}
     var jIni = paraMin(regra.inicio), jFim = paraMin(regra.fim);
     if (jIni == null || jFim == null) { vazio.motivo = 'janela invalida'; return vazio; }
 
-    var ocup = normalizaMarcados(marcados);
+    /* HAG_JANELA_FECHADA_v3 (11/09/2026)
+       So conta como ocupacao o que encosta NESTA janela. PORQUE: quarta tem duas
+       raias no mesmo dia, Pinheiros 11:00-14:00 e online 16:00-18:15. A consulta
+       online das 16:00 fazia o dia parecer cheio para a janela presencial, que
+       perdia a semente e caia no encaixe "antes do bloco". A paciente Jessica viu
+       exatamente isso na quarta 16/09: um unico horario de 15:00 oferecido numa
+       janela que termina as 14:00, e os tres horarios reais, 11:00 12:00 13:00,
+       escondidos. O deslocamento entre as duas raias e cuidado por
+       janelaEfetiva(), nao pela contiguidade. */
+    var ocup = normalizaMarcados(marcados).filter(function (o) {
+      return o.fim > jIni && o.inicio < jFim;
+    });
     var limite = regra.limite == null ? Infinity : regra.limite;
 
     var dia = {
@@ -235,7 +246,10 @@ a.zap{color:var(--gold2)}
          sala. 'inicio' da regra e o primeiro paciente; a sala abre antes dele de
          proposito, e a semente ja fazia assim. A v1 comparava a sala aqui e a
          janela ali, entao recusava encaixes validos so no caso do implante. */
-      if (antes >= jIni) {
+      /* HAG_JANELA_FECHADA_v3: o encaixe antes do bloco tambem tem que CABER na
+         janela. Faltava o teto aqui: bastava um marcado depois do fim da janela
+         para o candidato nascer fora dela. */
+      if (antes >= jIni && antes + t.paciente <= jFim) {
         /* EFEITO COLATERAL que precisa ser dito em voz alta. Ao entrar antes do
            bloco, este atendimento vira o primeiro do dia e o que era primeiro
            DEIXA DE SER. Na Livance isso muda o tipo do agendamento dele, que
@@ -463,7 +477,7 @@ function rest(caminho){
   return fetch(SURL+'/rest/v1/'+caminho,{headers:H}).then(function(r){return r.json();});
 }
 
-var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null, ALVO=null, ALVOMED=false;
+var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null, ALVO=null, ALVOMED=false, LOCALMED=null;
 
 function falha(msg){
   el('<div class="cartao"><div class="destaque">'+msg+'</div></div>');
@@ -487,6 +501,14 @@ function iniciar(){
        simetrica, 7 dias para cada lado: a data ja e decisao, nao estimativa. */
     ALVO=c.retorno.data_alvo||c.retorno.data_planejada;
     ALVOMED=(c.retorno.alvo_origem==='medico'&&!!c.retorno.data_alvo);
+    /* HAG_LOCAL_MEDICO_v2 (11/09/2026): o mesmo raciocinio do dia, aplicado ao
+       LUGAR. O Dr. Henrique manda a tarefa para a fila dizendo Tatuape, e ate
+       aqui a pagina oferecia tambem os dias de Pinheiros, porque so obedecia a
+       modalidade. Presencial nao e um lugar so: escolher a unidade e decisao
+       clinica e logistica dele, nao do paciente. Quando o local vem do medico,
+       a tela mostra so os dias daquela unidade. */
+    LOCALMED=(c.retorno.local_origem==='medico' && c.retorno.local
+              && c.retorno.local!=='online') ? c.retorno.local : null;
     if(!ALVO){
       telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'! Sua próxima consulta ("'+esc(c.retorno.nome)+'") ainda não tem data definida. Toque no botão abaixo e a Daniela organiza isso com você.');
       return;
@@ -542,6 +564,8 @@ function diasOfertados(modalidade){
       for(var i=0;i<REGRAS.length;i++){
         var rg=REGRAS[i];
         if(rg.dia_semana!==dow || rg.modalidade!==modalidade) continue;
+        /* HAG_LOCAL_MEDICO_v2: unidade escolhida pelo medico filtra os dias. */
+        if(LOCALMED && modalidade!=='online' && rg.local!==LOCALMED) continue;
         /* HAG_DIAG_SINAL_v1: o tipo deixa de ser fixo. Diagnostica online usa
            o tipo proprio de 75 min, e nao o 'online' de 45 min do retorno. */
         var tipo = modalidade==='online'
@@ -614,7 +638,9 @@ function telaEscolha(nota){
   if(travada){
     h+='<div class="aviso">'+(c.retorno.modalidade==='online'
         ? 'Esta consulta do seu plano é <b>online</b>.'
-        : 'Esta consulta do seu plano é <b>presencial</b>, no consultório.')
+        : LOCALMED
+          ? 'Esta consulta é <b>presencial</b>, no consultório '+(LOCALMED==='tatuape'?'do <b>Tatuapé</b>':'de <b>Pinheiros</b>')+'.'
+          : 'Esta consulta do seu plano é <b>presencial</b>, no consultório.')
       +'</div>';
   }
   if(hibrido){
