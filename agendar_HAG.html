@@ -474,6 +474,38 @@ var ENDERECOS={
   tatuape:{nome:'Livance Tatuapé', end:'R. Vilela, 665, 8º andar, Tatuapé, São Paulo/SP, 03314-000'},
   pinheiros:{nome:'Livance Pinheiros', end:'Av. Brig. Faria Lima, 1461, 6º andar, Pinheiros, São Paulo/SP, 01452-002'}
 };
+/* HAG_SALVAR_NO_CALENDARIO_v7 (11/09/2026): depois de marcar, o paciente ficava
+   só com a tela. Print resolve, mas exige que ele lembre de tirar. O evento no
+   calendário do próprio aparelho é o que realmente evita o esquecimento, e leva
+   junto o endereço. Dois caminhos porque o parque é dividido: o arquivo .ics
+   cobre iPhone, Android e Outlook, e o link cobre quem vive no Google Agenda. */
+function _icsData(data, hora){
+  return String(data).replace(/-/g,'') + 'T' + hhmm(hora).replace(':','') + '00';
+}
+function _icsEscapa(t){ return String(t||'').replace(/([,;\\])/g,'\\$1'); }
+function _fimDoEvento(ag){
+  if(ag.fim) return hhmm(ag.fim);
+  /* telaJaAgendado não traz o fim; uma hora é a duração do retorno presencial e
+     serve de lembrete, não de contrato. */
+  return S.paraHora(S.paraMin(hhmm(ag.inicio)) + 60);
+}
+function blocoCalendario(ag, ehOnline){
+  var ini=_icsData(ag.data, ag.inicio), fim=_icsData(ag.data, _fimDoEvento(ag));
+  var e=ENDERECOS[ag.local];
+  var titulo='Consulta · Dr. Henrique Alves Gonzaga';
+  var onde = ehOnline ? 'Online, o link chega pelo WhatsApp' : (e ? e.nome+', '+e.end : '');
+  window.HAGpg._ics={ini:ini, fim:fim, titulo:titulo, onde:onde};
+  var g='https://calendar.google.com/calendar/render?action=TEMPLATE&ctz=America%2FSao_Paulo'
+    +'&text='+encodeURIComponent(titulo)
+    +'&dates='+ini+'/'+fim
+    +'&location='+encodeURIComponent(onde)
+    +'&details='+encodeURIComponent('Consulta do seu acompanhamento no Método HAG.');
+  return '<div class="cartao"><h2>Guardar na sua agenda</h2>'
+    +'<button class="btn" onclick="HAGpg.baixarIcs()">Salvar no meu calendário</button>'
+    +'<a class="btn claro" style="display:block;text-align:center;text-decoration:none" '
+    +'target="_blank" rel="noopener" href="'+g+'">Usa Google Agenda? Adicionar por aqui</a>'
+    +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Se preferir, guarde um print desta tela.</p></div>';
+}
 function blocoComoChegar(local, ehOnline){
   if(ehOnline){
     return '<div class="cartao"><h2>Como vai funcionar</h2>'
@@ -854,7 +886,8 @@ function telaSucesso(ag){
     +'<div class="conf-linha"><span>Onde</span><b>'+(ehOn?'Online':LOCAIS[ag.local])+'</b></div>'
     +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Está reservado no seu nome. '
     +'Você vai receber a confirmação e os lembretes pelo WhatsApp, e para remarcar é só chamar a equipe.</p></div>'
-    + blocoComoChegar(ag.local, ehOn));
+    + blocoComoChegar(ag.local, ehOn)
+    + blocoCalendario(ag, ehOn));
 }
 
 function telaJaAgendado(){
@@ -867,15 +900,34 @@ function telaJaAgendado(){
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(a.inicio)+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+(ehOn2?'Online':LOCAIS[a.local]||'')+'</b></div>'
     +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Para remarcar, fale com a equipe pelo WhatsApp.</p></div>'
-    + blocoComoChegar(a.local, ehOn2));
+    + blocoComoChegar(a.local, ehOn2)
+    + blocoCalendario(a, ehOn2));
 }
 
 function telaAjuda(txt){
+  /* HAG_VOLTAR_PRIMEIRO_v7 (11/09/2026)
+     Este caminho existe para o caso real de nenhum horário servir, mas ele era
+     apresentado como o caminho fácil: botão escuro dizendo "pedir ajuda" e o
+     voltar em segundo plano. O efeito era retrabalho, porque pedir ajuda devolve
+     o paciente para a garimpagem manual da Daniela, que é justamente o que a tela
+     veio eliminar. Agora a hierarquia é invertida quando ainda há horários na
+     mesa: voltar e escolher é o botão principal, mandar recado é o secundário, e
+     o texto diz com todas as letras que vaga nova não é garantida.
+     Nas duas situações em que não há horário nenhum para voltar, data ainda não
+     definida e janela vencida, a tela continua como era, com o recado em primeiro
+     plano, porque ali ele é o único caminho. */
+  var temHorarios = !!(JANELA && JANELA.situacao==='aberta');
   el('<div class="cartao"><div class="destaque">'+txt+'</div>'
-    +'<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 6px">Se quiser, conte qual período costuma ser melhor para você:</p>'
+    +(temHorarios
+      ? '<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 6px">Se quiser, deixe abaixo o dia e o '
+        +'período que funcionariam para você. Avisamos se abrir alguma vaga nova, mas não há como garantir, '
+        +'e por isso vale a pena garantir agora um dos horários que já estão disponíveis.</p>'
+      : '<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 6px">Conte qual dia e período costumam ser melhores para você:</p>')
     +'<textarea id="obsAjuda" placeholder="Ex.: só consigo depois das 18h, ou aos sábados de manhã"></textarea></div>'
-    +'<button class="btn" onclick="HAGpg.enviarAjuda()">Pedir ajuda para agendar</button>'
-    +(JANELA&&JANELA.situacao==='aberta'?'<button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>':''));
+    +(temHorarios
+      ? '<button class="btn" onclick="HAGpg.voltar()">Voltar e escolher um horário</button>'
+        +'<button class="btn claro" onclick="HAGpg.enviarAjuda()">Enviar mesmo assim</button>'
+      : '<button class="btn" onclick="HAGpg.enviarAjuda()">Enviar para a equipe</button>'));
 }
 
 window.HAGpg={
@@ -883,8 +935,32 @@ window.HAGpg={
   tab:function(m){TAB=m;telaEscolha();},
   escolher:function(di,si){var d=this._dias[di];telaConfirma(d,d.horarios[si]);},
   voltar:function(){telaEscolha();},
-  ajuda:function(){telaAjuda('Sem problema. Deixe com a Daniela: ela encontra com você um horário que encaixe.');},
-  _pix:'',
+  ajuda:function(){telaAjuda('Os horários da tela anterior são os que o Dr. Henrique tem abertos para esta consulta dentro do período ideal do seu acompanhamento.');},
+  _pix:'', _ics:null,
+  baixarIcs:function(){
+    var d=this._ics||{}; if(!d.ini) return;
+    var agora=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+    var txt=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Clinica HAG//Agendamento//PT',
+      'CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+      'UID:hag-'+d.ini+'-'+Math.random().toString(36).slice(2)+'@clinicahag.com',
+      'DTSTAMP:'+agora,'DTSTART:'+d.ini,'DTEND:'+d.fim,
+      'SUMMARY:'+_icsEscapa(d.titulo),'LOCATION:'+_icsEscapa(d.onde),
+      'DESCRIPTION:'+_icsEscapa('Consulta do seu acompanhamento no Método HAG.'),
+      'BEGIN:VALARM','TRIGGER:-PT2H','ACTION:DISPLAY',
+      'DESCRIPTION:'+_icsEscapa('Consulta com o Dr. Henrique daqui a pouco'),'END:VALARM',
+      'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    try{
+      var blob=new Blob([txt],{type:'text/calendar;charset=utf-8'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url; a.download='consulta-metodo-hag.ics';
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ try{URL.revokeObjectURL(url); a.remove();}catch(e){} }, 1500);
+    }catch(e){
+      /* navegador antigo sem Blob: abre o arquivo, que o aparelho oferece ao calendário */
+      window.open('data:text/calendar;charset=utf-8,'+encodeURIComponent(txt));
+    }
+  },
   copiarPix:function(){
     var cod=this._pix||'', aviso=document.getElementById('pixAviso');
     function ok(){ if(aviso) aviso.textContent='Código copiado. Agora é só colar no Pix do seu banco.'; }
