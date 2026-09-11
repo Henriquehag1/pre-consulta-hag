@@ -550,6 +550,10 @@ function rest(caminho){
 }
 
 var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null, ALVO=null, ALVOMED=false, LOCALMED=null;
+/* HAG_REMARCA_PACIENTE_v1 (11/09/2026): a mesma página serve para marcar e para
+   remarcar. MODO diz qual das duas está acontecendo, e é a única diferença no
+   caminho: as regras de dia, horário, contiguidade e unidade são as mesmas. */
+var MODO='marcar', REM=null;
 
 function falha(msg){
   el('<div class="cartao"><div class="destaque">'+msg+'</div></div>');
@@ -765,7 +769,12 @@ function telaEscolha(nota){
      intervalo real, porque há ciclo com retorno de 45 e de 60 dias, e o paciente
      lia o número ao lado de uma data que não fechava a conta. O nome da etapa é
      vocabulário interno, serve ao prontuário, não à tela dele. */
-  var h='<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>. '
+  var h = (MODO==='remarcar' && REM)
+    ? ('<div class="cartao"><div class="destaque">Você está remarcando a consulta de '
+       +'<b style="text-transform:capitalize">'+dataBR(REM.atual.data)+'</b> às <b>'+hhmm(REM.atual.inicio)+'</b>. '
+       +'Escolha abaixo o novo dia e horário. O seu horário atual continua reservado até você confirmar o novo.'
+       +'</div></div>')
+    : ('<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>. '
     +(ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
                 +'para a sua próxima consulta, para manter a periodicidade do seu acompanhamento. '
                 +'Se esse dia não encaixar na sua agenda, logo abaixo estão as datas mais próximas.'
@@ -775,17 +784,19 @@ function telaEscolha(nota){
                               : 'A sua próxima consulta está prevista para perto de <b>'+dataBR(ALVO)+'</b>, '
                 +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
                 +'melhor se encaixam na sua agenda.')
-    +'</div></div>';
+    +'</div></div>');
   if(nota) h+='<div class="aviso">'+nota+'</div>';
   if(alargou) h+='<div class="aviso">Não sobrou horário livre exatamente na semana do dia indicado, então abrimos os dias seguintes.</div>';
   if(travada){
     h+='<div class="aviso">'+(c.retorno.modalidade==='online'
         ? 'Esta consulta do seu plano é <b>online</b>.'
-        : LOCALMED
+        : (LOCALMED && MODO!=='remarcar')
           ? 'Esta consulta é <b>presencial</b>. O dia indicado pelo Dr. Henrique é '
             +(LOCALMED==='tatuape'?'no <b>Tatuapé</b>':'em <b>Pinheiros</b>')
             +'. Os outros dias podem ser na outra unidade, e cada um mostra onde.'
-          : 'Esta consulta do seu plano é <b>presencial</b>, no consultório.')
+          /* HAG_REMARCA_PACIENTE_v1: na remarcação não existe dia indicado, então a
+             frase sobre ele sairia mentindo. Cada dia da lista já mostra a unidade. */
+          : 'Esta consulta é <b>presencial</b>. Cada dia abaixo mostra em qual consultório.')
       +'</div>';
   }
   if(hibrido){
@@ -833,7 +844,9 @@ function telaConfirma(dia,slot){
           +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Guardamos o horário para você e mostramos o Pix na tela seguinte.</p>'
         : '')
     +'</div>'
-    +'<button class="btn" onclick="HAGpg.reservar()">'+((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)?'Reservar este horário':'Confirmar este horário')+'</button>'
+    +'<button class="btn" onclick="HAGpg.confirmar()">'
+      +(MODO==='remarcar' ? 'Confirmar a remarcação'
+        : ((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)?'Reservar este horário':'Confirmar este horário'))+'</button>'
     +'<button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>');
   window.HAGpg._sel={dia:dia,slot:slot};
 }
@@ -899,9 +912,62 @@ function telaJaAgendado(){
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(a.data)+'</b></div>'
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(a.inicio)+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+(ehOn2?'Online':LOCAIS[a.local]||'')+'</b></div>'
-    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Para remarcar, fale com a equipe pelo WhatsApp.</p></div>'
+    +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Está reservado no seu nome. '
+    +'Você vai receber a confirmação e os lembretes pelo WhatsApp.</p></div>'
     + blocoComoChegar(a.local, ehOn2)
-    + blocoCalendario(a, ehOn2));
+    + blocoCalendario(a, ehOn2)
+    /* HAG_REMARCA_PACIENTE_v1: a remarcação entra por aqui, no mesmo link. Não
+       existe link novo nem mensagem nova: quem já marcou volta ao endereço que
+       tem no WhatsApp e encontra o caminho. */
+    + (CTX.remarcacao
+       ? '<button class="btn claro" onclick="HAGpg.remarcar()">Preciso remarcar esta consulta</button>'
+       : ''));
+}
+
+/* HAG_REMARCA_FORA_DO_PRAZO_v1 (11/09/2026)
+   Aqui a página NÃO oferece horários e NÃO decide nada. O texto espelha o
+   contrato em vez de parafrasear: "pode incidir" é o que está assinado, e
+   anunciar a taxa como certa tiraria do Dr. Henrique a margem de dispensar,
+   que é dele. Também não existe menu de opções, porque escolher entre taxa,
+   falta e dispensa é decisão do médico; um menu viraria o direito do paciente
+   de escolher a opção mais barata para ele. */
+function telaForaDoPrazo(r){
+  var a=r.atual||{}, limite=(r.motivo==='limite');
+  var horas=Math.max(0, Math.round(r.horas_ate||0));
+  var quando='<b style="text-transform:capitalize">'+dataBR(a.data)+'</b> às <b>'+hhmm(a.inicio)+'</b>';
+  el('<div class="cartao"><div class="destaque">'
+      +(limite
+        ? 'Esta consulta já foi remarcada uma vez por aqui. A partir daqui quem organiza a troca com você é a equipe.'
+        : 'O seu contrato prevê que a remarcação seja pedida com 72 horas de antecedência, e faltam cerca de '
+          +horas+' horas para a sua consulta de '+quando+'.')
+      +'</div>'
+      +(limite ? ''
+        : '<p style="font-size:13.5px;color:var(--ink3);margin:12px 0 0">Fora desse prazo pode incidir a taxa de '
+          +'reserva de agenda prevista no seu contrato, porque o horário fica bloqueado. Situações imprevisíveis e '
+          +'comprovadas são analisadas sem penalidade, e quem decide isso é o Dr. Henrique.</p>')
+      +'<p style="font-size:13.5px;color:var(--ink4);margin:10px 0 0">A sua consulta de '+quando+' continua reservada. '
+      +'Você não perde a vaga por ter pedido.</p>'
+      +'<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 6px">Conte o que aconteceu, para a equipe analisar:</p>'
+      +'<textarea id="obsRemarca" placeholder="Ex.: tive um imprevisto de trabalho, ou estou doente"></textarea></div>'
+    +'<button class="btn" onclick="HAGpg.voltarAoAgendado()">Manter o meu horário</button>'
+    +'<button class="btn claro" onclick="HAGpg.pedirRemarcacao()">Enviar pedido para a equipe</button>');
+}
+
+function telaPedidoEnviado(msg){
+  /* HAG_ATESTADO_v1: o anexo aparece DEPOIS de o pedido existir, porque é ele que
+     dá onde pendurar o documento na fila da Daniela. */
+  el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
+      +'<h2 style="text-align:center">Pedido enviado</h2>'
+      +'<p style="font-size:14.5px;color:var(--ink3)">'+esc(msg||'A equipe vai falar com você pelo WhatsApp.')+'</p>'
+      +'<p style="font-size:13.5px;color:var(--ink4);margin:10px 0 0">Até lá, o seu horário atual continua reservado.</p></div>'
+    +'<div class="cartao"><h2>Anexar documento</h2>'
+      +'<p style="font-size:14px;color:var(--ink3);margin:0 0 12px">Se você tem atestado ou algum documento que '
+      +'comprove o imprevisto, anexe aqui. Ele vai direto para os seus documentos, para o Dr. Henrique analisar '
+      +'junto com o pedido. Pode ser PDF ou foto.</p>'
+      +'<input type="file" id="arqAtestado" accept="application/pdf,image/*" style="display:none" '
+      +'onchange="HAGpg.enviarAtestado()">'
+      +'<button class="btn claro" onclick="document.getElementById(\'arqAtestado\').click()">Escolher arquivo</button>'
+      +'<p id="atestadoAviso" style="font-size:13px;color:var(--ink4);margin:10px 0 0"></p></div>');
 }
 
 function telaAjuda(txt){
@@ -937,6 +1003,102 @@ window.HAGpg={
   voltar:function(){telaEscolha();},
   ajuda:function(){telaAjuda('Os horários da tela anterior são os que o Dr. Henrique tem abertos para esta consulta dentro do período ideal do seu acompanhamento.');},
   _pix:'', _ics:null,
+  /* HAG_REMARCA_PACIENTE_v1 */
+  remarcar:function(){
+    var c=CTX, r=c&&c.remarcacao; if(!r) return;
+    REM=r;
+    if(!r.pode_remarcar || !r.retorno){ telaForaDoPrazo(r); return; }
+    MODO='remarcar';
+    /* o contexto de quem já marcou não traz o bloco 'retorno', porque aquele bloco
+       só enxerga retorno em 'agendar'. O bloco de remarcação traz o equivalente, e
+       daqui para baixo a página inteira funciona igual à primeira marcação. */
+    c.retorno={ id:r.retorno.id, nome:'', data_planejada:r.retorno.data_alvo, data_estimada:false,
+      data_alvo:r.retorno.data_alvo, alvo_origem:'medico', modalidade:r.retorno.modalidade,
+      local:r.retorno.local, local_origem:r.retorno.local?'medico':null,
+      regra:'', preferida:null, motivo:'' };
+    ALVO=r.retorno.data_alvo;
+    /* nada de "dia indicado" na remarcação: o dia indicado é justamente o que ele
+       está deixando, e marcá-lo de novo confundiria. A janela continua simétrica,
+       7 dias para cada lado do dia que ele tinha. */
+    ALVOMED=false;
+    LOCALMED=(r.retorno.local==='tatuape'||r.retorno.local==='pinheiros')?r.retorno.local:null;
+    TIPOCON='retorno';
+    JANELA=S.diasElegiveis(ALVO, hojeSP(), {antes:7,depois:7});
+    if(!JANELA || JANELA.situacao!=='aberta'){ telaForaDoPrazo(r); return; }
+    el('<div class="spin"><div class="anel"></div>Carregando os horários</div>');
+    carregarAgenda();
+  },
+  voltarAoAgendado:function(){ MODO='marcar'; telaJaAgendado(); },
+  confirmar:function(){ if(MODO==='remarcar') this.remarcarConfirma(); else this.reservar(); },
+  remarcarConfirma:function(){
+    var s=this._sel; if(!s) return;
+    if(this._enviando) return;
+    this._enviando=true;
+    el('<div class="spin"><div class="anel"></div>Remarcando a sua consulta'
+      + '<small>Leva alguns segundos. Não feche esta tela até aparecer a confirmação.</small></div>');
+    rpc('hag_remarcar_horario_link',{
+      p_token:TOKEN, p_data:s.dia.data, p_local:(TAB==='online'?'online':s.dia.local),
+      p_tipo:s.dia.tipo, p_hora_inicio:s.slot.hora,
+      p_retorno_id:(CTX.retorno?CTX.retorno.id:null)
+    }).then(function(r){
+      window.HAGpg._enviando=false;
+      if(r&&r.ok){ MODO='marcar'; telaSucesso(r.agendamento); return; }
+      if(r&&r.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
+      /* o servidor é quem manda no prazo e na cota: o relógio do celular não decide */
+      if(r&&(r.erro==='fora_do_prazo'||r.erro==='limite_de_remarcacoes')){
+        REM=REM||{}; REM.motivo=(r.erro==='fora_do_prazo')?'prazo':'limite';
+        REM.horas_ate=r.horas_restantes; REM.atual=r.atual||REM.atual;
+        telaForaDoPrazo(REM); return;
+      }
+      if(r&&(r.erro==='horario_ocupado'||r.erro==='abriria_buraco'||r.erro==='limite_do_dia')){
+        carregarAgendaENotificar('Esse horário acabou de ser preenchido. A lista foi atualizada, escolha outro.');
+        return;
+      }
+      falha((r&&r.mensagem)||'Não consegui remarcar agora. Tente de novo em instantes.');
+    }).catch(function(){ window.HAGpg._enviando=false;
+      falha('Não consegui remarcar agora. Verifique a internet e tente de novo.'); });
+  },
+  pedirRemarcacao:function(){
+    if(this._enviando) return;
+    this._enviando=true;
+    var obs=(document.getElementById('obsRemarca')||{}).value||'';
+    el('<div class="spin"><div class="anel"></div>Enviando o seu pedido'
+      + '<small>Só um instante, não feche esta tela.</small></div>');
+    rpc('hag_pedir_remarcacao_link',{p_token:TOKEN, p_motivo:obs.slice(0,600)})
+    .then(function(r){
+      window.HAGpg._enviando=false;
+      if(r&&r.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
+      telaPedidoEnviado(r&&r.mensagem);
+    }).catch(function(){ window.HAGpg._enviando=false;
+      falha('Não consegui enviar agora. Verifique a internet e tente de novo.'); });
+  },
+  enviarAtestado:function(){
+    var inp=document.getElementById('arqAtestado');
+    var f=inp&&inp.files&&inp.files[0]; if(!f) return;
+    var aviso=document.getElementById('atestadoAviso');
+    function diz(t){ if(aviso) aviso.textContent=t; }
+    if(f.size > 12*1024*1024){ diz('O arquivo passa de 12 MB. Envie uma foto menor ou um PDF.'); return; }
+    /* iOS às vezes entrega o arquivo sem tipo; o nome resolve */
+    var tipo=f.type||'';
+    if(!tipo){ tipo = /\.pdf$/i.test(f.name) ? 'application/pdf'
+             : (/\.png$/i.test(f.name) ? 'image/png'
+             : (/\.heic$/i.test(f.name) ? 'image/heic' : 'image/jpeg')); }
+    diz('Enviando o documento...');
+    var fr=new FileReader();
+    fr.onerror=function(){ diz('Não consegui ler o arquivo. Tente outro ou mande pelo WhatsApp.'); };
+    fr.onload=function(){
+      var b64=String(fr.result||'').split(',')[1]||'';
+      fetch(SURL+'/functions/v1/hag-atestado',{method:'POST',headers:H,
+        body:JSON.stringify({token:TOKEN, nome:f.name, tipo:tipo, base64:b64})})
+      .then(function(x){return x.json();})
+      .then(function(x){
+        diz((x&&x.ok) ? 'Documento recebido. A equipe vai analisar junto com o seu pedido.'
+                      : ((x&&x.mensagem)||'Não consegui enviar. Tente de novo ou mande pelo WhatsApp.'));
+      })
+      .catch(function(){ diz('Não consegui enviar agora. Tente de novo ou mande pelo WhatsApp.'); });
+    };
+    fr.readAsDataURL(f);
+  },
   baixarIcs:function(){
     var d=this._ics||{}; if(!d.ini) return;
     var agora=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
