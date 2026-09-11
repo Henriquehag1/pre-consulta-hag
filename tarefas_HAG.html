@@ -868,9 +868,13 @@ body {
         </div>
         <label style="margin-top:10px;display:block">Janela desejada <span style="font-size:10px;font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--ink3)">(opcional, semana alvo)</span></label>
         <input id="f-janela" type="date" style="margin-top:4px">
-        <label style="margin-top:10px;display:block">Local do atendimento</label>
+        <label style="margin-top:10px;display:block">Local do atendimento <span style="font-size:10px;font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--ink3)">(o que voce marcar aqui vence a regra do ciclo na tela do paciente)</span></label>
         <div class="tipo-chips" id="localChips">
-          <div class="tipo-chip active" onclick="selectLocal(this,'online')">&#x1f4bb; Online</div>
+          <!-- HAG_LOCAL_MEDICO_v2 (11/09/2026): o padrao passa a ser "Seguir o plano",
+               que grava local nulo. Com o campo mandando na modalidade que o paciente
+               ve, um chip marcado sozinho viraria decisao clinica sem ninguem decidir. -->
+          <div class="tipo-chip active" onclick="selectLocal(this,'')">&#x1f9ed; Seguir o plano</div>
+          <div class="tipo-chip" onclick="selectLocal(this,'online')">&#x1f4bb; Online</div>
           <div class="tipo-chip" onclick="selectLocal(this,'pinheiros')">&#x1f4cd; Pinheiros</div>
           <div class="tipo-chip" onclick="selectLocal(this,'tatuape')">&#x1f4cd; Tatuap&eacute;</div>
         </div>
@@ -1923,8 +1927,9 @@ async function whatsSinal(id){
   var x=(_sinais||[]).find(function(y){return String(y.id)===String(id);}); if(!x) return;
   var primeiro=String(x.patient_nome||'').split(' ')[0];
   var quando=(x.data||'').split('-').reverse().slice(0,2).join('/')+' às '+(x.hora||'');
-  var msg='Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
-    +'Seu horário de '+quando+' está guardado. Assim que você me mandar o comprovante do sinal de '
+  /* HAG_MSG_DANIELA_v2: mesma voz da mensagem de agendamento, sem emoji. */
+  var msg='Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
+    +'O seu horário de '+quando+' está guardado. Assim que você me enviar o comprovante do sinal de '
     +_brl(x.sinal_valor)+', eu confirmo a sua consulta.';
   var fone=_sinalFone(x.whatsapp);
   if(!fone){
@@ -1974,15 +1979,28 @@ function _filaMsgAgendar(t){
   var primeiro=(t.patient_nome||'').split(' ')[0];
   /* HAG_LINK_TOKEN_v1: sem token emitido nao vai link nenhum. Link quebrado na
      mao do paciente e pior do que combinar o horario pelo WhatsApp. */
-  if(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0 && _linksAgendar[t.patient_id]){
-    return 'Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
-      +'A sua próxima consulta já pode ser agendada. Agora você mesmo escolhe o melhor '
-      +'horário, direto por este link:\n'+HAG_LINK_AGENDAR+_linksAgendar[t.patient_id]+'\n\n'
-      +'Leva menos de um minuto. Qualquer dúvida, é só me chamar por aqui.';
+  var _lk = _linksAgendar[t.patient_id];
+  var _tok = (_lk && _lk.token) ? _lk.token : ((typeof _lk === 'string') ? _lk : '');
+  if(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0 && _tok){
+    /* HAG_LINK_NOVIDADE_v1 (11/09/2026): para quem nunca marcou pelo link, a mensagem
+       apresenta o agendamento por conta própria como novidade, porque até aqui a Daniela
+       combinava horário com um por um. Para quem já usou, a frase sai sozinha: novidade
+       repetida deixa de ser novidade e vira ruído. Quem decide é o banco, pelo histórico
+       de agendamentos de origem 'paciente', não um campo que alguém precise virar. */
+    var _novo = !!(_lk && _lk.novo);
+    return 'Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
+      +(_novo
+        ? 'Temos uma novidade: agora você mesmo escolhe o dia e o horário da sua próxima '
+          +'consulta, direto pelo link abaixo, sem precisar combinar por aqui. Leva menos '
+          +'de um minuto:'
+        : 'A sua próxima consulta já pode ser agendada. Pelo link abaixo você escolhe o dia '
+          +'e o horário que ficarem melhores para você, leva menos de um minuto:')
+      +'\n\n'+HAG_LINK_AGENDAR+_tok+'\n\n'
+      +'O horário fica reservado no seu nome assim que você confirmar por lá.';
   }
   var oque = (t.tipo_evento==='diagnostica'||t.tipo_evento==='retorno') ? 'a sua consulta'
            : (t.tipo_evento==='injetavel' ? 'a sua aplicação' : 'o seu procedimento');
-  return 'Oi, '+primeiro+'! Aqui é a Daniela, do consultório do Dr. Henrique. 😊\n\n'
+  return 'Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
     +'Estou entrando em contato para agendarmos '+oque+'. '
     +'Me conta qual período costuma ser melhor para você que eu verifico a agenda do Dr. Henrique.';
 }
@@ -2279,7 +2297,7 @@ function openModal(editId=null){
   document.getElementById('f-janela').value='';
   _selectedEvento='retorno';
   document.querySelectorAll('#eventoChips .tipo-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
-  _selectedLocal='online';
+  _selectedLocal='';
   document.querySelectorAll('#localChips .tipo-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
   if(editId){
     const t=_tasks.find(x=>x.id===editId)||_fila.find(x=>x.id===editId);
@@ -2298,8 +2316,8 @@ function openModal(editId=null){
         var _evOrder=['retorno','diagnostica','procedimento','injetavel','implante'];
         document.querySelectorAll('#eventoChips .tipo-chip').forEach(function(c,i){ c.classList.toggle('active', i===Math.max(0,_evOrder.indexOf(_selectedEvento))); });
         document.getElementById('f-janela').value=t.janela_data||'';
-        _selectedLocal=t.local||'online';
-        var _locOrder=['online','pinheiros','tatuape'];
+        _selectedLocal=t.local||'';
+        var _locOrder=['','online','pinheiros','tatuape'];
         document.querySelectorAll('#localChips .tipo-chip').forEach(function(c,i){ c.classList.toggle('active', i===Math.max(0,_locOrder.indexOf(_selectedLocal))); });
       } else {
         // Select tipo chip
@@ -2339,7 +2357,7 @@ function selectEvento(el,ev){
   _selectedEvento=ev;
 }
 var HAG_LOCAIS={online:{label:'Online',end:''},pinheiros:{label:'Pinheiros',end:'Livance Pinheiros, Av. Brig. Faria Lima, 1461, 6º andar, Pinheiros, São Paulo/SP, 01452-002'},tatuape:{label:'Tatuapé',end:'Livance Tatuapé, R. Vilela, 665, 8º andar, Tatuapé, São Paulo/SP, 03314-000'}};
-let _selectedLocal='online';
+let _selectedLocal='';
 function selectLocal(el,lc){ document.querySelectorAll('#localChips .tipo-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); _selectedLocal=lc; }
 
 // ── PATIENT AUTOCOMPLETE ──
@@ -2394,7 +2412,7 @@ async function saveTask(){
   if(paraFila){
     task.tipo_evento=_selectedEvento;
     task.janela_data=document.getElementById('f-janela').value||null;
-    task.local=_selectedLocal||'online';
+    task.local=_selectedLocal||null;
   }
   try{
     await db.from('tarefas').upsert(task,{onConflict:'id'});
