@@ -602,6 +602,23 @@ function iniciar(){
   }).catch(function(){ falha('Não consegui carregar agora. Verifique a internet e tente de novo em instantes.'); });
 }
 
+/* HAG_REMARCA_SEM_BURACO_v2 (11/09/2026)
+   Na remarcação, o horário que o próprio paciente está deixando NÃO pode contar
+   como ocupado ao montar a lista. Na primeira remarcação real isso apareceu: a
+   Jessica saía das 12:00, e as 13:00 apareciam como opção porque encostavam no
+   bloco dela mesma. Ela escolheu 13:00, o servidor cancelou as 12:00 e gravou as
+   13:00, e o sábado ficou com o Alan até as 12:00, um buraco de uma hora e ela
+   às 13:00. Tirando o horário dela da conta, a lista passa a ser exatamente o
+   que sobra sem ela, que é o mesmo que o servidor vai aceitar na hora de gravar.
+   Sem isso, a tela oferece horários que a regra de contiguidade vai recusar. */
+function tiraOMeuHorario(){
+  if(MODO!=='remarcar' || !REM || !REM.atual) return;
+  var d=REM.atual.data, h=hhmm(REM.atual.inicio);
+  if(!OCUP[d]) return;
+  OCUP[d]=OCUP[d].filter(function(o){ return o.inicio!==h; });
+  if(!OCUP[d].length) delete OCUP[d];
+}
+
 function carregarAgenda(){
   Promise.all([
     rest('agenda_regras?ativo=eq.true&select=dia_semana,local,modalidade,hora_inicio,hora_fim,limite,prioridade&order=prioridade'),
@@ -611,6 +628,7 @@ function carregarAgenda(){
     (rs[1]||[]).forEach(function(o){
       (OCUP[o.data]=OCUP[o.data]||[]).push({inicio:hhmm(o.hora_inicio),fim:hhmm(o.hora_fim),tipo:o.tipo||'retorno'});
     });
+    tiraOMeuHorario();
     /* HAG_MODALIDADE_CICLO_v1: a modalidade vem RESOLVIDA do servidor, ja
        aplicando a regra do plano (Reset alterna, Smart 90 e online, Transforma
        e presencial por padrao, Manutencao e livre) e a decisao da equipe gravada
@@ -648,9 +666,16 @@ function diasOfertados(modalidade){
         var r=S.horariosOfertados(
           {inicio:hhmm(rg.hora_inicio),fim:hhmm(rg.hora_fim),limite:rg.limite},
           OCUP[iso]||[], tipo);
-        if(r.horarios.length){
+        var hs=r.horarios;
+        /* HAG_REMARCA_SEM_BURACO_v2: o horário exato que ele já tem não entra na
+           lista. Escolher o mesmo horário seria cancelar e remarcar para o mesmo
+           lugar, gastando a única remarcação por conta própria à toa. */
+        if(MODO==='remarcar' && REM && REM.atual && iso===REM.atual.data){
+          hs=hs.filter(function(x){ return x.hora!==hhmm(REM.atual.inicio); });
+        }
+        if(hs.length){
           (porPrio[rg.prioridade]=porPrio[rg.prioridade]||[]).push(
-            {data:iso, local:rg.local, tipo:tipo, horarios:r.horarios.slice(0,3)});
+            {data:iso, local:rg.local, tipo:tipo, horarios:hs.slice(0,3)});
         }
         /* HAG_QUINTA_SO_COM_QUARTA_CHEIA_v5 (11/09/2026): dia que existe na regra,
            ja tem atendimento e nao coube mais nada e um dia LOTADO. E diferente de
@@ -1181,6 +1206,7 @@ function carregarAgendaENotificar(nota){
   rest('v_agenda_ocupacao?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,hora_inicio,hora_fim,tipo')
   .then(function(oc){
     OCUP={};(oc||[]).forEach(function(o){(OCUP[o.data]=OCUP[o.data]||[]).push({inicio:hhmm(o.hora_inicio),fim:hhmm(o.hora_fim),tipo:o.tipo||'retorno'});});
+    tiraOMeuHorario();
     telaEscolha(nota);
   });
 }
