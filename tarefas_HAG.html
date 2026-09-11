@@ -1837,7 +1837,16 @@ function buildFilaCard(t){
                 +(t.status==='pendente'?'Falei':'Desfazer')+'</button>'
                +'<button class="btn-acao ba-agendei" onclick="agendarFila(\''+t.id+'\')" title="A consulta está marcada: informe a data, a hora e o local"><span class="g">&#x1f4c5;</span>Agendei</button>'
               /* HAG_REMARCAR_v1: ja agendado ganha remarcar e marcar como realizada. */
-              : '<button class="btn-acao ba-remarcar" onclick="remarcarFila(\''+t.id+'\')" title="Mudar a data, a hora ou o local desta consulta"><span class="g">&#x1f501;</span>Remarcar</button>'
+              /* HAG_MSG_CONFIRMACAO_v1 (11/09/2026): o paciente que marca sozinho pelo link
+                 recebe endereço e orientações na própria tela, mas não recebe nada no
+                 WhatsApp, e é no WhatsApp que ele vai procurar depois. Envio automático
+                 exigiria a API oficial do WhatsApp Business; enquanto isso não existe,
+                 este botão deixa a mensagem pronta e a Daniela envia num toque. Vale
+                 também para o que ela mesma agendou pelo "Agendei". */
+              : (t.agendado_data
+                  ? '<button class="btn-acao ba-contato" onclick="whatsConfirmacao(\''+t.id+'\')" title="Abre o WhatsApp com a confirmação pronta: dia, horário, endereço e orientações"><span class="g">&#x1f4f2;</span>Confirmação</button>'
+                  : '')
+               +'<button class="btn-acao ba-remarcar" onclick="remarcarFila(\''+t.id+'\')" title="Mudar a data, a hora ou o local desta consulta"><span class="g">&#x1f501;</span>Remarcar</button>'
                +'<button class="btn-acao ba-agendei" onclick="marcarRealizada(\''+t.id+'\')" title="O paciente compareceu e a consulta aconteceu"><span class="g">&#x2714;</span>Realizada</button>')
           +'<span class="tc-menos"><span class="tc-sep"></span>'
           +'<button class="btn-icon edit" onclick="editFila(\''+t.id+'\')" title="Editar os dados desta tarefa">&#x270f;&#xfe0f;</button>'
@@ -2003,6 +2012,50 @@ function _filaMsgAgendar(t){
   return 'Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
     +'Estou entrando em contato para agendarmos '+oque+'. '
     +'Me conta qual período costuma ser melhor para você que eu verifico a agenda do Dr. Henrique.';
+}
+/* HAG_MSG_CONFIRMACAO_v1 (11/09/2026): a confirmação que vai pelo WhatsApp depois de
+   a consulta estar marcada. Os dados saem da própria tarefa, então não há nada para a
+   Daniela digitar, que era o defeito do script antigo de véspera: ele tinha três campos
+   em branco para ela preencher à mão com dado que o sistema já sabe. O endereço vem de
+   HAG_LOCAIS, a mesma fonte do resto da tela. */
+var _HAG_DIAS_SEM=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+function _diaPorExtenso(iso){
+  try{
+    var d=new Date(String(iso).slice(0,10)+'T12:00:00');
+    return _HAG_DIAS_SEM[d.getDay()]+', '+('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);
+  }catch(e){ return String(iso||''); }
+}
+function _filaMsgConfirmacao(t){
+  var primeiro=(t.patient_nome||'').split(' ')[0];
+  var chave=String(t.local||'').toLowerCase();
+  var online=(chave==='online');
+  var quando=_diaPorExtenso(t.agendado_data)+(t.agendado_hora?(', às '+t.agendado_hora):'');
+  var uni=(chave==='tatuape')?'do Tatuapé':((chave==='pinheiros')?'de Pinheiros':'');
+  var end=(HAG_LOCAIS[chave]||{}).end||'';
+  var msg='Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n';
+  if(online){
+    msg+='A sua consulta online está confirmada para '+quando+'.\n\n'
+       +'O link da sala chega por aqui antes do horário. Procure um lugar tranquilo e com boa internet.\n\n';
+  } else {
+    msg+='A sua consulta está confirmada para '+quando+(uni?(', no consultório '+uni):'')+'.\n'
+       +(end?(end+'\n\n'):'\n')
+       +'Chegue cerca de 10 minutos antes, para a recepção.\n\n';
+  }
+  msg+='Se tiver exames para entregar, envie em PDF por aqui que eu anexo no sistema do Dr. Henrique antes da consulta.\n\n'
+     +'Qualquer imprevisto, é só me avisar.';
+  return msg;
+}
+async function whatsConfirmacao(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t) return;
+  var fone=_filaFone(t.patient_id);
+  var msg=_filaMsgConfirmacao(t);
+  if(!fone){
+    try{ await navigator.clipboard.writeText(msg); toast('Sem WhatsApp no cadastro. Mensagem copiada.','ok'); }
+    catch(e){ prompt('Sem WhatsApp no cadastro. Copie a mensagem:', msg); }
+    return;
+  }
+  window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+  toast('WhatsApp aberto · confirmação de '+((t.patient_nome||'').split(' ')[0]),'ok');
 }
 async function whatsFila(id){
   var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t) return;
