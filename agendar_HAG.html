@@ -575,8 +575,6 @@ function diasOfertados(modalidade){
       for(var i=0;i<REGRAS.length;i++){
         var rg=REGRAS[i];
         if(rg.dia_semana!==dow || rg.modalidade!==modalidade) continue;
-        /* HAG_LOCAL_MEDICO_v2: unidade escolhida pelo medico filtra os dias. */
-        if(LOCALMED && modalidade!=='online' && rg.local!==LOCALMED) continue;
         /* HAG_DIAG_SINAL_v1: o tipo deixa de ser fixo. Diagnostica online usa
            o tipo proprio de 75 min, e nao o 'online' de 45 min do retorno. */
         var tipo = modalidade==='online'
@@ -614,9 +612,45 @@ function diasOfertados(modalidade){
   }
   if(!prios.length && !sug) return [];
 
-  var lista=prios.length ? porPrio[prios[0]] : [];
-  if(lista.length<2 && prios.length>1) lista=lista.concat(porPrio[prios[1]]);
-  lista=lista.sort(function(a,b){return a.data<b.data?-1:1;}).slice(0, sug?3:4);
+  /* HAG_DIAS_VIZINHOS_v4 (11/09/2026)
+     Duas correções de uma vez, as duas pedidas pelo Dr. Henrique depois de ver a
+     tela funcionando.
+     1) A unidade que ele escolhe na tarefa manda no DIA INDICADO, não na lista
+        inteira. Sábado no Tatuapé como indicação deve vir acompanhado da quarta
+        anterior e da quarta seguinte em Pinheiros, e do sábado seguinte: quem não
+        pode no dia indicado continua tendo para onde ir, e presencial é presencial
+        nas duas unidades. O filtro rígido da v2 mandava esse paciente direto para
+        a fila da Daniela.
+     2) A v2 só descia para a prioridade 2 quando a prioridade 1 tinha menos de
+        DOIS dias. Como sábado e quarta são as duas prioridade 1, a quinta quase
+        nunca aparecia, mesmo com as quartas lotadas. Agora a lista enche até o
+        teto na ordem das prioridades: a quinta entra quando sábado e quarta não
+        deram dias suficientes, que é exatamente "quando as quartas encherem".
+     Dia sem nenhum horário livre não chega até aqui, então "cheio" já está
+     resolvido antes: ele simplesmente não entrou no grupo. */
+  var porData = function(a,b){ return a.data<b.data?-1:1; };
+  /* HAG_DIAS_VIZINHOS_v4: dentro de cada prioridade, o mais PERTO do dia indicado
+     vem primeiro, e o empate vai para o dia de depois. Ordenar só por data daria
+     sempre os dias da frente da janela, e o teto de três cortaria justo o que o
+     Dr. Henrique quer oferecer: para um sábado indicado, a quarta anterior, a
+     quarta seguinte e o sábado seguinte; para uma quarta indicada, o sábado
+     antes, o sábado depois e a quarta depois. Quem não pode no dia indicado
+     quer, quase sempre, o mais perto dele. A lista final volta para a ordem do
+     calendário, que é como o paciente lê. */
+  var alvoMs = new Date(ALVO + 'T12:00:00').getTime();
+  var porPerto = function(a,b){
+    var da = Math.abs(new Date(a.data+'T12:00:00').getTime() - alvoMs);
+    var db = Math.abs(new Date(b.data+'T12:00:00').getTime() - alvoMs);
+    if(da !== db) return da - db;
+    return a.data < b.data ? 1 : -1;
+  };
+  var lim = sug ? 3 : 4;
+  var lista = [];
+  for(var pj=0; pj<prios.length && lista.length<lim; pj++){
+    var grupo = porPrio[prios[pj]].slice().sort(porPerto);
+    for(var gk=0; gk<grupo.length && lista.length<lim; gk++) lista.push(grupo[gk]);
+  }
+  lista.sort(porData);
   if(sug){ sug.sugerido=true; lista.unshift(sug); }
   return lista;
 }
@@ -650,7 +684,9 @@ function telaEscolha(nota){
     h+='<div class="aviso">'+(c.retorno.modalidade==='online'
         ? 'Esta consulta do seu plano é <b>online</b>.'
         : LOCALMED
-          ? 'Esta consulta é <b>presencial</b>, no consultório '+(LOCALMED==='tatuape'?'do <b>Tatuapé</b>':'de <b>Pinheiros</b>')+'.'
+          ? 'Esta consulta é <b>presencial</b>. O dia indicado pelo Dr. Henrique é '
+            +(LOCALMED==='tatuape'?'no <b>Tatuapé</b>':'em <b>Pinheiros</b>')
+            +'. Os outros dias podem ser na outra unidade, e cada um mostra onde.'
           : 'Esta consulta do seu plano é <b>presencial</b>, no consultório.')
       +'</div>';
   }
