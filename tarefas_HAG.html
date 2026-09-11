@@ -2005,7 +2005,12 @@ function _filaMsgAgendar(t){
         : 'A sua próxima consulta já pode ser agendada. Pelo link abaixo você escolhe o dia '
           +'e o horário que ficarem melhores para você, leva menos de um minuto:')
       +'\n\n'+HAG_LINK_AGENDAR+_tok+'\n\n'
-      +'O horário fica reservado no seu nome assim que você confirmar por lá.';
+      /* HAG_MSG_REMARCA_v1 (11/09/2026): a mensagem termina dizendo que o link continua
+         valendo depois de marcado. Sem isso, o paciente que precisa trocar o horário volta
+         a escrever para a Daniela, e a remarcação por conta própria fica existindo sem
+         ninguém saber que existe. É o mesmo endereço, então não há link novo para guardar. */
+      +'O horário fica reservado no seu nome assim que você confirmar por lá. '
+      +'Guarde este link: se precisar mudar o dia ou o horário depois, é só abrir por ele de novo.';
   }
   var oque = (t.tipo_evento==='diagnostica'||t.tipo_evento==='retorno') ? 'a sua consulta'
            : (t.tipo_evento==='injetavel' ? 'a sua aplicação' : 'o seu procedimento');

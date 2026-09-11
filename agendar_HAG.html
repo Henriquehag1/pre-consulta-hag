@@ -474,15 +474,22 @@ var ENDERECOS={
   tatuape:{nome:'Livance Tatuapé', end:'R. Vilela, 665, 8º andar, Tatuapé, São Paulo/SP, 03314-000'},
   pinheiros:{nome:'Livance Pinheiros', end:'Av. Brig. Faria Lima, 1461, 6º andar, Pinheiros, São Paulo/SP, 01452-002'}
 };
-/* HAG_SALVAR_NO_CALENDARIO_v7 (11/09/2026): depois de marcar, o paciente ficava
-   só com a tela. Print resolve, mas exige que ele lembre de tirar. O evento no
-   calendário do próprio aparelho é o que realmente evita o esquecimento, e leva
-   junto o endereço. Dois caminhos porque o parque é dividido: o arquivo .ics
-   cobre iPhone, Android e Outlook, e o link cobre quem vive no Google Agenda. */
+/* HAG_SALVAR_NO_CALENDARIO_v8 (11/09/2026): o arquivo .ics agora vem de uma URL
+   de verdade (hag-ics), e não mais de um blob montado aqui dentro.
+   POR QUE: com blob e atributo download, o iPhone não entende que aquilo é um
+   evento, ele salva um arquivo em Arquivos e o paciente fica com um .ics que não
+   sabe abrir. Foi o que aconteceu no teste de 11/09. Servido por URL com
+   Content-Type text/calendar, o iOS abre a prévia do evento com "Adicionar ao
+   Calendário" e o Android manda direto para o app de calendário.
+   REGRA QUE FICA: nada que o paciente precise ABRIR sai daqui como blob com
+   download; sai como endereço que o aparelho sabe interpretar.
+   O conteúdo do evento passou a ser montado no servidor a partir do agendamento
+   confirmado, então ele nunca fica diferente do que está na agenda, inclusive
+   depois de uma remarcação. Continuam dois caminhos porque o parque é dividido:
+   o .ics cobre iPhone, Android e Outlook, e o link cobre quem vive no Google. */
 function _icsData(data, hora){
   return String(data).replace(/-/g,'') + 'T' + hhmm(hora).replace(':','') + '00';
 }
-function _icsEscapa(t){ return String(t||'').replace(/([,;\\])/g,'\\$1'); }
 function _fimDoEvento(ag){
   if(ag.fim) return hhmm(ag.fim);
   /* telaJaAgendado não traz o fim; uma hora é a duração do retorno presencial e
@@ -494,14 +501,14 @@ function blocoCalendario(ag, ehOnline){
   var e=ENDERECOS[ag.local];
   var titulo='Consulta · Dr. Henrique Alves Gonzaga';
   var onde = ehOnline ? 'Online, o link chega pelo WhatsApp' : (e ? e.nome+', '+e.end : '');
-  window.HAGpg._ics={ini:ini, fim:fim, titulo:titulo, onde:onde};
   var g='https://calendar.google.com/calendar/render?action=TEMPLATE&ctz=America%2FSao_Paulo'
     +'&text='+encodeURIComponent(titulo)
     +'&dates='+ini+'/'+fim
     +'&location='+encodeURIComponent(onde)
     +'&details='+encodeURIComponent('Consulta do seu acompanhamento no Método HAG.');
   return '<div class="cartao"><h2>Guardar na sua agenda</h2>'
-    +'<button class="btn" onclick="HAGpg.baixarIcs()">Salvar no meu calendário</button>'
+    +'<a class="btn" style="display:block;text-align:center;text-decoration:none" '
+    +'href="'+SURL+'/functions/v1/hag-ics?t='+encodeURIComponent(TOKEN)+'">Salvar no meu calendário</a>'
     +'<a class="btn claro" style="display:block;text-align:center;text-decoration:none" '
     +'target="_blank" rel="noopener" href="'+g+'">Usa Google Agenda? Adicionar por aqui</a>'
     +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Se preferir, guarde um print desta tela.</p></div>';
@@ -915,7 +922,14 @@ function telaSucesso(ag){
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(ag.inicio)+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+(ehOn?'Online':LOCAIS[ag.local])+'</b></div>'
     +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Está reservado no seu nome. '
-    +'Você vai receber a confirmação e os lembretes pelo WhatsApp, e para remarcar é só chamar a equipe.</p></div>'
+    /* HAG_REMARCA_MESMO_LINK_v1 (11/09/2026): a tela ainda mandava "chamar a equipe"
+       para remarcar, texto de antes da remarcação por conta própria existir. Quem lê
+       isso volta a escrever para a Daniela, que é justamente o trabalho que o link
+       veio tirar. A frase agora diz o caminho que existe de verdade: reabrir o mesmo
+       endereço. REGRA QUE FICA: quando um caminho novo substitui um antigo, os textos
+       que ensinavam o antigo fazem parte da mesma mudança, não de um acerto depois. */
+    +'Você vai receber a confirmação e os lembretes pelo WhatsApp. Se precisar mudar o dia '
+    +'ou o horário, é só abrir este mesmo link outra vez.</p></div>'
     + blocoComoChegar(ag.local, ehOn)
     + blocoCalendario(ag, ehOn));
 }
@@ -1019,7 +1033,7 @@ window.HAGpg={
   escolher:function(di,si){var d=this._dias[di];telaConfirma(d,d.horarios[si]);},
   voltar:function(){telaEscolha();},
   ajuda:function(){telaAjuda('Os horários da tela anterior são os que o Dr. Henrique tem abertos para esta consulta dentro do período ideal do seu acompanhamento.');},
-  _pix:'', _ics:null,
+  _pix:'',
   /* HAG_REMARCA_PACIENTE_v1 */
   remarcar:function(){
     var c=CTX, r=c&&c.remarcacao; if(!r) return;
@@ -1115,30 +1129,6 @@ window.HAGpg={
       .catch(function(){ diz('Não consegui enviar agora. Tente de novo ou mande pelo WhatsApp.'); });
     };
     fr.readAsDataURL(f);
-  },
-  baixarIcs:function(){
-    var d=this._ics||{}; if(!d.ini) return;
-    var agora=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
-    var txt=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Clinica HAG//Agendamento//PT',
-      'CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
-      'UID:hag-'+d.ini+'-'+Math.random().toString(36).slice(2)+'@clinicahag.com',
-      'DTSTAMP:'+agora,'DTSTART:'+d.ini,'DTEND:'+d.fim,
-      'SUMMARY:'+_icsEscapa(d.titulo),'LOCATION:'+_icsEscapa(d.onde),
-      'DESCRIPTION:'+_icsEscapa('Consulta do seu acompanhamento no Método HAG.'),
-      'BEGIN:VALARM','TRIGGER:-PT2H','ACTION:DISPLAY',
-      'DESCRIPTION:'+_icsEscapa('Consulta com o Dr. Henrique daqui a pouco'),'END:VALARM',
-      'END:VEVENT','END:VCALENDAR'].join('\r\n');
-    try{
-      var blob=new Blob([txt],{type:'text/calendar;charset=utf-8'});
-      var url=URL.createObjectURL(blob);
-      var a=document.createElement('a');
-      a.href=url; a.download='consulta-metodo-hag.ics';
-      document.body.appendChild(a); a.click();
-      setTimeout(function(){ try{URL.revokeObjectURL(url); a.remove();}catch(e){} }, 1500);
-    }catch(e){
-      /* navegador antigo sem Blob: abre o arquivo, que o aparelho oferece ao calendário */
-      window.open('data:text/calendar;charset=utf-8,'+encodeURIComponent(txt));
-    }
   },
   copiarPix:function(){
     var cod=this._pix||'', aviso=document.getElementById('pixAviso');
