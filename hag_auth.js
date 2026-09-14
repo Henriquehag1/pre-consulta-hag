@@ -97,14 +97,46 @@
     if(h){ if(typeof h.forEach==='function'){ h.forEach(function(v,k){obj[k]=v;}); } else { for(var k in h){ if(Object.prototype.hasOwnProperty.call(h,k)) obj[k]=h[k]; } } }
     obj[name]=val; init.headers=obj;
   }
+  /* ── HAG_RETRY_401_v1 · 14/09/2026 ──────────────────────────────────────
+     PORQUE: o HAG_AUTOREFRESH_v1 abaixo renova o token quando o RELOGIO DAQUI
+     diz que ele morreu. Só que quem decide se o token vale é o servidor, e as
+     duas opiniões divergem sempre que o relógio do Mac está adiantado, quando
+     a sessão foi renovada em outra aba (e o expires_at guardado aqui ficou
+     velho) ou quando a sessão foi revogada. Nesses casos o PostgREST devolve
+     401 PGRST303 "JWT expired" e nada tentava de novo: o Dr. perdia a ação no
+     meio, com a tela cheia do que ele acabou de digitar. Foi assim que apareceu
+     o erro ao salvar um item no catálogo, em 14/09.
+     Agora um 401 do Supabase renova a sessão e REFAZ a chamada, uma vez só.
+     É seguro repetir: um 401 é recusa na porta, o servidor não executou nada.
+     Só não repete quando o corpo não é texto (stream não se lê duas vezes) e
+     nunca entra em laço, porque a segunda resposta vai embora como veio.
+     REGRA QUE FICA: token vencido não é erro de tela, é assunto da camada que
+     cuida do token. Qualquer chamada do HAG OS ganha isso de graça aqui. */
+  function _corpoRepetivel(init){
+    if(!init || init.body == null) return true;
+    return (typeof init.body === 'string');
+  }
+  function _eh401Token(resp){
+    return !!(resp && (resp.status === 401 || resp.status === 403));
+  }
+  function _comToken(init, c, tk){
+    init = init || {};
+    var copia = {};
+    for(var k in init){ if(Object.prototype.hasOwnProperty.call(init,k)) copia[k]=init[k]; }
+    _setHeader(copia, 'apikey', c.key);
+    _setHeader(copia, 'Authorization', 'Bearer '+tk);
+    return copia;
+  }
   function patchFetch(){
     if(!origFetch || window.__hagFetchPatched) return;
     window.__hagFetchPatched = true;
     window.fetch = function(input, init){
+      var c, alvoSupa = false;
       try{
-        var c = cfg();
+        c = cfg();
         var url = (typeof input==='string') ? input : (input && input.url) || '';
-        if(c.url && url.indexOf(c.url)===0 && url.indexOf('/auth/v1/')<0){
+        alvoSupa = !!(c.url && url.indexOf(c.url)===0 && url.indexOf('/auth/v1/')<0);
+        if(alvoSupa){
           var tk = token();
           /* HAG_AUTOREFRESH_v1: token morto + refresh disponivel -> renova antes
              de buscar, em vez de cair para a chave anonima (que desde o RLS de
@@ -112,22 +144,23 @@
           if(!tk && _anyRefresh()){
             return refresh().then(function(){
               var tk2 = token();
-              if(tk2){
-                init = init || {};
-                _setHeader(init, 'apikey', c.key);
-                _setHeader(init, 'Authorization', 'Bearer '+tk2);
-              }
-              return origFetch(input, init);
+              var i2 = tk2 ? _comToken(init, c, tk2) : init;
+              return origFetch(input, i2);
             }).catch(function(){ return origFetch(input, init); });
           }
-          if(tk){
-            init = init || {};
-            _setHeader(init, 'apikey', c.key);
-            _setHeader(init, 'Authorization', 'Bearer '+tk);
-          }
+          if(tk) init = _comToken(init, c, tk);
         }
       }catch(e){}
-      return origFetch(input, init);
+      if(!alvoSupa) return origFetch(input, init);
+      var podeRepetir = _corpoRepetivel(init);
+      return origFetch(input, init).then(function(resp){
+        if(!podeRepetir || !_eh401Token(resp) || !_anyRefresh()) return resp;
+        return refresh().then(function(ok){
+          var tk3 = ok && token();
+          if(!tk3) return resp;
+          return origFetch(input, _comToken(init, c, tk3));
+        }).catch(function(){ return resp; });
+      });
     };
   }
 
