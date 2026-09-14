@@ -67,7 +67,7 @@ a.zap{color:var(--gold2)}
 </style></head><body><div class="wrap">
 
 <div class="marca">Método HAG</div>
-<h1>Agendar consulta</h1>
+<h1 id="tituloPg">Agendar consulta</h1>
 <p class="sub">Dr. Henrique Alves Gonzaga · CRM/SP 226530</p>
 
 <div id="tela"><div class="spin"><div class="anel"></div>Carregando os horários</div></div>
@@ -530,6 +530,17 @@ function quandoBR(iso){
 }
 /* tipo da consulta que esta sendo agendada. Vem do contexto, nao e mais fixo. */
 var TIPOCON='retorno';
+/* HAG_LINK_INJETAVEL_v1 (14/09/2026)
+   A aplicação do protocolo injetável NÃO é consulta. Palavras do Dr. Henrique:
+   "uma coisa e a consulta, outra coisa e o injetavel". Quem tem as duas em
+   aberto, como a Ana Caroline, lê a mesma tela duas vezes em dias diferentes e
+   precisa saber qual das duas está marcando. Uma função decide a palavra a
+   partir do tipo, em vez de dois blocos de texto paralelos que um dia divergem. */
+function PAL(){ return TIPOCON==='injetavel' ? 'aplicação' : 'consulta'; }
+function tituloDaPagina(){
+  var t=document.getElementById('tituloPg');
+  if(t) t.textContent=(TIPOCON==='injetavel')?'Agendar aplicação':'Agendar consulta';
+}
 var LOCAIS={tatuape:'Tatuapé',pinheiros:'Pinheiros',online:'Online'};
 /* HAG_ONDE_E_COMO_v5 (11/09/2026): a tela de sucesso dizia só "você vai receber a
    confirmação pelo WhatsApp" e não dizia ONDE. O paciente acabava de marcar e saía
@@ -632,15 +643,35 @@ function falha(msg){
   el('<div class="cartao"><div class="destaque">'+msg+'</div></div>');
 }
 
+/* HAG_LINK_INJETAVEL_v1: saída única para "não dá para marcar este item agora".
+   Quem já tem horário vê o horário; quem não tem vê a mensagem. */
+function ouOJaMarcado(fn, msg){
+  if(CTX && CTX.agendamento){ telaJaAgendado(); return; }
+  fn(msg);
+}
+
 function iniciar(){
   if(!TOKEN){ falha(PID_LEGADO ? LINK_VENCIDO : 'Este link de agendamento está incompleto. Peça um novo link para a equipe pelo WhatsApp.'); return; }
   rpc('hag_agendamento_contexto_link',{p_token:TOKEN}).then(function(c){
     if(c&&c.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
     if(!c||!c.ok){ falha('Não encontrei o seu cadastro por este link. Fale com a equipe pelo WhatsApp que resolvemos rapidinho.'); return; }
     CTX=c;
-    TIPOCON=(c.tipo==='diagnostica')?'diagnostica':'retorno'; /* HAG_DIAG_SINAL_v1 */
-    if(c.agendamento){ telaJaAgendado(); return; }
-    if(!c.retorno){ falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Não encontrei nenhuma consulta aguardando agendamento para você. Se acha que deveria haver, fale com a equipe pelo WhatsApp.'); return; }
+    /* HAG_DIAG_SINAL_v1 · HAG_LINK_INJETAVEL_v1 */
+    TIPOCON=(c.tipo==='diagnostica')?'diagnostica':(c.tipo==='injetavel'?'injetavel':'retorno');
+    tituloDaPagina();
+    /* HAG_LINK_INJETAVEL_v1 (14/09/2026)
+       "Você já tem horário marcado" DEIXA de ser a primeira tela. Quem manda é o
+       item que ainda falta marcar; o que já está marcado vira a saída de
+       remarcação, oferecida logo abaixo na tela de escolha.
+       POR QUE: a Ana Caroline tem a 8ª aplicação pedida para 19/09 e o Controle
+       90 dias pedido para 23/09. Marcada a aplicação, ela reabriria o mesmo link
+       para marcar o controle e veria apenas a aplicação que já tinha, sem
+       caminho nenhum para o controle. Um horário marcado não pode esconder um
+       pedido em aberto. */
+    if(!c.retorno){
+      if(c.agendamento){ telaJaAgendado(); return; }
+      falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Não encontrei nenhuma consulta aguardando agendamento para você. Se acha que deveria haver, fale com a equipe pelo WhatsApp.'); return;
+    }
     /* HAG_ALVO_MEDICO_v1 (28/08/2026): a janela passa a girar em volta do dia
        que o Dr. Henrique mandou para a fila da Daniela, e nao mais da data
        teorica do plano. PORQUE: consulta antecipada por decisao clinica (o
@@ -658,17 +689,22 @@ function iniciar(){
        a tela mostra so os dias daquela unidade. */
     LOCALMED=(c.retorno.local_origem==='medico' && c.retorno.local
               && c.retorno.local!=='online') ? c.retorno.local : null;
+    /* HAG_LINK_INJETAVEL_v1: se a janela do pedido em aberto ainda não chegou,
+       ou já passou, o paciente cai nestas telas. Antes desta versão ninguém com
+       horário marcado chegava até aqui, então elas podiam falar sozinhas. Agora
+       chegam, e mandá-los para a Daniela sem mostrar o horário que eles já têm
+       seria esconder a informação mais importante da tela. */
     if(!ALVO){
-      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima consulta ainda não tem data definida. Toque no botão abaixo e a Daniela organiza isso com você.');
+      ouOJaMarcado(telaAjuda, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima '+PAL()+' ainda não tem data definida. Toque no botão abaixo e a Daniela organiza isso com você.');
       return;
     }
     JANELA=S.diasElegiveis(ALVO, hojeSP(), ALVOMED?{antes:7,depois:7}:null);
     if(!JANELA || JANELA.situacao==='ainda_nao_abriu'){
-      falha('Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima consulta está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
+      ouOJaMarcado(falha, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima '+PAL()+' está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
       return;
     }
     if(JANELA.situacao==='atrasado'){
-      telaAjuda('Olá, '+esc(c.paciente.primeiro_nome)+'. A data ideal da sua próxima consulta já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Daniela entra em contato.');
+      ouOJaMarcado(telaAjuda, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A data ideal da sua próxima '+PAL()+' já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Daniela entra em contato.');
       return;
     }
     carregarAgenda();
@@ -863,33 +899,48 @@ function telaEscolha(nota){
      lia o número ao lado de uma data que não fechava a conta. O nome da etapa é
      vocabulário interno, serve ao prontuário, não à tela dele. */
   var h = (MODO==='remarcar' && REM)
-    ? ('<div class="cartao"><div class="destaque">Você está remarcando a consulta de '
+    ? ('<div class="cartao"><div class="destaque">Você está remarcando a '+PAL()+' de '
        +'<b style="text-transform:capitalize">'+dataBR(REM.atual.data)+'</b> às <b>'+hhmm(REM.atual.inicio)+'</b>. '
        +'Escolha abaixo o novo dia e horário. O seu horário atual continua reservado até você confirmar o novo.'
        +'</div></div>')
     : ('<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>. '
     +(ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
-                +'para a sua próxima consulta, para manter a periodicidade do seu acompanhamento. '
+                +'para a sua próxima '+PAL()+', para manter a periodicidade do seu acompanhamento. '
                 +'Se esse dia não encaixar na sua agenda, logo abaixo estão as datas mais próximas.'
-     : c.retorno.data_estimada ? 'A sua próxima consulta está prevista para <b>meados de '
+     : c.retorno.data_estimada ? 'A sua próxima '+PAL()+' está prevista para <b>meados de '
                 +dataBR(ALVO).split(', ')[1]+'</b>, para manter a periodicidade do seu acompanhamento. '
                 +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
-                              : 'A sua próxima consulta está prevista para perto de <b>'+dataBR(ALVO)+'</b>, '
+                              : 'A sua próxima '+PAL()+' está prevista para perto de <b>'+dataBR(ALVO)+'</b>, '
                 +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
                 +'melhor se encaixam na sua agenda.')
     +'</div></div>');
   if(nota) h+='<div class="aviso">'+nota+'</div>';
   if(alargou) h+='<div class="aviso">Não sobrou horário livre exatamente na semana do dia indicado, então abrimos os dias seguintes.</div>';
+  /* HAG_LINK_INJETAVEL_v1: dizer QUAL aplicação é esta. O paciente conta as dele,
+     e "8ª de 8" é o que ele reconhece; "Procedimento injetável" não é. */
+  if(MODO==='marcar' && TIPOCON==='injetavel' && c.retorno && c.retorno.nome){
+    h+='<div class="aviso">Esta é a sua <b>'+esc(c.retorno.nome)+'</b> do protocolo. Ela leva cerca de 30 minutos.</div>';
+  }
+  /* HAG_LINK_INJETAVEL_v1: com um pedido em aberto E um horário já marcado, esta
+     tela vem primeiro. A remarcação do que já está marcado não pode sumir junto,
+     senão o paciente perde o único caminho que tinha para ela. */
+  if(MODO==='marcar' && CTX.remarcacao && CTX.agendamento){
+    h+='<div class="aviso">Você já tem '
+      +(CTX.agendamento.tipo==='injetavel'?'uma aplicação':'uma consulta')
+      +' marcada para <b style="text-transform:capitalize">'+dataBR(CTX.agendamento.data)+'</b>'
+      +' às <b>'+hhmm(CTX.agendamento.inicio)+'</b>. '
+      +'<a href="#" onclick="HAGpg.remarcar();return false;">Preciso remarcar essa</a>.</div>';
+  }
   if(travada){
     h+='<div class="aviso">'+(c.retorno.modalidade==='online'
         ? 'Esta consulta do seu plano é <b>online</b>.'
         : (LOCALMED && MODO!=='remarcar')
-          ? 'Esta consulta é <b>presencial</b>. O dia indicado pelo Dr. Henrique é '
+          ? 'Esta '+PAL()+' é <b>presencial</b>. O dia indicado pelo Dr. Henrique é '
             +(LOCALMED==='tatuape'?'no <b>Tatuapé</b>':'em <b>Pinheiros</b>')
             +'. Os outros dias podem ser na outra unidade, e cada um mostra onde.'
           /* HAG_REMARCA_PACIENTE_v1: na remarcação não existe dia indicado, então a
              frase sobre ele sairia mentindo. Cada dia da lista já mostra a unidade. */
-          : 'Esta consulta é <b>presencial</b>. Cada dia abaixo mostra em qual consultório.')
+          : 'Esta '+PAL()+' é <b>presencial</b>. Cada dia abaixo mostra em qual consultório.')
       +'</div>';
   }
   if(hibrido){
@@ -905,7 +956,7 @@ function telaEscolha(nota){
     +'<p style="font-size:13px;color:var(--ink4);margin:-4px 0 12px">'
     +'O horário fica reservado no seu nome assim que você escolher e confirmar. Até lá, ele segue disponível.</p>';
   if(!dias.length){
-    h+='<p style="font-size:14.5px;color:var(--ink3)">Não há horários '+(TAB==='online'?'online':'presenciais')+' disponíveis dentro do período ideal da sua consulta.</p>';
+    h+='<p style="font-size:14.5px;color:var(--ink3)">Não há horários '+(TAB==='online'?'online':'presenciais')+' disponíveis dentro do período ideal da sua '+PAL()+'.</p>';
   } else {
     var abriuOutros=false;
     dias.forEach(function(dia,di){
@@ -1020,7 +1071,7 @@ function telaJaAgendado(){
        existe link novo nem mensagem nova: quem já marcou volta ao endereço que
        tem no WhatsApp e encontra o caminho. */
     + (CTX.remarcacao
-       ? '<button class="btn claro" onclick="HAGpg.remarcar()">Preciso remarcar esta consulta</button>'
+       ? '<button class="btn claro" onclick="HAGpg.remarcar()">Preciso remarcar esta '+(a.tipo==='injetavel'?'aplicação':'consulta')+'</button>'
        : ''));
 }
 
@@ -1031,21 +1082,24 @@ function telaJaAgendado(){
    que é dele. Também não existe menu de opções, porque escolher entre taxa,
    falta e dispensa é decisão do médico; um menu viraria o direito do paciente
    de escolher a opção mais barata para ele. */
+/* HAG_LINK_INJETAVEL_v1: aqui a palavra vem do que ESTÁ MARCADO, não de
+   TIPOCON, porque esta tela também aparece antes de o tipo ser trocado. */
+function _palDe(a){ return (a&&a.tipo==='injetavel')?'aplicação':'consulta'; }
 function telaForaDoPrazo(r){
   var a=r.atual||{}, limite=(r.motivo==='limite');
   var horas=Math.max(0, Math.round(r.horas_ate||0));
   var quando='<b style="text-transform:capitalize">'+dataBR(a.data)+'</b> às <b>'+hhmm(a.inicio)+'</b>';
   el('<div class="cartao"><div class="destaque">'
       +(limite
-        ? 'Esta consulta já foi remarcada uma vez por aqui. A partir daqui quem organiza a troca com você é a equipe.'
+        ? 'Esta '+_palDe(a)+' já foi remarcada uma vez por aqui. A partir daqui quem organiza a troca com você é a equipe.'
         : 'O seu contrato prevê que a remarcação seja pedida com 72 horas de antecedência, e faltam cerca de '
-          +horas+' horas para a sua consulta de '+quando+'.')
+          +horas+' horas para a sua '+_palDe(a)+' de '+quando+'.')
       +'</div>'
       +(limite ? ''
         : '<p style="font-size:13.5px;color:var(--ink3);margin:12px 0 0">Fora desse prazo pode incidir a taxa de '
           +'reserva de agenda prevista no seu contrato, porque o horário fica bloqueado. Situações imprevisíveis e '
           +'comprovadas são analisadas sem penalidade, e quem decide isso é o Dr. Henrique.</p>')
-      +'<p style="font-size:13.5px;color:var(--ink4);margin:10px 0 0">A sua consulta de '+quando+' continua reservada. '
+      +'<p style="font-size:13.5px;color:var(--ink4);margin:10px 0 0">A sua '+_palDe(a)+' de '+quando+' continua reservada. '
       +'Você não perde a vaga por ter pedido.</p>'
       +'<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 6px">Conte o que aconteceu, para a equipe analisar:</p>'
       +'<textarea id="obsRemarca" placeholder="Ex.: tive um imprevisto de trabalho, ou estou doente"></textarea></div>'
@@ -1101,7 +1155,7 @@ window.HAGpg={
   tab:function(m){TAB=m;telaEscolha();},
   escolher:function(di,si){var d=this._dias[di];telaConfirma(d,d.horarios[si]);},
   voltar:function(){telaEscolha();},
-  ajuda:function(){telaAjuda('Os horários da tela anterior são os que o Dr. Henrique tem abertos para esta consulta dentro do período ideal do seu acompanhamento.');},
+  ajuda:function(){telaAjuda('Os horários da tela anterior são os que o Dr. Henrique tem abertos para esta '+PAL()+' dentro do período ideal do seu acompanhamento.');},
   _pix:'',
   /* HAG_REMARCA_PACIENTE_v1 */
   remarcar:function(){
@@ -1122,7 +1176,11 @@ window.HAGpg={
        7 dias para cada lado do dia que ele tinha. */
     ALVOMED=false;
     LOCALMED=(r.retorno.local==='tatuape'||r.retorno.local==='pinheiros')?r.retorno.local:null;
-    TIPOCON='retorno';
+    /* HAG_LINK_INJETAVEL_v1: remarcar uma aplicação não pode virar remarcar
+       uma consulta. O tipo vem do que está marcado, e ele decide os 30 ou os
+       60 minutos que a lista de horários vai respeitar. */
+    TIPOCON=(r.tipo==='injetavel')?'injetavel':'retorno';
+    tituloDaPagina();
     JANELA=S.diasElegiveis(ALVO, hojeSP(), {antes:7,depois:7});
     if(!JANELA || JANELA.situacao!=='aberta'){ telaForaDoPrazo(r); return; }
     el('<div class="spin"><div class="anel"></div>Carregando os horários</div>');
@@ -1134,7 +1192,7 @@ window.HAGpg={
     var s=this._sel; if(!s) return;
     if(this._enviando) return;
     this._enviando=true;
-    el('<div class="spin"><div class="anel"></div>Remarcando a sua consulta'
+    el('<div class="spin"><div class="anel"></div>Remarcando a sua '+PAL()
       + '<small>Leva alguns segundos. Não feche esta tela até aparecer a confirmação.</small></div>');
     rpc('hag_remarcar_horario_link',{
       p_token:TOKEN, p_data:s.dia.data, p_local:(TAB==='online'?'online':s.dia.local),

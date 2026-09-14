@@ -3,3 +3,6 @@ _to_delete/
 .DS_Store
 *.bak-*
 _backups/
+
+# HAG_LINK_INJETAVEL_v1: copias de seguranca dos patches nao entram no site
+_backup_*.html
