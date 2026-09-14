@@ -1966,7 +1966,9 @@ async function _carregaLinksAgendar(fila){
   try{
     var ids=[];
     (fila||[]).forEach(function(t){
-      if(['retorno','diagnostica'].indexOf(t.tipo_evento||'retorno')<0) return; /* HAG_DIAG_SINAL_v1 */
+      /* HAG_DIAG_SINAL_v1 · HAG_MSG_INJETAVEL_v1 (14/09/2026): sem token emitido
+         aqui, a mensagem da aplicação sairia sem link mesmo com o resto pronto. */
+      if(['retorno','diagnostica','injetavel'].indexOf(t.tipo_evento||'retorno')<0) return;
       if(['pendente','aguardando','andamento'].indexOf(t.status)<0) return;
       if(!t.patient_id || _linksAgendar[t.patient_id]) return;
       if(ids.indexOf(t.patient_id)<0) ids.push(t.patient_id);
@@ -1990,7 +1992,16 @@ function _filaMsgAgendar(t){
      mao do paciente e pior do que combinar o horario pelo WhatsApp. */
   var _lk = _linksAgendar[t.patient_id];
   var _tok = (_lk && _lk.token) ? _lk.token : ((typeof _lk === 'string') ? _lk : '');
-  if(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0 && _tok){
+  /* HAG_MSG_INJETAVEL_v1 (14/09/2026)
+     A aplicação do protocolo injetável passa a sair com link, como a consulta.
+     Ficava de fora desta lista, então o pedido de aplicação caía na mensagem
+     antiga, "me conta qual período é melhor", e a paciente voltava a combinar
+     horário no WhatsApp com a Daniela, mesmo com o auto-agendamento pronto.
+     A PALAVRA MUDA: nas palavras do Dr. Henrique, "uma coisa e a consulta,
+     outra coisa e o injetavel". Quem tem as duas em aberto precisa saber qual
+     das duas está marcando, e a página do link diz o mesmo. */
+  var _cons = (t.tipo_evento==='injetavel') ? 'aplicação' : 'consulta';
+  if(['retorno','diagnostica','injetavel'].indexOf(t.tipo_evento)>=0 && _tok){
     /* HAG_LINK_NOVIDADE_v1 (11/09/2026): para quem nunca marcou pelo link, a mensagem
        apresenta o agendamento por conta própria como novidade, porque até aqui a Daniela
        combinava horário com um por um. Para quem já usou, a frase sai sozinha: novidade
@@ -2000,9 +2011,9 @@ function _filaMsgAgendar(t){
     return 'Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
       +(_novo
         ? 'Temos uma novidade: agora você mesmo escolhe o dia e o horário da sua próxima '
-          +'consulta, direto pelo link abaixo, sem precisar combinar por aqui. Leva menos '
+          +_cons+', direto pelo link abaixo, sem precisar combinar por aqui. Leva menos '
           +'de um minuto:'
-        : 'A sua próxima consulta já pode ser agendada. Pelo link abaixo você escolhe o dia '
+        : 'A sua próxima '+_cons+' já pode ser agendada. Pelo link abaixo você escolhe o dia '
           +'e o horário que ficarem melhores para você, leva menos de um minuto:')
       +'\n\n'+HAG_LINK_AGENDAR+_tok+'\n\n'
       /* HAG_MSG_REMARCA_v1 (11/09/2026): a mensagem termina dizendo que o link continua
