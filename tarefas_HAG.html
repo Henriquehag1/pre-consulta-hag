@@ -1447,7 +1447,7 @@ let _agenda=[];
 let _agendaErro=null;
 
 async function loadAgenda(){
-  const{data,error}=await db.from('v_agenda_quadro').select('*').order('data').order('hora_inicio');
+  const{data,error}=await db.from('v_agenda_quadro_msg').select('*').order('data').order('hora_inicio');
   if(error) throw error;
   return data||[];
 }
@@ -1476,6 +1476,106 @@ function _agLocal(l){
 var _AG_TIPO={diagnostica:'diagnóstica',injetavel:'aplicação',retorno:'retorno',online:'online',procedimento:'procedimento',implante:'implante'};
 function _agTipo(t){ var k=String(t||'').toLowerCase(); return _AG_TIPO[k]||k||''; }
 function _agHora(h){ return String(h||'').slice(0,5); }
+
+/* ═══ HAG_QUADRO_CONFIRMAR_v1 (15/09/2026) ════════════════════════════════
+   PEDIDO DO DR. HENRIQUE: um botão por paciente no quadro da agenda, que abra
+   o WhatsApp certo com a mensagem de confirmação pronta, para enviar um dia
+   antes.
+
+   O QUE EU ACHEI ANTES DE CONSTRUIR: isso já existia. O confirmacoes_amanha.html
+   monta a mensagem por tipo e por unidade, com guia de chegada, orientação de
+   bioimpedância e controle de estado. Só que aquela tela nunca foi publicada,
+   então só o Dr. Henrique alcança, e a Daniela, que é quem faz contato
+   administrativo, não.
+
+   Copiar as sessenta linhas de montagem para cá seria repetir pela quarta vez
+   esta semana o erro que passamos o dia consertando: o mesmo fato em dois
+   lugares. Então a montagem virou a função hag_msg_confirmacao no banco, e as
+   duas telas chamam a mesma. Antes de ligar aqui, comparei as duas saídas em
+   192 combinações de tipo, local, data e nome de retorno: md5 idêntico. O
+   paciente recebe exatamente o mesmo texto de hoje.
+
+   O ESTADO TAMBÉM É O MESMO: grava em retornos.confirmacao_status ou em
+   eventos_clinicos.confirmacao_status, os campos que a tela do Dr. já lê. Ela
+   e a Daniela veem o mesmo estado porque é o mesmo dado, não porque foram
+   sincronizados. Assim ninguém manda duas vezes.
+
+   E onde não dá para gravar, a tela DIZ que não dá, em vez de fingir. */
+var _AG_CONF={
+  pendente:        {rotulo:'a confirmar', fundo:'#fdf6e3', cor:'#7a5c14', borda:'#e8d5b0'},
+  mensagem_enviada:{rotulo:'mensagem enviada', fundo:'#eef4fb', cor:'#2f5b8a', borda:'#c9dcf0'},
+  confirmado:      {rotulo:'confirmado', fundo:'#e8f3ec', cor:'#2f7a4f', borda:'#cfe5d8'}
+};
+function _agConfirmaSelo(x){
+  var hoje=new Date().toISOString().slice(0,10);
+  if(x.data<hoje) return '';
+  var c=_AG_CONF[String(x.confirmacao_status||'pendente')]||_AG_CONF.pendente;
+  return '<span style="background:'+c.fundo+';color:'+c.cor+';border:1px solid '+c.borda
+    +';border-radius:6px;padding:2px 7px;font-size:.66rem;font-weight:700;white-space:nowrap">'+c.rotulo+'</span>';
+}
+function _agConfirmaBotao(x){
+  var hoje=new Date().toISOString().slice(0,10);
+  if(x.data<hoje) return '';
+  var enviada=(String(x.confirmacao_status||'')==='mensagem_enviada'||String(x.confirmacao_status||'')==='confirmado');
+  return '<button onclick="confirmarAgenda(\'' + String(x.origem_id).replace(/'/g,"\\'") + '\')"'
+    +' title="Abre o WhatsApp do paciente com a mensagem de confirmação pronta"'
+    +' style="border:1px solid '+(enviada?'#e5e2da':'#1a1a18')+';background:'+(enviada?'#fff':'#1a1a18')
+    +';color:'+(enviada?'#6b6b63':'#fff')+';border-radius:8px;padding:5px 10px;font-size:.72rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'
+    +(enviada?'reenviar':'confirmar')+'</button>';
+}
+
+/* HAG_QUADRO_CONFIRMAR_v1: a mensagem vem do banco, nunca montada aqui. */
+async function confirmarAgenda(origemId){
+  var x=(_agenda||[]).find(function(y){ return String(y.origem_id)===String(origemId); });
+  if(!x){ toast('Não achei esse atendimento. Clique em Atualizar.','err'); return; }
+
+  var r;
+  try{
+    r=await db.rpc('hag_msg_confirmacao',{
+      p_nome:         x.patient_nome||'',
+      p_tipo_msg:     x.tipo_msg||'consulta',
+      p_data:         x.data,
+      p_horario:      String(x.hora_inicio||'').slice(0,5),
+      p_local:        x.local||'',
+      p_nome_retorno: x.nome_retorno||''
+    });
+  }catch(e){ r={error:e}; }
+  if(!r || r.error){ toast('Não consegui montar a mensagem: '+((r&&r.error&&r.error.message)||'erro'),'err'); return; }
+  var txt=String(r.data||'');
+
+  /* HAG_LOCAL_SEM_CHUTE: local desconhecido não pode virar Tatuapé por
+     engano. A própria mensagem carrega o marcador, e o envio trava aqui. */
+  if(txt.indexOf('[DEFINIR O LOCAL')>=0){
+    toast('O local deste atendimento está como "'+(x.local||'vazio')+'", que o sistema não reconhece. Corrija o local antes de enviar.','err');
+    return;
+  }
+
+  var p=(_patients||[]).find(function(q){ return String(q.id)===String(x.patient_id); });
+  var fone=p?_sinalFone(p.whatsapp):'';
+  if(fone){
+    window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(txt),'_blank');
+  } else {
+    try{ await navigator.clipboard.writeText(txt); }catch(e){ prompt('Copie a mensagem:', txt); }
+    toast('Sem WhatsApp no cadastro de '+String(x.patient_nome||'').split(' ')[0]+'. Mensagem copiada.','err');
+  }
+
+  /* grava no MESMO campo que a tela de Confirmações do Dr. usa */
+  if(x.confirmacao_tabela && x.confirmacao_id){
+    try{
+      var up=await db.from(x.confirmacao_tabela)
+        .update({confirmacao_status:'mensagem_enviada', confirmacao_enviada_at:new Date().toISOString()})
+        .eq('id', x.confirmacao_id);
+      if(up && up.error) throw up.error;
+      x.confirmacao_status='mensagem_enviada';
+      if(fone) toast('WhatsApp aberto e confirmação marcada como enviada','ok');
+    }catch(e){
+      toast('Mensagem aberta, mas NÃO consegui marcar como enviada: '+((e&&e.message)||e),'err');
+    }
+  } else {
+    toast('Mensagem aberta. Este atendimento só existe como tarefa, então não há onde registrar a confirmação.','err');
+  }
+  render();
+}
 
 function _agendaPainelHtml(){
   var hoje=new Date().toISOString().slice(0,10);
@@ -1533,7 +1633,10 @@ function _agendaPainelHtml(){
       h+='<div style="background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:0;margin-bottom:10px;overflow:hidden">'
         +'<div style="background:#faf8f4;border-bottom:1px solid #eee9e0;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
         +'<span style="font-size:.84rem;font-weight:700;color:#1a1a18;text-transform:capitalize">'+_msgEsc(_agFmtDia(diaAtual))+'</span>'
-        +'<span style="font-size:.72rem;color:#8a8578">'+doDia.length+(doDia.length===1?' atendimento':' atendimentos')
+        +'<span style="font-size:.72rem;color:#8a8578">'
+        +((diaAtual===new Date(Date.now()+86400000).toISOString().slice(0,10))
+           ? '<span style="background:#fdf6e3;color:#7a5c14;border:1px solid #e8d5b0;border-radius:6px;padding:2px 7px;font-weight:700;margin-right:7px">confirmar hoje</span>' : '')
+        +doDia.length+(doDia.length===1?' atendimento':' atendimentos')
         +' &middot; '+_msgEsc(Object.keys(locais).join(', '))+'</span>'
         +'</div>';
     }
@@ -1546,6 +1649,8 @@ function _agendaPainelHtml(){
       +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agTipo(x.tipo))+'</span>'
       +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agLocal(x.local))+'</span>'
       +selo
+      +_agConfirmaSelo(x)
+      +_agConfirmaBotao(x)
       +'</div>';
   });
   h+='</div>';
