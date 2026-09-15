@@ -2127,6 +2127,21 @@ function _resumoFila(t){
     + (alerta ? '<div class="alerta">'+_resEsc(alerta)+'</div>' : '');
 }
 
+/* HAG_QUEM_CRIOU_A_TAREFA_v1 (15/09/2026): a tela dizia "Medico" para toda
+   tarefa que nao fosse da secretaria, e tarefa criada pelo PROPRIO PACIENTE
+   pelo link entrava nesse balaio. Quem olhava a fila lia que o Dr. Henrique
+   tinha pedido aquilo, quando na verdade quem pediu foi o paciente. Agora cada
+   origem tem o seu nome, inclusive a vaga que o sistema abre sozinho. */
+var _CRIADORES={
+  secretaria:        {curto:'&#x1f4cb; Secretaria', longo:'pela secretaria'},
+  auto_agendamento:  {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, pelo link'},
+  pedido_remarcacao: {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que pediu para remarcar'},
+  pedido_ajuda:      {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que nao achou horario'},
+  vaga_aberta:       {curto:'&#x26a0; Vaga aberta', longo:'pelo sistema, quando a vaga abriu'}
+};
+function _quemCriou(cp){
+  return _CRIADORES[String(cp||'')] || {curto:'&#x1f9ba; Medico', longo:'pelo Dr. Henrique'};
+}
 function _resumoTarefa(t){
   var nome=String(t.patient_nome||'o paciente');
   var rot={pendente:'ainda não começou',andamento:'em andamento',aguardando:'esperando resposta',concluida:'concluída'};
@@ -2134,7 +2149,7 @@ function _resumoTarefa(t){
              andamento:'Ao terminar, toque em "Concluir". Se depender do paciente, use "Aguardando".',
              aguardando:'Está esperando alguém responder. Ao ter retorno, toque em "Concluir".',
              concluida:'Nada a fazer.'}[t.status]||'';
-  var quem=t.criado_por==='secretaria'?'pela secretaria':'pelo Dr. Henrique';
+  var quem=_quemCriou(t.criado_por).longo;
   var resp=Array.isArray(t.respostas)?t.respostas:[];
 
   return '<h5>Resumo</h5>'
@@ -2702,7 +2717,7 @@ function buildCard(t){
   const badgeCls=t.prioridade==='urgente'?'sb-urgente':(stBadge[t.status]||'sb-pendente');
   const badgeLabel=t.prioridade==='urgente'?'&#x26a0; URGENTE':(stLabels[t.status]||t.status);
   const criado=t.criado_em?new Date(t.criado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'--';
-  const criadoPor=t.criado_por==='secretaria'?'&#x1f4cb; Secretaria':'&#x1f9ba; Medico';
+  const criadoPor=_quemCriou(t.criado_por).curto;
 
   // Advance button based on current status
   let advBtn='';
