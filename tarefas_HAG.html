@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260915-2014"></script>
+<script src="hag_auth.js?v=20260915-2015"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -872,9 +872,11 @@ body {
         <input id="f-janela" type="date" style="margin-top:4px">
         <label style="margin-top:10px;display:block">Local do atendimento <span style="font-size:10px;font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--ink3)">(o que voce marcar aqui vence a regra do ciclo na tela do paciente)</span></label>
         <div class="tipo-chips" id="localChips">
-          <!-- HAG_LOCAL_MEDICO_v2 (11/09/2026): o padrao passa a ser "Seguir o plano",
-               que grava local nulo. Com o campo mandando na modalidade que o paciente
-               ve, um chip marcado sozinho viraria decisao clinica sem ninguem decidir. -->
+          <!-- HAG_LOCAL_MEDICO_v2 (11/09/2026): antes o chip Online ja vinha marcado
+               e o campo nem era lido por ninguem. Agora o local da tarefa manda na
+               modalidade que o paciente ve no link, entao um padrao marcado sozinho
+               viraria decisao clinica sem ninguem ter decidido. O padrao passa a ser
+               "Seguir o plano", que grava local nulo e deixa a regra do ciclo decidir. -->
           <div class="tipo-chip active" onclick="selectLocal(this,'')">&#x1f9ed; Seguir o plano</div>
           <div class="tipo-chip" onclick="selectLocal(this,'online')">&#x1f4bb; Online</div>
           <div class="tipo-chip" onclick="selectLocal(this,'pinheiros')">&#x1f4cd; Pinheiros</div>
@@ -2400,6 +2402,11 @@ function _filaMsgAgendar(t){
   var primeiro=(t.patient_nome||'').split(' ')[0];
   /* HAG_LINK_TOKEN_v1: sem token emitido nao vai link nenhum. Link quebrado na
      mao do paciente e pior do que combinar o horario pelo WhatsApp. */
+  /* HAG_MSG_DANIELA_v2 (11/09/2026): mensagem sem emoji e com o link isolado numa
+     linha só. Dois motivos. O emoji na abertura destoa de consultório premium e é
+     a primeira coisa que o paciente lê. E o link colado no meio do parágrafo,
+     além de feio, faz o WhatsApp grudar a pontuação na URL em alguns aparelhos,
+     o que quebra o link. Linha em branco antes e depois resolve os dois. */
   var _lk = _linksAgendar[t.patient_id];
   var _tok = (_lk && _lk.token) ? _lk.token : ((typeof _lk === 'string') ? _lk : '');
   /* HAG_MSG_INJETAVEL_v1 (14/09/2026)
@@ -3334,7 +3341,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260915-2014';
+  var VERSAO = '20260915-2015';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
