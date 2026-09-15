@@ -1506,6 +1506,16 @@ var _AG_CONF={
   mensagem_enviada:{rotulo:'mensagem enviada', fundo:'#eef4fb', cor:'#2f5b8a', borda:'#c9dcf0'},
   confirmado:      {rotulo:'confirmado', fundo:'#e8f3ec', cor:'#2f7a4f', borda:'#cfe5d8'}
 };
+/* HAG_PERFIL_INTERNO_JESSICA_v1 (15/09/2026): a paciente de teste continua
+   aparecendo no quadro, e é justamente esse o ponto. Ela sai da lista de
+   pacientes e da tela de Confirmações, onde não podia estar, mas na agenda ela
+   PRECISA ser vista, porque ocupa horário de verdade. O que faltava não era
+   esconder, era etiquetar. Um teste esquecido no sábado 19/09 empurrou uma
+   paciente real para uma hora pior, e ninguém viu porque parecia consulta. */
+function _agSeloTeste(x){
+  if(!x.interno) return '';
+  return '<span title="Perfil interno, usado para testar o sistema. Ocupa horário de verdade na agenda." style="background:#f3e8f6;color:#6b3a7a;border:1px solid #e0cce6;border-radius:6px;padding:2px 7px;font-size:.66rem;font-weight:700;white-space:nowrap">teste</span>';
+}
 function _agConfirmaSelo(x){
   var hoje=new Date().toISOString().slice(0,10);
   if(x.data<hoje) return '';
@@ -1516,6 +1526,9 @@ function _agConfirmaSelo(x){
 function _agConfirmaBotao(x){
   var hoje=new Date().toISOString().slice(0,10);
   if(x.data<hoje) return '';
+  /* HAG_PERFIL_INTERNO_JESSICA_v1: nao existe confirmacao para mandar a um
+     perfil de teste. Sem botao, e o selo ao lado explica por que. */
+  if(x.interno) return '';
   var enviada=(String(x.confirmacao_status||'')==='mensagem_enviada'||String(x.confirmacao_status||'')==='confirmado');
   return '<button onclick="confirmarAgenda(\'' + String(x.origem_id).replace(/'/g,"\\'") + '\')"'
     +' title="Abre o WhatsApp do paciente com a mensagem de confirmação pronta"'
@@ -1528,6 +1541,7 @@ function _agConfirmaBotao(x){
 async function confirmarAgenda(origemId){
   var x=(_agenda||[]).find(function(y){ return String(y.origem_id)===String(origemId); });
   if(!x){ toast('Não achei esse atendimento. Clique em Atualizar.','err'); return; }
+  if(x.interno){ toast(String(x.patient_nome||'').split(' ')[0]+' é perfil interno de teste. Não se manda confirmação para ele.','err'); return; }
 
   var r;
   try{
@@ -1649,6 +1663,7 @@ function _agendaPainelHtml(){
       +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agTipo(x.tipo))+'</span>'
       +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agLocal(x.local))+'</span>'
       +selo
+      +_agSeloTeste(x)
       +_agConfirmaSelo(x)
       +_agConfirmaBotao(x)
       +'</div>';
