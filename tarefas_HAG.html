@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260915-2051"></script>
+<script src="hag_auth.js?v=20260915-2056"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -3119,6 +3119,31 @@ async function _pushJaAssinado(){
    se a assinatura deste aparelho está sem dono ou com dono diferente de quem
    está logado agora, o e-mail é gravado. Só mexe na linha DESTE endpoint, que
    é único por aparelho, então ninguém carimba o celular de outra pessoa. */
+/* HAG_EMAIL_LOGADO_v1 (15/09/2026): quem está logado aqui NÃO mora no
+   db.auth do supabase-js.
+
+   O QUE ACONTECEU. O login do HAG OS é o hag_auth.js: ele chama o /auth/v1 na
+   mão, guarda a sessão no localStorage em "hag_auth_session" e injeta o token
+   em todas as chamadas por um wrapper de fetch. O supabase-js nunca fica
+   sabendo desse login, então db.auth.getSession() volta VAZIO mesmo com o
+   Dr. Henrique logado há horas. Eu escrevi duas travas em cima desse campo
+   vazio: a de ligar os avisos e a de carimbar o dono do aparelho. As duas
+   passaram a dizer "entre com o seu e-mail" para quem já estava dentro.
+
+   A REGRA. Identidade do usuário se pergunta ao HAGAuth, que é a camada de
+   login deste sistema. O db.auth fica como segunda tentativa, para o caso de
+   alguém ter entrado pelo dashboard. */
+async function _emailLogado(){
+  try{
+    var s = window.HAGAuth && window.HAGAuth.session && window.HAGAuth.session();
+    if (s && s.user) return String(s.user);
+  }catch(e){}
+  try{
+    var r = await db.auth.getSession();
+    return (r && r.data && r.data.session && r.data.session.user && r.data.session.user.email) || '';
+  }catch(e){ return ''; }
+}
+
 async function _carimbarDonoDoAparelho(){
   /* HAG_PUSH_DONO_AUTOMATICO_v2 (15/09/2026): a v1 falhou em silêncio e eu não
      tinha como saber onde. Duas mudanças, as duas pelo mesmo motivo.
@@ -3138,8 +3163,7 @@ async function _carimbarDonoDoAparelho(){
     var reg=await navigator.serviceWorker.getRegistration(); if(!reg) return;
     var sub=await reg.pushManager.getSubscription();         if(!sub) return;
     passo='sessao';
-    var sess=await db.auth.getSession();
-    var email=(sess&&sess.data&&sess.data.session&&sess.data.session.user&&sess.data.session.user.email)||'';
+    var email=await _emailLogado();   /* HAG_EMAIL_LOGADO_v1 */
     if(!email){
       toast('Este aparelho recebe aviso com nome de paciente e está sem dono identificado. Entre com o seu e-mail e abra de novo.','err');
       return;
@@ -3226,8 +3250,7 @@ window.ativarAvisos=async function(btn){
       });
     }
     var j=sub.toJSON();
-    var sess=await db.auth.getSession();
-    var email=(sess&&sess.data&&sess.data.session&&sess.data.session.user&&sess.data.session.user.email)||'';
+    var email=await _emailLogado();   /* HAG_EMAIL_LOGADO_v1 */
     /* ═══ HAG_PUSH_COM_DONO_v1 (15/09/2026) ══════════════════════════════════
        Assinatura sem dono não entra mais.
 
@@ -3262,7 +3285,7 @@ window.ativarAvisos=async function(btn){
     /* aviso de confirmacao, para ela ver que funcionou sem precisar esperar
        uma tarefa nova. So chega neste aparelho. */
     try{
-      var tok=(sess&&sess.data&&sess.data.session&&sess.data.session.access_token)||'';
+      var tok=(window.HAGAuth&&window.HAGAuth.token&&window.HAGAuth.token())||'';   /* HAG_EMAIL_LOGADO_v1 */
       if(tok) await fetch(SURL+'/functions/v1/hag-push',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
@@ -3368,7 +3391,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260915-2051';
+  var VERSAO = '20260915-2056';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
