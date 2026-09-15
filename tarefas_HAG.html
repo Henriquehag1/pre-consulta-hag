@@ -3097,10 +3097,46 @@ async function _pushJaAssinado(){
     return !!(await reg.pushManager.getSubscription());
   }catch(e){ return false; }
 }
+/* HAG_PUSH_DONO_AUTOMATICO_v1 (15/09/2026): o aparelho passa a se identificar
+   sozinho toda vez que a fila abre.
+
+   O QUE ACONTECEU. A trava que exige dono identificado (HAG_PUSH_COM_DONO_v1)
+   só roda quando alguém TOCA em "Ativar avisos". Quem já tinha os avisos
+   ligados vê o botão desativado, escrito "Avisos ligados", e não tem como tocar
+   nele. Resultado: o Dr. Henrique entrou com o e-mail dele no celular e a
+   assinatura continuou sem dono, porque nada mais pedia para gravar. Ficaram
+   duas assinaturas anônimas recebendo nome de paciente na tela de bloqueio, e
+   a única forma de saber de quem eram era mandar aviso e perguntar.
+
+   A REGRA. Dono do aparelho é quem está logado nele. Então, a cada abertura,
+   se a assinatura deste aparelho está sem dono ou com dono diferente de quem
+   está logado agora, o e-mail é gravado. Só mexe na linha DESTE endpoint, que
+   é único por aparelho, então ninguém carimba o celular de outra pessoa. */
+async function _carimbarDonoDoAparelho(){
+  try{
+    if(!_pushSuportado()) return;
+    var reg=await navigator.serviceWorker.getRegistration(); if(!reg) return;
+    var sub=await reg.pushManager.getSubscription();         if(!sub) return;
+    var sess=await db.auth.getSession();
+    var email=(sess&&sess.data&&sess.data.session&&sess.data.session.user&&sess.data.session.user.email)||'';
+    if(!email) return;
+    var ep=sub.endpoint;
+    var atual=await db.from('push_assinaturas').select('quem').eq('endpoint',ep).maybeSingle();
+    if(atual.error) return;
+    if(atual.data && atual.data.quem===email) return;   /* já está certo */
+    await db.from('push_assinaturas').update({
+      quem:email,
+      aparelho:(navigator.userAgent||'').slice(0,180),
+      atualizado_em:new Date().toISOString()
+    }).eq('endpoint',ep);
+  }catch(e){}
+}
+
 async function _mostrarBotaoPush(){
   var b=document.getElementById('btnPush'); if(!b) return;
   if(!_pushSuportado()){ b.style.display='none'; return; }
   if(Notification.permission==='granted' && await _pushJaAssinado()){
+    _carimbarDonoDoAparelho();   /* HAG_PUSH_DONO_AUTOMATICO_v1 */
     b.innerHTML='&#128276; Avisos ligados';
     b.style.display='inline-block'; b.disabled=true; b.style.opacity='.6';
     return;
