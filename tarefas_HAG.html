@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260915-2056"></script>
+<script src="hag_auth.js?v=20260915-1937"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -820,6 +820,8 @@ body {
     <button id="btnCadastro" onclick="verCadastro()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f5c2;&#xfe0f; Cadastro</button>
     <!-- HAG_QUADRO_AGENDA_v1 -->
     <button id="btnAgenda" onclick="verAgenda()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4c5; Agenda</button>
+    <!-- HAG_LEADS_ABA_v1 -->
+    <button id="btnLeads" onclick="verLeads()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f465; Leads</button>
   </div>
 
   <!-- TASK LIST -->
@@ -938,6 +940,41 @@ function gac(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);
 function gin(n){const p=n.trim().split(' ').filter(Boolean);return p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();}
 
 let _tasks=[], _patients=[], _filter='fila', _filaSub='agendar', _role=localStorage.getItem('hag_role')||'medico';
+
+/* HAG_LEADS_ABA_v1 (15/09/2026)
+   PORQUE: mkt_lead existe desde 31/08 e chegou a 15/09 com zero linhas,
+   porque nao havia onde escrever. No mesmo dia a campanha do Google foi
+   ativada e passou a gastar todo dia util. Sem estas linhas, o Google diz
+   quantas conversas comecaram e ninguem sabe quantas viraram paciente.
+   REGRA DE USO: no primeiro contato registra so origem e nome; volta na
+   linha quando a etapa muda. Se exigir tudo de uma vez, morre na segunda
+   semana.
+   REGRA DE OURO DO HAG OS: tudo que o render usa e const declarada aqui,
+   antes do primeiro uso, nunca var no fim do arquivo. */
+let _leads=[], _leadsErro=null, _leadFiltro='abertos', _leadNovo=false, _leadAlvo=null, _leadAcao=null;
+
+/* Google entra separado em anuncio e Maps: sem isso a conta de custo por
+   paciente da campanha paga fica impossivel de fechar. */
+const LEAD_ORIGENS=[
+  {rot:'Instagram',      origem:'instagram',       det:'',       tema:true},
+  {rot:'Google anúncio', origem:'google',          det:'ads'},
+  {rot:'Google Maps',    origem:'google',          det:'perfil'},
+  {rot:'Site',           origem:'site',            det:''},
+  {rot:'Indicação',      origem:'indicacao',       det:''},
+  {rot:'Já é paciente',  origem:'paciente_antigo', det:''},
+  {rot:'TikTok',         origem:'tiktok',          det:''},
+  {rot:'Outro',          origem:'outro',           det:''}
+];
+const LEAD_TEMAS=['bio','platô','hormônios','caneta','bariátrica','outro'];
+const LEAD_MOTIVOS=['emagrecimento','hormonal','bariátrica','performance','outro'];
+const LEAD_MODAIS=[{rot:'Tatuapé',v:'tatuape'},{rot:'Pinheiros',v:'pinheiros'},
+                   {rot:'Online',v:'online'},{rot:'Ainda não sei',v:'indefinido'}];
+const LEAD_PERDAS=['preço','distância','sumiu','foi com outro','adiou','só queria informação'];
+const LEAD_ETAPAS=['novo','respondido','qualificado','agendado','compareceu','paciente'];
+const LEAD_ROTULO={novo:'Novo',respondido:'Respondido',qualificado:'Qualificado',
+                   agendado:'Agendado',compareceu:'Compareceu',paciente:'Paciente',perdido:'Não seguiu'};
+const LEAD_CARIMBO={respondido:'primeira_resposta_em',agendado:'agendado_em',
+                    compareceu:'compareceu_em',paciente:'fechado_em'};
 let _selectedTipo='', _editId=null;
 
 // ── ROLE ──
@@ -1860,6 +1897,234 @@ function _cadPainelHtml(q){
     +lista.map(function(p){ return _cadLinhaHtml(p, !!marcadas[p.id], _cadAberto.has(p.id)); }).join('');
 }
 
+/* ══ HAG_LEADS_ABA_v1 (15/09/2026) · funil comercial em mkt_lead ══════════
+   A tela e deliberadamente curta: uma linha por pessoa e um toque por etapa.
+   Datas se carimbam sozinhas, e so na primeira vez que a etapa e atingida. */
+
+async function loadLeads(){
+  const{data,error}=await db.from('mkt_lead').select('*')
+    .order('primeiro_contato_em',{ascending:false}).limit(400);
+  if(error) throw error;
+  return data||[];
+}
+
+async function verLeads(){
+  _leadsErro=null; _leadNovo=false; _leadAcao=null; _leadAlvo=null;
+  setFilter('leads');
+  try{ _leads=await loadLeads(); }
+  catch(e){ _leadsErro=(e&&e.message)?e.message:String(e); }
+  render();
+}
+
+function setLeadFiltro(f){ _leadFiltro=f; render(); }
+function leadAbrirNovo(){ _leadNovo=!_leadNovo; _leadAcao=null; render(); }
+function leadPedir(id,tipo){ _leadAlvo=id; _leadAcao=(_leadAlvo===id&&_leadAcao===tipo)?null:tipo; render(); }
+
+function _leadRotuloOrigem(l){
+  var det=(l.origem_detalhe||'');
+  for(var i=0;i<LEAD_ORIGENS.length;i++){
+    var o=LEAD_ORIGENS[i];
+    if(o.origem===l.origem && o.det===(det==='ads'||det==='perfil'?det:'')) {
+      return o.rot + ((det && det!=='ads' && det!=='perfil') ? (' · '+det) : '');
+    }
+  }
+  return (l.origem||'sem origem')+(det?(' · '+det):'');
+}
+
+function _leadTrilha(l){
+  var i=LEAD_ETAPAS.indexOf(l.status), out='';
+  for(var k=0;k<LEAD_ETAPAS.length;k++){
+    var cor = (l.status==='perdido') ? '#c9a0a0'
+            : (k<=i ? (l.status==='paciente' ? '#4b9e78' : '#c9a55e') : '#e5e2da');
+    out+='<i style="flex:1;height:5px;border-radius:3px;background:'+cor+'"></i>';
+  }
+  return '<div style="display:flex;gap:4px;margin:0 0 11px">'+out+'</div>';
+}
+
+function _leadOpc(lista,campo){
+  var out='<option value="">…</option>';
+  for(var i=0;i<lista.length;i++){
+    var it=lista[i], rot=(typeof it==='string')?it:it.rot;
+    out+='<option value="'+i+'">'+_msgEsc(rot)+'</option>';
+  }
+  return out;
+}
+
+function _leadFormNovo(){
+  var est='width:100%;padding:11px;border:1px solid #e5e2da;border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:#1a1a18;margin:0 0 10px';
+  var lab='display:block;font-size:.74rem;color:#6b6b63;margin:0 0 5px';
+  return '<div style="background:#fff;border:1px solid #e5e2da;border-radius:14px;padding:16px;margin:0 0 14px">'
+    +'<div style="font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:#9a7b3f;margin:0 0 12px">Novo contato</div>'
+    +'<div style="background:#FBF8F0;border-left:3px solid #c9a55e;padding:10px 13px;border-radius:0 8px 8px 0;font-size:.8rem;color:#6b6b63;margin:0 0 14px">'
+    +'Preencha só o que já sabe. Origem é o único campo que não dá para descobrir depois.</div>'
+    +'<label style="'+lab+'">Nome</label><input id="ldNome" type="text" style="'+est+'" placeholder="Como a pessoa se apresentou">'
+    +'<label style="'+lab+'">WhatsApp</label><input id="ldZap" type="tel" style="'+est+'" placeholder="11 90000-0000">'
+    +'<label style="'+lab+'">De onde veio</label><select id="ldOrigem" style="'+est+'" onchange="_leadTemaVis()">'+_leadOpc(LEAD_ORIGENS)+'</select>'
+    +'<div id="ldBoxTema" style="display:none"><label style="'+lab+'">Qual conteúdo</label>'
+    +'<select id="ldTema" style="'+est+'">'+_leadOpc(LEAD_TEMAS)+'</select></div>'
+    +'<label style="'+lab+'">O que trouxe</label><select id="ldMotivo" style="'+est+'">'+_leadOpc(LEAD_MOTIVOS)+'</select>'
+    +'<label style="'+lab+'">Onde prefere</label><select id="ldModal" style="'+est+'">'+_leadOpc(LEAD_MODAIS)+'</select>'
+    +'<div style="display:flex;gap:9px;margin-top:6px">'
+    +'<button onclick="leadAbrirNovo()" style="flex:1;padding:13px;border:1px solid #e5e2da;background:#fff;border-radius:10px;font-size:.86rem;font-family:inherit;cursor:pointer;color:#6b6b63">Cancelar</button>'
+    +'<button onclick="leadSalvarNovo()" style="flex:1;padding:13px;border:0;background:#1a1a18;color:#fff;border-radius:10px;font-size:.86rem;font-weight:600;font-family:inherit;cursor:pointer">Salvar</button>'
+    +'</div></div>';
+}
+
+function _leadTemaVis(){
+  var s=document.getElementById('ldOrigem'), b=document.getElementById('ldBoxTema');
+  if(!s||!b) return;
+  var o=LEAD_ORIGENS[parseInt(s.value,10)];
+  b.style.display=(o&&o.tema)?'block':'none';
+}
+
+async function leadSalvarNovo(){
+  var g=function(id){ var e=document.getElementById(id); return e?e.value:''; };
+  if(g('ldOrigem')===''){ toast('Marque de onde a pessoa veio. É o único campo que não dá para descobrir depois.','erro'); return; }
+  var o=LEAD_ORIGENS[parseInt(g('ldOrigem'),10)];
+  var tema=(o.tema && g('ldTema')!=='') ? LEAD_TEMAS[parseInt(g('ldTema'),10)] : '';
+  var agora=new Date().toISOString();
+  var linha={
+    nome:(g('ldNome')||'').trim()||null,
+    whatsapp:(g('ldZap')||'').trim()||null,
+    origem:o.origem,
+    origem_detalhe:(o.det||tema)||null,
+    motivo:g('ldMotivo')!==''?LEAD_MOTIVOS[parseInt(g('ldMotivo'),10)]:null,
+    modalidade:g('ldModal')!==''?LEAD_MODAIS[parseInt(g('ldModal'),10)].v:null,
+    status:'novo', primeiro_contato_em:agora, atualizado_em:agora
+  };
+  var r=await db.from('mkt_lead').insert(linha);
+  if(r.error){ toast('Não consegui salvar: '+r.error.message,'erro'); return; }
+  _leadNovo=false;
+  toast('Contato registrado');
+  await verLeads();
+}
+
+async function leadEtapa(id,novo,extra){
+  var l=null;
+  for(var i=0;i<_leads.length;i++){ if(_leads[i].id===id){ l=_leads[i]; break; } }
+  if(!l) return;
+  var agora=new Date().toISOString();
+  var body={status:novo, atualizado_em:agora};
+  if(extra){ for(var k in extra){ if(Object.prototype.hasOwnProperty.call(extra,k)) body[k]=extra[k]; } }
+  var col=LEAD_CARIMBO[novo];
+  if(col && !l[col]) body[col]=agora;
+  var r=await db.from('mkt_lead').update(body).eq('id',id);
+  if(r.error){ toast('Não consegui salvar: '+r.error.message,'erro'); return; }
+  _leadAcao=null; _leadAlvo=null;
+  await verLeads();
+}
+
+function leadAvancar(id){
+  var l=null;
+  for(var i=0;i<_leads.length;i++){ if(_leads[i].id===id){ l=_leads[i]; break; } }
+  if(!l) return;
+  var i2=LEAD_ETAPAS.indexOf(l.status);
+  if(i2<0||i2>=LEAD_ETAPAS.length-1) return;
+  leadEtapa(id, LEAD_ETAPAS[i2+1]);
+}
+
+async function leadConfirmarGanho(id){
+  var p=document.getElementById('ldPlano'), v=document.getElementById('ldValor');
+  var n=parseFloat(String(v?v.value:'').replace(',','.'));
+  await leadEtapa(id,'paciente',{plano_contratado:(p&&p.value.trim())||null, valor:isNaN(n)?null:n});
+}
+
+async function leadConfirmarPerda(id){
+  var s=document.getElementById('ldPerda');
+  if(!s||s.value===''){ toast('Marque o motivo. É o que ensina onde o funil vaza.','erro'); return; }
+  await leadEtapa(id,'perdido',{motivo_perda:LEAD_PERDAS[parseInt(s.value,10)]});
+}
+
+function _leadCard(l){
+  var i=LEAD_ETAPAS.indexOf(l.status);
+  var prox=(i>=0&&i<LEAD_ETAPAS.length-1)?LEAD_ETAPAS[i+1]:null;
+  var zap=String(l.whatsapp||'').replace(/\D+/g,'');
+  var partes=[_leadRotuloOrigem(l)];
+  if(l.motivo) partes.push(l.motivo);
+  if(l.modalidade&&l.modalidade!=='indefinido') partes.push(l.modalidade);
+  var bt='padding:10px 14px;border-radius:10px;font-size:.84rem;font-weight:600;font-family:inherit;cursor:pointer;border:1.5px solid ';
+  var acoes='';
+  if(l.status!=='paciente'&&l.status!=='perdido'){
+    if(prox==='paciente') acoes+='<button onclick="leadPedir(\''+l.id+'\',\'ganho\')" style="'+bt+'#4b9e78;background:#fff;color:#2e7d5b">Virou paciente</button>';
+    else if(prox) acoes+='<button onclick="leadAvancar(\''+l.id+'\')" style="'+bt+'#1a1a18;background:#1a1a18;color:#fff">'+LEAD_ROTULO[prox]+'</button>';
+    acoes+='<button onclick="leadPedir(\''+l.id+'\',\'perda\')" style="'+bt+'#d7b7b2;background:#fff;color:#a8443a">Não seguiu</button>';
+  }
+  if(zap) acoes+='<a href="https://wa.me/55'+zap+'" target="_blank" rel="noopener" style="'+bt+'#e5e2da;background:#fff;color:#6b6b63;font-weight:400;text-decoration:none;display:inline-block">WhatsApp</a>';
+
+  var extra='';
+  var est='width:100%;padding:11px;border:1px solid #e5e2da;border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:#1a1a18;margin:0 0 9px';
+  if(_leadAlvo===l.id&&_leadAcao==='ganho'){
+    extra='<div style="margin-top:12px;padding-top:12px;border-top:1px solid #efece4">'
+      +'<div style="font-size:.78rem;color:#6b6b63;margin:0 0 9px">Plano e valor são o que transforma conversa em custo por paciente.</div>'
+      +'<input id="ldPlano" type="text" placeholder="Plano contratado" style="'+est+'">'
+      +'<input id="ldValor" type="number" inputmode="decimal" step="0.01" placeholder="Valor em R$" style="'+est+'">'
+      +'<div style="display:flex;gap:9px"><button onclick="leadPedir(\''+l.id+'\',\'ganho\')" style="flex:1;'+bt+'#e5e2da;background:#fff;color:#6b6b63;font-weight:400">Cancelar</button>'
+      +'<button onclick="leadConfirmarGanho(\''+l.id+'\')" style="flex:1;'+bt+'#4b9e78;background:#4b9e78;color:#fff">Confirmar</button></div></div>';
+  }
+  if(_leadAlvo===l.id&&_leadAcao==='perda'){
+    extra='<div style="margin-top:12px;padding-top:12px;border-top:1px solid #efece4">'
+      +'<div style="font-size:.78rem;color:#6b6b63;margin:0 0 9px">Saber por que não seguiu vale tanto quanto saber quem fechou.</div>'
+      +'<select id="ldPerda" style="'+est+'">'+_leadOpc(LEAD_PERDAS)+'</select>'
+      +'<div style="display:flex;gap:9px"><button onclick="leadPedir(\''+l.id+'\',\'perda\')" style="flex:1;'+bt+'#e5e2da;background:#fff;color:#6b6b63;font-weight:400">Cancelar</button>'
+      +'<button onclick="leadConfirmarPerda(\''+l.id+'\')" style="flex:1;'+bt+'#a8443a;background:#a8443a;color:#fff">Confirmar</button></div></div>';
+  }
+
+  var dinheiro=(l.status==='paciente'&&l.valor!=null)?(' · <b>R$ '+Number(l.valor).toFixed(2).replace('.',',')+'</b>'):'';
+  var perda=(l.status==='perdido'&&l.motivo_perda)?(' · '+_msgEsc(l.motivo_perda)):'';
+  return '<div style="background:#fff;border:1px solid #e5e2da;border-radius:14px;padding:14px;margin:0 0 11px">'
+    +'<div style="font-size:1.02rem;font-weight:600;color:#1a1a18;margin:0 0 3px">'+_msgEsc(l.nome||'Sem nome')+'</div>'
+    +'<div style="font-size:.78rem;color:#9a938a;margin:0 0 10px"><b style="color:#9a7b3f">'+_msgEsc(partes.join(' · '))+'</b><br>'+LEAD_ROTULO[l.status]+dinheiro+perda+'</div>'
+    +_leadTrilha(l)
+    +'<div style="display:flex;gap:7px;flex-wrap:wrap">'+acoes+'</div>'
+    +extra+'</div>';
+}
+
+function _leadsPainelHtml(){
+  var voltar='<button onclick="setFilter(\'fila\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:8px 13px;font-size:.78rem;font-family:inherit;cursor:pointer;color:#6b6b63;margin-bottom:12px">&#8592; Voltar para a fila</button>';
+
+  /* Falha de leitura NUNCA pode parecer funil vazio: sao decisoes opostas. */
+  if(_leadsErro){
+    return voltar
+      +'<div style="background:#fdecea;border:1px solid #f3c2bc;border-radius:12px;padding:18px;color:#8a2c20;font-size:.86rem;line-height:1.5">'
+      +'<b>Não consegui ler os leads.</b><br>'+_msgEsc(_leadsErro)
+      +'<br><br>A lista está vazia porque a leitura falhou, <b>não</b> porque não haja contato registrado.</div>';
+  }
+
+  var hoje=new Date().toISOString().slice(0,10);
+  var abertos=0, pac=0;
+  for(var i=0;i<_leads.length;i++){
+    var s=_leads[i].status;
+    if(s==='paciente') pac++;
+    else if(s!=='perdido') abertos++;
+  }
+  var taxa=_leads.length?Math.round(pac*100/_leads.length):0;
+  var rc=function(n,r){ return '<div style="flex:1;background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:10px 8px;text-align:center">'
+    +'<b style="display:block;font-size:1.25rem;color:#1a1a18;line-height:1.2">'+n+'</b>'
+    +'<span style="font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:#9a938a">'+r+'</span></div>'; };
+
+  var ft=function(k,r){ return '<button onclick="setLeadFiltro(\''+k+'\')" style="flex:0 0 auto;padding:8px 14px;border:1px solid '+(_leadFiltro===k?'#1a1a18':'#e5e2da')+';background:'+(_leadFiltro===k?'#1a1a18':'#fff')+';color:'+(_leadFiltro===k?'#fff':'#6b6b63')+';border-radius:999px;font-size:.78rem;font-family:inherit;cursor:pointer;white-space:nowrap">'+r+'</button>'; };
+
+  var vis=_leads.filter(function(l){
+    if(_leadFiltro==='todos') return true;
+    if(_leadFiltro==='paciente') return l.status==='paciente';
+    if(_leadFiltro==='perdido') return l.status==='perdido';
+    if(_leadFiltro==='hoje') return String(l.primeiro_contato_em||'').slice(0,10)===hoje;
+    return l.status!=='paciente'&&l.status!=='perdido';
+  });
+
+  var lista = vis.length ? vis.map(_leadCard).join('')
+    : '<div class="empty"><div class="empty-icon">&#x1f465;</div><div class="empty-title">Nada aqui ainda</div>'
+      +'<div class="empty-sub">Toque em Novo contato quando alguém chamar.</div></div>';
+
+  return voltar
+    +'<div style="display:flex;gap:8px;margin:0 0 14px">'+rc(abertos,'em aberto')+rc(pac,'pacientes')+rc(taxa+'%','conversão')+'</div>'
+    +'<button onclick="leadAbrirNovo()" style="width:100%;padding:14px;border:0;background:#1a1a18;color:#fff;border-radius:12px;font-size:.92rem;font-weight:600;font-family:inherit;cursor:pointer;margin:0 0 14px">+ Novo contato</button>'
+    +(_leadNovo?_leadFormNovo():'')
+    +'<div style="display:flex;gap:7px;margin:0 0 14px;overflow-x:auto;padding-bottom:2px">'
+    +ft('abertos','Em aberto')+ft('hoje','De hoje')+ft('paciente','Viraram paciente')+ft('perdido','Perdidos')+ft('todos','Todos')
+    +'</div>'+lista;
+}
+
 // ── FILTER ──
 function setFilter(f){
   _filter=f;
@@ -1983,6 +2248,11 @@ function render(){
     _elC.innerHTML=_cadPainelHtml(_qc);
     var _bc=document.getElementById('cadBusca');
     if(_bc && _qc){ _bc.focus(); try{ _bc.setSelectionRange(_qc.length,_qc.length); }catch(e){} }
+    return;
+  }
+  /* HAG_LEADS_ABA_v1 */
+  if(_filter==='leads'){
+    document.getElementById('taskList').innerHTML=_leadsPainelHtml();
     return;
   }
   if(_filter==='fila'){
@@ -3391,7 +3661,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260915-2056';
+  var VERSAO = '20260915-1937';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
