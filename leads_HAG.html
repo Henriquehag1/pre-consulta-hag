@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Leads · Método HAG</title>
+<meta name="theme-color" content="#1B2745">
+<script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
+<script src="hag_auth.js?v=20260915-2056"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- HAG_LEADS_v1 (15/09/2026)
+     PORQUE: a tabela mkt_lead existe desde 02/09 e nunca recebeu uma linha,
+     porque nao havia onde escrever. Sem ela, o Google Ads (ativado em 15/09)
+     informa quantas conversas comecaram e ninguem sabe quantas viraram
+     paciente. Pagina propria, fora do tarefas_HAG.html, para nao tocar no app
+     que a Daniela usa todo dia. Mesmo login (hag_auth.js), mesmo repositorio.
+     REGRA DE USO: no primeiro contato registra so origem e nome; volta na
+     linha quando a etapa muda. Se exigir preencher tudo de uma vez, morre na
+     segunda semana. -->
+<style>
+:root{--navy:#1B2745;--gold:#C9A55E;--gold2:#9A7B3F;--cream:#F8F4EA;--cream2:#FBFAF6;
+--line:#E4DECB;--ink:#2B2A26;--ink3:#6E6A60;--ink4:#98917F;--ok:#2E7D5B;--bad:#A8443A}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--cream2);color:var(--ink);
+font:16px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+.wrap{max-width:620px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(110px + env(safe-area-inset-bottom,0px))}
+.marca{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold2);text-align:center}
+h1{font-size:21px;color:var(--navy);text-align:center;margin:6px 0 2px}
+.sub{color:var(--ink3);text-align:center;font-size:13.5px;margin:0 0 18px}
+.filtros{display:flex;gap:7px;margin:0 0 14px;overflow-x:auto;padding-bottom:2px}
+.filtro{flex:0 0 auto;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;
+cursor:pointer;font-size:13.5px;color:var(--ink3);white-space:nowrap}
+.filtro.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 11px;
+box-shadow:0 1px 4px rgba(27,39,69,.05)}
+.card h3{margin:0 0 3px;font-size:16.5px;color:var(--navy)}
+.meta{font-size:12.5px;color:var(--ink4);margin:0 0 10px}
+.meta b{color:var(--gold2);font-weight:600}
+.trilha{display:flex;gap:4px;margin:0 0 11px}
+.et{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.et.on{background:var(--gold)}
+.et.win{background:var(--ok)}
+.et.lose{background:var(--bad)}
+.acoes{display:flex;gap:7px;flex-wrap:wrap}
+.b{padding:10px 14px;border-radius:10px;border:1.5px solid var(--gold);background:#fff;color:var(--navy);
+font-size:14.5px;font-weight:600;cursor:pointer}
+.b:active{background:var(--cream)}
+.b.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+.b.gh{border-color:var(--line);color:var(--ink3);font-weight:400}
+.b.ok{border-color:var(--ok);color:var(--ok)}
+.b.bad{border-color:var(--bad);color:var(--bad)}
+.b:disabled{opacity:.45}
+.vazio{text-align:center;color:var(--ink4);padding:38px 10px;font-size:14.5px}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));
+background:var(--navy);color:#fff;border:0;border-radius:999px;padding:15px 30px;font-size:16px;font-weight:600;
+box-shadow:0 5px 18px rgba(27,39,69,.28);cursor:pointer;z-index:20}
+.sheet{position:fixed;inset:0;background:rgba(27,39,69,.42);display:none;z-index:40;align-items:flex-end}
+.sheet.on{display:flex}
+.sheet-in{background:var(--cream2);width:100%;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;
+padding:20px 16px calc(26px + env(safe-area-inset-bottom,0px));max-width:620px;margin:0 auto}
+.sheet h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold2);margin:0 0 14px}
+label{display:block;font-size:12.5px;color:var(--ink3);margin:14px 0 6px}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;
+font-size:16px;background:#fff;color:var(--ink);font-family:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;font-size:14px;color:var(--ink3)}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.rodape{display:flex;gap:9px;margin-top:20px}
+.rodape .b{flex:1;text-align:center;padding:14px}
+.aviso{background:var(--cream);border-left:3px solid var(--gold);padding:10px 13px;border-radius:0 8px 8px 0;
+font-size:13px;color:var(--ink3);margin:0 0 14px}
+.tt{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink4);margin:22px 0 8px}
+.resumo{display:flex;gap:8px;margin:0 0 16px}
+.rc{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+.rc b{display:block;font-size:20px;color:var(--navy);line-height:1.2}
+.rc span{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink4)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="marca">Método HAG</div>
+  <h1>Leads</h1>
+  <p class="sub">Quem chegou, de onde veio, e no que deu.</p>
+
+  <div class="resumo" id="resumo"></div>
+
+  <div class="filtros" id="filtros">
+    <button class="filtro on" data-f="abertos">Em aberto</button>
+    <button class="filtro" data-f="hoje">De hoje</button>
+    <button class="filtro" data-f="paciente">Viraram paciente</button>
+    <button class="filtro" data-f="perdido">Perdidos</button>
+    <button class="filtro" data-f="todos">Todos</button>
+  </div>
+
+  <div id="lista"><div class="vazio">Carregando...</div></div>
+</div>
+
+<button class="fab" id="fabNovo">+ Novo contato</button>
+
+<div class="sheet" id="sheetNovo">
+  <div class="sheet-in">
+    <h2>Novo contato</h2>
+    <div class="aviso">Preencha só o que já sabe. Origem é o único campo que não dá para
+    descobrir depois. O resto você volta e completa quando a conversa andar.</div>
+
+    <label>Nome</label>
+    <input id="fNome" type="text" autocomplete="off" placeholder="Como a pessoa se apresentou">
+
+    <label>WhatsApp</label>
+    <input id="fZap" type="tel" autocomplete="off" placeholder="11 90000-0000">
+
+    <label>De onde veio</label>
+    <div class="chips" id="fOrigem"></div>
+
+    <div id="boxTema" style="display:none">
+      <label>Qual conteúdo (se ela disse)</label>
+      <div class="chips" id="fTema"></div>
+    </div>
+
+    <label>O que trouxe</label>
+    <div class="chips" id="fMotivo"></div>
+
+    <label>Onde prefere</label>
+    <div class="chips" id="fModal"></div>
+
+    <label>Observação (opcional)</label>
+    <textarea id="fObs" rows="2" placeholder="Só se tiver algo que você não quer esquecer"></textarea>
+
+    <div class="rodape">
+      <button class="b gh" id="novoCancelar">Cancelar</button>
+      <button class="b pri" id="novoSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheetFechar">
+  <div class="sheet-in">
+    <h2>Virou paciente</h2>
+    <div class="aviso">Esses dois campos são o que transforma "conversa" em "quanto custou o
+    paciente". Sem eles o funil conta pessoas e não conta dinheiro.</div>
+    <label>Plano contratado</label>
+    <input id="gPlano" type="text" autocomplete="off" placeholder="Ciclo Reset, avulsa, etc.">
+    <label>Valor (R$)</label>
+    <input id="gValor" type="number" inputmode="decimal" step="0.01" placeholder="0,00">
+    <div class="rodape">
+      <button class="b gh" id="fecharCancelar">Cancelar</button>
+      <button class="b ok" id="fecharSalvar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheetPerder">
+  <div class="sheet-in">
+    <h2>Não seguiu</h2>
+    <div class="aviso">Saber por que não seguiu vale tanto quanto saber quem fechou. É o que
+    mostra se o problema é preço, distância ou resposta demorada.</div>
+    <label>Motivo</label>
+    <div class="chips" id="pMotivo"></div>
+    <div class="rodape">
+      <button class="b gh" id="perderCancelar">Cancelar</button>
+      <button class="b bad" id="perderSalvar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* HAG_LEADS_v1 (15/09/2026) · registro de leads em mkt_lead.
+   Regra de ouro do HAG OS: tudo que o render usa e const declarada antes do
+   primeiro uso, nunca var no fim do arquivo. */
+
+const SURL = window.SUPA_URL, SKEY = window.SUPA_KEY;
+
+/* Origem: o que a Daniela ve (rotulo) e o que o banco guarda (origem + detalhe).
+   Google aparece separado em Anuncio e Maps porque desde 15/09 existe campanha
+   paga rodando, e misturar os dois inutiliza a conta de custo por paciente. */
+const ORIGENS = [
+  {rot:'Instagram',      origem:'instagram',       det:null,      tema:true},
+  {rot:'Google anúncio', origem:'google',          det:'ads'},
+  {rot:'Google Maps',    origem:'google',          det:'perfil'},
+  {rot:'Site',           origem:'site',            det:null},
+  {rot:'Indicação',      origem:'indicacao',       det:null},
+  {rot:'Já é paciente',  origem:'paciente_antigo', det:null},
+  {rot:'TikTok',         origem:'tiktok',          det:null},
+  {rot:'Outro',          origem:'outro',           det:null}
+];
+const TEMAS    = ['bio','platô','hormônios','caneta','bariátrica','outro'];
+const MOTIVOS  = ['emagrecimento','hormonal','bariátrica','performance','outro'];
+const MODALS   = [{rot:'Tatuapé',v:'tatuape'},{rot:'Pinheiros',v:'pinheiros'},
+                  {rot:'Online',v:'online'},{rot:'Ainda não sei',v:'indefinido'}];
+const PERDAS   = ['preço','distância','sumiu','foi com outro','adiou','só queria informação'];
+
+/* Etapas na ordem. O indice manda na trilha visual e no botao de avancar. */
+const ETAPAS = ['novo','respondido','qualificado','agendado','compareceu','paciente'];
+const ROTULO = {novo:'Novo',respondido:'Respondido',qualificado:'Qualificado',
+                agendado:'Agendado',compareceu:'Compareceu',paciente:'Paciente',perdido:'Não seguiu'};
+/* Carimbo de data por etapa: a coluna que recebe now() quando a etapa e atingida. */
+const CARIMBO = {respondido:'primeira_resposta_em',agendado:'agendado_em',
+                 compareceu:'compareceu_em',paciente:'fechado_em'};
+
+const $  = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.prototype.slice.call(document.querySelectorAll(s));
+const agora = ()=>new Date().toISOString();
+const esc = (t)=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const soDigitos = (t)=>String(t||'').replace(/\D+/g,'');
+
+let db = null;
+let LEADS = [];
+let FILTRO = 'abertos';
+let alvoId = null;          /* lead em foco nas folhas de fechar/perder */
+const sel = {origem:null, tema:null, motivo:null, modalidade:null, perda:null};
+
+/* ── chips genericos ─────────────────────────────────────────────────── */
+function montaChips(box, itens, campo, aoEscolher){
+  box.innerHTML = '';
+  itens.forEach(function(it, i){
+    const rot = (typeof it === 'string') ? it : it.rot;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = rot; b.dataset.i = i;
+    b.addEventListener('click', function(){
+      Array.prototype.forEach.call(box.children, c=>c.classList.remove('on'));
+      b.classList.add('on');
+      sel[campo] = i;
+      if (aoEscolher) aoEscolher(i);
+    });
+    box.appendChild(b);
+  });
+}
+function limpaChips(box, campo){
+  Array.prototype.forEach.call(box.children, c=>c.classList.remove('on'));
+  sel[campo] = null;
+}
+
+/* ── resumo do topo ──────────────────────────────────────────────────── */
+function pintaResumo(){
+  const abertos = LEADS.filter(l=>ETAPAS.indexOf(l.status)>=0 && l.status!=='paciente').length;
+  const pac     = LEADS.filter(l=>l.status==='paciente').length;
+  const total   = LEADS.length;
+  const taxa    = total ? Math.round(pac*100/total) : 0;
+  $('#resumo').innerHTML =
+    '<div class="rc"><b>'+abertos+'</b><span>em aberto</span></div>' +
+    '<div class="rc"><b>'+pac+'</b><span>pacientes</span></div>' +
+    '<div class="rc"><b>'+taxa+'%</b><span>conversão</span></div>';
+}
+
+/* ── lista ───────────────────────────────────────────────────────────── */
+function filtra(l){
+  if (FILTRO==='todos')    return true;
+  if (FILTRO==='paciente') return l.status==='paciente';
+  if (FILTRO==='perdido')  return l.status==='perdido';
+  if (FILTRO==='hoje')     return (l.primeiro_contato_em||'').slice(0,10) === agora().slice(0,10);
+  return l.status!=='paciente' && l.status!=='perdido';   /* abertos */
+}
+function rotuloOrigem(l){
+  const o = ORIGENS.filter(function(x){
+    return x.origem===l.origem && (x.det||null)===(l.origem_detalhe==='ads'||l.origem_detalhe==='perfil'?l.origem_detalhe:null);
+  })[0];
+  let t = o ? o.rot : (l.origem||'sem origem');
+  if (l.origem_detalhe && l.origem_detalhe!=='ads' && l.origem_detalhe!=='perfil') t += ' · '+l.origem_detalhe;
+  return t;
+}
+function trilha(l){
+  if (l.status==='perdido') return '<div class="trilha">'+ETAPAS.map(()=> '<i class="et lose"></i>').join('')+'</div>';
+  const i = ETAPAS.indexOf(l.status);
+  return '<div class="trilha">'+ETAPAS.map(function(_,k){
+    const cls = k<=i ? (l.status==='paciente'?'et win':'et on') : 'et';
+    return '<i class="'+cls+'"></i>';
+  }).join('')+'</div>';
+}
+
+function cartao(l){
+  const i = ETAPAS.indexOf(l.status);
+  const prox = (i>=0 && i<ETAPAS.length-1) ? ETAPAS[i+1] : null;
+  const zap = soDigitos(l.whatsapp);
+  const partes = [rotuloOrigem(l)];
+  if (l.motivo) partes.push(l.motivo);
+  if (l.modalidade && l.modalidade!=='indefinido') partes.push(l.modalidade);
+  let acoes = '';
+  if (l.status!=='paciente' && l.status!=='perdido'){
+    if (prox==='paciente') acoes += '<button class="b ok" data-fechar="'+l.id+'">Virou paciente</button>';
+    else if (prox)         acoes += '<button class="b pri" data-prox="'+l.id+'">'+ROTULO[prox]+'</button>';
+    acoes += '<button class="b bad" data-perder="'+l.id+'">Não seguiu</button>';
+  }
+  if (zap) acoes += '<a class="b gh" href="https://wa.me/55'+zap+'" target="_blank" rel="noopener">WhatsApp</a>';
+  const dinheiro = (l.status==='paciente' && l.valor!=null)
+    ? ' · <b>R$ '+Number(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})+'</b>' : '';
+  const perda = (l.status==='perdido' && l.motivo_perda) ? ' · '+esc(l.motivo_perda) : '';
+  return '<div class="card">' +
+    '<h3>'+esc(l.nome||'Sem nome')+'</h3>' +
+    '<p class="meta"><b>'+esc(partes.join(' · '))+'</b><br>'+ROTULO[l.status]+dinheiro+perda+'</p>' +
+    trilha(l) +
+    '<div class="acoes">'+acoes+'</div>' +
+  '</div>';
+}
+function pinta(){
+  pintaResumo();
+  const v = LEADS.filter(filtra);
+  $('#lista').innerHTML = v.length ? v.map(cartao).join('')
+    : '<div class="vazio">Nada aqui ainda.<br>Toque em Novo contato quando alguém chamar.</div>';
+}
+
+/* ── banco ───────────────────────────────────────────────────────────── */
+async function carrega(){
+  const r = await db.from('mkt_lead').select('*').order('primeiro_contato_em',{ascending:false}).limit(400);
+  if (r.error){ $('#lista').innerHTML = '<div class="vazio">Não consegui ler os leads.<br>'+esc(r.error.message)+'</div>'; return; }
+  LEADS = r.data || [];
+  pinta();
+}
+async function salvaEtapa(id, novo, extra){
+  const l = LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  const body = Object.assign({status:novo, atualizado_em:agora()}, extra||{});
+  const col = CARIMBO[novo];
+  if (col && !l[col]) body[col] = agora();
+  const r = await db.from('mkt_lead').update(body).eq('id',id);
+  if (r.error){ alert('Não consegui salvar: '+r.error.message); return; }
+  await carrega();
+}
+
+/* ── folhas ──────────────────────────────────────────────────────────── */
+function abre(id){ $(id).classList.add('on'); }
+function fecha(id){ $(id).classList.remove('on'); }
+
+function abreNovo(){
+  $('#fNome').value=''; $('#fZap').value=''; $('#fObs').value='';
+  limpaChips($('#fOrigem'),'origem'); limpaChips($('#fTema'),'tema');
+  limpaChips($('#fMotivo'),'motivo'); limpaChips($('#fModal'),'modalidade');
+  $('#boxTema').style.display='none';
+  abre('#sheetNovo');
+}
+async function salvaNovo(){
+  if (sel.origem===null){ alert('Marque de onde a pessoa veio. É o único campo que não dá para descobrir depois.'); return; }
+  const o = ORIGENS[sel.origem];
+  const linha = {
+    nome: $('#fNome').value.trim() || null,
+    whatsapp: $('#fZap').value.trim() || null,
+    origem: o.origem,
+    origem_detalhe: o.det || (o.tema && sel.tema!==null ? TEMAS[sel.tema] : null),
+    motivo: sel.motivo!==null ? MOTIVOS[sel.motivo] : null,
+    modalidade: sel.modalidade!==null ? MODALS[sel.modalidade].v : null,
+    status: 'novo',
+    obs: $('#fObs').value.trim() || null,
+    primeiro_contato_em: agora(),
+    atualizado_em: agora()
+  };
+  $('#novoSalvar').disabled = true;
+  const r = await db.from('mkt_lead').insert(linha);
+  $('#novoSalvar').disabled = false;
+  if (r.error){ alert('Não consegui salvar: '+r.error.message); return; }
+  fecha('#sheetNovo');
+  await carrega();
+}
+async function salvaFechamento(){
+  const v = parseFloat(String($('#gValor').value).replace(',','.'));
+  await salvaEtapa(alvoId, 'paciente', {
+    plano_contratado: $('#gPlano').value.trim() || null,
+    valor: isNaN(v) ? null : v
+  });
+  fecha('#sheetFechar');
+}
+async function salvaPerda(){
+  if (sel.perda===null){ alert('Marque o motivo. É o que ensina onde o funil vaza.'); return; }
+  await salvaEtapa(alvoId, 'perdido', {motivo_perda: PERDAS[sel.perda]});
+  fecha('#sheetPerder');
+}
+
+/* ── ligacoes de tela ────────────────────────────────────────────────── */
+function liga(){
+  montaChips($('#fOrigem'), ORIGENS, 'origem', function(i){
+    $('#boxTema').style.display = ORIGENS[i].tema ? 'block' : 'none';
+    if (!ORIGENS[i].tema) limpaChips($('#fTema'),'tema');
+  });
+  montaChips($('#fTema'),   TEMAS,   'tema');
+  montaChips($('#fMotivo'), MOTIVOS, 'motivo');
+  montaChips($('#fModal'),  MODALS,  'modalidade');
+  montaChips($('#pMotivo'), PERDAS,  'perda');
+
+  $('#fabNovo').addEventListener('click', abreNovo);
+  $('#novoCancelar').addEventListener('click', function(){ fecha('#sheetNovo'); });
+  $('#novoSalvar').addEventListener('click', salvaNovo);
+  $('#fecharCancelar').addEventListener('click', function(){ fecha('#sheetFechar'); });
+  $('#fecharSalvar').addEventListener('click', salvaFechamento);
+  $('#perderCancelar').addEventListener('click', function(){ fecha('#sheetPerder'); });
+  $('#perderSalvar').addEventListener('click', salvaPerda);
+
+  $$('.sheet').forEach(function(s){
+    s.addEventListener('click', function(e){ if (e.target===s) s.classList.remove('on'); });
+  });
+  $('#filtros').addEventListener('click', function(e){
+    const b = e.target.closest('.filtro'); if(!b) return;
+    $$('.filtro').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); FILTRO = b.dataset.f; pinta();
+  });
+  /* Um listener so na lista, delegado. Evita handler duplicado quando a lista
+     e repintada, que ja foi causa de clique contado duas vezes no HAG OS. */
+  $('#lista').addEventListener('click', function(e){
+    const p = e.target.closest('[data-prox]');
+    if (p){ const id=p.dataset.prox; const l=LEADS.filter(x=>x.id===id)[0];
+            salvaEtapa(id, ETAPAS[ETAPAS.indexOf(l.status)+1]); return; }
+    const f = e.target.closest('[data-fechar]');
+    if (f){ alvoId=f.dataset.fechar; $('#gPlano').value=''; $('#gValor').value=''; abre('#sheetFechar'); return; }
+    const x = e.target.closest('[data-perder]');
+    if (x){ alvoId=x.dataset.perder; limpaChips($('#pMotivo'),'perda'); abre('#sheetPerder'); return; }
+  });
+}
+
+/* ── inicio: login primeiro, banco depois ────────────────────────────── */
+window.HAGAuth.mount(function(){
+  window.HAGAuth.patchFetch();
+  db = window.supabase.createClient(SURL, SKEY);
+  liga();
+  carrega();
+});
+</script>
+</body>
+</html>
