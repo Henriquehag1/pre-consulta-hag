@@ -1292,20 +1292,49 @@ var _cadAberto = new Set();   /* HAG_CADASTRO_LISTA_v2: fichas abertas, sobreviv
 
 function verCadastro(){ setFilter('cadastro'); }
 
-/* ═══ HAG_QUADRO_AGENDA_v1 (15/09/2026) ═══════════════════════════════════
-   Quadro da agenda por dia, pedido pelo Dr. Henrique para acompanhar como a
-   agenda vai se formando agora que os pacientes marcam sozinhos pelo link.
+/* ═══ HAG_QUADRO_AGENDA_v2 (15/09/2026) ═══════════════════════════════════
+   Quadro da agenda por dia, para acompanhar como a agenda vai se formando
+   agora que os pacientes marcam sozinhos pelo link.
 
-   NÃO FAZ CONSULTA NOVA, de propósito: tudo o que ele mostra já está em _fila,
-   que a tela carrega de qualquer jeito. Toda tarefa de agendamento com dia e
-   hora marcados é um atendimento marcado, não importa se quem marcou foi a
-   Daniela ou o próprio paciente pelo link. Quem marcou sozinho tem
-   criado_por = 'auto_agendamento', e é isso que vira o selo.
+   POR QUE A v1 FOI REFEITA, NO MESMO DIA EM QUE NASCEU
+   A v1 lia só _fila, e o comentário dela afirmava, com todas as letras, que
+   "tudo o que ele mostra já está em _fila". Era falso. A ocupação da agenda
+   vem de TRÊS lugares: agendamentos_online, tarefas e retornos. Um retorno
+   marcado direto na tabela de retornos não tem tarefa nenhuma e sumia do
+   quadro; uma consulta que só existe como tarefa concluída também não
+   aparecia para o motor. No dia 19/09 o quadro mostrava dois atendimentos
+   onde a agenda tinha três horários ocupados, e um horário fantasma da
+   paciente de teste passou quatro dias escondido atrás dessa diferença.
 
-   Assim o quadro não pode divergir da fila: é a mesma fonte, olhada de outro
-   jeito. Painel que busca por conta própria acaba mostrando um número
-   diferente do da tela ao lado, e aí ninguém sabe em qual acreditar. */
-function verAgenda(){ setFilter('agenda'); }
+   A v2 lê v_agenda_quadro, que é a v_agenda_ocupacao, a MESMA view que
+   agendar_HAG.html usa para decidir o que oferecer ao paciente, com o nome do
+   paciente e a origem grudados. Mesmas três fontes, mesmas durações, mesma
+   regra de desempate. Quadro e motor não podem mais divergir, porque agora é
+   literalmente a mesma conta.
+
+   A LIÇÃO, para não repetir: painel que "aproveita" um dado já carregado na
+   tela economiza uma consulta e paga com uma verdade pela metade. Quando o
+   painel existe para CONFERIR alguma coisa, ele tem que ler a fonte que manda,
+   nem que custe uma busca a mais. */
+let _agenda=[];
+let _agendaErro=null;
+
+async function loadAgenda(){
+  const{data,error}=await db.from('v_agenda_quadro').select('*').order('data').order('hora_inicio');
+  if(error) throw error;
+  return data||[];
+}
+
+async function verAgenda(){
+  _agendaErro=null;
+  setFilter('agenda');
+  try{
+    _agenda = await loadAgenda();
+  }catch(e){
+    _agendaErro = (e && e.message) ? e.message : String(e);
+  }
+  render();
+}
 
 function _agFmtDia(iso){
   try{ return _diaPorExtenso(iso); }catch(e){ return String(iso||''); }
@@ -1314,42 +1343,37 @@ function _agLocal(l){
   var k=String(l||'').toLowerCase();
   return (HAG_LOCAIS[k]&&HAG_LOCAIS[k].label) || (l||'a definir');
 }
+/* HAG_QUADRO_AGENDA_v2: o tipo aparece porque aplicação de 30 min e consulta
+   diagnóstica de 75 ocupam o dia de jeitos muito diferentes, e o quadro serve
+   para o Dr. Henrique enxergar o peso do dia, não só a contagem. */
+var _AG_TIPO={diagnostica:'diagnóstica',injetavel:'aplicação',retorno:'retorno',online:'online',procedimento:'procedimento',implante:'implante'};
+function _agTipo(t){ var k=String(t||'').toLowerCase(); return _AG_TIPO[k]||k||''; }
+function _agHora(h){ return String(h||'').slice(0,5); }
 
 function _agendaPainelHtml(){
   var hoje=new Date().toISOString().slice(0,10);
   var voltar='<button onclick="setFilter(\'fila\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:8px 13px;font-size:.78rem;font-family:inherit;cursor:pointer;color:#6b6b63;margin-bottom:12px">&#8592; Voltar para a fila</button>';
 
-  var marcados=(_fila||[]).filter(function(t){
-    return t.status!=='cancelada' && t.agendado_data && t.agendado_data>=hoje;
-  });
-  marcados.sort(function(a,b){
-    if(a.agendado_data!==b.agendado_data) return a.agendado_data<b.agendado_data?-1:1;
-    return String(a.agendado_hora||'')<String(b.agendado_hora||'')?-1:1;
-  });
+  /* HAG_QUADRO_AGENDA_v2: falha de leitura NUNCA pode parecer agenda vazia.
+     Um quadro em branco por erro de rede e um quadro em branco por não ter
+     ninguém marcado levam a decisões opostas. */
+  if(_agendaErro){
+    return voltar
+      +'<div style="background:#fdecea;border:1px solid #f3c2bc;border-radius:12px;padding:18px;color:#8a2c20;font-size:.86rem;line-height:1.5">'
+      +'<b>Não consegui ler a agenda.</b><br>'+_msgEsc(_agendaErro)
+      +'<br><br>O quadro está em branco porque a leitura falhou, <b>não</b> porque a agenda esteja vazia. Clique em Atualizar e tente de novo.</div>';
+  }
 
-  /* HAG_QUADRO_AGENDA_v1: mesmo paciente, mesmo dia, mesma hora é UM atendimento,
-     ainda que existam duas tarefas para ele. Acontece quando a mesma consulta foi
-     lançada duas vezes na fila, e hoje existem dois casos no histórico inteiro.
-     Sem juntar, o dia apareceria mais cheio do que é, e o quadro serve justamente
-     para conferir quantos atendimentos o dia tem. Junta e AVISA, porque a tarefa
-     repetida continua lá para ser limpa: esconder sem dizer seria trocar um erro
-     visível por um invisível. */
-  var vistos={}, unicos=[];
-  marcados.forEach(function(t){
-    var ch=t.agendado_data+'|'+(t.agendado_hora||'')+'|'+(t.patient_nome||'');
-    if(vistos[ch]){ vistos[ch].repetida=(vistos[ch].repetida||1)+1; return; }
-    var copia={};
-    for(var k in t){ if(Object.prototype.hasOwnProperty.call(t,k)) copia[k]=t[k]; }
-    vistos[ch]=copia; unicos.push(copia);
-  });
-  marcados=unicos;
+  var marcados=(_agenda||[]).filter(function(x){ return x.data && x.data>=hoje; });
 
-  /* quantos marcaram sozinhos, e quantos nos ultimos 7 dias, que e a leitura
-     de adesao ao link que o Dr. Henrique quis acompanhar */
+  /* quantos marcaram sozinhos no total e quantos nos ultimos 7 dias, que e a
+     leitura de adesao ao link. O corte olha a data em que o horario FOI
+     MARCADO, nao a data do atendimento, por isso usa _agenda inteiro, que
+     carrega 30 dias para tras. */
   var corte=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
-  var sozinhoTotal=marcados.filter(function(t){return t.criado_por==='auto_agendamento';}).length;
-  var sozinho7=(_fila||[]).filter(function(t){
-    return t.criado_por==='auto_agendamento' && String(t.criado_em||'').slice(0,10)>=corte;
+  var sozinhoTotal=marcados.filter(function(x){return x.marcou_sozinho;}).length;
+  var sozinho7=(_agenda||[]).filter(function(x){
+    return x.marcou_sozinho && String(x.criado_em||'').slice(0,10)>=corte;
   }).length;
 
   var h=voltar;
@@ -1372,13 +1396,13 @@ function _agendaPainelHtml(){
   }
 
   var diaAtual=null;
-  marcados.forEach(function(t){
-    if(t.agendado_data!==diaAtual){
+  marcados.forEach(function(x){
+    if(x.data!==diaAtual){
       if(diaAtual!==null) h+='</div>';
-      diaAtual=t.agendado_data;
-      var doDia=marcados.filter(function(x){return x.agendado_data===diaAtual;});
+      diaAtual=x.data;
+      var doDia=marcados.filter(function(y){return y.data===diaAtual;});
       var locais={};
-      doDia.forEach(function(x){ locais[_agLocal(x.local)]=1; });
+      doDia.forEach(function(y){ locais[_agLocal(y.local)]=1; });
       h+='<div style="background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:0;margin-bottom:10px;overflow:hidden">'
         +'<div style="background:#faf8f4;border-bottom:1px solid #eee9e0;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
         +'<span style="font-size:.84rem;font-weight:700;color:#1a1a18;text-transform:capitalize">'+_msgEsc(_agFmtDia(diaAtual))+'</span>'
@@ -1386,15 +1410,15 @@ function _agendaPainelHtml(){
         +' &middot; '+_msgEsc(Object.keys(locais).join(', '))+'</span>'
         +'</div>';
     }
-    var selo = (t.criado_por==='auto_agendamento')
+    var selo = x.marcou_sozinho
       ? '<span style="background:#e8f3ec;color:#2f7a4f;border:1px solid #cfe5d8;border-radius:6px;padding:2px 7px;font-size:.66rem;font-weight:700;white-space:nowrap">marcou sozinho</span>'
       : '';
     h+='<div style="padding:9px 14px;border-bottom:1px solid #f4f1ea;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-      +'<span style="font-size:.84rem;font-weight:700;color:#1a1a18;min-width:48px">'+_msgEsc(t.agendado_hora||'--:--')+'</span>'
-      +'<span style="flex:1;min-width:150px;font-size:.84rem;color:#3a3a34">'+_msgEsc(t.patient_nome||'(sem nome)')+'</span>'
-      +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agLocal(t.local))+'</span>'
+      +'<span style="font-size:.84rem;font-weight:700;color:#1a1a18;min-width:48px">'+_msgEsc(_agHora(x.hora_inicio))+'</span>'
+      +'<span style="flex:1;min-width:150px;font-size:.84rem;color:#3a3a34">'+_msgEsc(x.patient_nome||'(sem nome)')+'</span>'
+      +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agTipo(x.tipo))+'</span>'
+      +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agLocal(x.local))+'</span>'
       +selo
-      +(t.repetida ? '<span title="Existem '+t.repetida+' tarefas na fila para este mesmo atendimento. Vale apagar as repetidas." style="background:#fdf6e3;color:#7a5c14;border:1px solid #e8d5b0;border-radius:6px;padding:2px 7px;font-size:.66rem;font-weight:700;white-space:nowrap">'+t.repetida+' tarefas repetidas</span>' : '')
       +'</div>';
   });
   h+='</div>';
@@ -1411,6 +1435,10 @@ async function atualizarTudo(btn){
     _tasks = await loadTasks();
     _fila  = await loadFila();
     _patients = await loadPatients();
+    /* HAG_QUADRO_AGENDA_v2: o quadro le a propria view, entao Atualizar
+       precisa recarregar ela tambem, senao o botao mente para quem esta
+       olhando o quadro. */
+    if(_filter==='agenda'){ _agendaErro=null; try{ _agenda = await loadAgenda(); }catch(e){ _agendaErro=(e&&e.message)?e.message:String(e); } }
     render();
     sSync('ok','sincronizado');
     toast('Atualizado','ok');
