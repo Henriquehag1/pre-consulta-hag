@@ -3094,6 +3094,28 @@ async function _mostrarBotaoPush(){
   b.style.display='inline-block'; b.disabled=false; b.style.opacity='';
 }
 
+/* HAG_PUSH_COM_DONO_v1: quais aparelhos recebem os avisos. Existe porque em
+   15/09 a pergunta "para quem foram esses dois avisos" não tinha resposta na
+   tela, só no banco. Quem recebe nome de paciente tem que ser auditável por
+   quem é dono da clínica, sem depender de ninguém consultar o banco. */
+window.verAparelhosDeAviso=async function(){
+  try{
+    var r=await db.from('push_assinaturas').select('quem,aparelho,criado_em').order('criado_em');
+    if(r.error) throw r.error;
+    var lista=(r.data||[]);
+    if(!lista.length){ alert('Nenhum aparelho recebe avisos no momento.'); return; }
+    var txt=lista.map(function(a,i){
+      var ap=String(a.aparelho||'');
+      var tipo=/iPhone/i.test(ap)?'iPhone':(/iPad/i.test(ap)?'iPad':(/Android/i.test(ap)?'Android':'outro'));
+      return (i+1)+'. '+(a.quem||'SEM DONO IDENTIFICADO')+'\n   '+tipo
+             +', ligado em '+String(a.criado_em||'').slice(0,10).split('-').reverse().join('/');
+    }).join('\n\n');
+    var semDono=lista.filter(function(a){ return !a.quem; }).length;
+    alert('Aparelhos que recebem os avisos (com nome de paciente):\n\n'+txt
+          + (semDono ? '\n\n⚠️ '+semDono+' sem dono identificado. Vale conferir de quem é, ou desligar o aviso nesse aparelho e ligar de novo já logado.' : ''));
+  }catch(e){ toast('Nao consegui ler: '+(e&&e.message?e.message:e),'err'); }
+};
+
 window.ativarAvisos=async function(btn){
   if(!_pushSuportado()){ toast('Este navegador nao entrega aviso com a pagina fechada.','err'); return; }
   if(_ehIOS() && !_estaInstalado()){
@@ -3121,6 +3143,26 @@ window.ativarAvisos=async function(btn){
     var j=sub.toJSON();
     var sess=await db.auth.getSession();
     var email=(sess&&sess.data&&sess.data.session&&sess.data.session.user&&sess.data.session.user.email)||'';
+    /* ═══ HAG_PUSH_COM_DONO_v1 (15/09/2026) ══════════════════════════════════
+       Assinatura sem dono não entra mais.
+
+       O QUE ACONTECEU: em 15/09 um aviso não chegou no iPhone do Dr. Henrique.
+       O servidor tinha enviado certo, a Apple aceitou, mas havia DUAS
+       assinaturas e uma delas estava com o campo "quem" em branco. Sem saber de
+       quem era o aparelho, não dava para dizer se o aviso tinha ido para o
+       celular certo, e o diagnóstico virou adivinhação.
+
+       E tem o lado que pesa mais: o aviso leva NOME DE PACIENTE na tela de
+       bloqueio. Aparelho que ninguém consegue identificar não pode receber
+       isso. Sem login, sem assinatura.
+
+       O campo ficava em branco quando a sessão ainda não tinha carregado no
+       momento do toque, então o pedido é para tentar de novo, não um erro. */
+    if(!email){
+      toast('Entre com o seu e-mail antes de ligar os avisos. O aviso mostra nome de paciente, então o aparelho precisa ter dono identificado.','err');
+      if(btn){ btn.disabled=false; btn.innerHTML=_o; }
+      return;
+    }
     var r=await db.from('push_assinaturas').upsert({
       endpoint:j.endpoint,
       p256dh:(j.keys&&j.keys.p256dh)||'',
@@ -3130,7 +3172,7 @@ window.ativarAvisos=async function(btn){
       atualizado_em:new Date().toISOString()
     },{onConflict:'endpoint'});
     if(r.error) throw new Error(r.error.message);
-    toast('Avisos ligados neste aparelho','ok');
+    toast('Avisos ligados neste aparelho, como '+email,'ok');
     _mostrarBotaoPush();
     /* aviso de confirmacao, para ela ver que funcionou sem precisar esperar
        uma tarefa nova. So chega neste aparelho. */
