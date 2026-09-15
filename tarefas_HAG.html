@@ -1061,12 +1061,94 @@ var DAN_CAT=[{id:'pre_consulta',nome:'Pré-consulta',ic:'📨'},{id:'confirmacao
 var _msgCat='todas', _msgPacId=null, _msgAberta=null;
 function _msgEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function _msgPac(){ return (_patients||[]).find(function(p){ return String(p.id)===String(_msgPacId); }) || null; }
-function _msgTexto(t){
+
+/* ═══ HAG_MSG_NOME_ANTES_DO_CADASTRO_v1 (15/09/2026) ══════════════════════
+   O PROBLEMA, apontado pelo Dr. Henrique
+   As mensagens de pré-consulta começam com "Olá [nome]", e o [nome] só era
+   preenchido escolhendo o paciente da lista. Mas nessa etapa o paciente AINDA
+   NÃO EXISTE no sistema: é justamente o formulário pré-consulta que cria o
+   cadastro. Ou seja, exatamente nas cinco mensagens em que a Daniela mais
+   precisa do nome, ela não tinha como preencher, e o texto saía com "[nome]"
+   escrito por extenso, ou ela corrigia à mão toda vez.
+
+   Errar isso é caro: "Olá [nome]" é a PRIMEIRA mensagem que a pessoa recebe do
+   consultório, antes de pagar qualquer coisa.
+
+   A SAÍDA: não é tirar o nome da mensagem, é dar um lugar para escrevê-lo. A
+   Daniela está com o nome da pessoa na conversa do WhatsApp, na frente dela.
+   Um campo de texto resolve, e o tratamento pelo nome, que vale muito numa
+   clínica premium, continua de pé.
+
+   DE QUEBRA: o [data] nunca era trocado por nada, em nenhuma mensagem. As
+   mensagens de dúvida clínica e de recebimento de exames saíam literalmente
+   com "A sua próxima consulta é [data]". Agora ele vem do cadastro.
+
+   E A TRAVA: nenhuma mensagem com etiqueta por preencher abre no WhatsApp. O
+   aviso amarelo sozinho não basta, porque avisar depende de alguém ler. */
+var _msgNomeAvulso='';
+var _msgFoco=null;   /* qual campo estava com o cursor, para o render nao roubar o foco */
+
+function _msgSetNome(v){ _msgNomeAvulso=String(v||''); _msgFoco='msgNome'; render(); }
+
+function _msgPrimeiroNome(){
   var p=_msgPac();
-  var primeiro = p ? String(p.nome||'').trim().split(' ')[0] : '';
-  return primeiro ? t.texto.split('[nome]').join(primeiro) : t.texto;
+  if(p) return String(p.nome||'').trim().split(' ')[0];
+  var n=String(_msgNomeAvulso||'').trim();
+  return n ? n.split(' ')[0] : '';
 }
-function verMensagens(){ setFilter('mensagens'); }
+/* HAG_MSG_DATA_DA_AGENDA_v1 (15/09/2026)
+   O [data] quase saiu de patients.proxima, e eu conferi antes: de 13 pacientes
+   com proxima futura, 12 batem com a agenda e 1 nao. A Priscila tem 04/11 no
+   cadastro e NADA marcado na agenda; para ela, proxima e uma data planejada,
+   nao um horario reservado. Mandar "a sua proxima consulta e 04/11" para quem
+   nao tem consulta marcada e pior do que nao mandar data nenhuma.
+
+   Entao o [data] sai da agenda de verdade, a mesma v_agenda_quadro que o motor
+   usa. Sem horario marcado, o [data] simplesmente nao e preenchido e a tela
+   avisa, que e o comportamento seguro: a Daniela escreve a mao sabendo o que
+   esta escrevendo. */
+function _msgDataProxima(){
+  var p=_msgPac();
+  if(!p) return '';
+  var hoje=new Date().toISOString().slice(0,10);
+  var meus=(_agenda||[]).filter(function(x){
+    return String(x.patient_id)===String(p.id) && x.data && x.data>=hoje;
+  }).sort(function(a,b){ return a.data<b.data ? -1 : (a.data>b.data ? 1 : 0); });
+  if(!meus.length) return '';
+  var m=String(meus[0].data).split('-');
+  return (m.length===3 && m[0].length===4) ? (m[2]+'/'+m[1]+'/'+m[0]) : '';
+}
+function _msgTexto(t){
+  var txt=t.texto;
+  var nome=_msgPrimeiroNome();
+  if(nome) txt=txt.split('[nome]').join(nome);
+  var d=_msgDataProxima();
+  if(d) txt=txt.split('[data]').join(d);
+  return txt;
+}
+/* o que ainda falta, e COMO resolver cada coisa. Dizer que falta sem dizer
+   onde se resolve transfere o problema em vez de resolver. */
+function _msgPendencias(txt){
+  var f=[];
+  if(txt.indexOf('[nome]')>=0) f.push({tag:'[nome]', como:'escolha o paciente, ou escreva o nome no campo do topo'});
+  if(txt.indexOf('[data]')>=0) f.push({tag:'[data]', como: _agendaErro
+      ? 'não consegui ler a agenda agora, escreva a data à mão depois de copiar'
+      : 'este paciente não tem consulta marcada na agenda, escreva a data à mão depois de copiar'});
+  if(txt.indexOf('[link]')>=0) f.push({tag:'[link]', como:'o link individual sai da tela de disparo de check-ins'});
+  return f;
+}
+/* HAG_MSG_DATA_DA_AGENDA_v1: o painel de mensagens precisa da agenda para
+   preencher o [data], entao carrega junto. Se falhar, o [data] fica pendente e
+   a tela diz por que, em vez de chutar uma data. */
+async function verMensagens(){
+  setFilter('mensagens');
+  if(!(_agenda||[]).length){
+    _agendaErro=null;
+    try{ _agenda = await loadAgenda(); }
+    catch(e){ _agendaErro=(e&&e.message)?e.message:String(e); }
+    render();
+  }
+}
 function setMsgCat(c){ _msgCat=c; _msgAberta=null; render(); }
 function abrirMsg(id){ _msgAberta = (_msgAberta===id) ? null : id; render(); }
 function escolherMsgPac(id){ _msgPacId=id||null; render(); }
@@ -1074,7 +1156,11 @@ function limparMsgPac(){ _msgPacId=null; var b=document.getElementById('msgBusca
 async function copiarMsg(id){
   var t=DAN_TPL.find(function(x){return x.id===id;}); if(!t) return;
   var txt=_msgTexto(t);
-  try{ await navigator.clipboard.writeText(txt); toast('Mensagem copiada','ok'); }
+  /* HAG_MSG_NOME_ANTES_DO_CADASTRO_v1: copiar continua liberado, porque as
+     vezes ela quer justamente editar a mao. Mas o aviso vai junto. */
+  var _pd=_msgPendencias(txt);
+  var _av=_pd.length ? (' Falta trocar '+_pd.map(function(x){return x.tag;}).join(' e ')+'.') : '';
+  try{ await navigator.clipboard.writeText(txt); toast('Mensagem copiada.'+_av, _pd.length?'err':'ok'); }
   catch(e){ prompt('Copie a mensagem:', txt); }
 }
 function whatsMsg(id){
@@ -1083,6 +1169,12 @@ function whatsMsg(id){
   if(!p){ toast('Escolha o paciente primeiro','err'); return; }
   var fone=_sinalFone(p.whatsapp);
   var txt=_msgTexto(t);
+  /* HAG_MSG_NOME_ANTES_DO_CADASTRO_v1: nada meio escrito chega perto do paciente. */
+  var _pd=_msgPendencias(txt);
+  if(_pd.length){
+    toast('Falta preencher '+_pd.map(function(x){return x.tag;}).join(' e ')+': '+_pd[0].como,'err');
+    return;
+  }
   if(!fone){
     copiarMsg(id);
     toast('Sem WhatsApp no cadastro de '+String(p.nome||'').split(' ')[0]+'. Mensagem copiada.','err');
@@ -1168,8 +1260,13 @@ async function enviarComAnexo(id){
   var t=DAN_TPL.find(function(x){return x.id===id;}); if(!t || !t.anexo) return;
   var p=_msgPac();
   if(!p){ toast('Escolha o paciente primeiro','err'); return; }
-  _anexoBusy = true;
   var txt=_msgTexto(t);
+  var _pd=_msgPendencias(txt);   /* HAG_MSG_NOME_ANTES_DO_CADASTRO_v1 */
+  if(_pd.length){
+    toast('Falta preencher '+_pd.map(function(x){return x.tag;}).join(' e ')+': '+_pd[0].como,'err');
+    return;
+  }
+  _anexoBusy = true;
   try{
     toast('Buscando o documento...','');
     var doc = await _anexoDoPaciente(p.id, t.anexo);
@@ -1232,12 +1329,19 @@ function _msgPainelHtml(q){
     var lista=achados.map(function(x){
       return '<button onclick="escolherMsgPac(\''+x.id+'\')" style="display:block;width:100%;text-align:left;border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:9px 11px;margin-top:6px;font-size:.84rem;font-family:inherit;cursor:pointer;color:#2b2a26">'+_msgEsc(x.nome)+'</button>';
     }).join('');
+    /* HAG_MSG_NOME_ANTES_DO_CADASTRO_v1: dois caminhos, e o segundo e o que
+       faltava. Paciente ja cadastrado sai da busca; paciente que ainda nao
+       existe, que e o caso de toda a pre-consulta, entra pelo campo de baixo. */
     topo='<div style="padding:11px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px;margin-bottom:12px">'
       +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42;margin-bottom:7px">Para quem é a mensagem</div>'
-      +'<input id="msgBusca" type="text" value="'+_msgEsc(q)+'" oninput="render()" placeholder="Digite o nome do paciente..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit">'
+      +'<input id="msgBusca" type="text" value="'+_msgEsc(q)+'" oninput="render()" onfocus="_msgFoco=\'msgBusca\'" placeholder="Paciente já cadastrado: digite o nome..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit">'
       +lista
-      +(qq.length>=2&&!achados.length?'<div style="font-size:.78rem;color:#6b6b63;margin-top:7px">Nenhum paciente com esse nome.</div>':'')
-      +'<div style="font-size:.72rem;color:#8a8578;margin-top:7px">Sem escolher, dá para copiar o texto do mesmo jeito.</div></div>';
+      +(qq.length>=2&&!achados.length?'<div style="font-size:.78rem;color:#6b6b63;margin-top:7px">Nenhum paciente com esse nome. Se ele ainda não foi cadastrado, use o campo abaixo.</div>':'')
+      +'<div style="margin-top:11px;padding-top:11px;border-top:1px dashed #ddd0a8">'
+        +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42;margin-bottom:6px">Ainda não é paciente cadastrado</div>'
+        +'<input id="msgNome" type="text" value="'+_msgEsc(_msgNomeAvulso)+'" oninput="_msgSetNome(this.value)" onfocus="_msgFoco=\'msgNome\'" placeholder="Primeiro nome, como ele se apresentou" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit">'
+        +'<div style="font-size:.72rem;color:#8a8578;margin-top:6px">Na pré-consulta o cadastro ainda não existe, é o formulário que cria. Escreva o nome aqui que as mensagens já saem certas. Sem WhatsApp no cadastro, use Copiar.</div>'
+      +'</div></div>';
   }
   /* categorias */
   var cats=[{id:'todas',nome:'Todas',ic:'📋'}].concat(DAN_CAT);
@@ -1257,11 +1361,11 @@ function _msgPainelHtml(q){
       /* HAG_MENSAGENS_TAREFAS_v2: [link] é o link individual do check-in, que
          leva o id do paciente. Sem ele o formulário mostra "Link inválido ou
          expirado", então o aviso tem que ser tão visível quanto o do [data]. */
-      var _pend=[];
-      if(txt.indexOf('[data]')>=0) _pend.push('<b>[data]</b>');
-      if(txt.indexOf('[link]')>=0) _pend.push('<b>[link]</b>, que sai da tela de disparo de check-ins');
+      /* HAG_MSG_NOME_ANTES_DO_CADASTRO_v1: o [nome] entrou na lista, e cada
+         etiqueta agora vem com o lugar onde se resolve. */
+      var _pend=_msgPendencias(txt).map(function(x){ return '<b>'+x.tag+'</b> ('+x.como+')'; });
       var aviso=_pend.length
-        ? '<div style="font-size:.74rem;color:#8a5a2b;margin-top:7px">⚠ Troque '+_pend.join(' e ')+' antes de enviar.</div>' : '';
+        ? '<div style="font-size:.74rem;color:#8a5a2b;margin-top:7px;line-height:1.5">⚠ Falta preencher '+_pend.join(' e ')+'. O botão do WhatsApp fica travado até resolver.</div>' : '';
       corpo='<div style="margin-top:9px;padding:11px 13px;background:#faf9f5;border:1px solid #ecebe4;border-radius:9px;font-size:.84rem;line-height:1.55;color:#2b2a26;white-space:pre-wrap">'+_msgEsc(txt)+'</div>'
         +aviso
         +'<div id="msgAcoes" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
@@ -1714,8 +1818,11 @@ function render(){
     var _elM=document.getElementById('taskList');
     var _qm=(document.getElementById('msgBusca')||{}).value||'';
     _elM.innerHTML=_msgPainelHtml(_qm);
-    var _bm=document.getElementById('msgBusca');
-    if(_bm && _qm){ _bm.focus(); try{ _bm.setSelectionRange(_qm.length,_qm.length); }catch(e){} }
+    /* HAG_MSG_NOME_ANTES_DO_CADASTRO_v1: sao dois campos agora, entao o foco
+       volta para o que estava sendo digitado, e nao sempre para a busca. */
+    var _bm=(_msgFoco==='msgNome') ? document.getElementById('msgNome')
+          : (_qm ? document.getElementById('msgBusca') : null);
+    if(_bm){ _bm.focus(); try{ var _vv=_bm.value||''; _bm.setSelectionRange(_vv.length,_vv.length); }catch(e){} }
     return;
   }
   /* HAG_QUADRO_AGENDA_v1 (15/09/2026): o quadro da agenda por dia. */
