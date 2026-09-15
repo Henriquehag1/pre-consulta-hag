@@ -818,6 +818,8 @@ body {
     <button id="btnMensagens" onclick="verMensagens()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4ac; Mensagens</button>
     <!-- HAG_CADASTRO_LIVANCE_v1 -->
     <button id="btnCadastro" onclick="verCadastro()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f5c2;&#xfe0f; Cadastro</button>
+    <!-- HAG_QUADRO_AGENDA_v1 -->
+    <button id="btnAgenda" onclick="verAgenda()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4c5; Agenda</button>
   </div>
 
   <!-- TASK LIST -->
@@ -1290,6 +1292,116 @@ var _cadAberto = new Set();   /* HAG_CADASTRO_LISTA_v2: fichas abertas, sobreviv
 
 function verCadastro(){ setFilter('cadastro'); }
 
+/* ═══ HAG_QUADRO_AGENDA_v1 (15/09/2026) ═══════════════════════════════════
+   Quadro da agenda por dia, pedido pelo Dr. Henrique para acompanhar como a
+   agenda vai se formando agora que os pacientes marcam sozinhos pelo link.
+
+   NÃO FAZ CONSULTA NOVA, de propósito: tudo o que ele mostra já está em _fila,
+   que a tela carrega de qualquer jeito. Toda tarefa de agendamento com dia e
+   hora marcados é um atendimento marcado, não importa se quem marcou foi a
+   Daniela ou o próprio paciente pelo link. Quem marcou sozinho tem
+   criado_por = 'auto_agendamento', e é isso que vira o selo.
+
+   Assim o quadro não pode divergir da fila: é a mesma fonte, olhada de outro
+   jeito. Painel que busca por conta própria acaba mostrando um número
+   diferente do da tela ao lado, e aí ninguém sabe em qual acreditar. */
+function verAgenda(){ setFilter('agenda'); }
+
+function _agFmtDia(iso){
+  try{ return _diaPorExtenso(iso); }catch(e){ return String(iso||''); }
+}
+function _agLocal(l){
+  var k=String(l||'').toLowerCase();
+  return (HAG_LOCAIS[k]&&HAG_LOCAIS[k].label) || (l||'a definir');
+}
+
+function _agendaPainelHtml(){
+  var hoje=new Date().toISOString().slice(0,10);
+  var voltar='<button onclick="setFilter(\'fila\')" style="border:1px solid #e5e2da;background:#fff;border-radius:9px;padding:8px 13px;font-size:.78rem;font-family:inherit;cursor:pointer;color:#6b6b63;margin-bottom:12px">&#8592; Voltar para a fila</button>';
+
+  var marcados=(_fila||[]).filter(function(t){
+    return t.status!=='cancelada' && t.agendado_data && t.agendado_data>=hoje;
+  });
+  marcados.sort(function(a,b){
+    if(a.agendado_data!==b.agendado_data) return a.agendado_data<b.agendado_data?-1:1;
+    return String(a.agendado_hora||'')<String(b.agendado_hora||'')?-1:1;
+  });
+
+  /* HAG_QUADRO_AGENDA_v1: mesmo paciente, mesmo dia, mesma hora é UM atendimento,
+     ainda que existam duas tarefas para ele. Acontece quando a mesma consulta foi
+     lançada duas vezes na fila, e hoje existem dois casos no histórico inteiro.
+     Sem juntar, o dia apareceria mais cheio do que é, e o quadro serve justamente
+     para conferir quantos atendimentos o dia tem. Junta e AVISA, porque a tarefa
+     repetida continua lá para ser limpa: esconder sem dizer seria trocar um erro
+     visível por um invisível. */
+  var vistos={}, unicos=[];
+  marcados.forEach(function(t){
+    var ch=t.agendado_data+'|'+(t.agendado_hora||'')+'|'+(t.patient_nome||'');
+    if(vistos[ch]){ vistos[ch].repetida=(vistos[ch].repetida||1)+1; return; }
+    var copia={};
+    for(var k in t){ if(Object.prototype.hasOwnProperty.call(t,k)) copia[k]=t[k]; }
+    vistos[ch]=copia; unicos.push(copia);
+  });
+  marcados=unicos;
+
+  /* quantos marcaram sozinhos, e quantos nos ultimos 7 dias, que e a leitura
+     de adesao ao link que o Dr. Henrique quis acompanhar */
+  var corte=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  var sozinhoTotal=marcados.filter(function(t){return t.criado_por==='auto_agendamento';}).length;
+  var sozinho7=(_fila||[]).filter(function(t){
+    return t.criado_por==='auto_agendamento' && String(t.criado_em||'').slice(0,10)>=corte;
+  }).length;
+
+  var h=voltar;
+  h+='<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">'
+    +'<div style="flex:1;min-width:130px;background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:12px 14px">'
+      +'<div style="font-size:1.4rem;font-weight:700;color:#1a1a18">'+marcados.length+'</div>'
+      +'<div style="font-size:.72rem;color:#8a8578;text-transform:uppercase;letter-spacing:.04em">atendimentos marcados</div></div>'
+    +'<div style="flex:1;min-width:130px;background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:12px 14px">'
+      +'<div style="font-size:1.4rem;font-weight:700;color:#2f7a4f">'+sozinhoTotal+'</div>'
+      +'<div style="font-size:.72rem;color:#8a8578;text-transform:uppercase;letter-spacing:.04em">marcados pelo paciente</div></div>'
+    +'<div style="flex:1;min-width:130px;background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:12px 14px">'
+      +'<div style="font-size:1.4rem;font-weight:700;color:#2f7a4f">'+sozinho7+'</div>'
+      +'<div style="font-size:.72rem;color:#8a8578;text-transform:uppercase;letter-spacing:.04em">pelo link, últimos 7 dias</div></div>'
+    +'</div>';
+
+  if(!marcados.length){
+    h+='<div style="background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:22px;text-align:center;color:#8a8578;font-size:.86rem">'
+      +'Nenhum atendimento marcado de hoje em diante.</div>';
+    return h;
+  }
+
+  var diaAtual=null;
+  marcados.forEach(function(t){
+    if(t.agendado_data!==diaAtual){
+      if(diaAtual!==null) h+='</div>';
+      diaAtual=t.agendado_data;
+      var doDia=marcados.filter(function(x){return x.agendado_data===diaAtual;});
+      var locais={};
+      doDia.forEach(function(x){ locais[_agLocal(x.local)]=1; });
+      h+='<div style="background:#fff;border:1px solid #e5e2da;border-radius:12px;padding:0;margin-bottom:10px;overflow:hidden">'
+        +'<div style="background:#faf8f4;border-bottom:1px solid #eee9e0;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+        +'<span style="font-size:.84rem;font-weight:700;color:#1a1a18;text-transform:capitalize">'+_msgEsc(_agFmtDia(diaAtual))+'</span>'
+        +'<span style="font-size:.72rem;color:#8a8578">'+doDia.length+(doDia.length===1?' atendimento':' atendimentos')
+        +' &middot; '+_msgEsc(Object.keys(locais).join(', '))+'</span>'
+        +'</div>';
+    }
+    var selo = (t.criado_por==='auto_agendamento')
+      ? '<span style="background:#e8f3ec;color:#2f7a4f;border:1px solid #cfe5d8;border-radius:6px;padding:2px 7px;font-size:.66rem;font-weight:700;white-space:nowrap">marcou sozinho</span>'
+      : '';
+    h+='<div style="padding:9px 14px;border-bottom:1px solid #f4f1ea;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<span style="font-size:.84rem;font-weight:700;color:#1a1a18;min-width:48px">'+_msgEsc(t.agendado_hora||'--:--')+'</span>'
+      +'<span style="flex:1;min-width:150px;font-size:.84rem;color:#3a3a34">'+_msgEsc(t.patient_nome||'(sem nome)')+'</span>'
+      +'<span style="font-size:.74rem;color:#8a8578">'+_msgEsc(_agLocal(t.local))+'</span>'
+      +selo
+      +(t.repetida ? '<span title="Existem '+t.repetida+' tarefas na fila para este mesmo atendimento. Vale apagar as repetidas." style="background:#fdf6e3;color:#7a5c14;border:1px solid #e8d5b0;border-radius:6px;padding:2px 7px;font-size:.66rem;font-weight:700;white-space:nowrap">'+t.repetida+' tarefas repetidas</span>' : '')
+      +'</div>';
+  });
+  h+='</div>';
+  return h;
+}
+
+
 /* HAG_ATUALIZAR_v1: recarrega tudo o que a tela mostra, sem recarregar a
    pagina, para nao perder o filtro nem a busca em que ela estava. */
 async function atualizarTudo(btn){
@@ -1576,6 +1688,11 @@ function render(){
     _elM.innerHTML=_msgPainelHtml(_qm);
     var _bm=document.getElementById('msgBusca');
     if(_bm && _qm){ _bm.focus(); try{ _bm.setSelectionRange(_qm.length,_qm.length); }catch(e){} }
+    return;
+  }
+  /* HAG_QUADRO_AGENDA_v1 (15/09/2026): o quadro da agenda por dia. */
+  if(_filter==='agenda'){
+    document.getElementById('taskList').innerHTML=_agendaPainelHtml();
     return;
   }
   /* HAG_CADASTRO_LIVANCE_v1: mesmo desenho do painel de mensagens, com busca
