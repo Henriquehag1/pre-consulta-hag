@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<!-- HAG_RESPOSTAS_LOGIN_v1 (17/09/2026)
+     POR QUE: esta pagina esta PUBLICADA na internet e lia a tabela checkins so
+     com a chave publishable, ou seja, como anonimo. Em 09/09 o endurecimento de
+     seguranca tirou a leitura do anonimo de todas as tabelas clinicas, e a partir
+     dali a pagina passou a mostrar "Nenhuma resposta encontrada" com as 217
+     respostas intactas no banco.
+     A correcao NAO e devolver leitura ao anonimo: isso publicaria a resposta
+     clinica de todo paciente para quem tivesse o link. A correcao e a pagina
+     entrar pela porta, com o mesmo login do resto do HAG OS, exatamente como o
+     app de tarefas da Daniela ja faz desde 20/08.
+     As duas linhas abaixo sao as mesmas do tarefas_HAG.html e precisam vir ANTES
+     do supabase-js: o hag_auth.js remenda o window.fetch, e o cliente criado
+     depois passa a mandar o token do usuario em toda chamada. -->
+<script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
+<script src="hag_auth.js?v=20260917-1745"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>HAG OS · Respostas dos Pacientes</title>
@@ -246,9 +261,35 @@ document.addEventListener('click',function(e){
   if(head&&head.dataset.cid){toggleCard(head.dataset.cid);}
 });
 // Real-time
+/* HAG_RESPOSTAS_LOGIN_v1: o canal de tempo real tem autenticacao propria; sem
+   o token ele conecta como anonimo e nunca recebe evento de tabela protegida. */
+try{
+  var _tk = (window.HAGAuth && window.HAGAuth.token && window.HAGAuth.token()) || null;
+  if(_tk && db.realtime && db.realtime.setAuth) db.realtime.setAuth(_tk);
+}catch(e){}
 db.channel('ci-rt').on('postgres_changes',{event:'*',schema:'public',table:'checkins'},async()=>{await load();}).subscribe();
 async function load(){
-  const{data}=await db.from('checkins').select('*').order('data_envio',{ascending:false});
+  /* HAG_RESPOSTAS_LOGIN_v1: o erro era descartado, entao "sem permissao" e
+     "nao tem nada" viravam a mesma tela vazia. Foi assim que 217 respostas
+     pareceram ter desaparecido. Erro agora aparece, e com o motivo. */
+  const{data,error}=await db.from('checkins').select('*').order('data_envio',{ascending:false});
+  if(error){
+    _all=[];
+    const semSessao = !(window.HAGAuth && window.HAGAuth.valid && window.HAGAuth.valid());
+    const area=document.getElementById('listArea');
+    if(area){
+      area.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--ink2,#6b6656)">'
+        + '<div style="font-size:15px;font-weight:600;margin-bottom:8px">Nao foi possivel ler as respostas</div>'
+        + '<div style="font-size:13px;max-width:460px;margin:0 auto;line-height:1.5">'
+        + (semSessao
+            ? 'Esta pagina precisa do login do HAG OS. Recarregue e entre com o seu e-mail.'
+            : 'O banco recusou a leitura: ' + String(error.message||error).replace(/</g,'&lt;')
+              + '. Se o login foi ha muito tempo, recarregue a pagina.')
+        + '</div><div style="font-size:12px;margin-top:14px;opacity:.7">Nenhuma resposta foi apagada: elas continuam no banco.</div></div>';
+    }
+    console.warn('[respostas]', error);
+    return;
+  }
   _all=data||[];
   render();
 }
