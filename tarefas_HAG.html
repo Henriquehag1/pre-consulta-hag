@@ -2909,6 +2909,50 @@ async function definirLocalFila(id){
   }catch(e){ toast('Erro: '+e.message,'err'); }
 }
 
+/* ── HAG_REMARCAR_MOVE_RESERVA_v1 (17/09/2026) ───────────────────────────────
+   O Remarcar movia quatro coisas: a tarefa, o retorno do ciclo, o
+   patients.proxima e o evento do calendario. Faltava a QUINTA, a reserva em
+   agendamentos_online, que e' onde mora a vaga.
+
+   O caso que mostrou: a Maria Eduarda tinha reservado 17/10 as 13:00 pelo
+   proprio link. A Daniela remarcou para 19/09 as 14:00 pela fila, e tudo andou,
+   menos a reserva. Resultado, dois estragos silenciosos:
+     1) 17/10 as 13:00 continuou OCUPADO por ela, e a vaga nao foi oferecida a
+        ninguem, por quase um mes;
+     2) primeiro_do_dia e sala_inicio continuaram descrevendo 17/10, quando ela
+        era a primeira do dia. Em 19/09 as 14:00 ela e a ultima, e o texto
+        mandava reservar a sala das 12:45 as 14:00, em cima da aplicacao da Ana
+        Caroline.
+
+   Movida a reserva, os gatilhos do banco fazem o resto sozinhos: recalculam
+   quem e o primeiro do dia e o bloco de sala do dia inteiro, e abrem a tarefa
+   de "vaga aberta" na data velha, com a lista de quem pode encaixar.
+
+   Reserva nao e' obrigatoria: agendamento que a Daniela criou pela fila nunca
+   teve uma. Nesse caso nao ha o que mover, e o silencio e' a resposta certa. */
+async function moverReservaDoPaciente(t, iso, h, loc){
+  if(!t || !t.patient_id || !t.agendado_data || !t.agendado_hora) return;
+  try{
+    var r = await db.from('agendamentos_online')
+      .select('id,data,hora_inicio,hora_fim,local,modalidade')
+      .eq('patient_id', t.patient_id).eq('status','confirmado')
+      .eq('data', t.agendado_data).limit(5);
+    var lista = (r && r.data) || [];
+    var alvo = lista.filter(function(x){
+      return String(x.hora_inicio||'').slice(0,5) === String(t.agendado_hora||'').slice(0,5);
+    })[0];
+    if(!alvo) return;
+    /* a duracao do atendimento nao muda ao remarcar: so anda no relogio */
+    function paraMin(v){ var p=String(v||'').slice(0,5).split(':'); return (+p[0])*60 + (+p[1]); }
+    function paraHora(v){ var hh=Math.floor(v/60), mm=v%60; return ('0'+hh).slice(-2)+':'+('0'+mm).slice(-2); }
+    var dur = paraMin(alvo.hora_fim) - paraMin(alvo.hora_inicio);
+    if(!(dur > 0)) dur = 60;
+    var body = { data: iso, hora_inicio: h, hora_fim: paraHora(paraMin(h) + dur) };
+    var _L = _RET_LOCAL[loc];
+    if(_L){ body.local = loc; body.modalidade = _L[1]; }
+    await db.from('agendamentos_online').update(body).eq('id', alvo.id);
+  }catch(e){ console.warn('[remarcar reserva]', e); }
+}
 async function remarcarFila(id){
   var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t){toast('Agendamento nao encontrado','err');return;}
   function isoParaBR(iso){ if(!iso)return ''; var p=String(iso).slice(0,10).split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):''; }
@@ -2932,6 +2976,7 @@ async function remarcarFila(id){
       atualizado_em:new Date().toISOString()
     }).eq('id',id);
     await atualizarRetornoPaciente(t.patient_id, iso, h, loc);
+    await moverReservaDoPaciente(t, iso, h, loc);   /* HAG_REMARCAR_MOVE_RESERVA_v1 */
     _fila=await loadFila(); _patients=await loadPatients(); render();
     toast(String(t.patient_nome||'').split(' ')[0]+' remarcado para '+('0'+m[1]).slice(-2)+'/'+('0'+m[2]).slice(-2)+' '+h+' ✓','ok');
   }catch(e){ toast('Erro: '+e.message,'err'); }
@@ -3664,7 +3709,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260916-2211';
+  var VERSAO = '20260917-2100';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
