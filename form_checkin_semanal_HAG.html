@@ -1040,6 +1040,17 @@ function calcAlerta(){
 }
 function fv(id){var e=document.getElementById(id);return e&&e.value.trim()?e.value.trim():'—';}
 function radio(id){var g=document.getElementById(id);if(!g)return '—';var on=g.querySelector('.radio-row.on');return on?on.querySelector('.radio-label').textContent.trim():'—';}
+/* HAG_CHECKIN_RADIO_v1 (17/09/2026) ────────────────────────────────────────
+   As perguntas de escolha unica desta tela NAO usam <input type="radio">, sao
+   <div class="radio-row"> com a classe 'on'. O envio lia
+   document.querySelector('input[name="r_estoque"]:checked'), que nunca casa
+   nada, entao as colunas 'estoque' e 'resultado' chegaram VAZIAS em todos os
+   183 check-ins desde 17/04/2026. A resposta nao se perdeu, porque o
+   texto_completo usa a funcao radio() e guarda tudo, mas ficava so no texto:
+   27 check-ins dizem "renovar" ali dentro e nenhuma consulta conseguia achar.
+   Este ajudante devolve o mesmo que radio(), com string vazia no lugar do
+   travessao, para a coluna ficar limpa. */
+function _radioVal(id){ var v = radio(id); return (v === '—') ? '' : v; }
 function sc5(id){var v=getScale(id);return v>=0?String(v)+'/5':'—';}
 
 function buildMsg(){
@@ -1216,9 +1227,9 @@ async function enviarCheckin(){
       colateral:fv('f_colateral'),
       acerto:fv('f_acerto'),
       obstaculo:fv('f_obstaculo'),
-      resultado:(document.querySelector('input[name="r_resultado"]:checked')||{}).value||'',
+      resultado:_radioVal('r_resultado')/*HAG_CHECKIN_RADIO_v1*/,
       evento:fv('f_evento'),
-      estoque:(document.querySelector('input[name="r_estoque"]:checked')||{}).value||'',
+      estoque:_radioVal('r_estoque')/*HAG_CHECKIN_RADIO_v1*/,
       mensagem:fv('f_mensagem'),
       interpretacao:interpretacao||'',
       criado:new Date().toISOString(),
