@@ -1,0 +1,64 @@
+#!/bin/sh
+# Trava de publicacao do HAG.
+# 17/09/2026, revisada no mesmo dia depois de uma conferencia que mostrou que a
+# primeira versao protegia a porta errada.
+#
+# Este repositorio e PUBLICO. A trava recusa o commit em quatro casos:
+#
+#   1. arquivos internos do consultorio, por nome exato;
+#   2. qualquer arquivo de backup (.bak), porque foi isso que de fato vazou:
+#      seis copias .bak ficaram versionadas aqui desde julho, tres delas com o
+#      codigo anterior a correcao de LGPD;
+#   3. o que o .gitignore ja manda ignorar. Esta e a regra que pega o caso 2 de
+#      forma geral: o .gitignore dizia *.bak-* e mesmo assim os arquivos
+#      estavam versionados, porque gitignore nao desversiona o que ja entrou;
+#   4. o que parece ser chave de servico.
+
+proibidos="sistema_HAG_v26-2.html hag_precos.js consulta_motor_HAG.html financeiro_HAG.html"
+falhou=0
+alterados=$(git diff --cached --name-only --diff-filter=ACM)
+
+for arq in $alterados; do
+  base=$(basename "$arq")
+
+  for p in $proibidos; do
+    if [ "$base" = "$p" ]; then
+      echo "BLOQUEADO: $arq e um arquivo interno e este repositorio e publico."
+      falhou=1
+    fi
+  done
+
+  case "$base" in
+    *.bak|*.bak.*|*.bak-*|*.backup|*~)
+      echo "BLOQUEADO: $arq e copia de backup. Backup nao vai para repositorio publico."
+      falhou=1
+      ;;
+  esac
+
+  # --no-index e obrigatorio: sem ele, o git check-ignore pula arquivos ja
+  # rastreados, e como o git add torna o arquivo rastreado, a regra nunca
+  # dispararia. Foi assim que ela passou no teste errado na primeira versao.
+  if git check-ignore --no-index -q -- "$arq" 2>/dev/null; then
+    echo "BLOQUEADO: $arq casa com uma regra do .gitignore e mesmo assim foi adicionado."
+    falhou=1
+  fi
+
+  case "$arq" in
+    *.html|*.js|*.json|*.txt|*.md)
+      if git show ":$arq" 2>/dev/null | grep -q -E "sb_secret|service_role|SUPABASE_SERVICE"; then
+        echo "BLOQUEADO: $arq contem o que parece ser uma chave de servico."
+        falhou=1
+      fi
+      ;;
+  esac
+done
+
+if [ "$falhou" = "1" ]; then
+  echo ""
+  echo "Nada foi commitado. Se for engano, tire do stage com:"
+  echo "  git restore --staged <arquivo>"
+  echo "Para conferir a fronteira inteira:"
+  echo "  python3 ~/Scripts/HAG/hag_checa_duplicados.py"
+  exit 1
+fi
+exit 0

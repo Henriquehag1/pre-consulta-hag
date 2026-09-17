@@ -1,0 +1,17 @@
+Este gancho precisa ser armado depois de cada clone
+===================================================
+
+O arquivo .githooks/pre-commit viaja junto com o repositorio, mas a configuracao
+que manda o git usar esta pasta mora em .git/config, que NAO e versionado. Ou
+seja: num clone novo, o gancho existe e fica desligado.
+
+Depois de clonar, rode uma vez:
+
+    git config core.hooksPath .githooks
+
+Para conferir se esta armado:
+
+    git config core.hooksPath      # tem que responder .githooks
+
+A auditoria ~/Scripts/HAG/hag_checa_duplicados.py tambem avisa quando um
+repositorio publico esta sem a trava ligada.
