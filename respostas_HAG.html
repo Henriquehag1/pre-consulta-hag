@@ -108,6 +108,22 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .sc-chip.high{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
 .sc-chip.mid{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
 .sc-chip.low{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+/* HAG_RESP_RESPONDIDO_v1 · RESTAURADO em 17/09/2026
+   Este recurso existia na copia congelada em HAG_Consultas/_obsoleto_publicados/
+   e NUNCA esteve no arquivo publicado. Quando a copia congelada foi aposentada,
+   por ser duplicata, o publicado virou fonte unica e levou junto o ramo mais
+   ANTIGO: sumiram o login e o "marcar respondido". Os carimbos no banco provam
+   que a ferramenta era usada, em lotes pequenos, ate 16/09/2026.
+   REGRA QUE FICA: antes de aposentar uma copia, diferenciar as duas. Duplicata
+   nao quer dizer identica, e a que vai sobreviver pode ser a mais pobre. */
+.resp-card.respondido{opacity:.62}
+.resp-card.respondido .resp-name::after{content:' ✓ Respondido';font-family:var(--fm);font-size:9.5px;color:var(--green);font-weight:600}
+.resp-card.respondido{border-left:3px solid var(--green) !important}
+.btn-resp{font-family:var(--fm);font-size:10px;font-weight:600;padding:5px 11px;border-radius:8px;cursor:pointer;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);white-space:nowrap;transition:all .12s}
+.btn-resp:hover{background:var(--green);color:#fff}
+.btn-resp.undo{border-color:var(--border);background:var(--surface3);color:var(--ink3)}
+.btn-resp.undo:hover{background:var(--ink3);color:#fff}
+.resp-foot{display:flex;justify-content:flex-end;padding:8px 0 2px;border-top:1px solid var(--border);margin-top:8px}
 /* LOADING */
 .loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;transition:opacity .4s}
 .loading-screen.hidden{opacity:0;pointer-events:none}
@@ -153,6 +169,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <button class="filter-btn b-verde" data-cls="verde" onclick="setCls('verde')" style="background:transparent">Excelente</button>
     <button class="filter-btn" data-cls="amarelo" onclick="setCls('amarelo')">Atencao</button>
     <button class="filter-btn" data-cls="vermelho" onclick="setCls('vermelho')">Intervencao</button>
+    <!-- HAG_RESP_RESPONDIDO_v1: "A responder" e a fila de trabalho do dia -->
+    <button class="filter-btn" data-resp="aresp" onclick="setResp('aresp')">A responder <span id="cnt-aresp"></span></button>
+    <button class="filter-btn" data-resp="resp" onclick="setResp('resp')">Respondidos <span id="cnt-resp"></span></button>
     <div class="search-wrap">
       <span class="search-icon">&#8981;</span>
       <input class="search-input" id="searchInput" type="text" placeholder="Buscar por paciente..." oninput="render()">
@@ -168,7 +187,8 @@ const db=createClient(SURL,SKEY);
 const AC=['#1a5fa8','#2d7a3a','#7c3a8a','#b45309','#1a7a6a','#8a3a1a','#3a5a8a','#5a3a7a','#2a6a4a','#6a2a4a'];
 function gac(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);return AC[Math.abs(h)%AC.length];}
 function gin(n){const p=n.trim().split(' ').filter(Boolean);return p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();}
-let _all=[], _tipo='all', _cls='';
+let _all=[], _tipo='all', _cls='', _resp='';  /* HAG_RESP_RESPONDIDO_v1 */
+function setResp(r){_resp=_resp===r?'':r;document.querySelectorAll('.filter-btn[data-resp]').forEach(b=>b.classList.toggle('active',b.dataset.resp===r&&_resp===r));render();}
 function setTipo(t){_tipo=t;_cls='';document.querySelectorAll('.filter-btn[data-tipo]').forEach(b=>b.classList.toggle('active',b.dataset.tipo===t));document.querySelectorAll('.filter-btn[data-cls]').forEach(b=>b.classList.remove('active'));render();}
 function setCls(c){_cls=_cls===c?'':c;document.querySelectorAll('.filter-btn[data-cls]').forEach(b=>b.classList.toggle('active',b.dataset.cls===c&&_cls===c));render();}
 function scChipCls(v){return v>=4?'high':v>=2?'mid':v!==null&&v!==undefined&&v>=0?'low':'';}
@@ -178,6 +198,9 @@ function render(){
     if(q&&!r.patient_nome.toLowerCase().includes(q))return false;
     if(_tipo!=='all'&&r.tipo!==_tipo)return false;
     if(_cls&&r.classificacao!==_cls)return false;
+    /* HAG_RESP_RESPONDIDO_v1 */
+    if(_resp==='aresp'&&r.respondido===true)return false;
+    if(_resp==='resp'&&r.respondido!==true)return false;
     return true;
   });
   // Update counts
@@ -186,6 +209,9 @@ function render(){
   document.getElementById('cnt-trimestral').textContent='('+_all.filter(r=>r.tipo==='trimestral').length+')';
   var _elPre=document.getElementById('cnt-preconsulta'); if(_elPre) _elPre.textContent='('+_all.filter(r=>r.tipo==='pre-consulta').length+')';
   var _elMes=document.getElementById('cnt-mensal'); if(_elMes) _elMes.textContent='('+_all.filter(r=>r.tipo==='mensal').length+')';
+  /* HAG_RESP_RESPONDIDO_v1 */
+  var _elAr=document.getElementById('cnt-aresp'); if(_elAr) _elAr.textContent='('+_all.filter(r=>r.respondido!==true).length+')';
+  var _elRe=document.getElementById('cnt-resp'); if(_elRe) _elRe.textContent='('+_all.filter(r=>r.respondido===true).length+')';
   const area=document.getElementById('listArea');
   if(!list.length){
     area.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">Nenhuma resposta encontrada</div></div>';
@@ -232,7 +258,9 @@ function buildCard(r){
   const id='rc_'+r.id.replace(/[^a-z0-9]/gi,'_');
   // Peso if present
   const pesoStr=r.peso?'<span style="font-family:var(--fm);font-size:10px;color:var(--ink3)">&#9878; '+r.peso+'</span>':'';
-  return '<div class="'+cardCls+'" id="'+id+'">' +
+  /* HAG_RESP_RESPONDIDO_v1: marca visual de respondido */
+  const _respCls = r.respondido===true ? ' respondido' : '';
+  return '<div class="'+cardCls+_respCls+'" id="'+id+'">' +
     '<div class="resp-head" data-cid="'+id+'">' +
       '<div class="resp-avatar" style="background:'+color+'">'+inits+'</div>' +
       '<div class="resp-info">' +
@@ -246,9 +274,34 @@ function buildCard(r){
     '<div class="resp-body" id="body_'+id+'">' +
       (r.texto_completo?'<div class="resp-texto">'+r.texto_completo.replace(/</g,'&lt;')+'</div>':'<div style="color:var(--ink3);font-size:12px;padding:8px 0">Texto completo nao disponivel para este registro.</div>') +
       (r.interpretacao?'<div class="resp-interp"><div class="resp-interp-label">Interpretacao clinica (IA)</div><div class="resp-interp-text">'+r.interpretacao.replace(/</g,'&lt;')+'</div></div>':'') +
+      /* HAG_RESP_RESPONDIDO_v1 */
+      '<div class="resp-foot">' +
+        (r.respondido===true
+          ? '<button class="btn-resp undo" onclick="toggleRespondido(\''+r.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',false)">↺ Desfazer respondido</button>'
+          : '<button class="btn-resp" onclick="toggleRespondido(\''+r.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',true)">✓ Marcar respondido</button>') +
+      '</div>' +
     '</div>' +
   '</div>';
 }
+/* HAG_RESP_RESPONDIDO_v1: grava respondido na tabela checkins.
+   Restaurado em 17/09/2026 junto com os filtros e a marca visual. */
+async function toggleRespondido(cid, valor){
+  try {
+    const patch = valor
+      ? { respondido:true, respondido_em:new Date().toISOString() }
+      : { respondido:false, respondido_em:null };
+    const { error } = await db.from('checkins').update(patch).eq('id', cid);
+    if(error) throw error;
+    // atualiza estado local na hora (o real-time tambem dispara load)
+    const it = _all.find(x=>x.id===cid);
+    if(it){ it.respondido = valor; it.respondido_em = patch.respondido_em; }
+    render();
+  } catch(e){
+    console.error('Erro ao marcar respondido:', e);
+    alert('Nao foi possivel salvar: ' + e.message);
+  }
+}
+
 function toggleCard(id){
   const body=document.getElementById('body_'+id);
   const arr=document.getElementById('arr_'+id);
