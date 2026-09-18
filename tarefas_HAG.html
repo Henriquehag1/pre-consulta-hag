@@ -1113,11 +1113,17 @@ function _filaCarimbarUma(id){
    reserva provisória em compromisso. O modelo do sinal dizia o contrário,
    que o formulário vinha depois do pagamento. */
 var DAN_TPL=[
+  /* HAG_MSG_QUEM_ESCOLHE_O_HORARIO_v2 (18/09/2026): os passos ganharam numero
+     em v1 e a lista continuou na ordem antiga, porque o painel desenha na ordem
+     do array e nao ordena nada. Na tela saia 1, 4, 5, 2, 3. Numerar sem
+     reordenar e' pior que nao numerar: o numero promete uma ordem que o olho
+     nao encontra. A ordem do array passa a ser a ordem do funil.
+     Conferido antes de mexer: ninguem le DAN_TPL por indice, so por id. */
   {id:'saudacao_inicial',cat:'pre_consulta',nome:'Saudação inicial',sub:'Passo 1 · paciente novo entra no WhatsApp',texto:'Olá [nome], seja muito bem-vindo(a). Meu nome é Daniela e sou eu que vou te atender por aqui.\n\nO Dr. Henrique trabalha com o Método HAG, um acompanhamento médico estruturado para transformar metabolismo, composição corporal e saúde de forma individualizada.\n\nVocê conseguiu acessar o material com as informações da consulta diagnóstica? Se ficou alguma dúvida, me fala que eu te oriento nos próximos passos.'},
-  {id:'sinal_50',cat:'pre_consulta',nome:'Sinal de reserva',sub:'Passo 4 · o sinal confirma a reserva provisória',texto:'[nome], o seu horário está guardado, e o que confirma a reserva é o sinal de R$ 450 no Pix.\n\nEsse valor inicia o ato médico: organização prévia do caso, análise do questionário pré-consulta e reserva da agenda.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nA Avaliação Diagnóstica HAG presencial é R$ 900 à vista no Pix, ou 3x de R$ 320 no cartão, total R$ 960. A Consulta Diagnóstica HAG online é R$ 750 à vista no Pix, ou 3x de R$ 270 no cartão, total R$ 810.\n\nSe preferir cartão, me avisa que eu te envio o link.\n\nO mesmo Pix aparece na tela do agendamento, então você pode pagar por lá ou por aqui, como preferir. Assim que entrar, eu te confirmo e te mando as orientações da consulta.'},
-  {id:'pos_pagamento',cat:'pre_consulta',nome:'Pagamento confirmado',sub:'Passo 5 · confirma o recebimento e segue',texto:'[nome], recebi a confirmação do seu pagamento e a sua consulta está confirmada.\n\nAgora é só aguardar o dia. Se você ainda não preencheu o formulário pré-consulta, me avisa que eu te reenvio o link: é ele que permite ao Dr. Henrique analisar o seu caso com antecedência.\n\nNa véspera eu te mando as orientações e o endereço.'},
   {id:'cadastro_form',cat:'pre_consulta',nome:'Formulário pré-consulta',sub:'Passo 2 · cria o cadastro e libera a agenda',texto:'[nome], para personalizar o seu atendimento, preciso que você preencha o formulário pré-consulta. Ele já recolhe os seus dados de cadastro, então nada sensível precisa circular por aqui:\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_pre_consulta_HAG.html\n\nSe você tiver exames recentes, de preferência dos últimos 6 meses, pode me enviar em PDF por aqui. Se não tiver, não se preocupe: isso não impede a consulta, e o Dr. Henrique define o melhor momento para exames adicionais.'},
   {id:'opcoes_horario',cat:'pre_consulta',nome:'Link para agendar',sub:'Passo 3 · o paciente escolhe o dia e o horário',texto:'[nome], perfeito, recebi o seu formulário. Já liberei a sua agenda.\n\nPelo link abaixo você escolhe o dia e o horário que ficarem melhores para você, entre as datas que o Dr. Henrique tem abertas. Leva menos de um minuto:\n\n[link]\n\nO horário fica guardado no seu nome assim que você confirmar por lá, e a própria tela te mostra até quando. Para a consulta diagnóstica, quem completa a reserva é o sinal, e o Pix aparece ali mesmo.\n\nGuarde este link: se precisar mudar o dia ou o horário depois, é só abrir por ele de novo.'},
+  {id:'sinal_50',cat:'pre_consulta',nome:'Sinal de reserva',sub:'Passo 4 · o sinal confirma a reserva provisória',texto:'[nome], o seu horário está guardado, e o que confirma a reserva é o sinal de R$ 450 no Pix.\n\nEsse valor inicia o ato médico: organização prévia do caso, análise do questionário pré-consulta e reserva da agenda.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nA Avaliação Diagnóstica HAG presencial é R$ 900 à vista no Pix, ou 3x de R$ 320 no cartão, total R$ 960. A Consulta Diagnóstica HAG online é R$ 750 à vista no Pix, ou 3x de R$ 270 no cartão, total R$ 810.\n\nSe preferir cartão, me avisa que eu te envio o link.\n\nO mesmo Pix aparece na tela do agendamento, então você pode pagar por lá ou por aqui, como preferir. Assim que entrar, eu te confirmo e te mando as orientações da consulta.'},
+  {id:'pos_pagamento',cat:'pre_consulta',nome:'Pagamento confirmado',sub:'Passo 5 · confirma o recebimento e segue',texto:'[nome], recebi a confirmação do seu pagamento e a sua consulta está confirmada.\n\nAgora é só aguardar o dia. Se você ainda não preencheu o formulário pré-consulta, me avisa que eu te reenvio o link: é ele que permite ao Dr. Henrique analisar o seu caso com antecedência.\n\nNa véspera eu te mando as orientações e o endereço.'},
   {id:'diretrizes',cat:'confirmacao',nome:'Diretrizes do consultório',sub:'Espelha a cláusula 4 do contrato',texto:'[nome], para manter a organização e a qualidade do atendimento, seguimos as diretrizes que estão no seu contrato:\n\n• Reagendamento pedido com até 72 horas de antecedência eu organizo sem custo. Fora desse prazo pode incidir a taxa de reserva de agenda, de R$ 350, porque o horário fica bloqueado. Ela não é cumulativa com a cobrança da consulta.\n• Atraso acima de 15 minutos pode reduzir ou inviabilizar a consulta. Nesse caso, eu remarco uma vez sem custo.\n• Consulta não confirmada até 3 horas antes tem a vaga liberada para a lista de espera.\n• Falta sem aviso pode implicar a retenção do sinal, ou a mesma taxa de reserva de agenda, também pelo horário bloqueado.\n\nImprevisto acontece: situação comprovada é analisada sem penalidade.\n\nIsso existe para garantir pontualidade e atenção total ao seu atendimento.'},
   {id:'avaliacao_google',cat:'pos_consulta',nome:'Avaliação no Google',sub:'Só na primeira consulta, 1h depois',texto:'[nome], espero que a sua experiência tenha sido positiva. Se você quiser, a sua avaliação no Google ajuda muito:\nhttps://g.page/r/CVaxd8nwbLMaEAI/review'},
   {id:'boas_vindas_ciclo',cat:'onboarding',nome:'Boas-vindas ao ciclo',sub:'Paciente contratou, quem entrega o plano é o Dr.',texto:'[nome], seja muito bem-vindo(a) ao seu ciclo dentro do Método HAG.\n\nJá informei o Dr. Henrique sobre a confirmação do seu pagamento e solicitei a sua nota fiscal ao financeiro.\n\nO seu planejamento vem diretamente do Dr. Henrique, pelo canal de contato do seu plano.\n\nQualquer dúvida de organização, é comigo por aqui.'},
@@ -1474,7 +1480,16 @@ function _msgPainelHtml(q){
   }).join('');
   var barra='<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">'+chips+'</div>';
   /* lista */
-  var lista=DAN_TPL.filter(function(t){ return _msgCat==='todas'||t.cat===_msgCat; }).map(function(t){
+  /* HAG_MSG_QUEM_ESCOLHE_O_HORARIO_v2: quando o modelo diz "Passo N", o N manda
+     na ordem da lista. Assim renumerar basta, e nunca mais existe numero que
+     promete uma ordem que o olho nao encontra. Modelo sem passo fica depois,
+     na ordem em que esta no arquivo. */
+  var _passo=function(t){ var m=String(t.sub||'').match(/Passo\s+(\d+)/i); return m?parseInt(m[1],10):9999; };
+  var lista=DAN_TPL.filter(function(t){ return _msgCat==='todas'||t.cat===_msgCat; })
+    .map(function(t,i){ return {t:t,i:i}; })
+    .sort(function(a,b){ var d=_passo(a.t)-_passo(b.t); return d!==0?d:(a.i-b.i); })
+    .map(function(x){ return x.t; })
+    .map(function(t){
     var aberta=(_msgAberta===t.id);
     var corpo='';
     if(aberta){
@@ -3765,7 +3780,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260918-1940';
+  var VERSAO = '20260918-2025';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
