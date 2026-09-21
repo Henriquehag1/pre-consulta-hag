@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260921-1457"></script>
+<script src="hag_auth.js?v=20260921-1532"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -872,6 +872,29 @@ body {
         </div>
         <label style="margin-top:10px;display:block">Janela desejada <span style="font-size:10px;font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--ink3)">(opcional, semana alvo)</span></label>
         <input id="f-janela" type="date" style="margin-top:4px">
+        <!-- HAG_JANELA_EXAMES_v1 (21/09/2026): primeira consulta com pedido de exames
+             antes precisa de 14 a 28 dias, senao a consulta acontece sem os exames. O link
+             oferece 7 dias antes e 7 depois da janela, entao janela em D+21 = datas de D+14
+             a D+28. Sem janela, o link oferece de hoje ate 14 dias, que e o certo para
+             paciente novo sem exames. Decidido pelo Dr. Henrique em 21/09. -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <button type="button" onclick="hagJanelaExames()" style="padding:6px 11px;font-size:12px;border:1px solid #8A7B4F;background:#F3EFE4;color:#5c5233;border-radius:8px;cursor:pointer;font-family:inherit">+3 semanas · com exames antes</button>
+          <span id="f-janela-nota" style="font-size:11px;color:var(--ink3)"></span>
+        </div>
+        <script>
+        function hagJanelaExames(){
+          var z=function(n){return (n<10?'0':'')+n;};
+          var iso=function(d){return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());};
+          var br=function(d){return z(d.getDate())+'/'+z(d.getMonth()+1);};
+          var h=new Date(); h.setHours(12,0,0,0);
+          var alvo=new Date(h); alvo.setDate(alvo.getDate()+21);
+          var ini=new Date(h); ini.setDate(ini.getDate()+14);
+          var fim=new Date(h); fim.setDate(fim.getDate()+28);
+          var inp=document.getElementById('f-janela'); if(inp) inp.value=iso(alvo);
+          var nota=document.getElementById('f-janela-nota');
+          if(nota) nota.textContent='O link vai oferecer datas de '+br(ini)+' a '+br(fim)+', dentro dos dias de atendimento.';
+        }
+        </script>
         <label style="margin-top:10px;display:block">Local do atendimento <span style="font-size:10px;font-family:var(--fb);text-transform:none;letter-spacing:0;color:var(--ink3)">(o que voce marcar aqui vence a regra do ciclo na tela do paciente)</span></label>
         <div class="tipo-chips" id="localChips">
           <!-- HAG_LOCAL_MEDICO_v2 (11/09/2026): antes o chip Online ja vinha marcado
@@ -3786,7 +3809,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260921-1457';
+  var VERSAO = '20260921-1532';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;

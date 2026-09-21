@@ -904,7 +904,20 @@ function telaEscolha(nota){
        +'Escolha abaixo o novo dia e horário. O seu horário atual continua reservado até você confirmar o novo.'
        +'</div></div>')
     : ('<div class="cartao"><div class="destaque">Olá, <b>'+esc(c.paciente.primeiro_nome)+'</b>. '
-    +(ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
+    /* HAG_TEXTO_DIAGNOSTICA_v1 (21/09/2026): a diagnostica usava o texto do retorno,
+       "a sua proxima consulta ... para manter a periodicidade do seu acompanhamento",
+       que nao faz sentido numa primeira consulta. Com data-alvo do Dr. Henrique a
+       espera tem motivo, os exames, e o texto mostra o INTERVALO e nao um dia so:
+       o alvo pode cair num feriado ou num dia sem atendimento, e dizer que ele
+       "indicou" esse dia seria mentira. Nenhuma diagnostica tinha passado pelo link
+       antes de 21/09, por isso ninguem tinha visto. */
+    +(TIPOCON==='diagnostica'
+       ? ((ALVOMED && JANELA && JANELA.inicio)
+          ? 'Separamos para a sua consulta as datas entre <b>'+dataBR(JANELA.inicio).split(', ')[1]+'</b> e <b>'
+            +dataBR(JANELA.fim).split(', ')[1]+'</b>, para dar tempo de os seus exames ficarem prontos. '
+            +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
+          : 'Escolha abaixo o dia e o horário da sua consulta diagnóstica, entre as próximas datas que o Dr. Henrique tem abertas.')
+     : ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
                 +'para a sua próxima '+PAL()+', para manter a periodicidade do seu acompanhamento. '
                 +'Se esse dia não encaixar na sua agenda, logo abaixo estão as datas mais próximas.'
      : c.retorno.data_estimada ? 'A sua próxima '+PAL()+' está prevista para <b>meados de '
@@ -915,7 +928,7 @@ function telaEscolha(nota){
                 +'melhor se encaixam na sua agenda.')
     +'</div></div>');
   if(nota) h+='<div class="aviso">'+nota+'</div>';
-  if(alargou) h+='<div class="aviso">Não sobrou horário livre exatamente na semana do dia indicado, então abrimos os dias seguintes.</div>';
+  if(alargou) h+='<div class="aviso">'+(TIPOCON==='diagnostica' ? 'Não sobrou horário livre nessas datas, então abrimos os dias seguintes.' : 'Não sobrou horário livre exatamente na semana do dia indicado, então abrimos os dias seguintes.')+'</div>';  /* HAG_TEXTO_DIAGNOSTICA_v1 */
   /* HAG_LINK_INJETAVEL_v1: dizer QUAL aplicação é esta. O paciente conta as dele,
      e "8ª de 8" é o que ele reconhece; "Procedimento injetável" não é. */
   if(MODO==='marcar' && TIPOCON==='injetavel' && c.retorno && c.retorno.nome){
