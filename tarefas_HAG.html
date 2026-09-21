@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260921-1532"></script>
+<script src="hag_auth.js?v=20260921-1559"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1165,9 +1165,10 @@ var DAN_TPL=[
   /* HAG_SINAL_JA_PAGO_v1 (21/09/2026): paciente do fluxo antigo, que pagou o sinal antes de
      existir o link e ainda nao consultou. O link agora reconhece isso e confirma o horario
      sem cobrar; este texto diz o mesmo, para a paciente nao pagar duas vezes.
-     Mora em Pre-consulta, e nao em Resgate: e diagnostica que ainda nao aconteceu, e foi
+     Texto generico desde 21/09: 'renovou' valia para a Bianca e era falso para o Bruno Aguiar,
+     que recebe o primeiro pedido. Mora em Pre-consulta, e nao em Resgate: e diagnostica que ainda nao aconteceu, e foi
      ali que o Dr. Henrique procurou primeiro. Sem 'Passo N', vai para o fim da aba. */
-  {id:'retomada_sinal_pago',cat:'pre_consulta',nome:'Retomada com sinal já pago',sub:'Pagou o sinal antes do link e ainda não consultou',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nRetomando o seu atendimento: o Dr. Henrique renovou o seu pedido de exames, que segue em anexo.\n\nO sinal que você já pagou continua valendo, então você não precisa pagar nada agora. Para garantir a sua consulta, é só escolher o horário por este link:\n\n[link]\n\nA recomendação é escolher uma data com pelo menos duas semanas, para dar tempo de os exames ficarem prontos. Se algum resultado atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nQualquer dúvida, estou por aqui.'},
+  {id:'retomada_sinal_pago',cat:'pre_consulta',nome:'Retomada com sinal já pago',sub:'Pagou o sinal antes do link e ainda não consultou',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nDando sequência ao seu atendimento: o Dr. Henrique enviou o seu pedido de exames, que segue em anexo.\n\nO sinal que você já pagou continua valendo, então você não precisa pagar nada agora. Para garantir a sua consulta, é só escolher o horário por este link:\n\n[link]\n\nA recomendação é escolher uma data com pelo menos duas semanas, para dar tempo de os exames ficarem prontos. Se algum resultado atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nQualquer dúvida, estou por aqui.'},
   {id:'fechamento_aviso',cat:'finalizacao',nome:'Aviso da consulta de fechamento',sub:'Antes da última consulta do ciclo',texto:'[nome], a sua próxima consulta com o Dr. Henrique é a consulta de fechamento do seu ciclo. Ela é diferente das outras: além de avaliar a sua evolução do período inteiro, é nela que o Dr. define com você o próximo passo, seguir com um novo ciclo ou encerrar com orientações de alta.\n\nSe quiser, vá pensando no que funcionou e no que travou nesse período. Ajuda muito a conversa render.\n\nQualquer dúvida, estou por aqui.'},
   {id:'proposta_toque1',cat:'finalizacao',nome:'Proposta sem resposta · toque 1',sub:'24h, metade do prazo · vale para nova e renovação',texto:'[nome], passando para saber se ficou alguma dúvida sobre o planejamento que o Dr. Henrique montou para você.\n\nSe for sobre forma de pagamento, me fala que eu te ajudo a organizar. Temos Pix e cartão em até 3x sem juros, e eu vejo com você o que se encaixa melhor.\n\nA proposta é válida até [data], e a sua vaga na agenda está reservada até lá.'},
   {id:'proposta_toque2',cat:'finalizacao',nome:'Proposta sem resposta · toque 2',sub:'Prazo vencido, vaga liberada, sem aspereza',texto:'[nome], como não recebi a confirmação até [data], a sua reserva na agenda foi liberada e o planejamento anterior se encerrou.\n\nIsso não fecha nenhuma porta. Quando você quiser retomar, é só me avisar: eu verifico as datas disponíveis e as condições vigentes no momento e organizo tudo com você.\n\nFoi um prazer acompanhar o seu ciclo até aqui. O Dr. Henrique segue à disposição.'},
@@ -3809,7 +3810,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260921-1532';
+  var VERSAO = '20260921-1559';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
