@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260921-1559"></script>
+<script src="hag_auth.js?v=20260921-1617"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1143,10 +1143,16 @@ var DAN_TPL=[
      nao encontra. A ordem do array passa a ser a ordem do funil.
      Conferido antes de mexer: ninguem le DAN_TPL por indice, so por id. */
   {id:'saudacao_inicial',cat:'pre_consulta',nome:'Saudação inicial',sub:'Passo 1 · paciente novo entra no WhatsApp',texto:'Olá [nome], seja muito bem-vindo(a). Meu nome é Daniela e sou eu que vou te atender por aqui.\n\nO Dr. Henrique trabalha com o Método HAG, um acompanhamento médico estruturado para transformar metabolismo, composição corporal e saúde de forma individualizada.\n\nVocê conseguiu acessar o material com as informações da consulta diagnóstica? Se ficou alguma dúvida, me fala que eu te oriento nos próximos passos.'},
-  {id:'cadastro_form',cat:'pre_consulta',nome:'Formulário pré-consulta',sub:'Passo 2 · cria o cadastro e libera a agenda',texto:'[nome], para personalizar o seu atendimento, preciso que você preencha o formulário pré-consulta. Ele já recolhe os seus dados de cadastro, então nada sensível precisa circular por aqui:\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_pre_consulta_HAG.html\n\nSe você tiver exames recentes, de preferência dos últimos 6 meses, pode me enviar em PDF por aqui. Se não tiver, não se preocupe: isso não impede a consulta, e o Dr. Henrique define o melhor momento para exames adicionais.'},
-  {id:'opcoes_horario',cat:'pre_consulta',nome:'Link para agendar',sub:'Passo 3 · o paciente escolhe o dia e o horário',texto:'[nome], perfeito, recebi o seu formulário. Já liberei a sua agenda.\n\nPelo link abaixo você escolhe o dia e o horário que ficarem melhores para você, entre as datas que o Dr. Henrique tem abertas. Leva menos de um minuto:\n\n[link]\n\nO horário fica guardado no seu nome assim que você confirmar por lá, e a própria tela te mostra até quando. Para a consulta diagnóstica, quem completa a reserva é o sinal, e o Pix aparece ali mesmo.\n\nGuarde este link: se precisar mudar o dia ou o horário depois, é só abrir por ele de novo.'},
+  {id:'cadastro_form',cat:'pre_consulta',nome:'Formulário pré-consulta',sub:'Passo 2 · cria o cadastro e libera a agenda',texto:'[nome], para personalizar o seu atendimento, preciso que você preencha o formulário pré-consulta. Ele já recolhe os seus dados de cadastro, então nada sensível precisa circular por aqui:\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_pre_consulta_HAG.html\n\nSe você tiver exames recentes, de preferência dos últimos 6 meses, pode me enviar em PDF por aqui. Se não tiver, não se preocupe: o Dr. Henrique avalia o seu formulário e, se for preciso, eu te envio o pedido de exames para fazer antes da consulta.'},
+  /* HAG_DIAG_JANELA_POR_EXAMES_v1 (21/09/2026): o Passo 3 virou dois, porque a data
+     minima depende dos exames. Ao abrir ou copiar, o painel grava na tarefa diagnostica
+     o modo e a data do meio (envio+10 ou envio+21); a pagina oferece 7 dias para cada
+     lado. Ja tem exames: D+3 a D+17. Vai receber o pedido: D+14 a D+28. Quem decide
+     se pede exames e o Dr. Henrique; a Daniela so escolhe a mensagem certa. */
+  {id:'opcoes_horario',cat:'pre_consulta',modo:'ja_tem',nome:'Link para agendar · já tem exames',sub:'Passo 3 · sem pedido de exames · datas a partir de 3 dias',texto:'[nome], perfeito, recebi o seu formulário. Já liberei a sua agenda.\n\nPelo link abaixo você escolhe o dia e o horário da sua consulta diagnóstica, entre as datas que o Dr. Henrique tem abertas. Leva menos de um minuto:\n\n[link]\n\nO horário fica guardado no seu nome assim que você confirmar por lá, e a própria tela te mostra até quando. Quem completa a reserva é o sinal, e o Pix aparece ali mesmo.\n\nSe ainda não me mandou os seus exames recentes, pode enviar em PDF por aqui antes da consulta.\n\nGuarde este link: se precisar mudar o dia ou o horário depois, é só abrir por ele de novo.'},
+  {id:'opcoes_horario_pedido',cat:'pre_consulta',modo:'pedido',nome:'Link para agendar · com pedido de exames',sub:'Passo 3 · vai junto com o PDF do pedido · datas a partir de 14 dias',texto:'[nome], perfeito, recebi o seu formulário. Já liberei a sua agenda.\n\nSegue em anexo o pedido de exames do Dr. Henrique, para você fazer antes da consulta.\n\nPelo link abaixo você escolhe o dia e o horário da sua consulta diagnóstica. As datas começam duas semanas à frente, para dar tempo de os resultados ficarem prontos:\n\n[link]\n\nO horário fica guardado no seu nome assim que você confirmar por lá, e a própria tela te mostra até quando. Quem completa a reserva é o sinal, e o Pix aparece ali mesmo.\n\nAssim que os resultados saírem, me envie em PDF por aqui. Se algum atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nGuarde este link: se precisar mudar o dia ou o horário depois, é só abrir por ele de novo.'},
   {id:'sinal_50',cat:'pre_consulta',nome:'Sinal de reserva',sub:'Passo 4 · o sinal confirma a reserva provisória',texto:'[nome], o seu horário está guardado, e o que confirma a reserva é o sinal de R$ 450 no Pix.\n\nEsse valor inicia o ato médico: organização prévia do caso, análise do questionário pré-consulta e reserva da agenda.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nA Avaliação Diagnóstica HAG presencial é R$ 900 à vista no Pix, ou 3x de R$ 320 no cartão, total R$ 960. A Consulta Diagnóstica HAG online é R$ 750 à vista no Pix, ou 3x de R$ 270 no cartão, total R$ 810.\n\nSe preferir cartão, me avisa que eu te envio o link.\n\nO mesmo Pix aparece na tela do agendamento, então você pode pagar por lá ou por aqui, como preferir. Assim que entrar, eu te confirmo e te mando as orientações da consulta.'},
-  {id:'pos_pagamento',cat:'pre_consulta',nome:'Pagamento confirmado',sub:'Passo 5 · confirma o recebimento e segue',texto:'[nome], recebi a confirmação do seu pagamento e a sua consulta está confirmada.\n\nAgora é só aguardar o dia. Se você ainda não preencheu o formulário pré-consulta, me avisa que eu te reenvio o link: é ele que permite ao Dr. Henrique analisar o seu caso com antecedência.\n\nNa véspera eu te mando as orientações e o endereço.'},
+  {id:'pos_pagamento',cat:'pre_consulta',nome:'Pagamento confirmado',sub:'Passo 5 · confirma o recebimento e segue',texto:'[nome], recebi a confirmação do seu pagamento e a sua consulta está confirmada.\n\nSe tiver exames para enviar, pode mandar em PDF por aqui, que eu deixo junto do seu histórico para o Dr. Henrique analisar antes da consulta.\n\nNa véspera eu te mando as orientações e o endereço.'},
   {id:'diretrizes',cat:'confirmacao',nome:'Diretrizes do consultório',sub:'Espelha a cláusula 4 do contrato',texto:'[nome], para manter a organização e a qualidade do atendimento, seguimos as diretrizes que estão no seu contrato:\n\n• Reagendamento pedido com até 72 horas de antecedência eu organizo sem custo. Fora desse prazo pode incidir a taxa de reserva de agenda, de R$ 350, porque o horário fica bloqueado. Ela não é cumulativa com a cobrança da consulta.\n• Atraso acima de 15 minutos pode reduzir ou inviabilizar a consulta. Nesse caso, eu remarco uma vez sem custo.\n• Consulta não confirmada até 3 horas antes tem a vaga liberada para a lista de espera.\n• Falta sem aviso pode implicar a retenção do sinal, ou a mesma taxa de reserva de agenda, também pelo horário bloqueado.\n\nImprevisto acontece: situação comprovada é analisada sem penalidade.\n\nIsso existe para garantir pontualidade e atenção total ao seu atendimento.'},
   {id:'avaliacao_google',cat:'pos_consulta',nome:'Avaliação no Google',sub:'Só na primeira consulta, 1h depois',texto:'[nome], espero que a sua experiência tenha sido positiva. Se você quiser, a sua avaliação no Google ajuda muito:\nhttps://g.page/r/CVaxd8nwbLMaEAI/review'},
   {id:'boas_vindas_ciclo',cat:'onboarding',nome:'Boas-vindas ao ciclo',sub:'Paciente contratou, quem entrega o plano é o Dr.',texto:'[nome], seja muito bem-vindo(a) ao seu ciclo dentro do Método HAG.\n\nJá informei o Dr. Henrique sobre a confirmação do seu pagamento e solicitei a sua nota fiscal ao financeiro.\n\nO seu planejamento vem diretamente do Dr. Henrique, pelo canal de contato do seu plano.\n\nQualquer dúvida de organização, é comigo por aqui.'},
@@ -1168,7 +1174,7 @@ var DAN_TPL=[
      Texto generico desde 21/09: 'renovou' valia para a Bianca e era falso para o Bruno Aguiar,
      que recebe o primeiro pedido. Mora em Pre-consulta, e nao em Resgate: e diagnostica que ainda nao aconteceu, e foi
      ali que o Dr. Henrique procurou primeiro. Sem 'Passo N', vai para o fim da aba. */
-  {id:'retomada_sinal_pago',cat:'pre_consulta',nome:'Retomada com sinal já pago',sub:'Pagou o sinal antes do link e ainda não consultou',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nDando sequência ao seu atendimento: o Dr. Henrique enviou o seu pedido de exames, que segue em anexo.\n\nO sinal que você já pagou continua valendo, então você não precisa pagar nada agora. Para garantir a sua consulta, é só escolher o horário por este link:\n\n[link]\n\nA recomendação é escolher uma data com pelo menos duas semanas, para dar tempo de os exames ficarem prontos. Se algum resultado atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nQualquer dúvida, estou por aqui.'},
+  {id:'retomada_sinal_pago',cat:'pre_consulta',modo:'pedido',nome:'Retomada com sinal já pago',sub:'Pagou o sinal antes do link e ainda não consultou',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nDando sequência ao seu atendimento: o Dr. Henrique enviou o seu pedido de exames, que segue em anexo.\n\nO sinal que você já pagou continua valendo, então você não precisa pagar nada agora. Para garantir a sua consulta, é só escolher o horário por este link:\n\n[link]\n\nAs datas começam duas semanas à frente, para dar tempo de os exames ficarem prontos. Se algum resultado atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nQualquer dúvida, estou por aqui.'},
   {id:'fechamento_aviso',cat:'finalizacao',nome:'Aviso da consulta de fechamento',sub:'Antes da última consulta do ciclo',texto:'[nome], a sua próxima consulta com o Dr. Henrique é a consulta de fechamento do seu ciclo. Ela é diferente das outras: além de avaliar a sua evolução do período inteiro, é nela que o Dr. define com você o próximo passo, seguir com um novo ciclo ou encerrar com orientações de alta.\n\nSe quiser, vá pensando no que funcionou e no que travou nesse período. Ajuda muito a conversa render.\n\nQualquer dúvida, estou por aqui.'},
   {id:'proposta_toque1',cat:'finalizacao',nome:'Proposta sem resposta · toque 1',sub:'24h, metade do prazo · vale para nova e renovação',texto:'[nome], passando para saber se ficou alguma dúvida sobre o planejamento que o Dr. Henrique montou para você.\n\nSe for sobre forma de pagamento, me fala que eu te ajudo a organizar. Temos Pix e cartão em até 3x sem juros, e eu vejo com você o que se encaixa melhor.\n\nA proposta é válida até [data], e a sua vaga na agenda está reservada até lá.'},
   {id:'proposta_toque2',cat:'finalizacao',nome:'Proposta sem resposta · toque 2',sub:'Prazo vencido, vaga liberada, sem aspereza',texto:'[nome], como não recebi a confirmação até [data], a sua reserva na agenda foi liberada e o planejamento anterior se encerrou.\n\nIsso não fecha nenhuma porta. Quando você quiser retomar, é só me avisar: eu verifico as datas disponíveis e as condições vigentes no momento e organizo tudo com você.\n\nFoi um prazer acompanhar o seu ciclo até aqui. O Dr. Henrique segue à disposição.'},
@@ -1310,8 +1316,32 @@ function escolherMsgPac(id){
   }
 }
 function limparMsgPac(){ _msgPacId=null; var b=document.getElementById('msgBusca'); if(b) b.value=''; render(); }
+/* HAG_DIAG_JANELA_POR_EXAMES_v1: grava na tarefa diagnostica em aberto o modo e a data do
+   meio da janela, contando do dia do envio. Sem await no caminho do WhatsApp, para o
+   Safari nao bloquear a janela; a pagina so le isso quando o paciente abre o link. */
+function _diagIsoMais(n){
+  var d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+n);
+  var z=function(x){return (x<10?'0':'')+x;};
+  return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());
+}
+async function _diagMarcarJanela(pid, modo){
+  if(!pid || (modo!=='ja_tem' && modo!=='pedido')) return false;
+  var alvo=_diagIsoMais(modo==='pedido'?21:10);
+  try{
+    var r=await db.from('tarefas').update({janela_data:alvo, diag_exames:modo, atualizado_em:new Date().toISOString()})
+      .eq('patient_id',pid).eq('tipo','agendamento').eq('tipo_evento','diagnostica')
+      .in('status',['pendente','aguardando','andamento']).select('id');
+    var n=(r&&r.data)?r.data.length:0;
+    if(r&&r.error) throw r.error;
+    if(!n){ toast('Nao achei a tarefa de agendamento da diagnostica deste paciente: o link vai abrir com as datas padrao (a partir de 3 dias).','err'); return false; }
+    toast('Link com datas de '+_diagIsoMais(modo==='pedido'?14:3).split('-').reverse().slice(0,2).join('/')
+      +' a '+_diagIsoMais(modo==='pedido'?28:17).split('-').reverse().slice(0,2).join('/'),'ok');
+    return true;
+  }catch(e){ toast('Nao consegui gravar as datas do link: '+(e.message||e),'err'); return false; }
+}
 async function copiarMsg(id){
   var t=DAN_TPL.find(function(x){return x.id===id;}); if(!t) return;
+  if(t.modo && _msgPacId) _diagMarcarJanela(_msgPacId, t.modo);
   var txt=_msgTexto(t);
   /* HAG_MSG_NOME_ANTES_DO_CADASTRO_v1: copiar continua liberado, porque as
      vezes ela quer justamente editar a mao. Mas o aviso vai junto. */
@@ -1339,6 +1369,7 @@ function whatsMsg(id){
   }
   window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(txt),'_blank');
   toast('WhatsApp aberto','ok');
+  if(t.modo) _diagMarcarJanela(p.id, t.modo);
 }
 /* ═══ HAG_MSG_ANEXO_v1 (04/09/2026) ═══════════════════════════════════════
    POR QUE: a carta de encerramento so existia no Mac do Dr. O painel abre os
@@ -2614,9 +2645,14 @@ function buildFilaCard(t){
                  sem memoria de que o contato ja tinha sido feito. E alternador
                  de proposito, para um toque errado nao virar beco sem saida. */
               /* HAG_FILA_ROTULOS_v1: palavra + cor do selo que a acao produz. */
-              ? '<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\')" title="'
+              /* HAG_DIAG_JANELA_POR_EXAMES_v1: na diagnostica sao dois botoes, porque a data
+                 minima do link depende de ter ou nao pedido de exames. */
+              ? (t.tipo_evento==='diagnostica'
+                 ? '<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\',\'ja_tem\')" title="Sem pedido de exames: o link oferece datas a partir de 3 dias"><span class="g">&#x1f4f2;</span>Link · já tem exames</button>'
+                  +'<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\',\'pedido\')" title="Vai junto com o PDF do pedido: o link oferece datas a partir de 14 dias"><span class="g">&#x1f4f2;</span>Link · com pedido</button>'
+                 : '<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\')" title="'
                 +(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Abre o WhatsApp com o link para o paciente agendar sozinho':'Abre o WhatsApp para combinar o horário')
-                +'"><span class="g">&#x1f4f2;</span>'+(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Enviar link':'WhatsApp')+'</button>' /* HAG_DIAG_SINAL_v1 */
+                +'"><span class="g">&#x1f4f2;</span>'+(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Enviar link':'WhatsApp')+'</button>') /* HAG_DIAG_SINAL_v1 */
                +'<button class="btn-acao ba-falei" onclick="comunicadoFila(\''+t.id+'\')" title="'
                 +(t.status==='pendente'?'Registra que você já falou com o paciente e está aguardando a resposta dele':'Desfazer: volta o cartão para a agendar')
                 +'"><span class="g">'+(t.status==='pendente'?'&#x1f4ac;':'&#x21a9;')+'</span>'
@@ -2864,10 +2900,22 @@ async function whatsConfirmacao(id){
   window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
   toast('WhatsApp aberto · confirmação de '+((t.patient_nome||'').split(' ')[0]),'ok');
 }
-async function whatsFila(id){
+async function whatsFila(id, modo){
   var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t) return;
   var fone=_filaFone(t.patient_id);
   var msg=_filaMsgAgendar(t);
+  /* HAG_DIAG_JANELA_POR_EXAMES_v1: a diagnostica usava o texto do retorno ("a sua proxima
+     consulta ja pode ser agendada"), errado para quem ainda nao consultou. Agora sai o
+     mesmo texto do Passo 3 do painel de mensagens, e a janela e gravada no envio. */
+  if(t.tipo_evento==='diagnostica' && modo){
+    var tpl=DAN_TPL.find(function(x){return x.id===(modo==='pedido'?'opcoes_horario_pedido':'opcoes_horario');});
+    var _lk=_linksAgendar[t.patient_id]; var _tk=(_lk&&_lk.token)?_lk.token:((typeof _lk==='string')?_lk:'');
+    if(tpl && _tk){
+      msg=tpl.texto.split('[nome]').join(String(t.patient_nome||'').trim().split(' ')[0])
+                   .split('[link]').join(HAG_LINK_AGENDAR+_tk);
+    }
+    _diagMarcarJanela(t.patient_id, modo);
+  }
   if(!fone){
     try{ await navigator.clipboard.writeText(msg);
       toast('Sem WhatsApp no cadastro. Mensagem copiada.','ok');
@@ -3810,7 +3858,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260921-1559';
+  var VERSAO = '20260921-1617';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;

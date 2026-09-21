@@ -806,7 +806,9 @@ function diasOfertados(modalidade){
      2) a lista e cronologica e o alvo fica no MEIO da janela, entao o teto de
         4 dias cortava o alvo quando havia 4 dias uteis antes dele. */
   var sug=null;
-  if(ALVOMED){
+  /* HAG_DIAG_JANELA_POR_EXAMES_v1: na diagnostica o alvo e so o meio do intervalo,
+     nao uma indicacao do medico; marcar 'dia indicado' seria dizer o que ele nao disse. */
+  if(ALVOMED && TIPOCON!=='diagnostica'){
     for(var pi=0; pi<prios.length && !sug; pi++){
       var bal=porPrio[prios[pi]];
       for(var k=0;k<bal.length;k++){ if(bal[k].data===ALVO){ sug=bal[k]; bal.splice(k,1); break; } }
@@ -912,9 +914,15 @@ function telaEscolha(nota){
        "indicou" esse dia seria mentira. Nenhuma diagnostica tinha passado pelo link
        antes de 21/09, por isso ninguem tinha visto. */
     +(TIPOCON==='diagnostica'
+       /* HAG_DIAG_JANELA_POR_EXAMES_v1 (21/09/2026): o motivo da espera so aparece para
+          quem vai fazer exames ('pedido', ou janela que comeca 10 dias ou mais a frente,
+          caso de tarefa antiga sem a marcacao). Quem ja tem exames le so o intervalo. */
        ? ((ALVOMED && JANELA && JANELA.inicio)
           ? 'Separamos para a sua consulta as datas entre <b>'+dataBR(JANELA.inicio).split(', ')[1]+'</b> e <b>'
-            +dataBR(JANELA.fim).split(', ')[1]+'</b>, para dar tempo de os seus exames ficarem prontos. '
+            +dataBR(JANELA.fim).split(', ')[1]+'</b>'
+            +((c.retorno.exames==='pedido' || (c.retorno.exames!=='ja_tem'
+               && (new Date(JANELA.inicio+'T12:00:00')-new Date(hojeSP()+'T12:00:00'))/864e5>=10))
+               ? ', para dar tempo de os seus exames ficarem prontos. ' : '. ')
             +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
           : 'Escolha abaixo o dia e o horário da sua consulta diagnóstica, entre as próximas datas que o Dr. Henrique tem abertas.')
      : ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
@@ -947,7 +955,7 @@ function telaEscolha(nota){
   if(travada){
     h+='<div class="aviso">'+(c.retorno.modalidade==='online'
         ? 'Esta consulta do seu plano é <b>online</b>.'
-        : (LOCALMED && MODO!=='remarcar')
+        : (LOCALMED && MODO!=='remarcar' && TIPOCON!=='diagnostica')
           ? 'Esta '+PAL()+' é <b>presencial</b>. O dia indicado pelo Dr. Henrique é '
             +(LOCALMED==='tatuape'?'no <b>Tatuapé</b>':'em <b>Pinheiros</b>')
             +'. Os outros dias podem ser na outra unidade, e cada um mostra onde.'
