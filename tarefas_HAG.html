@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260922-0939"></script>
+<script src="hag_auth.js?v=20260922-1750"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1215,6 +1215,15 @@ var DAN_TPL=[
      que recebe o primeiro pedido. Mora em Pre-consulta, e nao em Resgate: e diagnostica que ainda nao aconteceu, e foi
      ali que o Dr. Henrique procurou primeiro. Sem 'Passo N', vai para o fim da aba. */
   {id:'retomada_sinal_pago',cat:'pre_consulta',modo:'pedido',nome:'Retomada com sinal já pago',sub:'Pagou o sinal antes do link e ainda não consultou',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nDando sequência ao seu atendimento: o Dr. Henrique enviou o seu pedido de exames, que segue em anexo.\n\nO sinal que você já pagou continua valendo, então você não precisa pagar nada agora. Para garantir a sua consulta, é só escolher o horário por este link:\n\n[link]\n\nAs datas começam duas semanas à frente, para dar tempo de os exames ficarem prontos. Se algum resultado atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nQualquer dúvida, estou por aqui.'},
+  /* HAG_FILA_RELOGIO_v1 (22/09/2026): a fila ganhou prazo, e prazo sem mensagem
+     pronta vira trabalho manual. Dois toques, os dois com UMA porta so: escolher no
+     link. Nenhum deles oferece "me fala que eu vejo outra data com o Dr. Henrique".
+     Essa frase parece gentileza e e' armadilha: devolve para a Daniela um trabalho
+     que a pagina faz sozinha, tira do paciente a decisao que ele precisa tomar e
+     abre negociacao de agenda fora do sistema, que e exatamente o que o link veio
+     resolver. Quem oferece horario e a pagina, nunca a mensagem. */
+  {id:'sem_resposta_link',cat:'pre_consulta',nome:'Recebeu o link e nao escolheu',sub:'3 dias de silencio \u00b7 reforca a escolha, sem abrir negociacao',texto:'[nome], tudo bem? Passando para lembrar que a sua consulta ainda est\u00e1 sem data.\n\nAs datas que o Dr. Henrique separou para voc\u00ea est\u00e3o neste link, e \u00e9 por l\u00e1 que voc\u00ea escolhe o dia e o hor\u00e1rio:\n\n[link]\n\nLeva menos de um minuto. Assim que voc\u00ea confirmar, o hor\u00e1rio j\u00e1 fica guardado no seu nome.'},
+  {id:'janela_fechando',cat:'pre_consulta',nome:'Janela de datas fechando',sub:'\u00daltima chamada antes de o link vencer',texto:'[nome], tudo bem? As datas que estavam separadas para a sua consulta se encerram nos pr\u00f3ximos dias.\n\nPara garantir a sua, \u00e9 s\u00f3 escolher o dia e o hor\u00e1rio por aqui:\n\n[link]\n\nDepois desse per\u00edodo essas datas saem do ar e eu preciso pedir ao Dr. Henrique uma nova libera\u00e7\u00e3o de agenda, com as datas que estiverem dispon\u00edveis no momento.'},
   {id:'fechamento_aviso',cat:'finalizacao',nome:'Aviso da consulta de fechamento',sub:'Antes da última consulta do ciclo',texto:'[nome], a sua próxima consulta com o Dr. Henrique é a consulta de fechamento do seu ciclo. Ela é diferente das outras: além de avaliar a sua evolução do período inteiro, é nela que o Dr. define com você o próximo passo, seguir com um novo ciclo ou encerrar com orientações de alta.\n\nSe quiser, vá pensando no que funcionou e no que travou nesse período. Ajuda muito a conversa render.\n\nQualquer dúvida, estou por aqui.'},
   {id:'proposta_toque1',cat:'finalizacao',nome:'Proposta sem resposta · toque 1',sub:'24h, metade do prazo · vale para nova e renovação',texto:'[nome], passando para saber se ficou alguma dúvida sobre o planejamento que o Dr. Henrique montou para você.\n\nSe for sobre forma de pagamento, me fala que eu te ajudo a organizar. Temos Pix e cartão em até 3x sem juros, e eu vejo com você o que se encaixa melhor.\n\nA proposta é válida até [data], e a sua vaga na agenda está reservada até lá.'},
   {id:'proposta_toque2',cat:'finalizacao',nome:'Proposta sem resposta · toque 2',sub:'Prazo vencido, vaga liberada, sem aspereza',texto:'[nome], como não recebi a confirmação até [data], a sua reserva na agenda foi liberada e o planejamento anterior se encerrou.\n\nIsso não fecha nenhuma porta. Quando você quiser retomar, é só me avisar: eu verifico as datas disponíveis e as condições vigentes no momento e organizo tudo com você.\n\nFoi um prazer acompanhar o seu ciclo até aqui. O Dr. Henrique segue à disposição.'},
@@ -2387,8 +2396,9 @@ function render(){
   // Stats
   var _corteF=new Date(Date.now()-14*86400000).toISOString();
   var _setTxt=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-  _setTxt('st-fa', _fila.filter(t=>t.status==='pendente').length);
-  _setTxt('st-fc', _fila.filter(t=>t.status==='andamento'||t.status==='aguardando').length);
+  /* HAG_FILA_RELOGIO_v1: os contadores do topo seguem a mesma regra das abas. */
+  _setTxt('st-fa', _fila.filter(t=>t.status==='pendente'||_filaVencido(t)).length);
+  _setTxt('st-fc', _fila.filter(t=>(t.status==='andamento'||t.status==='aguardando')&&!_filaVencido(t)).length);
   _setTxt('st-fg', _fila.filter(t=>t.status==='concluida'&&(t.concluido_em||t.atualizado_em||t.criado_em||'')>=_corteF).length);
   _setTxt('st-fx', _fila.filter(t=>t.status!=='concluida'&&t.janela_data&&t.janela_data<today).length);
 
@@ -2434,8 +2444,11 @@ function render(){
     const el=document.getElementById('taskList');
     var corte=new Date(Date.now()-14*86400000).toISOString();
     var baseF=_fila.filter(t=>!q||String(t.patient_nome||'').toLowerCase().includes(q));
-    var g_agendar=baseF.filter(t=>t.status==='pendente');
-    var g_comunic=baseF.filter(t=>t.status==='andamento'||t.status==='aguardando');
+    /* HAG_FILA_RELOGIO_v1: quem passou da janela reaparece em A agendar, porque a
+       partir dali o link nao oferece mais a janela certa. Muda o filtro, nao o dado:
+       nada e gravado no banco e a regra se desfaz trocando estas duas linhas. */
+    var g_agendar=baseF.filter(t=>t.status==='pendente'||_filaVencido(t));
+    var g_comunic=baseF.filter(t=>(t.status==='andamento'||t.status==='aguardando')&&!_filaVencido(t));
     /* HAG_REMARCAR_v1: procurando por nome, o corte de 14 dias sai do caminho.
        Era ele que fazia parecer que agendamento antigo nao tinha mais como mexer. */
     var g_agendados=baseF.filter(t=>t.status==='concluida'&&(!!q||(t.concluido_em||t.atualizado_em||t.criado_em||'')>=corte));
@@ -2649,6 +2662,55 @@ document.addEventListener('click', function(e){
   }
 });
 
+/* HAG_FILA_RELOGIO_v1 (22/09/2026): a aba Comunicado era um estado sem relogio.
+   A tarefa virava 'aguardando' sozinha quando a Daniela abria o WhatsApp, e nada
+   nunca a tirava de la: ou o paciente agendava, ou alguem lembrava de devolver a
+   mao. Enquanto isso o proprio link morre. diasElegiveis() no agendar_HAG.html so
+   oferece alvo-7 a alvo+7 e, pelo remendo do HAG_ALVO_MEDICO_v1, estica ate
+   alvo+14; passado isso o paciente que finalmente clica ve uma tela sem nenhum
+   horario, e ninguem no consultorio fica sabendo.
+   Tres marcos, todos calculados do que ja existe, sem coluna nova e sem migracao:
+     silencio : 3 dias sem resposta       -> selo, continua em Comunicado
+     alvo     : chegou o dia indicado     -> selo, continua em Comunicado
+     vencido  : passou de alvo+7          -> o cartao reaparece em A agendar
+   Nao ha carrossel porque a saida de 'vencido' e um dado que mudou, nao um clique:
+   na diagnostica o reenvio ja regrava janela_data (_diagMarcarJanela), no retorno
+   e preciso abrir a tarefa e definir nova data, que e decisao humana e deve ser. */
+var FILA_DIAS_CUTUCADA=3, FILA_DIAS_VENCE=7;
+function _filaHoje(){
+  try{ return new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'}); }
+  catch(e){ return new Date().toISOString().slice(0,10); }
+}
+function _filaDiasEntre(aISO,bISO){
+  if(!aISO||!bISO) return null;
+  var a=new Date(String(aISO).slice(0,10)+'T12:00:00');
+  var b=new Date(String(bISO).slice(0,10)+'T12:00:00');
+  if(isNaN(a.getTime())||isNaN(b.getTime())) return null;
+  return Math.round((b-a)/86400000);
+}
+function _filaFase(t){
+  if(!t) return null;
+  if(t.status!=='andamento'&&t.status!=='aguardando') return null;
+  var hoje=_filaHoje();
+  if(t.janela_data){
+    var d=_filaDiasEntre(t.janela_data,hoje);
+    if(d!==null&&d>FILA_DIAS_VENCE){
+      return {cod:'vencido',cor:'#B03A2E',
+        rot:(t.tipo_evento==='diagnostica'?'LINK VENCIDO \u00b7 REENVIAR':'JANELA VENCIDA \u00b7 NOVA DATA')};
+    }
+    if(d!==null&&d>=0){
+      return {cod:'alvo',cor:'#C0621B',
+        rot:(d===0?'DIA INDICADO \u00c9 HOJE':'DIA INDICADO PASSOU H\u00c1 '+d+(d===1?' DIA':' DIAS'))};
+    }
+  }
+  var sil=_filaDiasEntre((t.atualizado_em||t.criado_em||''),hoje);
+  if(sil!==null&&sil>=FILA_DIAS_CUTUCADA){
+    return {cod:'silencio',cor:'#8A6D1F',rot:'SEM RESPOSTA H\u00c1 '+sil+(sil===1?' DIA':' DIAS')};
+  }
+  return null;
+}
+function _filaVencido(t){ var f=_filaFase(t); return !!(f&&f.cod==='vencido'); }
+
 function buildFilaCard(t){
   const color=gac(t.patient_nome||'?');
   const stMap={pendente:['sb-pendente','&#x1f7e0; A agendar'],andamento:['sb-andamento','&#x1f4ac; Paciente comunicado'],aguardando:['sb-aguardando','&#x1f4ac; Paciente comunicado'],concluida:['sb-concluida','&#x2705; Agendado']};
@@ -2662,11 +2724,15 @@ function buildFilaCard(t){
      .task-card tem overflow:hidden, entao um selo absoluto seria cortado. */
   const _nov=_filaNovidade(t);
   const _selo=_nov?'<span style="display:inline-block;background:#C9AF6E;color:#231F19;font-size:9.5px;font-weight:800;letter-spacing:.09em;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle">NOVIDADE</span>':'';
-  return '<div class="task-card st-'+t.status+'" data-rid="'+t.id+'" data-rkind="fila"'+(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':'')+'>'+
+  /* HAG_FILA_RELOGIO_v1: selo de prazo, em linha como o de novidade. */
+  const _fase=_filaFase(t);
+  const _seloF=_fase?('<span style="display:inline-block;background:'+_fase.cor+';color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.07em;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle">'+_fase.rot+'</span>'):'';
+  const _bordaF=(_fase&&_fase.cod==='vencido')?' style="border-color:#B03A2E;box-shadow:0 2px 14px rgba(176,58,46,.22)"':'';
+  return '<div class="task-card st-'+t.status+'" data-rid="'+t.id+'" data-rkind="fila"'+(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':_bordaF)+'>'+
     '<div class="tc-main">'+
       '<div class="tc-avatar" style="background:'+color+'">'+gin(t.patient_nome||'?')+'</div>'+
       '<div class="tc-info">'+
-        '<div class="tc-name">'+_selo+t.patient_nome+'</div>'+
+        '<div class="tc-name">'+_selo+_seloF+t.patient_nome+'</div>'+
         '<div class="tc-desc">'+(FILA_EV_LABEL[t.tipo_evento]||'Agendamento')+' &middot; '+janela+'</div>'+
         (t.local?'<div class="tc-desc" style="color:var(--ink3)">'+_filaLocalLabel(t.local)+'</div>':'')+
         (t.obs?'<div class="tc-desc" style="color:var(--ink3)">'+t.obs+'</div>':'')+
@@ -3974,7 +4040,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260922-0939';
+  var VERSAO = '20260922-1750';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
