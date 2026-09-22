@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260921-1617"></script>
+<script src="hag_auth.js?v=20260922-0939"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -822,11 +822,51 @@ body {
     <button id="btnAgenda" onclick="verAgenda()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4c5; Agenda</button>
     <!-- HAG_LEADS_ABA_v1 -->
     <button id="btnLeads" onclick="verLeads()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f465; Leads</button>
+    <!-- HAG_RECEBIMENTO_DANIELA_v1 -->
+    <button id="btnRecebimento" onclick="recAbrir()" title="Registrar um pagamento que entrou (Pix, maquininha, link, sinal)" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4b0; Recebimento</button>
   </div>
 
   <!-- TASK LIST -->
   <div class="task-list" id="taskList"></div>
 
+</div>
+
+<!-- HAG_RECEBIMENTO_DANIELA_v1 (22/09/2026): registra o pagamento em receitas, com nota fiscal pendente -->
+<div class="modal-overlay" id="modalRec">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-ttl">Registrar recebimento</div>
+      <button class="modal-x" onclick="recFechar()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Paciente</label>
+        <input id="rec-pac" type="text" list="recPacList" placeholder="Digite o nome do paciente..." autocomplete="off">
+        <datalist id="recPacList"></datalist></div>
+      <div class="field"><label>O que foi pago</label><select id="rec-serv"></select></div>
+      <div class="field"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="rec-sinal" style="width:auto"> &Eacute; o sinal da consulta diagn&oacute;stica</label>
+        <div style="font-size:11px;color:var(--ink3);margin-top:3px">Marcado, o link de agendamento deste paciente deixa de cobrar o sinal.</div></div>
+      <div class="field"><label>Valor (R$)</label><input id="rec-valor" type="number" step="0.01" min="0" inputmode="decimal" placeholder="450,00"></div>
+      <div class="field"><label>Forma de pagamento</label>
+        <select id="rec-forma" onchange="recForma()">
+          <option value="pix">Pix</option>
+          <option value="credito_avista">Cart&atilde;o de cr&eacute;dito &agrave; vista</option>
+          <option value="credito_parcelado">Cart&atilde;o de cr&eacute;dito parcelado</option>
+          <option value="link_parcelado">Link de pagamento</option>
+        </select></div>
+      <div class="field"><label>Onde entrou</label>
+        <select id="rec-meio">
+          <option value="pix_direto">Pix direto na conta</option>
+          <option value="infinitepay_taptopay">Maquininha InfinitePay (celular)</option>
+          <option value="infinitepay_link">Link InfinitePay</option>
+        </select></div>
+      <div class="field" id="rec-parc-wrap" style="display:none"><label>Parcelas</label><input id="rec-parc" type="number" min="1" max="12" value="1"></div>
+      <div class="field"><label>Data do pagamento</label><input id="rec-data" type="date"></div>
+      <div class="field"><label>Observa&ccedil;&atilde;o (opcional)</label><input id="rec-obs" type="text" placeholder="Ex.: comprovante no WhatsApp"></div>
+      <div id="recAviso" style="display:none;background:#fdf6e3;border:1px solid #e8d5b0;border-radius:10px;padding:10px 12px;font-size:.8rem;color:#7a5c14;margin:6px 0"></div>
+      <button id="recBtn" onclick="recSalvar(false)" style="width:100%;border:0;background:#1a1a18;color:#fff;border-radius:12px;height:46px;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px">Registrar</button>
+      <div style="font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.5">O registro entra no financeiro do HAG OS com a nota fiscal <b>pendente</b>, na mesma lista que o Dr. Henrique usa para pedir as notas &agrave; contabilidade.</div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -3522,6 +3562,82 @@ db.channel('tarefas-rt')
 
 // ── TOAST ──
 let _tt;
+/* ═══ HAG_RECEBIMENTO_DANIELA_v1 (22/09/2026) ══════════════════════════════
+   PEDIDO: a Daniela registra aqui um dinheiro que entrou de paciente, e o registro vai para o HAG OS
+   no lugar certo: tabela receitas, NFS-e 'pendente', junto das outras, que e a lista que o Dr. usa para
+   pedir a nota a contabilidade no financeiro. Caso que motivou: Bruno Aguiar, Pix de R$ 450 em 18/09,
+   recebido fora do link, sem caminho para registrar.
+   A regra mora no banco (RPC hag_registrar_recebimento): mesma forma do "Nova receita" do financeiro,
+   antiduplicacao de 3 dias para cada lado, e o sinal da diagnostica grava patients.sinal_pago para o
+   link nao cobrar de novo. Esta tela so coleta e mostra a resposta. */
+var _recCat=null;
+function _recHoje(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _recEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function recAbrir(){
+  var dl=document.getElementById('recPacList');
+  dl.innerHTML=(_patients||[]).slice().sort(function(a,b){return String(a.nome||'').localeCompare(String(b.nome||''),'pt');})
+    .map(function(p){ return '<option value="'+_recEsc(p.nome)+'"></option>'; }).join('');
+  if(!_recCat){
+    try{ var r=await db.from('catalogo_servicos').select('codigo,nome,ordem').eq('ativo',true).order('ordem'); _recCat=(r&&r.data)||[]; }catch(e){ _recCat=[]; }
+  }
+  var sv=document.getElementById('rec-serv');
+  sv.innerHTML=_recCat.map(function(c){ return '<option value="'+_recEsc(c.codigo)+'"'+(c.codigo==='m1_consulta'?' selected':'')+'>'+_recEsc(c.nome)+'</option>'; }).join('')
+    || '<option value="m1_consulta">1 · Consulta médica</option>';
+  ['rec-pac','rec-valor','rec-obs'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('rec-sinal').checked=false;
+  document.getElementById('rec-forma').value='pix'; recForma();
+  document.getElementById('rec-parc').value='1';
+  document.getElementById('rec-data').value=_recHoje();
+  document.getElementById('recAviso').style.display='none';
+  document.getElementById('modalRec').classList.add('vis');
+}
+function recFechar(){ document.getElementById('modalRec').classList.remove('vis'); }
+function recForma(){
+  var f=document.getElementById('rec-forma').value, m=document.getElementById('rec-meio');
+  m.value = (f==='pix') ? 'pix_direto' : (f==='link_parcelado' ? 'infinitepay_link' : 'infinitepay_taptopay');
+  document.getElementById('rec-parc-wrap').style.display = (f==='credito_parcelado'||f==='link_parcelado') ? '' : 'none';
+}
+function _recPacId(){
+  var n=String(document.getElementById('rec-pac').value||'').trim().toLowerCase();
+  var ach=(_patients||[]).filter(function(p){ return String(p.nome||'').trim().toLowerCase()===n; });
+  return ach.length===1 ? ach[0].id : (ach.length>1 ? 'AMBIGUO' : null);
+}
+async function recSalvar(forcar){
+  var av=document.getElementById('recAviso'), bt=document.getElementById('recBtn');
+  var pid=_recPacId();
+  if(pid==='AMBIGUO'){ toast('Há dois pacientes com esse nome. Fale com o Dr. Henrique.','err'); return; }
+  if(!pid){ toast('Escolha o paciente pela lista (o nome precisa ser igual ao do cadastro).','err'); return; }
+  var valor=parseFloat(String(document.getElementById('rec-valor').value||'').replace(',','.'));
+  if(!(valor>0)){ toast('Informe o valor.','err'); return; }
+  var data=document.getElementById('rec-data').value;
+  if(!data){ toast('Informe a data do pagamento.','err'); return; }
+  var forma=document.getElementById('rec-forma').value;
+  bt.disabled=true; bt.textContent='Registrando...';
+  try{
+    var r=await db.rpc('hag_registrar_recebimento',{
+      p_patient_id:pid, p_servico_codigo:document.getElementById('rec-serv').value, p_valor:valor,
+      p_forma:forma, p_meio:document.getElementById('rec-meio').value,
+      p_parcelas:(forma==='credito_parcelado'||forma==='link_parcelado')?(parseInt(document.getElementById('rec-parc').value,10)||1):1,
+      p_data_pagamento:data, p_obs:document.getElementById('rec-obs').value||null,
+      p_eh_sinal:document.getElementById('rec-sinal').checked, p_por:_role||'secretaria', p_forcar:!!forcar});
+    if(r&&r.error) throw r.error;
+    var d=r&&r.data;
+    if(d&&d.ok===false&&d.erro==='possivel_duplicata'){
+      av.style.display='';
+      av.innerHTML='<b>Já existe um registro parecido</b> para este paciente:<br>'
+        +(d.ja_existe||[]).map(function(x){ return '• R$ '+Number(x.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})+' em '+String(x.data).split('-').reverse().join('/')+' ('+_recEsc(x.servico)+', nota '+_recEsc(x.nfse)+')'; }).join('<br>')
+        +'<br><br>Se for o mesmo pagamento, <b>não registre de novo</b>. Se for outro pagamento, confirme:'
+        +'<br><button onclick="recSalvar(true)" style="margin-top:8px;border:1px solid #7a5c14;background:#fff;color:#7a5c14;border-radius:9px;padding:7px 12px;font-weight:700;font-family:inherit;cursor:pointer">Registrar mesmo assim</button>';
+      return;
+    }
+    if(!d||d.ok!==true){ toast('Não registrou: '+((d&&d.erro)||'resposta vazia'),'err'); return; }
+    recFechar();
+    toast('Registrado: '+String(d.paciente||'').split(' ')[0]+', R$ '+Number(d.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})+'. Nota fiscal pendente no financeiro.'+(d.sinal?' Sinal marcado como pago.':''),'ok');
+    try{ _patients=await loadPatients(); }catch(e){}
+  }catch(e){ toast('Erro ao registrar: '+((e&&e.message)||e),'err'); }
+  finally{ bt.disabled=false; bt.textContent='Registrar'; }
+}
+
 function toast(msg,type){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast vis'+(type?' '+type:'');
@@ -3858,7 +3974,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260921-1617';
+  var VERSAO = '20260922-0939';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
