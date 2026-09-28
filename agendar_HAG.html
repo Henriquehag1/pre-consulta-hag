@@ -51,6 +51,15 @@ display:flex;align-items:center;justify-content:center;font-size:26px;color:var(
 textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit;font-size:14.5px;
 min-height:70px;resize:vertical;background:#fff}
 .rodape{color:var(--ink4);font-size:12.5px;text-align:center;margin-top:26px}
+/* HAG_PLANO_NO_LINK_v1 */
+.plano .pl-datas{font-size:14px;color:var(--ink3);margin:0 0 12px}
+.pl-trilha{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.pl-i{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink4);background:#fff;white-space:nowrap}
+.pl-i.ok{color:var(--navy);background:var(--cream)}
+.pl-i.marc{color:var(--gold2);border-color:var(--gold)}
+.pl-i.atual{color:#fff;background:var(--navy);border-color:var(--navy);font-weight:600}
+.pl-conta{font-size:14px;color:var(--navy);font-weight:600}
+.pl-cort{font-size:13.5px;color:var(--ink3);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 .spin{text-align:center;color:var(--ink4);padding:34px 0;font-size:14.5px}
 /* HAG_ESPERA_VISIVEL_v1 (11/09/2026): a reserva levava alguns segundos mostrando
    so uma linha de texto cinza. Numa tela de celular isso passa por "nada
@@ -873,6 +882,60 @@ function diasOfertados(modalidade){
   return lista;
 }
 
+/* HAG_PLANO_NO_LINK_v1 (28/09/2026)
+   Cartão "Seu acompanhamento" no topo do link: início e término previsto do
+   ciclo, os encontros já feitos com a data, este que está sendo marcado e os
+   que faltam. Pedido do Dr. Henrique: o paciente enxerga onde está no plano sem
+   precisar perguntar para a Daniela.
+   Regras (todas decididas com ele):
+   . sem nome de etapa (HAG_SEM_NUMERO_DE_ETAPA_v6); só datas e contagem;
+   . conta só consulta; questionário mensal não é encontro;
+   . cortesia do ciclo anterior aparece à parte e não entra na conta;
+   . aplicação injetável e diagnóstica não mostram o cartão.
+   Os dados vêm prontos do servidor (hag_plano_resumo, dentro do contexto do
+   link). Se não vierem, o cartão simplesmente não aparece. */
+function _plDM(iso){ var p=String(iso||'').split('-'); return p.length===3 ? p[2]+'/'+p[1] : ''; }
+function _plDMA(iso){ var p=String(iso||'').split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : ''; }
+var _PL_MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function cartaoPlano(atualId){
+  var p=CTX && CTX.plano;
+  if(!p || typeof p!=='object') return '';
+  var hoje=hojeSP(), itens=p.itens||[], total=+p.total||0, feitos=+p.realizados||0;
+  var h='<div class="cartao plano"><h2>Seu acompanhamento'+(p.rotulo?' · '+esc(p.rotulo):'')+'</h2>';
+  if(p.inicio){
+    h+='<div class="pl-datas">Início <b>'+_plDMA(p.inicio)+'</b>'
+      /* término que já passou com encontro ainda devido só confunde: some */
+      +((p.fim_previsto && p.fim_previsto>=hoje)?' · ciclo atual até <b>'+_plDMA(p.fim_previsto)+'</b>':'')+'</div>';
+  }
+  if(total>0){
+    h+='<div class="pl-trilha">';
+    itens.forEach(function(it){
+      var cls='', txt='';
+      if(atualId && it.id===atualId){ cls='atual'; txt='● esta consulta'; }
+      else if(it.situacao==='realizada'){ cls='ok'; txt='✓ '+_plDM(it.data); }
+      else if(it.situacao==='marcada'){ cls='marc'; txt='◷ '+_plDM(it.data)+' marcada'; }
+      else if(it.fechamento){ txt='○ balanço e próximos passos'; }
+      else if(it.data && it.data>=hoje){ txt='○ '+_PL_MES[+it.data.split('-')[1]-1]; }
+      else { txt='○ a marcar'; }
+      h+='<span class="pl-i'+(cls?' '+cls:'')+'">'+txt+'</span>';
+    });
+    h+='</div>';
+    var faltam=Math.max(0,total-feitos);
+    h+='<div class="pl-conta">'+(faltam===0
+        ? (total===1 ? 'O encontro do seu plano foi realizado.' : 'Todos os '+total+' encontros do seu plano foram realizados.')
+        : feitos+' de '+total+' encontros realizados · '+(faltam===1?'falta 1':'faltam '+faltam))+'</div>';
+  }
+  var c=p.cortesia;
+  if(c && c.id){
+    var ct = (atualId && c.id===atualId) ? 'é esta consulta'
+           : c.situacao==='realizada' ? 'realizada em '+_plDM(c.data)
+           : c.situacao==='marcada' ? 'marcada para '+_plDM(c.data)
+           : 'a marcar';
+    h+='<div class="pl-cort">Consulta de cortesia do ciclo anterior: <b>'+ct+'</b>. Ela não conta entre os encontros do plano atual.</div>';
+  }
+  return h+'</div>';
+}
+
 function telaEscolha(nota){
   var c=CTX, hibrido=c.retorno.modalidade==='hibrido';
   /* Trava: quando o plano define a modalidade, nao existe aba para escolher.
@@ -994,6 +1057,12 @@ function telaEscolha(nota){
     });
   }
   h+='</div><button class="btn claro" onclick="HAGpg.ajuda()">Nenhum destes horários funciona para mim</button>';
+  /* HAG_PLANO_NO_LINK_v1: o cartao do plano vai no topo. Remarcando, a consulta
+     'desta vez' e a que esta sendo remarcada; marcando, o retorno em aberto. */
+  var _plAtual = (MODO==='remarcar' && REM)
+      ? ((REM.tipo!=='injetavel' && REM.retorno && REM.retorno.id) ? REM.retorno.id : false)
+      : (TIPOCON==='retorno' && c.retorno ? c.retorno.id : false);
+  if(_plAtual!==false) h=cartaoPlano(_plAtual)+h;
   el(h);
   window.HAGpg._dias=dias;
 }
@@ -1079,7 +1148,10 @@ function telaJaAgendado(){
   var a=CTX.agendamento;
   if(a && a.status==='pre_reservado'){ telaSinal(a); return; } /* HAG_DIAG_SINAL_v1 */
   var ehOn2=(a.modalidade==='online'||a.local==='online');
-  el('<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
+  /* HAG_PLANO_NO_LINK_v1 */
+  var _plTopo = (a.tipo!=='injetavel' && a.tipo!=='diagnostica')
+      ? cartaoPlano(CTX.remarcacao && CTX.remarcacao.retorno ? CTX.remarcacao.retorno.id : null) : '';
+  el(_plTopo+'<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
     +'<h2 style="text-align:center">Você já tem horário marcado</h2>'
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(a.data)+'</b></div>'
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(a.inicio)+'</b></div>'
