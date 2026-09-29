@@ -1302,7 +1302,10 @@ window.HAGpg={
         telaForaDoPrazo(REM); return;
       }
       if(r&&(r.erro==='horario_ocupado'||r.erro==='abriria_buraco'||r.erro==='limite_do_dia')){
-        carregarAgendaENotificar('Esse horário acabou de ser preenchido. A lista foi atualizada, escolha outro.');
+        /* HAG_MSG_DO_SERVIDOR_v1 (29/09/2026): os tres motivos caiam na mesma frase, e em dois deles ela era falsa
+           (a Cintia leu "acabou de ser preenchido" com o horario livre, ESTADO-ATUAL 26/09). O servidor ja
+           devolve a frase certa de cada caso; a tela usa a dele e so cai na generica se vier vazia. */
+        carregarAgendaENotificar(((r&&r.mensagem)?String(r.mensagem):'Esse horário não está mais disponível.')+' A lista foi atualizada, escolha outro.');
         return;
       }
       falha((r&&r.mensagem)||'Não consegui remarcar agora. Tente de novo em instantes.');
@@ -1381,7 +1384,10 @@ window.HAGpg={
       if(r&&r.ok){ telaSucesso(r.agendamento); return; }
       if(r&&r.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
       if(r&&(r.erro==='horario_ocupado'||r.erro==='abriria_buraco'||r.erro==='limite_do_dia')){
-        carregarAgendaENotificar('Esse horário acabou de ser preenchido. A lista foi atualizada, escolha outro.');
+        /* HAG_MSG_DO_SERVIDOR_v1 (29/09/2026): os tres motivos caiam na mesma frase, e em dois deles ela era falsa
+           (a Cintia leu "acabou de ser preenchido" com o horario livre, ESTADO-ATUAL 26/09). O servidor ja
+           devolve a frase certa de cada caso; a tela usa a dele e so cai na generica se vier vazia. */
+        carregarAgendaENotificar(((r&&r.mensagem)?String(r.mensagem):'Esse horário não está mais disponível.')+' A lista foi atualizada, escolha outro.');
         return;
       }
       if(r&&r.erro==='ja_agendado'){ iniciar(); return; }

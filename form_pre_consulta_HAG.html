@@ -601,7 +601,10 @@ img{-webkit-user-drag:none}
 </style>
 </head>
 <body>
-<div id="hagVersionTag" style="position:fixed;top:8px;right:8px;z-index:99999;background:#c11e1e;color:#fff;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.3);letter-spacing:.05em">⚠ JS NÃO CARREGOU</div>
+<!-- HAG_TAG_SO_DEBUG_v1 (29/09/2026): a etiqueta de versao (vermelha ate o script de documento
+     iniciar, verde depois) ficava fixa no canto de TODA pagina de paciente. E instrumento de
+     diagnostico, nao de paciente: fica oculta e so aparece com ?debug=1 na URL. -->
+<div id="hagVersionTag" style="display:none;position:fixed;top:8px;right:8px;z-index:99999;background:#c11e1e;color:#fff;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.3);letter-spacing:.05em">⚠ JS NÃO CARREGOU</div>
 <script>console.log('[HAG-EARLY] script tag reached, JS runtime active');</script>
 
 <script>
@@ -814,7 +817,8 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     _initDone = true;
     console.log('[HAG] Sistema de identificacao por documento inicializado v2.1');
     var tag = document.getElementById('hagVersionTag');
-    if(tag){ tag.style.background='#2d7a3a'; tag.textContent='✓ HAG v2.1 · DOC-FLEX'; }
+    if(tag){ tag.style.background='#2d7a3a'; tag.textContent='✓ HAG v2.1 · DOC-FLEX';
+      /* HAG_TAG_SO_DEBUG_v1 */ if(/[?&]debug=1/.test(location.search)) tag.style.display='block'; }
 
     // Set initial placeholder based on default type (CPF)
     inp.placeholder = docPlaceholder(_getType());
