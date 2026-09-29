@@ -124,7 +124,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .btn-resp.undo{border-color:var(--border);background:var(--surface3);color:var(--ink3)}
 .btn-resp.undo:hover{background:var(--ink3);color:#fff}
 .resp-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:8px 0 2px;border-top:1px solid var(--border);margin-top:8px}
-/* HAG_RESP_COPIAR_v1 (29/09/2026): botao que copia a resposta + o historico inteiro do paciente */
+/* HAG_RESP_COPIAR_v2 (29/09/2026): botao que copia somente a resposta aberta */
 .btn-copy{font-family:var(--fm);font-size:10px;font-weight:600;padding:5px 11px;border-radius:8px;cursor:pointer;border:1px solid var(--gold-border);background:var(--gold-bg);color:var(--gold-dim);white-space:nowrap;transition:all .12s}
 .btn-copy:hover{background:var(--gold);color:#fff}
 .btn-copy:disabled{opacity:.7;cursor:wait}
@@ -284,8 +284,8 @@ function buildCard(r){
       (r.interpretacao?'<div class="resp-interp"><div class="resp-interp-label">Interpretacao clinica (IA)</div><div class="resp-interp-text">'+r.interpretacao.replace(/</g,'&lt;')+'</div></div>':'') +
       /* HAG_RESP_RESPONDIDO_v1 */
       '<div class="resp-foot">' +
-        /* HAG_RESP_COPIAR_v1: ao lado do marcar respondido */
-        '<button class="btn-copy" data-copy="'+String(r.id).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" title="Copia esta resposta e, abaixo dela, tudo o que o HAG OS tem do paciente (prontuarios, receitas, planos, exames, check-ins e WhatsApp), para colar em outra IA ou onde quiser">⧉ Copiar tudo do paciente</button>' +
+        /* HAG_RESP_COPIAR_v2: ao lado do marcar respondido; copia SO esta resposta */
+        '<button class="btn-copy" data-copy="'+String(r.id).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" title="Copia somente esta resposta (paciente, formulario, data, score e o texto inteiro), para colar onde quiser">⧉ Copiar resposta</button>' +
         (r.respondido===true
           ? '<button class="btn-resp undo" onclick="toggleRespondido(\''+r.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',false)">↺ Desfazer respondido</button>'
           : '<button class="btn-resp" onclick="toggleRespondido(\''+r.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',true)">✓ Marcar respondido</button>') +
@@ -312,18 +312,14 @@ async function toggleRespondido(cid, valor){
   }
 }
 
-/* HAG_RESP_COPIAR_v1 (29/09/2026)
+/* HAG_RESP_COPIAR_v2 (29/09/2026)
    Pedido do Dr. Henrique: ao lado de "Marcar respondido", um botao que copia
-   "aquele todo do paciente" para colar em outro lugar (outra IA, por exemplo).
-   Copia duas coisas, nesta ordem: (1) ESTA resposta, inteira, com tipo, data,
-   score e peso, porque e ela que motivou abrir o card; (2) o contexto completo
-   do paciente, da mesma funcao do botao "Contexto para o Claude" do dashboard
-   (hag_contexto_paciente: prontuarios, receitas, planos, exames, check-ins e
-   WhatsApp). So leitura do banco, sem IA. Exige login (a pagina ja exige).
-   Se o historico falhar, copia so a resposta e o botao diz isso.
-   Safari: a copia depois de uma espera perde o "gesto" do clique, por isso vai
-   primeiro por ClipboardItem com promessa; se nao der, writeText; se nem isso,
-   abre uma janela com o texto ja selecionado. */
+   para a area de transferencia a resposta aberta, para colar em outro lugar.
+   v1 (mesmo dia) anexava o historico inteiro do paciente (hag_contexto_paciente);
+   ele preferiu que AQUI seja so a resposta. O "tudo do paciente" continua no
+   botao "Contexto para o Claude" do dashboard. Sem banco, sem IA.
+   Copia direto no clique (sem espera), entao o Safari aceita; se o navegador
+   recusar, abre uma janela com o texto ja selecionado. */
 function _rcFmtData(d){
   if(!d) return '';
   try{ const dt=new Date(d); if(isNaN(dt)) return String(d);
@@ -332,7 +328,7 @@ function _rcFmtData(d){
 }
 function _rcTextoResposta(r){
   const nomes={verde:'Excelente',amarelo:'Atenção',vermelho:'Intervenção'};
-  const L=['# Resposta do paciente para analisar','Paciente: '+(r.patient_nome||'')];
+  const L=['Paciente: '+(r.patient_nome||'')];
   L.push('Formulário: '+(r.tipo||'semanal')+(r.semana?' · '+r.semana:'')+' · enviado em '+_rcFmtData(r.criado||r.data_envio));
   const x=[];
   if(r.score_pct!=null) x.push('score '+r.score_pct+'%');
@@ -342,19 +338,6 @@ function _rcTextoResposta(r){
   L.push('');
   L.push(r.texto_completo ? String(r.texto_completo).trim() : '(texto completo não disponível para este registro)');
   return L.join('\n');
-}
-async function _rcMontar(r){
-  const resp=_rcTextoResposta(r);
-  if(!r.patient_id) return {txt:resp+'\n\n(Resposta sem paciente vinculado no cadastro: não há histórico para anexar.)', completo:false};
-  try{
-    const {data,error}=await db.rpc('hag_contexto_paciente',{p_patient_id:r.patient_id});
-    if(error) throw error;
-    if(!data || String(data).indexOf('Paciente nao encontrado')===0) throw new Error('paciente não encontrado no banco');
-    return {txt:resp+'\n\n---\n\n# Contexto completo do paciente (HAG OS)\n\n'+data, completo:true};
-  }catch(e){
-    console.warn('[copiar] contexto falhou', e);
-    return {txt:resp+'\n\n(O histórico completo não pôde ser anexado: '+String((e&&e.message)||e)+')', completo:false};
-  }
 }
 function _rcJanela(txt){
   const ov=document.createElement('div'); ov.className='rc-ov';
@@ -367,23 +350,11 @@ function _rcJanela(txt){
 }
 async function copiarResposta(cid, btn){
   const r=_all.find(x=>x.id===cid); if(!r) return;
-  const orig=btn?btn.textContent:'';
-  if(btn){ btn.disabled=true; btn.textContent='Montando...'; }
-  const prom=_rcMontar(r);
-  let ok=false, res=null;
-  try{
-    if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
-      await navigator.clipboard.write([new ClipboardItem({'text/plain': prom.then(x=>{res=x; return new Blob([x.txt],{type:'text/plain'});})})]);
-      ok=true;
-    }
-  }catch(e){ console.warn('[copiar] ClipboardItem', e); }
-  if(!res) res=await prom;
-  if(!ok){ try{ await navigator.clipboard.writeText(res.txt); ok=true; }catch(e){ console.warn('[copiar] writeText', e); } }
-  if(!ok) _rcJanela(res.txt);
-  if(btn){
-    btn.textContent = !ok ? orig : (res.completo ? '✓ Copiado · '+Math.round(res.txt.length/1000)+' mil caracteres' : '✓ Copiado · só a resposta');
-    setTimeout(()=>{ btn.textContent=orig; btn.disabled=false; }, ok?3500:0);
-  }
+  const txt=_rcTextoResposta(r);
+  let ok=false;
+  try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){ console.warn('[copiar] writeText', e); }
+  if(!ok){ _rcJanela(txt); return; }
+  if(btn){ if(!btn.dataset.orig) btn.dataset.orig=btn.textContent; btn.textContent='✓ Copiado'; clearTimeout(btn._rcT); btn._rcT=setTimeout(()=>{ btn.textContent=btn.dataset.orig; }, 2500); }
 }
 document.addEventListener('click',function(e){
   const b=e.target.closest && e.target.closest('.btn-copy');
