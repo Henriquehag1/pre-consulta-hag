@@ -132,6 +132,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .rc-box{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-lg);width:100%;max-width:760px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .rc-box textarea{width:100%;height:55vh;font-family:var(--fm);font-size:11px;border:1px solid var(--border2);border-radius:var(--rsm);padding:10px;resize:vertical}
 .rc-box .rc-dica{font-size:12px;color:var(--ink2)}
+/* HAG_RESP_PROXIMA_CONSULTA_v1 (29/09/2026): proxima consulta no card */
+.resp-prox{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-family:var(--fm);font-size:10px;font-weight:500;padding:3px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface3);color:var(--ink2);max-width:100%;white-space:normal;line-height:1.4}
+.resp-prox.perto{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)}
+.resp-prox.marcada{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.resp-prox.aguarda{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
+.resp-prox.vencida{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
 /* LOADING */
 .loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;transition:opacity .4s}
 .loading-screen.hidden{opacity:0;pointer-events:none}
@@ -275,6 +281,7 @@ function buildCard(r){
         '<div class="resp-name">'+r.patient_nome+'</div>' +
         '<div class="resp-meta">'+dataHora+' '+semana+' '+pesoStr+'</div>' +
         (chips?'<div class="resp-scores">'+chips+'</div>':'') +
+        _rpProxHtml(r) +   /* HAG_RESP_PROXIMA_CONSULTA_v1 */
       '</div>' +
       '<div class="resp-badges">'+typeBadge+clsBadge+scorePill+'</div>' +
       '<span class="toggle-arrow" id="arr_'+id+'">&#9660;</span>' +
@@ -293,6 +300,59 @@ function buildCard(r){
     '</div>' +
   '</div>';
 }
+/* HAG_RESP_PROXIMA_CONSULTA_v1 (29/09/2026)
+   Pedido do Dr. Henrique: no card da resposta, saber se o paciente ja tem a
+   proxima consulta marcada e quando, para decidir entre responder, intervir ou
+   esperar a consulta que esta perto. Dado da RPC hag_proximas_consultas (so
+   authenticated), que junta as TRES fontes de consulta marcada (reserva do link,
+   fila da Daniela e retorno agendado) e, sem nada marcado, traz o proximo
+   controle PREVISTO do ciclo ativo. Uma chamada por carga da pagina.
+   Silencio diz se e "nao ha" ou "nao sei": falha de leitura aparece como
+   "nao conferida", nunca como "sem consulta". */
+let _prox = null;          /* null = nao carregou; {} = carregou */
+let _proxErro = false;
+const _RP_LOCAL = {tatuape:'Tatuapé', pinheiros:'Pinheiros', online:'Online'};
+const _RP_DIAS = ['dom','seg','ter','qua','qui','sex','sáb'];
+function _rpEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _rpHojeISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _rpDiff(iso){ const a=new Date(_rpHojeISO()+'T12:00:00'), b=new Date(String(iso).slice(0,10)+'T12:00:00'); return Math.round((b-a)/86400000); }
+function _rpData(iso){ const d=new Date(String(iso).slice(0,10)+'T12:00:00'); return _RP_DIAS[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+function _rpQuando(n){ return n===0?'hoje':n===1?'amanhã':'em '+n+' dias'; }
+async function _rpCarregar(){
+  try{
+    const {data,error}=await db.rpc('hag_proximas_consultas');
+    if(error) throw error;
+    const m={}; (data||[]).forEach(x=>{ if(x.patient_id) m[x.patient_id]=x; });
+    _prox=m; _proxErro=false;
+  }catch(e){ console.warn('[proxima consulta]', e); _prox=null; _proxErro=true; }
+}
+function _rpProxHtml(r){
+  if(!r.patient_id) return '';
+  if(_prox===null){ return _proxErro ? '<div><span class="resp-prox" title="A leitura da agenda falhou; recarregue a página">📅 Próxima consulta: não conferida</span></div>' : ''; }
+  const x=_prox[r.patient_id];
+  if(x && x.marcada_data){
+    const n=_rpDiff(x.marcada_data);
+    const tipo=(x.marcada_tipo||'').toLowerCase();
+    const tipoTxt = (tipo==='diagnostica'?'diagnóstica':tipo==='injetavel'?'aplicação':'');
+    const partes=['📅 Próxima consulta: '+_rpData(x.marcada_data)+(x.marcada_hora?' · '+x.marcada_hora:''),
+                  _RP_LOCAL[(x.marcada_local||'').toLowerCase()]||x.marcada_local||'', tipoTxt, _rpQuando(n)].filter(Boolean);
+    let cls = n<=7 ? 'perto' : 'marcada';
+    let txt = partes.join(' · ');
+    if(x.aguardando_sinal){ cls='aguarda'; txt+=' · aguardando sinal'; }
+    return '<div><span class="resp-prox '+cls+'">'+_rpEsc(txt)+'</span></div>';
+  }
+  if(x && x.prevista_data){
+    const n=_rpDiff(x.prevista_data);
+    const nome=x.prevista_nome?x.prevista_nome+' ':'';
+    const falta = x.prevista_status==='faltou' ? ' (faltou, remarcar)' : '';
+    const txt = n<0
+      ? '⚠ Sem consulta marcada · '+nome+'previsto para '+_rpData(x.prevista_data)+', há '+(-n)+(n===-1?' dia':' dias')+falta
+      : '⚠ Sem consulta marcada · '+nome+'previsto para '+_rpData(x.prevista_data)+' ('+_rpQuando(n)+')'+falta;
+    return '<div><span class="resp-prox '+(n<0?'vencida':'aguarda')+'">'+_rpEsc(txt)+'</span></div>';
+  }
+  return '<div><span class="resp-prox" title="Nenhuma consulta marcada e nenhum controle previsto em ciclo ativo">📅 Sem consulta marcada</span></div>';
+}
+
 /* HAG_RESP_RESPONDIDO_v1: grava respondido na tabela checkins.
    Restaurado em 17/09/2026 junto com os filtros e a marca visual. */
 async function toggleRespondido(cid, valor){
@@ -403,6 +463,7 @@ async function load(){
     return;
   }
   _all=data||[];
+  await _rpCarregar();   /* HAG_RESP_PROXIMA_CONSULTA_v1 */
   render();
 }
 async function init(){
