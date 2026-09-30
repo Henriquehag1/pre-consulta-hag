@@ -1290,9 +1290,10 @@ var DAN_TPL=[
      taxa de R$ 350 sao da clausula 4 (modelo 'diretrizes'); as tres saidas fora do prazo
      (comprovante, contar no plano, taxa) sao decisao do Dr. Henrique em 30/09. */
   {id:'desmarcou_no_prazo',cat:'remarcacao',nome:"Desmarcou no prazo (72 h ou mais)",sub:"Sem custo, link para a nova data",texto:"[nome], tudo certo, recebi o seu aviso e já liberei o horário. Como ele veio dentro do prazo, não há custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo. Ele mostra os dias que o Dr. Henrique tem abertos para esta etapa do seu acompanhamento:\n\n[link]"},
-  {id:'desmarcou_fora_prazo',cat:'remarcacao',nome:"Desmarcou fora do prazo · as 3 opções",sub:"Menos de 72 h: o paciente escolhe o caminho",texto:"[nome], recebi o seu aviso, obrigada por me avisar.\n\nComo a desmarcação veio com menos de 72 horas, o contrato prevê a taxa de reserva de agenda, porque o horário ficou reservado para você e não pôde ser oferecido a outro paciente. Para esses casos o consultório oferece três caminhos, e você escolhe o que fizer mais sentido:\n\n1. Se o motivo foi de saúde, me envie o comprovante médico (atestado ou declaração) e a nova data sai sem custo.\n2. Considerar esta consulta como uma das consultas do seu plano. Não há cobrança, e o acompanhamento segue para a próxima etapa.\n3. Pagar a taxa de reserva de agenda, de R$ 350, e remarcar esta mesma consulta.\n\nMe responde com o número da opção, que eu organizo o restante."},
+  {id:'desmarcou_fora_prazo',cat:'remarcacao',nome:"Desmarcou fora do prazo · as 3 opções",sub:"Menos de 72 h: o paciente escolhe o caminho",texto:"[nome], recebi o seu aviso, obrigada por me avisar.\n\nComo a desmarcação veio com menos de 72 horas, o contrato prevê a taxa de reserva de agenda, porque o horário ficou reservado para você e não pôde ser oferecido a outro paciente. Para esses casos o consultório oferece três caminhos, e você escolhe o que fizer mais sentido:\n\n1. Se o motivo foi de saúde, me envie o comprovante médico (atestado ou declaração) e a nova data sai sem custo.\n2. Usar esta consulta como uma das consultas do seu plano, sem cobrança. Nesse caso a próxima consulta do plano é antecipada, e você já escolhe a data nas próximas duas semanas.\n3. Pagar a taxa de reserva de agenda, de R$ 350, e remarcar esta mesma consulta.\n\nMe responde com o número da opção, que eu organizo o restante."},
   {id:'desmarcou_comprovante',cat:'remarcacao',nome:"Comprovante recebido · nova data",sub:"Sem custo, com o link",texto:"[nome], recebi o comprovante, obrigada. Fica registrado, sem custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]\n\nEspero que você já esteja melhor."},
   {id:'desmarcou_usar_plano',cat:'remarcacao',nome:"Escolheu contar a consulta no plano",sub:"Sem cobrança, segue para a próxima etapa",texto:"[nome], combinado. A consulta desmarcada fica registrada como uma das consultas do seu plano, sem cobrança.\n\nO seu acompanhamento segue para a próxima etapa, e eu te aviso por aqui quando as datas dela abrirem."},
+  {id:'desmarcou_usar_plano_antecipa',cat:'remarcacao',nome:"Contou no plano · próxima antecipada",sub:"Sem cobrança, link das duas próximas semanas",texto:"[nome], combinado. A consulta desmarcada fica registrada como uma das consultas do seu plano, sem cobrança, e a próxima foi antecipada para você.\n\nÉ só escolher a data pelo link abaixo, que mostra as próximas duas semanas:\n\n[link]"},
   {id:'desmarcou_taxa',cat:'remarcacao',nome:"Escolheu a taxa de R$ 350",sub:"Cobrança; o link vai depois do pagamento",texto:"[nome], combinado. Segue abaixo o pagamento da taxa de reserva de agenda, de R$ 350.\n\nAssim que ele entrar, eu te envio o link para você escolher a nova data desta mesma consulta."},
   {id:'desmarcou_taxa_paga',cat:'remarcacao',nome:"Taxa recebida · nova data",sub:"Pagamento confirmado, com o link",texto:"[nome], pagamento recebido, obrigada.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]"},
   {id:'atraso_paciente',cat:'remarcacao',nome:'Paciente atrasado',sub:'Pode inviabilizar a consulta',texto:'[nome], vi que você está atrasado(a) para a consulta. Vou verificar com o Dr. Henrique se ainda há janela para te atender hoje.\n\nSe não der, eu já organizo o reagendamento. Me aguarda um instante que eu te retorno.'},
@@ -2690,7 +2691,8 @@ var _CRIADORES={
   auto_agendamento:  {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, pelo link'},
   pedido_remarcacao: {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que pediu para remarcar'},
   pedido_ajuda:      {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que nao achou horario'},
-  vaga_aberta:       {curto:'&#x26a0; Vaga aberta', longo:'pelo sistema, quando a vaga abriu'}
+  vaga_aberta:       {curto:'&#x26a0; Vaga aberta', longo:'pelo sistema, quando a vaga abriu'},
+  desmarcacao:       {curto:'&#x2715; Desmarcação', longo:'pelo painel Desmarcou, antecipando o controle seguinte'} /* HAG_DESMARCAR_ANTECIPA_v1 */
 };
 function _quemCriou(cp){
   return _CRIADORES[String(cp||'')] || {curto:'&#x1f9ba; Medico', longo:'pelo Dr. Henrique'};
@@ -3402,8 +3404,23 @@ async function delFila(id){
      quando existe reserva do link: consulta marcada pela Daniela ficava
      'agendada' e o link oferecia o controle seguinte.
    O token do link e emitido ao ABRIR o painel, nunca dentro do clique do
-   WhatsApp (o Safari do iPhone bloqueia a janela). */
+   WhatsApp (o Safari do iPhone bloqueia a janela).
+   HAG_DESMARCAR_ANTECIPA_v1 (30/09/2026, decisao do Dr. Henrique): quem escolhe
+   contar a consulta no plano nao fica sem consulta ate o controle seguinte. O
+   controle seguinte e ANTECIPADO: nasce uma tarefa de retorno com alvo do medico
+   (tarefas.janela_data), que o hag_agendamento_contexto ja usa como data-alvo,
+   e o link oferece alvo -7/+7, ou seja, as duas proximas semanas. O alvo cai
+   sempre em dia de preferencia (quarta, ou sabado no Tatuape), nunca em dia de
+   reserva. A data prevista original do controle fica em data_prevista_original.
+   Nao antecipa a consulta de fechamento. */
 var _dsm=null;
+function _dsmAlvoAntecipado(local){
+  /* primeiro dia de preferencia a partir de hoje + 7: quarta (3), ou sabado (6) no Tatuape */
+  var alvoDow = (String(local||'').toLowerCase()==='tatuape') ? 6 : 3;
+  var d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+7);
+  while(d.getDay()!==alvoDow) d.setDate(d.getDate()+1);
+  return d.getFullYear()+'-'+_dsmZ(d.getMonth()+1)+'-'+_dsmZ(d.getDate());
+}
 var _DSM_ROT={prazo:'no prazo, sem custo', atestado:'comprovante médico, sem custo', plano:'contada como consulta do plano, sem cobrança', taxa:'taxa de reserva de agenda, R$ 350'};
 var _DSM_MSG_DEPOIS={prazo:'desmarcou_no_prazo', atestado:'desmarcou_comprovante', plano:'desmarcou_usar_plano', taxa:'desmarcou_taxa'};
 function _dsmZ(n){ return ('0'+n).slice(-2); }
@@ -3422,19 +3439,29 @@ async function _dsmAcharRetorno(t){
   if(cr&&cr.error) throw cr.error;
   var cids=((cr&&cr.data)||[]).map(function(c){return c.id;});
   if(!cids.length) return null;
-  var rr=await db.from('retornos').select('id,status,nome_retorno,especie,ordem,data_planejada,eh_fechamento,cortesia_de_ciclo_id,observacoes')
+  var rr=await db.from('retornos').select('id,ciclo_id,status,nome_retorno,especie,ordem,data_planejada,data_prevista_original,eh_fechamento,cortesia_de_ciclo_id,observacoes')
                  .in('ciclo_id',cids).in('status',['agendada','agendar']);
   if(rr&&rr.error) throw rr.error;
   var dia=String(t.agendado_data||'').slice(0,10);
   var l=((rr&&rr.data)||[]).filter(function(r){ return !_dsmEhQuest(r) && r.data_planejada===dia; });
   l.sort(function(a,b){ return (a.status==='agendada'?0:1)-(b.status==='agendada'?0:1); });
-  return l[0]||null;
+  var ret=l[0]||null;
+  /* HAG_DESMARCAR_ANTECIPA_v1: o controle seguinte do mesmo ciclo, ainda a agendar */
+  if(ret && _dsm){
+    var prox=((rr&&rr.data)||[]).filter(function(r){
+      return r.id!==ret.id && r.ciclo_id===ret.ciclo_id && r.status==='agendar' && !_dsmEhQuest(r) && !r.cortesia_de_ciclo_id
+          && (r.ordem||0)>(ret.ordem||0);
+    }).sort(function(a,b){ return (a.ordem||0)-(b.ordem||0); })[0]||null;
+    _dsm.prox=prox;
+    _dsm.antecipar=!!(prox && !prox.eh_fechamento);
+  }
+  return ret;
 }
 async function desmarcarFila(id){
   var t=(_fila||[]).find(function(x){return x.id===id;});
   if(!t){ toast('Agendamento nao encontrado','err'); return; }
   if(!t.agendado_data){ toast('Esse agendamento ainda nao tem data.','err'); return; }
-  _dsm={t:t, ret:null, retErro:false, carregando:true, decisao:null, aviso:_dsmAgoraLocal(), motivo:'', feito:null, salvando:false};
+  _dsm={t:t, ret:null, prox:null, antecipar:false, antecipou:null, retErro:false, carregando:true, decisao:null, aviso:_dsmAgoraLocal(), motivo:'', feito:null, salvando:false};
   if(t.patient_id && !_linksAgendar[t.patient_id]){
     db.rpc('hag_links_agendamento',{p_patient_ids:[t.patient_id]}).then(function(r){
       if(r&&r.data) Object.keys(r.data).forEach(function(k){ _linksAgendar[k]=r.data[k]; });
@@ -3456,7 +3483,7 @@ function _dsmOpcoes(){
                : ret.cortesia_de_ciclo_id ? 'É a cortesia do ciclo anterior: não conta no plano atual.' : '';
   return [
     {id:'atestado', tit:'Apresentou comprovante médico', sub:'Sem custo. O controle volta para "agendar" e o link oferece novas datas. Guarde o comprovante.'},
-    {id:'plano', tit:'Contar como consulta do plano', sub: planoOff || ('Sem cobrança. "'+(ret.nome_retorno||'Controle')+'" fica como usado, e o link passa a oferecer o controle seguinte.'), off: !!planoOff},
+    {id:'plano', tit:'Contar como consulta do plano', sub: planoOff || ('Sem cobrança. "'+(ret.nome_retorno||'Controle')+'" fica como usado.'), off: !!planoOff},
     {id:'taxa', tit:'Taxa de reserva de agenda, R$ 350', sub:'O controle volta para "agendar". O link só vai depois que o pagamento entrar.'}
   ];
 }
@@ -3481,6 +3508,20 @@ function _dsmRender(){
   html+='<div>'+_dsmOpcoes().map(function(o){
       return '<button type="button" class="dsm-op'+(_dsm.decisao===o.id?' on':'')+'"'+(o.off?' disabled':'')+' onclick="_dsm.decisao=\''+o.id+'\';_dsmRender()">'+o.tit+'<small>'+_dsmEsc(o.sub)+'</small></button>';
     }).join('')+'</div>';
+  /* HAG_DESMARCAR_ANTECIPA_v1 */
+  if(_dsm.decisao==='plano'){
+    var px=_dsm.prox;
+    if(px && !px.eh_fechamento){
+      var al=_dsmAlvoAntecipado(t.local).split('-');
+      html+='<label class="dsm-nota" style="display:flex;gap:8px;align-items:flex-start;color:var(--ink2)"><input type="checkbox" style="margin-top:2px"'+(_dsm.antecipar?' checked':'')+' onchange="_dsm.antecipar=this.checked">'
+        +'<span><b>Antecipar o '+_dsmEsc(px.nome_retorno||'próximo controle')+'</b>'+(px.data_planejada?' (previsto para '+_dsmEsc(String(px.data_planejada).slice(8,10)+'/'+String(px.data_planejada).slice(5,7))+')':'')
+        +'. O link passa a oferecer as duas próximas semanas, com o dia indicado em '+al[2]+'/'+al[1]+'. As consultas seguintes do plano mantêm as datas.</span></label>';
+    } else if(px && px.eh_fechamento){
+      html+='<div class="dsm-nota">O controle seguinte é a consulta de fechamento do ciclo: ela não é antecipada.</div>';
+    } else if(!_dsm.carregando){
+      html+='<div class="dsm-nota">Não há outro controle a agendar neste ciclo para antecipar.</div>';
+    }
+  }
   html+='<div class="field"><label>Observação (opcional)</label><input type="text" id="dsm-motivo" value="'+_dsmEsc(_dsm.motivo)+'" oninput="_dsm.motivo=this.value" placeholder="Ex.: viagem a trabalho"></div>';
   var bloqueado=(!_dsm.decisao||_dsm.carregando||_dsm.salvando);
   html+='<button class="btn-save" onclick="dsmConfirmar()"'+(bloqueado?' disabled style="opacity:.5;cursor:not-allowed"':'')+'>'+(_dsm.salvando?'Registrando...':'Desmarcar e registrar')+'</button>';
@@ -3507,6 +3548,23 @@ async function dsmConfirmar(){
       var u=await db.from('retornos').update(upd).eq('id',ret.id);
       if(u&&u.error) throw new Error('o agendamento foi cancelado, mas o controle do plano não foi acertado ('+u.error.message+'). Avise o Dr. Henrique.');
     }
+    /* HAG_DESMARCAR_ANTECIPA_v1 */
+    if(dec==='plano' && _dsm && _dsm.antecipar && _dsm.prox && !_dsm.prox.eh_fechamento){
+      var px=_dsm.prox, alvo=_dsmAlvoAntecipado(t.local), agora=new Date().toISOString();
+      var pa=String(px.data_planejada||'').slice(0,10).split('-');
+      var nota='Antecipado em '+new Date().toLocaleDateString('pt-BR')+': a consulta de '+String(t.agendado_data).slice(8,10)+'/'+String(t.agendado_data).slice(5,7)
+               +' ('+(ret.nome_retorno||'controle')+') foi desmarcada e contada no plano'+(px.data_planejada?'; previsto originalmente para '+pa[2]+'/'+pa[1]+'/'+pa[0]:'')+'.';
+      var u2=await db.from('retornos').update({observacoes:(String(px.observacoes||'').trim()+'\n'+nota).trim().slice(0,1500),
+                                              data_prevista_original:px.data_prevista_original||px.data_planejada||null}).eq('id',px.id);
+      if(u2&&u2.error) throw new Error('desmarcado e contado no plano, mas não consegui antecipar o controle seguinte ('+u2.error.message+'). Use o link normal ou fale com o Dr. Henrique.');
+      var tid='t_'+Date.now();
+      var ins=await db.from('tarefas').insert({id:tid, patient_id:t.patient_id, patient_nome:t.patient_nome, tipo:'agendamento',
+        descricao:'Antecipar '+(px.nome_retorno||'controle'), status:'pendente', prioridade:'alta', criado_por:'desmarcacao',
+        criado_em:agora, atualizado_em:agora, tipo_evento:'retorno', janela_data:alvo, local:t.local||null,
+        obs:nota+' O link oferece as duas semanas em torno de '+alvo.slice(8,10)+'/'+alvo.slice(5,7)+'.'});
+      if(ins&&ins.error) throw new Error('desmarcado e contado no plano, mas a tarefa de antecipação não foi criada ('+ins.error.message+').');
+      _dsm.antecipou={tid:tid, alvo:alvo, nome:px.nome_retorno||'controle'};
+    }
     if(!_dsm) return;
     _dsm.salvando=false; _dsm.feito=dec;
     _fila=await loadFila(); _patients=await loadPatients(); render(); _dsmRender();
@@ -3523,6 +3581,10 @@ function _dsmHtmlFeito(){
     h+='<div class="dsm-nota">Próximo passo: enviar a cobrança. Quando o pagamento entrar, registre em 💰 e envie o modelo <b>Taxa recebida · nova data</b> (aba Remarcação das mensagens), que leva o link.</div>'
      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_taxa\')"><span class="g">&#x1f4f2;</span>Enviar a cobrança</button>'
      +'<button class="btn-acao ba-agendei" onclick="dsmRecebimento()"><span class="g">&#x1f4b0;</span>Registrar o pagamento</button></div>';
+  } else if(dec==='plano' && _dsm.antecipou){
+    var aa=_dsm.antecipou.alvo;
+    h+='<div class="dsm-nota"><b>'+_dsmEsc(_dsm.antecipou.nome)+'</b> antecipado: o link oferece as duas próximas semanas (dia indicado '+aa.slice(8,10)+'/'+aa.slice(5,7)+'). A tarefa está em A agendar e fecha sozinha quando ele marcar.</div>'
+     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_usar_plano_antecipa\')"><span class="g">&#x1f4f2;</span>Enviar o link</button></div>';
   } else if(dec==='plano'){
     h+='<div class="dsm-nota">O link passa a oferecer o controle seguinte quando a janela dele abrir.</div>'
      +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_usar_plano\')"><span class="g">&#x1f4f2;</span>Avisar o paciente</button></div>';
@@ -3549,6 +3611,11 @@ function dsmWhats(tplId){
     return;
   }
   window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+  /* a tarefa da antecipacao vira "comunicado" quando o link sai */
+  if(tplId==='desmarcou_usar_plano_antecipa' && _dsm.antecipou){
+    db.from('tarefas').update({status:'aguardando', atualizado_em:new Date().toISOString()}).eq('id',_dsm.antecipou.tid)
+      .then(function(){ return loadFila(); }).then(function(f){ _fila=f; render(); }).catch(function(){});
+  }
 }
 async function dsmRecebimento(){
   if(!_dsm) return;
@@ -3562,7 +3629,6 @@ async function dsmRecebimento(){
   document.getElementById('rec-valor').value='350';
   document.getElementById('rec-obs').value='Taxa de reserva de agenda · desmarcação fora do prazo';
 }
-
 function buildCard(t){
   const color=gac(t.patient_nome);
   const stCls='st-'+(t.prioridade==='urgente'?'urgente':t.status);
@@ -4314,7 +4380,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260930-1415';
+  var VERSAO = '20260930-1441';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
