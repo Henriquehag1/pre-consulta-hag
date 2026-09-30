@@ -420,6 +420,18 @@ body {
 .ba-agendei:hover { background: var(--green); color: #fff }
 .ba-remarcar { background: var(--amber-light); color: var(--amber); border-color: var(--amber-border) }
 .ba-remarcar:hover { background: var(--amber); color: #fff }
+/* HAG_DESMARCAR_v1 */
+.ba-desmarcou { background: var(--red-light); color: var(--red); border-color: var(--red-border) }
+.ba-desmarcou:hover { background: var(--red); color: #fff }
+.dsm-info { font-size: 13px; line-height: 1.6; color: var(--ink2) }
+.dsm-selo { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-top: 6px }
+.dsm-selo.ok { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border) }
+.dsm-selo.fora { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border) }
+.dsm-op { display: block; width: 100%; text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 12px; padding: 11px 14px; cursor: pointer; font-family: var(--fb); font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px }
+.dsm-op small { display: block; color: var(--ink3); font-size: 11.5px; font-weight: 400; margin-top: 3px; line-height: 1.45 }
+.dsm-op.on { border-color: var(--ink); box-shadow: 0 0 0 2px rgba(26,26,24,.08) }
+.dsm-op:disabled { opacity: .45; cursor: not-allowed }
+.dsm-nota { font-size: 11.5px; color: var(--ink3); line-height: 1.5 }
 .tc-sep { width: 1px; height: 18px; background: var(--border); margin: 0 2px }
 /* os dois secundarios quebram de linha JUNTOS, nunca um solto embaixo do outro */
 .tc-menos { display: inline-flex; align-items: center; gap: 6px; flex: none }
@@ -869,6 +881,17 @@ body {
   </div>
 </div>
 
+<!-- HAG_DESMARCAR_v1 -->
+<div class="modal-overlay" id="modalDsm">
+  <div class="modal-box" style="max-height:92vh;overflow-y:auto">
+    <div class="modal-hdr">
+      <div class="modal-ttl">Paciente desmarcou</div>
+      <button class="modal-x" onclick="dsmFechar()">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="dsm-corpo"></div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal-box">
@@ -1263,6 +1286,15 @@ var DAN_TPL=[
   {id:'consulta_online_funciona',cat:'administrativo',nome:'Como funciona a consulta online',sub:'Link, ambiente e o que deixar \u00e0 m\u00e3o',texto:'[nome], a consulta online \u00e9 por videochamada e eu te envio o link antes do hor\u00e1rio.\n\nSepare um lugar reservado e com boa conex\u00e3o, e prefira o computador se puder, porque parte da consulta \u00e9 a revis\u00e3o dos seus exames.\n\nSe tiver medidas recentes de peso e de composi\u00e7\u00e3o corporal, deixe \u00e0 m\u00e3o. E se ainda n\u00e3o me enviou os exames, me manda antes para eu deixar tudo organizado no seu prontu\u00e1rio.'},
   {id:'faltou_sem_aviso',cat:'remarcacao',nome:'Faltou sem avisar',sub:'Vaga liberada, oferece reorganizar',texto:'[nome], vi que não deu para você comparecer à consulta hoje. Imprevisto acontece, e eu entendo.\n\nComo o horário ficou vago, ele já foi para a lista de espera, que é o combinado do consultório.\n\nSe quiser remarcar, é só abrir o link abaixo e escolher o dia que ficar melhor para você:\n\n[link]'},
   {id:'nao_confirmou',cat:'remarcacao',nome:'Não confirmou no prazo',sub:'3 horas antes, vaga liberada',texto:'[nome], como eu não recebi a sua confirmação dentro do prazo, precisei liberar a sua vaga para a lista de espera, conforme as diretrizes do consultório.\n\nSe você quiser remarcar, é só escolher um novo dia pelo link abaixo:\n\n[link]'},
+  /* HAG_DESMARCAR_v1 (30/09/2026): o paciente que DESMARCA nao tinha modelo. As 72 h e a
+     taxa de R$ 350 sao da clausula 4 (modelo 'diretrizes'); as tres saidas fora do prazo
+     (comprovante, contar no plano, taxa) sao decisao do Dr. Henrique em 30/09. */
+  {id:'desmarcou_no_prazo',cat:'remarcacao',nome:"Desmarcou no prazo (72 h ou mais)",sub:"Sem custo, link para a nova data",texto:"[nome], tudo certo, recebi o seu aviso e já liberei o horário. Como ele veio dentro do prazo, não há custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo. Ele mostra os dias que o Dr. Henrique tem abertos para esta etapa do seu acompanhamento:\n\n[link]"},
+  {id:'desmarcou_fora_prazo',cat:'remarcacao',nome:"Desmarcou fora do prazo · as 3 opções",sub:"Menos de 72 h: o paciente escolhe o caminho",texto:"[nome], recebi o seu aviso, obrigada por me avisar.\n\nComo a desmarcação veio com menos de 72 horas, o contrato prevê a taxa de reserva de agenda, porque o horário ficou reservado para você e não pôde ser oferecido a outro paciente. Para esses casos o consultório oferece três caminhos, e você escolhe o que fizer mais sentido:\n\n1. Se o motivo foi de saúde, me envie o comprovante médico (atestado ou declaração) e a nova data sai sem custo.\n2. Considerar esta consulta como uma das consultas do seu plano. Não há cobrança, e o acompanhamento segue para a próxima etapa.\n3. Pagar a taxa de reserva de agenda, de R$ 350, e remarcar esta mesma consulta.\n\nMe responde com o número da opção, que eu organizo o restante."},
+  {id:'desmarcou_comprovante',cat:'remarcacao',nome:"Comprovante recebido · nova data",sub:"Sem custo, com o link",texto:"[nome], recebi o comprovante, obrigada. Fica registrado, sem custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]\n\nEspero que você já esteja melhor."},
+  {id:'desmarcou_usar_plano',cat:'remarcacao',nome:"Escolheu contar a consulta no plano",sub:"Sem cobrança, segue para a próxima etapa",texto:"[nome], combinado. A consulta desmarcada fica registrada como uma das consultas do seu plano, sem cobrança.\n\nO seu acompanhamento segue para a próxima etapa, e eu te aviso por aqui quando as datas dela abrirem."},
+  {id:'desmarcou_taxa',cat:'remarcacao',nome:"Escolheu a taxa de R$ 350",sub:"Cobrança; o link vai depois do pagamento",texto:"[nome], combinado. Segue abaixo o pagamento da taxa de reserva de agenda, de R$ 350.\n\nAssim que ele entrar, eu te envio o link para você escolher a nova data desta mesma consulta."},
+  {id:'desmarcou_taxa_paga',cat:'remarcacao',nome:"Taxa recebida · nova data",sub:"Pagamento confirmado, com o link",texto:"[nome], pagamento recebido, obrigada.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]"},
   {id:'atraso_paciente',cat:'remarcacao',nome:'Paciente atrasado',sub:'Pode inviabilizar a consulta',texto:'[nome], vi que você está atrasado(a) para a consulta. Vou verificar com o Dr. Henrique se ainda há janela para te atender hoje.\n\nSe não der, eu já organizo o reagendamento. Me aguarda um instante que eu te retorno.'},
   {id:'sumiu_2sem',cat:'resgate',nome:'Sumiu por duas semanas',sub:'Regra de ouro do método',texto:'Oi [nome], tudo bem por aí? Senti a sua falta nos últimos check-ins.\n\nO Dr. Henrique pediu para eu te lembrar de uma regra do Método HAG: não buscamos perfeição, buscamos repetição.\n\nSe os últimos dias foram difíceis ou fora do plano, tudo bem. O que não pode é abandonar o processo.\n\nComo eu posso te ajudar a retomar hoje?'},
   {id:'voltou_envergonhado',cat:'resgate',nome:'Voltou constrangido',sub:'Acolhimento, sem lição de moral',texto:'Fica tranquilo(a), [nome]. Isso acontece, e faz parte do processo.\n\nA diferença aqui é que você não precisa resolver sozinho(a): é justamente para isso que existe o acompanhamento.\n\nJá liberei a sua agenda para vocês alinharem a rota. Escolha pelo link o dia e o horário que ficarem melhores para você:\n\n[link]'},
@@ -2425,6 +2457,8 @@ function _buscaPacientesHtml(q){
           +'</div>'
           +'<div class="tc-actions" style="margin-top:6px">'
           +'<button class="btn-icon" onclick="remarcarFila(\''+agend.id+'\')" title="Remarcar data, hora ou local" style="color:#8a5a2b">🔁</button>'
+          /* HAG_DESMARCAR_v1 */
+          +(String(agend.agendado_data).slice(0,10)>=_dsmHojeISO() ? '<button class="btn-acao ba-desmarcou" onclick="desmarcarFila(\''+agend.id+'\')" title="O paciente avisou que não vem: registra, libera o horário e acerta o plano"><span class="g">&#x2715;</span>Desmarcou</button>' : '')
           +'<button class="btn-icon" onclick="marcarRealizada(\''+agend.id+'\')" title="Marcar como realizada" style="color:#2d7a45">✔</button>'
           +'</div>';
     } else if(p.proxima){
@@ -2834,6 +2868,8 @@ function buildFilaCard(t){
                   ? '<button class="btn-acao ba-contato" onclick="whatsConfirmacao(\''+t.id+'\')" title="Abre o WhatsApp com a confirmação pronta: dia, horário, endereço e orientações"><span class="g">&#x1f4f2;</span>Confirmação</button>'
                   : '')
                +'<button class="btn-acao ba-remarcar" onclick="remarcarFila(\''+t.id+'\')" title="Mudar a data, a hora ou o local desta consulta"><span class="g">&#x1f501;</span>Remarcar</button>'
+               /* HAG_DESMARCAR_v1 */
+               +((t.agendado_data && String(t.agendado_data).slice(0,10)>=_dsmHojeISO()) ? '<button class="btn-acao ba-desmarcou" onclick="desmarcarFila(\''+t.id+'\')" title="O paciente avisou que não vem: registra, libera o horário e acerta o plano"><span class="g">&#x2715;</span>Desmarcou</button>' : '')
                +'<button class="btn-acao ba-agendei" onclick="marcarRealizada(\''+t.id+'\')" title="O paciente compareceu e a consulta aconteceu"><span class="g">&#x2714;</span>Realizada</button>')
           +'<span class="tc-menos"><span class="tc-sep"></span>'
           +'<button class="btn-icon edit" onclick="editFila(\''+t.id+'\')" title="Editar os dados desta tarefa">&#x270f;&#xfe0f;</button>'
@@ -3134,7 +3170,7 @@ async function atualizarRetornoPaciente(pid, data, hora, local){
       /* HAG_LEITORES_USAM_ESPECIE_v1 */
       var alvo=rets.find(function(x){
         var ehQuest = x.especie ? (x.especie==='questionario') : /quest/i.test(String(x.nome_retorno||''));
-        return x.status!=='realizada' && !ehQuest;
+        return x.status!=='realizada' && x.status!=='cancelada' && !ehQuest; /* HAG_DESMARCAR_v1 */
       });
       if(alvo){
         var _upd={status:'agendada',data_planejada:data,data_realizada:null,horario:hora,edicao_manual:true};
@@ -3309,7 +3345,7 @@ async function marcarRealizada(id){
       /* HAG_LEITORES_USAM_ESPECIE_v1 */
       var alvo=((rr&&rr.data)||[]).find(function(x){
         var ehQuest = x.especie ? (x.especie==='questionario') : /quest/i.test(String(x.nome_retorno||''));
-        return x.status!=='realizada' && !ehQuest;
+        return x.status!=='realizada' && x.status!=='cancelada' && !ehQuest; /* HAG_DESMARCAR_v1 */
       });
       if(alvo){
         await db.from('retornos').update({status:'realizada',data_realizada:t.agendado_data,data_planejada:t.agendado_data,horario:t.agendado_hora||null}).eq('id',alvo.id);
@@ -3334,6 +3370,8 @@ async function marcarRealizada(id){
 async function delFila(id){
   const t=_fila.find(x=>x.id===id);
   if(!t)return;
+  /* HAG_DESMARCAR_v1: consulta marcada que vai ser cancelada e desmarcacao; passa pelo painel. */
+  if(t.status==='concluida' && t.agendado_data){ return desmarcarFila(id); }
   const temEvento = (t.calendar_sync==='criado');
   const aviso = temEvento
     ? ('Cancelar o agendamento de '+t.patient_nome+'?\n\nO horario volta a ficar livre e o evento sai da sua agenda em ate 10 minutos.')
@@ -3346,6 +3384,183 @@ async function delFila(id){
     render();
     toast((data&&data.mensagem)||'Removido da fila','ok');
   }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+/* HAG_DESMARCAR_v1 (30/09/2026)
+   Pedido do Dr. Henrique a partir do caso Wilson (30/09): a Daniela nao tinha
+   caminho para "o paciente desmarcou". O cartao da busca so oferecia Remarcar
+   e Realizada, e no cartao de Agendados o cancelamento era um X sem nome.
+   "Desmarcou" abre este painel, que:
+   . calcula a antecedencia do aviso contra as 72 h do contrato (clausula 4);
+   . no prazo, cancela sem custo;
+   . fora do prazo, registra UMA das tres saidas oferecidas ao paciente:
+     comprovante medico (sem custo), contar como consulta do plano (sem
+     cobranca; o controle fica 'cancelada', que hag_consulta_eh_fechamento ja
+     trata como encerrado) ou taxa de reserva de agenda de R$ 350;
+   . cancela pela hag_remover_agendamento (tarefa, reserva, proxima, evento) e
+     acerta o controle do ciclo AQUI, porque a funcao so reabre o controle
+     quando existe reserva do link: consulta marcada pela Daniela ficava
+     'agendada' e o link oferecia o controle seguinte.
+   O token do link e emitido ao ABRIR o painel, nunca dentro do clique do
+   WhatsApp (o Safari do iPhone bloqueia a janela). */
+var _dsm=null;
+var _DSM_ROT={prazo:'no prazo, sem custo', atestado:'comprovante médico, sem custo', plano:'contada como consulta do plano, sem cobrança', taxa:'taxa de reserva de agenda, R$ 350'};
+var _DSM_MSG_DEPOIS={prazo:'desmarcou_no_prazo', atestado:'desmarcou_comprovante', plano:'desmarcou_usar_plano', taxa:'desmarcou_taxa'};
+function _dsmZ(n){ return ('0'+n).slice(-2); }
+function _dsmAgoraLocal(){ var d=new Date(); return d.getFullYear()+'-'+_dsmZ(d.getMonth()+1)+'-'+_dsmZ(d.getDate())+'T'+_dsmZ(d.getHours())+':'+_dsmZ(d.getMinutes()); }
+function _dsmHojeISO(){ return _dsmAgoraLocal().slice(0,10); }
+function _dsmHoras(){
+  var t=_dsm.t, hh=String(t.agendado_hora||'00:00').slice(0,5);
+  var ini=new Date(String(t.agendado_data).slice(0,10)+'T'+hh+':00').getTime();
+  var av=new Date(_dsm.aviso||_dsmAgoraLocal()).getTime();
+  return (ini-av)/3600000;
+}
+function _dsmEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function _dsmEhQuest(r){ return r.especie ? (r.especie==='questionario') : /quest/i.test(String(r.nome_retorno||'')); }
+async function _dsmAcharRetorno(t){
+  var cr=await db.from('ciclos').select('id').eq('patient_id',t.patient_id).eq('status','ativo');
+  if(cr&&cr.error) throw cr.error;
+  var cids=((cr&&cr.data)||[]).map(function(c){return c.id;});
+  if(!cids.length) return null;
+  var rr=await db.from('retornos').select('id,status,nome_retorno,especie,ordem,data_planejada,eh_fechamento,cortesia_de_ciclo_id,observacoes')
+                 .in('ciclo_id',cids).in('status',['agendada','agendar']);
+  if(rr&&rr.error) throw rr.error;
+  var dia=String(t.agendado_data||'').slice(0,10);
+  var l=((rr&&rr.data)||[]).filter(function(r){ return !_dsmEhQuest(r) && r.data_planejada===dia; });
+  l.sort(function(a,b){ return (a.status==='agendada'?0:1)-(b.status==='agendada'?0:1); });
+  return l[0]||null;
+}
+async function desmarcarFila(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;});
+  if(!t){ toast('Agendamento nao encontrado','err'); return; }
+  if(!t.agendado_data){ toast('Esse agendamento ainda nao tem data.','err'); return; }
+  _dsm={t:t, ret:null, retErro:false, carregando:true, decisao:null, aviso:_dsmAgoraLocal(), motivo:'', feito:null, salvando:false};
+  if(t.patient_id && !_linksAgendar[t.patient_id]){
+    db.rpc('hag_links_agendamento',{p_patient_ids:[t.patient_id]}).then(function(r){
+      if(r&&r.data) Object.keys(r.data).forEach(function(k){ _linksAgendar[k]=r.data[k]; });
+    }).catch(function(){});
+  }
+  _dsmRender();
+  document.getElementById('modalDsm').classList.add('vis');
+  try{ _dsm.ret=await _dsmAcharRetorno(t); }catch(e){ if(_dsm) _dsm.retErro=true; }
+  if(!_dsm) return;
+  _dsm.carregando=false; _dsmRender();
+}
+function dsmFechar(){ document.getElementById('modalDsm').classList.remove('vis'); _dsm=null; }
+function _dsmOpcoes(){
+  var h=_dsmHoras(), ret=_dsm.ret;
+  if(h>=72) return [{id:'prazo', tit:'Cancelar sem custo', sub:'Aviso dentro das 72 h. O controle volta para "agendar" e o link oferece novas datas.'}];
+  var planoOff = _dsm.carregando ? 'Conferindo o controle do plano...'
+               : !ret ? 'Sem controle do plano nesta data: vale só para consulta de ciclo.'
+               : ret.eh_fechamento ? 'É a consulta de fechamento do ciclo: não se conta como usada sem falar com o Dr. Henrique.'
+               : ret.cortesia_de_ciclo_id ? 'É a cortesia do ciclo anterior: não conta no plano atual.' : '';
+  return [
+    {id:'atestado', tit:'Apresentou comprovante médico', sub:'Sem custo. O controle volta para "agendar" e o link oferece novas datas. Guarde o comprovante.'},
+    {id:'plano', tit:'Contar como consulta do plano', sub: planoOff || ('Sem cobrança. "'+(ret.nome_retorno||'Controle')+'" fica como usado, e o link passa a oferecer o controle seguinte.'), off: !!planoOff},
+    {id:'taxa', tit:'Taxa de reserva de agenda, R$ 350', sub:'O controle volta para "agendar". O link só vai depois que o pagamento entrar.'}
+  ];
+}
+function _dsmRender(){
+  var el=document.getElementById('dsm-corpo'); if(!el||!_dsm) return;
+  if(_dsm.feito){ el.innerHTML=_dsmHtmlFeito(); return; }
+  var t=_dsm.t, h=_dsmHoras();
+  if(h>=72 && !_dsm.decisao) _dsm.decisao='prazo';
+  var hTxt = h<0 ? 'aviso depois do horário da consulta' : ('aviso com '+Math.floor(h)+' h de antecedência');
+  var p=String(t.agendado_data).slice(0,10).split('-');
+  var html='<div class="dsm-info"><b>'+_dsmEsc(t.patient_nome)+'</b><br>Consulta de '+p[2]+'/'+p[1]+(t.agendado_hora?' às '+_dsmEsc(t.agendado_hora):'')+(t.local?' · '+_dsmEsc(_bpLocal(t.local)):'')
+    +'<br><span class="dsm-selo '+(h>=72?'ok':'fora')+'">'+hTxt+(h>=72?' · dentro do prazo':' · fora do prazo de 72 h')+'</span></div>';
+  html+='<div class="field"><label>Quando o paciente avisou</label><input type="datetime-local" id="dsm-aviso" value="'+_dsmEsc(_dsm.aviso)+'" onchange="_dsm.aviso=this.value||_dsmAgoraLocal();_dsm.decisao=null;_dsmRender()"></div>';
+  html+='<div class="dsm-nota">'+(_dsm.carregando ? 'Procurando o controle do plano ligado a esta data...'
+        : _dsm.retErro ? '⚠ Não consegui conferir o controle do plano. Cancelar funciona, mas confira a pasta do paciente depois.'
+        : _dsm.ret ? ('Controle do plano: <b>'+_dsmEsc(_dsm.ret.nome_retorno||'')+'</b>')
+        : 'Nenhum controle do plano nesta data (consulta avulsa, diagnóstica ou aplicação).')+'</div>';
+  if(h<72){
+    html+='<div class="dsm-nota">Ainda não sabe o que o paciente prefere? Envie as três opções e volte aqui quando ele responder. Nada é alterado até você confirmar.</div>'
+      +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_fora_prazo\')"><span class="g">&#x1f4f2;</span>Enviar as 3 opções</button></div>';
+  }
+  html+='<div>'+_dsmOpcoes().map(function(o){
+      return '<button type="button" class="dsm-op'+(_dsm.decisao===o.id?' on':'')+'"'+(o.off?' disabled':'')+' onclick="_dsm.decisao=\''+o.id+'\';_dsmRender()">'+o.tit+'<small>'+_dsmEsc(o.sub)+'</small></button>';
+    }).join('')+'</div>';
+  html+='<div class="field"><label>Observação (opcional)</label><input type="text" id="dsm-motivo" value="'+_dsmEsc(_dsm.motivo)+'" oninput="_dsm.motivo=this.value" placeholder="Ex.: viagem a trabalho"></div>';
+  var bloqueado=(!_dsm.decisao||_dsm.carregando||_dsm.salvando);
+  html+='<button class="btn-save" onclick="dsmConfirmar()"'+(bloqueado?' disabled style="opacity:.5;cursor:not-allowed"':'')+'>'+(_dsm.salvando?'Registrando...':'Desmarcar e registrar')+'</button>';
+  el.innerHTML=html;
+}
+async function dsmConfirmar(){
+  if(!_dsm||!_dsm.decisao||_dsm.salvando||_dsm.carregando) return;
+  var t=_dsm.t, ret=_dsm.ret, dec=_dsm.decisao, h=_dsmHoras();
+  if(dec==='plano' && (!ret || ret.eh_fechamento || ret.cortesia_de_ciclo_id)) return;
+  var av=String(_dsm.aviso||'').split('T'), ad=(av[0]||'').split('-');
+  var linha='Desmarcou (aviso em '+ad[2]+'/'+ad[1]+' '+(av[1]||'')+', '+(h<0?'depois do horário':Math.floor(h)+' h antes')+'): '+_DSM_ROT[dec]
+          +(String(_dsm.motivo||'').trim()?' · '+String(_dsm.motivo).trim():'')
+          +' · registrado pela fila em '+new Date().toLocaleString('pt-BR');
+  _dsm.salvando=true; _dsmRender();
+  try{
+    var r=await db.rpc('hag_remover_agendamento',{p_tarefa_id:t.id,p_motivo:linha});
+    if(r&&r.error) throw r.error;
+    if(r&&r.data&&r.data.ok===false) throw new Error(r.data.erro||'não removido');
+    if(ret){
+      var obs=(String(ret.observacoes||'').trim()+'\n'+linha).trim().slice(0,1500);
+      var upd = (dec==='plano')
+        ? {status:'cancelada', horario:null, local:null, observacoes:obs}
+        : {status:'agendar', horario:null, local:null, edicao_manual:false, observacoes:obs};
+      var u=await db.from('retornos').update(upd).eq('id',ret.id);
+      if(u&&u.error) throw new Error('o agendamento foi cancelado, mas o controle do plano não foi acertado ('+u.error.message+'). Avise o Dr. Henrique.');
+    }
+    if(!_dsm) return;
+    _dsm.salvando=false; _dsm.feito=dec;
+    _fila=await loadFila(); _patients=await loadPatients(); render(); _dsmRender();
+    toast(String(t.patient_nome||'').split(' ')[0]+' desmarcado · '+_DSM_ROT[dec],'ok');
+  }catch(e){
+    if(_dsm){ _dsm.salvando=false; _dsmRender(); }
+    toast('Erro: '+((e&&e.message)||e),'err');
+  }
+}
+function _dsmHtmlFeito(){
+  var dec=_dsm.feito, nome=String(_dsm.t.patient_nome||'').split(' ')[0];
+  var h='<div class="dsm-info"><b>✓ '+_dsmEsc(nome)+' desmarcado</b><br>'+_DSM_ROT[dec]+'. O horário foi liberado e o evento sai da agenda em até 10 minutos.</div>';
+  if(dec==='taxa'){
+    h+='<div class="dsm-nota">Próximo passo: enviar a cobrança. Quando o pagamento entrar, registre em 💰 e envie o modelo <b>Taxa recebida · nova data</b> (aba Remarcação das mensagens), que leva o link.</div>'
+     +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_taxa\')"><span class="g">&#x1f4f2;</span>Enviar a cobrança</button>'
+     +'<button class="btn-acao ba-agendei" onclick="dsmRecebimento()"><span class="g">&#x1f4b0;</span>Registrar o pagamento</button></div>';
+  } else if(dec==='plano'){
+    h+='<div class="dsm-nota">O link passa a oferecer o controle seguinte quando a janela dele abrir.</div>'
+     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_usar_plano\')"><span class="g">&#x1f4f2;</span>Avisar o paciente</button></div>';
+  } else {
+    h+='<div class="dsm-nota">'+(_dsm.ret?'O link já oferece as datas desta consulta.':'Sem controle do plano: combine a nova data com o paciente.')+'</div>'
+     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\''+_DSM_MSG_DEPOIS[dec]+'\')"><span class="g">&#x1f4f2;</span>Enviar o link da nova data</button></div>';
+  }
+  return h+'<button class="btn-save" onclick="dsmFechar()">Fechar</button>';
+}
+function dsmWhats(tplId){
+  if(!_dsm) return;
+  var t=_dsm.t, tpl=DAN_TPL.find(function(x){return x.id===tplId;});
+  if(!tpl){ toast('Modelo não encontrado','err'); return; }
+  var lk=_linksAgendar[t.patient_id]; var tk=(lk&&lk.token)?lk.token:((typeof lk==='string')?lk:'');
+  var msg=tpl.texto.split('[nome]').join(String(t.patient_nome||'').trim().split(' ')[0]);
+  if(msg.indexOf('[link]')>=0){
+    if(!tk){ toast('O link ainda não foi emitido. Espere 2 segundos e toque de novo.','err'); return; }
+    msg=msg.split('[link]').join(HAG_LINK_AGENDAR+tk);
+  }
+  var fone=_filaFone(t.patient_id);
+  if(!fone){
+    try{ navigator.clipboard.writeText(msg); toast('Sem WhatsApp no cadastro. Mensagem copiada.','ok'); }
+    catch(e){ prompt('Sem WhatsApp no cadastro. Copie a mensagem:', msg); }
+    return;
+  }
+  window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+}
+async function dsmRecebimento(){
+  if(!_dsm) return;
+  var pid=_dsm.t.patient_id, p=(_patients||[]).find(function(x){return x.id===pid;});
+  var nome=(p&&p.nome)||_dsm.t.patient_nome||'';
+  dsmFechar();
+  await recAbrir();
+  document.getElementById('rec-pac').value=nome;
+  var sv=document.getElementById('rec-serv');
+  if(sv && sv.querySelector('option[value="m_taxa_falta"]')) sv.value='m_taxa_falta';
+  document.getElementById('rec-valor').value='350';
+  document.getElementById('rec-obs').value='Taxa de reserva de agenda · desmarcação fora do prazo';
 }
 
 function buildCard(t){
@@ -4099,7 +4314,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260925-1432';
+  var VERSAO = '20260930-1415';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;

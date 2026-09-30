@@ -57,6 +57,7 @@ min-height:70px;resize:vertical;background:#fff}
 .pl-i{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink4);background:#fff;white-space:nowrap}
 .pl-i.ok{color:var(--navy);background:var(--cream)}
 .pl-i.marc{color:var(--gold2);border-color:var(--gold)}
+.pl-i.desm{color:var(--ink4);border-style:dashed} /* HAG_DESMARCAR_v1 */
 .pl-i.atual{color:#fff;background:var(--navy);border-color:var(--navy);font-weight:600}
 .pl-conta{font-size:14px;color:var(--navy);font-weight:600}
 .pl-cort{font-size:13.5px;color:var(--ink3);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
@@ -914,16 +915,19 @@ function cartaoPlano(atualId){
       if(atualId && it.id===atualId){ cls='atual'; txt='● esta consulta'; }
       else if(it.situacao==='realizada'){ cls='ok'; txt='✓ '+_plDM(it.data); }
       else if(it.situacao==='marcada'){ cls='marc'; txt='◷ '+_plDM(it.data)+' marcada'; }
+      else if(it.situacao==='desmarcada'){ cls='desm'; txt='✕ '+_plDM(it.data)+' desmarcada'; } /* HAG_DESMARCAR_v1 */
       else if(it.fechamento){ txt='○ balanço e próximos passos'; }
       else if(it.data && it.data>=hoje){ txt='○ '+_PL_MES[+it.data.split('-')[1]-1]; }
       else { txt='○ a marcar'; }
       h+='<span class="pl-i'+(cls?' '+cls:'')+'">'+txt+'</span>';
     });
     h+='</div>';
-    var faltam=Math.max(0,total-feitos);
+    /* HAG_DESMARCAR_v1: consulta desmarcada e contada no plano nao e 'realizada' nem 'falta'. */
+    var desm=+p.desmarcadas||0;
+    var faltam=Math.max(0,total-feitos-desm);
     h+='<div class="pl-conta">'+(faltam===0
-        ? (total===1 ? 'O encontro do seu plano foi realizado.' : 'Todos os '+total+' encontros do seu plano foram realizados.')
-        : feitos+' de '+total+' encontros realizados · '+(faltam===1?'falta 1':'faltam '+faltam))+'</div>';
+        ? (desm ? 'Os '+total+' encontros do seu plano foram concluídos.' : (total===1 ? 'O encontro do seu plano foi realizado.' : 'Todos os '+total+' encontros do seu plano foram realizados.'))
+        : feitos+' de '+total+' encontros realizados · '+(desm?(desm===1?'1 desmarcado e contado · ':desm+' desmarcados e contados · '):'')+(faltam===1?'falta 1':'faltam '+faltam))+'</div>';
   }
   var c=p.cortesia;
   if(c && c.id){
