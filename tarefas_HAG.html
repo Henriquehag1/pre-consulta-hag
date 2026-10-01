@@ -7,6 +7,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>HAG OS · Tarefas</title>
+<!-- HAG_MSG_SEM_APRESENTACAO_v1 (01/10/2026): mensagens sem 'Aqui é a Daniela', decisão do Dr. Henrique -->
 <!-- HAG_APP_TELA_INICIO_v1: faz o "adicionar a tela de inicio" virar app de verdade -->
 <link rel="manifest" href="manifest-tarefas.json">
 <meta name="theme-color" content="#1a1a18">
@@ -1291,8 +1292,8 @@ var DAN_TPL=[
      taxa de R$ 350 sao da clausula 4 (modelo 'diretrizes'); as tres saidas fora do prazo
      (comprovante, contar no plano, taxa) sao decisao do Dr. Henrique em 30/09. */
   /* HAG_AGENDA_BLOQUEIO_v1 (30/09/2026): o consultorio precisou fechar um dia. */
-  {id:'consultorio_remarca',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcou pelo link",sub:"Ele remarca pelo próprio link, sem custo",texto:"[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nPrecisamos reorganizar a agenda do dia [data], e a sua consulta desse dia vai precisar mudar de data. Não há custo nenhum, e essa mudança não conta como uma remarcação sua.\n\nÉ só abrir o seu link, tocar em \"Preciso remarcar\" e escolher o novo dia entre os horários disponíveis na agenda do Dr. Henrique. O seu horário atual fica guardado até você confirmar o novo:\n\n[link]\n\nObrigada pela compreensão, e qualquer dificuldade me chama por aqui."},
-  {id:'consultorio_remarca_cancelado',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcado pela Daniela",sub:"Depois de desmarcar no painel, com o link",texto:"[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nPrecisamos reorganizar a agenda do dia [data], e a sua consulta desse dia vai precisar mudar de data, sem custo nenhum.\n\nPara escolher o novo dia, é só abrir o link abaixo, com os horários disponíveis na agenda do Dr. Henrique:\n\n[link]\n\nObrigada pela compreensão, e qualquer dificuldade me chama por aqui."},
+  {id:'consultorio_remarca',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcou pelo link",sub:"Ele remarca pelo próprio link, sem custo",texto:"[nome], tudo bem?\n\nPrecisamos reorganizar a agenda do dia [data], e a sua consulta desse dia vai precisar mudar de data. Não há custo nenhum, e essa mudança não conta como uma remarcação sua.\n\nÉ só abrir o seu link, tocar em \"Preciso remarcar\" e escolher o novo dia entre os horários disponíveis na agenda do Dr. Henrique. O seu horário atual fica guardado até você confirmar o novo:\n\n[link]\n\nObrigada pela compreensão, e qualquer dificuldade me chama por aqui."},
+  {id:'consultorio_remarca_cancelado',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcado pela Daniela",sub:"Depois de desmarcar no painel, com o link",texto:"[nome], tudo bem?\n\nPrecisamos reorganizar a agenda do dia [data], e a sua consulta desse dia vai precisar mudar de data, sem custo nenhum.\n\nPara escolher o novo dia, é só abrir o link abaixo, com os horários disponíveis na agenda do Dr. Henrique:\n\n[link]\n\nObrigada pela compreensão, e qualquer dificuldade me chama por aqui."},
   {id:'desmarcou_no_prazo',cat:'remarcacao',nome:"Desmarcou no prazo (72 h ou mais)",sub:"Sem custo, link para a nova data",texto:"[nome], tudo certo, recebi o seu aviso e já liberei o horário. Como ele veio dentro do prazo, não há custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo. Ele mostra os dias que o Dr. Henrique tem abertos para esta etapa do seu acompanhamento:\n\n[link]"},
   {id:'desmarcou_fora_prazo',cat:'remarcacao',nome:"Desmarcou fora do prazo · as 3 opções",sub:"Menos de 72 h: o paciente escolhe o caminho",texto:"[nome], recebi o seu aviso, obrigada por me avisar.\n\nComo a desmarcação veio com menos de 72 horas, o contrato prevê a taxa de reserva de agenda, porque o horário ficou reservado para você e não pôde ser oferecido a outro paciente. Para esses casos o consultório oferece três caminhos, e você escolhe o que fizer mais sentido:\n\n1. Se o motivo foi de saúde, me envie o comprovante médico (atestado ou declaração) e a nova data sai sem custo.\n2. Usar esta consulta como uma das consultas do seu plano, sem cobrança. Nesse caso a próxima consulta do plano é antecipada, e você já escolhe a data entre os horários disponíveis na agenda do Dr. Henrique.\n3. Pagar a taxa de reserva de agenda, de R$ 350, e remarcar esta mesma consulta.\n\nMe responde com o número da opção, que eu organizo o restante."},
   {id:'desmarcou_comprovante',cat:'remarcacao',nome:"Comprovante recebido · nova data",sub:"Sem custo, com o link",texto:"[nome], recebi o comprovante, obrigada. Fica registrado, sem custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]\n\nEspero que você já esteja melhor."},
@@ -1310,7 +1311,7 @@ var DAN_TPL=[
      Texto generico desde 21/09: 'renovou' valia para a Bianca e era falso para o Bruno Aguiar,
      que recebe o primeiro pedido. Mora em Pre-consulta, e nao em Resgate: e diagnostica que ainda nao aconteceu, e foi
      ali que o Dr. Henrique procurou primeiro. Sem 'Passo N', vai para o fim da aba. */
-  {id:'retomada_sinal_pago',cat:'pre_consulta',modo:'pedido',nome:'Retomada com sinal já pago',sub:'Pagou o sinal antes do link e ainda não consultou',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nDando sequência ao seu atendimento: o Dr. Henrique enviou o seu pedido de exames, que segue em anexo.\n\nO sinal que você já pagou continua valendo, então você não precisa pagar nada agora. Para garantir a sua consulta, é só escolher o horário por este link:\n\n[link]\n\nAs datas começam duas semanas à frente, para dar tempo de os exames ficarem prontos. Se algum resultado atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nQualquer dúvida, estou por aqui.'},
+  {id:'retomada_sinal_pago',cat:'pre_consulta',modo:'pedido',nome:'Retomada com sinal já pago',sub:'Pagou o sinal antes do link e ainda não consultou',texto:'[nome], tudo bem?\n\nDando sequência ao seu atendimento: o Dr. Henrique enviou o seu pedido de exames, que segue em anexo.\n\nO sinal que você já pagou continua valendo, então você não precisa pagar nada agora. Para garantir a sua consulta, é só escolher o horário por este link:\n\n[link]\n\nAs datas começam duas semanas à frente, para dar tempo de os exames ficarem prontos. Se algum resultado atrasar, a consulta segue normalmente e o Dr. Henrique avalia com você o que já estiver pronto.\n\nQualquer dúvida, estou por aqui.'},
   /* HAG_FILA_RELOGIO_v1 (22/09/2026): a fila ganhou prazo, e prazo sem mensagem
      pronta vira trabalho manual. Dois toques, os dois com UMA porta so: escolher no
      link. Nenhum deles oferece "me fala que eu vejo outra data com o Dr. Henrique".
@@ -2966,7 +2967,7 @@ async function whatsSinal(id){
   var primeiro=String(x.patient_nome||'').split(' ')[0];
   var quando=(x.data||'').split('-').reverse().slice(0,2).join('/')+' às '+(x.hora||'');
   /* HAG_MSG_DANIELA_v2: mesma voz da mensagem de agendamento, sem emoji. */
-  var msg='Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
+  var msg='Olá, '+primeiro+', tudo bem?\n\n'
     +'O seu horário de '+quando+' está guardado. Assim que você me enviar o comprovante do sinal de '
     +_brl(x.sinal_valor)+', eu confirmo a sua consulta.';
   var fone=_sinalFone(x.whatsapp);
@@ -3042,7 +3043,7 @@ function _filaMsgAgendar(t){
        repetida deixa de ser novidade e vira ruído. Quem decide é o banco, pelo histórico
        de agendamentos de origem 'paciente', não um campo que alguém precise virar. */
     var _novo = !!(_lk && _lk.novo);
-    return 'Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
+    return 'Olá, '+primeiro+', tudo bem?\n\n'
       +(_novo
         ? 'Temos uma novidade: agora você mesmo escolhe o dia e o horário da sua próxima '
           +_cons+', direto pelo link abaixo, sem precisar combinar por aqui. Leva menos '
@@ -3059,7 +3060,7 @@ function _filaMsgAgendar(t){
   }
   var oque = (t.tipo_evento==='diagnostica'||t.tipo_evento==='retorno') ? 'a sua consulta'
            : (t.tipo_evento==='injetavel' ? 'a sua aplicação' : 'o seu procedimento');
-  return 'Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n'
+  return 'Olá, '+primeiro+', tudo bem?\n\n'
     +'Estou entrando em contato para agendarmos '+oque+'. '
     +'Me conta qual período costuma ser melhor para você que eu verifico a agenda do Dr. Henrique.';
 }
@@ -3082,7 +3083,7 @@ function _filaMsgConfirmacao(t){
   var quando=_diaPorExtenso(t.agendado_data)+(t.agendado_hora?(', às '+t.agendado_hora):'');
   var uni=(chave==='tatuape')?'do Tatuapé':((chave==='pinheiros')?'de Pinheiros':'');
   var end=(HAG_LOCAIS[chave]||{}).end||'';
-  var msg='Olá, '+primeiro+', tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\n';
+  var msg='Olá, '+primeiro+', tudo bem?\n\n';
   if(online){
     msg+='A sua consulta online está confirmada para '+quando+'.\n\n'
        +'O link da sala chega por aqui antes do horário. Procure um lugar tranquilo e com boa internet.\n\n';
@@ -4483,7 +4484,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20260930-2145';
+  var VERSAO = '20261001-1211';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
