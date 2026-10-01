@@ -300,12 +300,12 @@ function renderModelos(){
 
 /* ---------- aba exercícios ---------- */
 function renderExs(){
-  const f=E.exFiltro.toLowerCase(), lista=E.exs.filter(e=>!f||e.nome.toLowerCase().includes(f)||e.id.includes(f)), comV=E.exs.filter(e=>e.video_youtube).length;
-  main.innerHTML=`<div><div class="kicker">Exercícios e vídeos</div><h2>${E.exs.length} exercícios, ${comV} com vídeo</h2><p class="note">Cole o link de um vídeo público do YouTube que você aprova. O paciente vê no player oficial, em modo de privacidade, dentro do treino. Nada é baixado nem hospedado aqui.</p></div>${msgHTML()}
+  const f=E.exFiltro.toLowerCase(), lista=E.exs.filter(e=>!f||e.nome.toLowerCase().includes(f)||e.id.includes(f)), comV=E.exs.filter(e=>e.video_youtube).length, sug=E.exs.filter(e=>!e.video_youtube&&e.video_sugestao&&e.video_sugestao.id).length;
+  main.innerHTML=`<div><div class="kicker">Exercícios e vídeos</div><h2>${E.exs.length} exercícios, ${comV} com vídeo aprovado${sug?`, sugestões para assistir: ${sug}`:""}</h2><p class="note">Sugestão não aparece para o paciente: só o vídeo que você aprovou. Assista, e aprove ou troque. Para trocar, abra "editar" e cole o link de um vídeo público do YouTube que você aprova. O paciente vê no player oficial, em modo de privacidade, dentro do treino. Nada é baixado nem hospedado aqui.</p></div>${msgHTML()}
    <div class="card row"><div class="f" style="flex:1"><label class="lbl" for="exf">Buscar</label><input type="search" id="exf" value="${esc(E.exFiltro)}" placeholder="nome do exercício"></div><button class="btn small ghost" data-a="exnovo">+ novo exercício</button></div>
    ${E.exAberto==="__novo"?formEx({id:"",nome:"",modalidade:"forca",unidade:"kg",incremento:2.5,funcao:"",cue:"",porque:"",video_youtube:"",ativo:true,musculos:{},substitutos:[]},true):""}
    <div class="card"><div class="scroll"><table><thead><tr><th>Exercício</th><th>Tipo</th><th>Vídeo</th><th>Passo</th><th></th></tr></thead><tbody>
-   ${lista.map(e=>`<tr><td><b>${esc(e.nome)}</b>${e.ativo?"":` <span class="tag">inativo</span>`}<div class="note">${esc(e.cue||"")}</div></td><td class="mono">${esc(e.modalidade)} · ${esc(e.unidade)}</td><td>${e.video_youtube?`<a href="https://www.youtube.com/watch?v=${esc(e.video_youtube)}" target="_blank" rel="noopener">assistir</a>`:`<span class="note">sem vídeo</span>`}</td><td class="mono">${fkg(e.incremento)}</td><td><button class="btn small ghost" data-a="exabrir" data-v="${esc(e.id)}">${E.exAberto===e.id?"fechar":"editar"}</button></td></tr>${E.exAberto===e.id?`<tr><td colspan="5">${formEx(e,false)}</td></tr>`:""}`).join("")}
+   ${lista.map(e=>`<tr><td><b>${esc(e.nome)}</b>${e.ativo?"":` <span class="tag">inativo</span>`}<div class="note">${esc(e.cue||"")}</div></td><td class="mono">${esc(e.modalidade)} · ${esc(e.unidade)}</td><td>${e.video_youtube?`<span class="tag g">aprovado</span> <a href="https://www.youtube.com/watch?v=${esc(e.video_youtube)}" target="_blank" rel="noopener">assistir</a>`:(e.video_sugestao&&e.video_sugestao.id)?`<span class="tag y">sugestão</span> <a href="https://www.youtube.com/watch?v=${esc(e.video_sugestao.id)}" target="_blank" rel="noopener">assistir</a><div class="note">${esc(e.video_sugestao.titulo||"")} · ${esc(e.video_sugestao.canal||"")}${e.video_sugestao.obs?`<br>${esc(e.video_sugestao.obs)}`:""}</div><button class="btn small" data-a="exaprovar" data-v="${esc(e.id)}" style="margin-top:4px">Aprovar este vídeo</button>`:`<span class="note">sem vídeo</span>`}</td><td class="mono">${fkg(e.incremento)}</td><td><button class="btn small ghost" data-a="exabrir" data-v="${esc(e.id)}">${E.exAberto===e.id?"fechar":"editar"}</button></td></tr>${E.exAberto===e.id?`<tr><td colspan="5">${formEx(e,false)}</td></tr>`:""}`).join("")}
    </tbody></table></div></div>`;
 }
 function formEx(e,novo){
@@ -369,6 +369,7 @@ main.addEventListener("click",e=>{
   if(a==="exabrir"){ E.exAberto=E.exAberto===v?null:v; return render(); }
   if(a==="exnovo"){ E.exAberto=E.exAberto==="__novo"?null:"__novo"; return render(); }
   if(a==="exsalvar") return acao(salvarEx,"Exercício salvo.");
+  if(a==="exaprovar") return acao(async()=>{ const e=E.exMap[v]; if(!e||!e.video_sugestao||!e.video_sugestao.id) throw new Error("sem sugestão para aprovar"); await api(`treino_exercicios?id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:{video_youtube:e.video_sugestao.id}}); e.video_youtube=e.video_sugestao.id; },"Vídeo aprovado. O paciente já vê no treino.");
 });
 main.addEventListener("input",e=>{
   const t=e.target, p=E.edit;
