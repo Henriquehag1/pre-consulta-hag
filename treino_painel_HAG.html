@@ -125,7 +125,7 @@ const linkDe=t=>/^https?:/.test(t)?t:new URL("treino_HAG.html?t="+t,location.hre
 function ytId(v){ v=String(v||"").trim(); if(!v) return null; const m=v.match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/); if(m) return m[1]; return /^[A-Za-z0-9_-]{11}$/.test(v)?v:undefined; }
 
 /* ---------- estado ---------- */
-const E={aba:"pac", pacientes:[], comProg:new Set(), pid:null, P:null, exs:[], exMap:{}, modelos:[], edit:null, msg:null, exSel:null, filtro:"", exFiltro:"", exAberto:null, publicar:null};
+const E={metodos:[], exGrupo:"", exCat:"nucleo", aba:"pac", pacientes:[], comProg:new Set(), pid:null, P:null, exs:[], exMap:{}, modelos:[], edit:null, msg:null, exSel:null, filtro:"", exFiltro:"", exAberto:null, publicar:null};
 const EX=id=>E.exMap[id]||(E.P&&E.P.exercicios&&E.P.exercicios[id]&&{nome:E.P.exercicios[id].nome,musculos:E.P.exercicios[id].m,modalidade:E.P.exercicios[id].mod,unidade:E.P.exercicios[id].un})||{nome:id,musculos:{},modalidade:"forca",unidade:"kg"};
 function aviso(tipo,texto){ E.msg={tipo,texto}; render(); }
 const msgHTML=()=>E.msg?`<div class="msg ${E.msg.tipo}" role="status">${esc(E.msg.texto)}</div>`:"";
@@ -169,7 +169,7 @@ function historia(P){
   const ult=h.at(-1), cv=h.filter(s=>s.cv && diasAtras(s.data)<=60);
   if(cv.length) L.push({c:"r",t:`Sintoma cardiovascular registrado em ${cv.map(s=>br(s.data)).join(", ")}. A sessão foi encerrada e a tarefa foi criada.`});
   /* janela = desde a primeira sessão, no máximo 28 dias: programa novo não nasce devendo */
-  const alvo=(prog&&prog.sessoes_semana)||3, jan=Math.min(28,diasAtras(h[0].data)+1), esp=Math.max(1,Math.round(alvo*jan/7)), s28=h.filter(s=>diasAtras(s.data)<jan).length, ad=s28/esp;
+  const alvo=(prog&&prog.sessoes_semana)||3, jan=Math.min(28,diasAtras(h[0].data)+1), esp=Math.max(1,Math.round(alvo*jan/7)), s28=h.filter(s=>diasAtras(s.data)<jan&&s.tipo!=="Atividade").length, ad=s28/esp;
   L.push({c:ad>=.75?"g":ad>=.5?"y":"r",t:`Adesão: ${s28} de ${esp} sessões esperadas nos últimos ${jan} dias (${fmt(Math.min(ad,9.99)*100,0)}%). Última sessão em ${br(ult.data)}, há ${diasAtras(ult.data)} ${diasAtras(ult.data)===1?"dia":"dias"}.`});
   const ids=[...new Set(h.flatMap(s=>s.series.map(x=>x.ex)))], g=ids.map(id=>{ const p=serieE1(h,id); return p.length>1?{id,g:(p.at(-1).y/p[0].y-1)*100,de:p[0].x}:null; }).filter(Boolean);
   if(g.length){ const up=g.filter(x=>x.g>=2), dn=g.filter(x=>x.g<=-5), top=[...g].sort((a,b)=>b.g-a.g)[0];
@@ -242,7 +242,7 @@ async function abrirEditor(id){
   try{ const r=await api(`treino_programas?id=eq.${id}&select=*,treino_dias(*,treino_prescricao(*))`); if(!r||!r.length) throw new Error("programa não encontrado"); E.edit=progParaEdicao(r[0]); E.msg=null; E.publicar=null; render(); window.scrollTo(0,0); }
   catch(e){ aviso("err","Não consegui abrir o programa: "+e.message); }
 }
-const exOptions=sel=>{ const grupos={forca:"Força",mobilidade:"Mobilidade",cardio:"Cardio",hyrox:"Hyrox"}; return Object.entries(grupos).map(([g,lab])=>`<optgroup label="${lab}">${E.exs.filter(e=>e.modalidade===g&&(e.ativo||e.id===sel)).map(e=>`<option value="${esc(e.id)}"${e.id===sel?" selected":""}>${esc(e.nome)}</option>`).join("")}</optgroup>`).join(""); };
+const exOptions=sel=>{ const gs=[...new Set(E.exs.filter(e=>e.ativo||e.id===sel).map(e=>e.grupo||"Sem grupo"))].sort((x,y)=>x.localeCompare(y)); return gs.map(g=>`<optgroup label="${esc(g)}">${E.exs.filter(e=>(e.grupo||"Sem grupo")===g&&(e.ativo||e.id===sel)).map(e=>`<option value="${esc(e.id)}"${e.id===sel?" selected":""}>${esc(e.nome)}${e.familia?" · "+esc(e.familia):""}</option>`).join("")}</optgroup>`).join(""); };
 function renderEditor(){
   const p=E.edit, ro=p.status!=="rascunho";
   const dis=ro?"disabled":"";
@@ -262,9 +262,11 @@ function renderEditor(){
        ${ro?"":`<button class="link" data-a="dsobe" data-d="${di}" ${di===0?"disabled":""}>↑</button><button class="link" data-a="ddesce" data-d="${di}" ${di===p.dias.length-1?"disabled":""}>↓</button><button class="link" data-a="dremove" data-d="${di}" style="color:var(--crit)">remover dia</button>`}</div>
      ${d.itens.map((it,ii)=>{ const ex=EX(it.ex), forca=ex.modalidade==="forca"||ex.modalidade==="mobilidade"; const c=(k,lab,tipo)=>`<div class="f"><label class="lbl">${lab}</label><input type="${tipo||"number"}" data-d="${di}" data-i="${ii}" data-k="${k}" value="${esc(it[k])}" ${dis}></div>`;
        return `<div class="item"><div class="f"><label class="lbl">Exercício</label><select data-d="${di}" data-i="${ii}" data-k="ex" ${dis}>${exOptions(it.ex)}</select></div>
-        ${c("series",forca?"Séries":"Voltas")}${forca?c("min",ex.unidade==="seg"?"Seg mín":"Reps mín")+c("max",ex.unidade==="seg"?"Seg máx":"Reps máx")+c("rir","Sobrando"):`<div></div><div></div><div></div>`}${c("desc","Desc. (s)")}${c("carga","Carga inicial")}${c(forca?"nota":"alvo",forca?"Nota ao paciente":"Alvo da sessão","text")}
+        ${c("series",forca?"Séries":"Voltas")}${forca?c("min",ex.unidade==="seg"?"Seg mín":"Reps mín")+c("max",ex.unidade==="seg"?"Seg máx":"Reps máx")+c("rir","Sobrando"):`<div></div><div></div><div></div>`}${c("desc","Desc. (s)")}${c("carga","Carga inicial")}<div class="f"><label class="lbl">${forca?"Nota ao paciente":"Alvo da sessão"}</label><input type="text" list="metodos-${forca?"forca":"cardio"}" data-d="${di}" data-i="${ii}" data-k="${forca?"nota":"alvo"}" value="${esc(it[forca?"nota":"alvo"])}" ${dis}></div>
         ${ro?"<div></div>":`<div class="row" style="gap:2px"><button class="link" data-a="isobe" data-d="${di}" data-i="${ii}" ${ii===0?"disabled":""}>↑</button><button class="link" data-a="idesce" data-d="${di}" data-i="${ii}" ${ii===d.itens.length-1?"disabled":""}>↓</button><button class="link" data-a="iremove" data-d="${di}" data-i="${ii}" style="color:var(--crit)" aria-label="Remover exercício">✕</button></div>`}</div>`; }).join("")}
      ${ro?"":`<div><button class="btn small ghost" data-a="iadd" data-d="${di}">+ exercício</button></div>`}</div>`).join("")}
+   <datalist id="metodos-forca">${E.metodos.filter(m=>m.modalidade==="forca"&&m.texto_paciente).map(m=>`<option value="${esc(m.texto_paciente)}" label="${esc(m.nome)}">`).join("")}</datalist>
+   <datalist id="metodos-cardio">${E.metodos.filter(m=>m.modalidade!=="forca"&&m.texto_paciente).map(m=>`<option value="${esc(m.texto_paciente)}" label="${esc(m.nome)}">`).join("")}</datalist>
    <datalist id="tipos">${["Força","Hipertrofia","Z2","Limiar","Longo","Mobilidade","Hyrox condicionado","Simulado"].map(t=>`<option value="${t}">`).join("")}</datalist>
    ${ro?"":`<div class="row"><button class="btn ghost" data-a="dadd">+ dia de treino</button><div style="flex:1"></div><button class="btn" data-a="gravar">Salvar rascunho</button>${p.modelo?"":`<button class="btn" data-a="pub1" style="background:var(--good);color:#fff">Publicar para o paciente…</button>`}</div>
    ${E.publicar!=null?`<div class="card"><h3>Publicar a versão ${p.versao}</h3><p class="note">O programa ativo anterior é encerrado e o paciente passa a ver este. Escreva em uma linha o que mudou; o paciente lê isso na aba de evolução.</p><input type="text" id="mudanca" style="width:100%" value="${esc(E.publicar)}" placeholder="ex.: primeira versão; ou: troca do agachamento por leg press"><div class="row" style="margin-top:10px"><button class="btn" data-a="pub2" style="background:var(--good);color:#fff">Salvar e publicar agora</button><button class="link" data-a="pub0">cancelar</button></div></div>`:""}`}`;
@@ -300,13 +302,27 @@ function renderModelos(){
 
 /* ---------- aba exercícios ---------- */
 function renderExs(){
-  const f=E.exFiltro.toLowerCase(), lista=E.exs.filter(e=>!f||e.nome.toLowerCase().includes(f)||e.id.includes(f)), comV=E.exs.filter(e=>e.video_youtube).length, sug=E.exs.filter(e=>!e.video_youtube&&e.video_sugestao&&e.video_sugestao.id).length;
-  main.innerHTML=`<div><div class="kicker">Exercícios e vídeos</div><h2>${E.exs.length} exercícios, ${comV} com vídeo aprovado${sug?`, sugestões para assistir: ${sug}`:""}</h2><p class="note">Sugestão não aparece para o paciente: só o vídeo que você aprovou. Assista, e aprove ou troque. Para trocar, abra "editar" e cole o link de um vídeo público do YouTube que você aprova. O paciente vê no player oficial, em modo de privacidade, dentro do treino. Nada é baixado nem hospedado aqui.</p></div>${msgHTML()}
-   <div class="card row"><div class="f" style="flex:1"><label class="lbl" for="exf">Buscar</label><input type="search" id="exf" value="${esc(E.exFiltro)}" placeholder="nome do exercício"></div><button class="btn small ghost" data-a="exnovo">+ novo exercício</button></div>
-   ${E.exAberto==="__novo"?formEx({id:"",nome:"",modalidade:"forca",unidade:"kg",incremento:2.5,funcao:"",cue:"",porque:"",video_youtube:"",ativo:true,musculos:{},substitutos:[]},true):""}
-   <div class="card"><div class="scroll"><table><thead><tr><th>Exercício</th><th>Tipo</th><th>Vídeo</th><th>Passo</th><th></th></tr></thead><tbody>
-   ${lista.map(e=>`<tr><td><b>${esc(e.nome)}</b>${e.ativo?"":` <span class="tag">inativo</span>`}<div class="note">${esc(e.cue||"")}</div></td><td class="mono">${esc(e.modalidade)} · ${esc(e.unidade)}</td><td>${e.video_youtube?`<span class="tag g">aprovado</span> <a href="https://www.youtube.com/watch?v=${esc(e.video_youtube)}" target="_blank" rel="noopener">assistir</a>`:(e.video_sugestao&&e.video_sugestao.id)?`<span class="tag y">sugestão</span> <a href="https://www.youtube.com/watch?v=${esc(e.video_sugestao.id)}" target="_blank" rel="noopener">assistir</a><div class="note">${esc(e.video_sugestao.titulo||"")} · ${esc(e.video_sugestao.canal||"")}${e.video_sugestao.obs?`<br>${esc(e.video_sugestao.obs)}`:""}</div><button class="btn small" data-a="exaprovar" data-v="${esc(e.id)}" style="margin-top:4px">Aprovar este vídeo</button>`:`<span class="note">sem vídeo</span>`}</td><td class="mono">${fkg(e.incremento)}</td><td><button class="btn small ghost" data-a="exabrir" data-v="${esc(e.id)}">${E.exAberto===e.id?"fechar":"editar"}</button></td></tr>${E.exAberto===e.id?`<tr><td colspan="5">${formEx(e,false)}</td></tr>`:""}`).join("")}
+  const f=E.exFiltro.toLowerCase(), nuc=E.exs.filter(e=>e.catalogo!=="extensao"), ext=E.exs.length-nuc.length, comV=nuc.filter(e=>e.video_youtube).length;
+  const grupos=[...new Set(E.exs.map(e=>e.grupo).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const lista=E.exs.filter(e=>(E.exCat==="todos"||(E.exCat==="extensao")===(e.catalogo==="extensao"))&&(!E.exGrupo||e.grupo===E.exGrupo)&&(!f||e.nome.toLowerCase().includes(f)||(e.nome_en||"").toLowerCase().includes(f)||e.id.includes(f))).sort((a,b)=>(a.grupo||"").localeCompare(b.grupo||"")||(a.familia||"").localeCompare(b.familia||"")||a.nome.localeCompare(b.nome));
+  const mostra=lista.slice(0,250);
+  main.innerHTML=`<div><div class="kicker">Exercícios e vídeos</div><h2>Núcleo: ${nuc.length} exercícios, ${comV} com vídeo · Extensão: ${ext}</h2><p class="note">Núcleo é o que aparece no editor de programas, completo e com vídeo. Extensão é a biblioteca ampla, só com nome e classificação: "editar" e marcar como ativo traz o exercício para o uso. Os vídeos são de terceiros no YouTube e já aparecem para o paciente; para trocar, "editar" e colar outro link.</p></div>${msgHTML()}
+   <div class="card row"><div class="f" style="flex:2;min-width:160px"><label class="lbl" for="exf">Buscar</label><input type="search" id="exf" value="${esc(E.exFiltro)}" placeholder="nome em português ou inglês"></div>
+     <div class="f" style="flex:1;min-width:150px"><label class="lbl" for="exg">Grupo</label><select id="exg"><option value="">todos</option>${grupos.map(g=>`<option${g===E.exGrupo?" selected":""}>${esc(g)}</option>`).join("")}</select></div>
+     <div class="f"><label class="lbl" for="exc">Catálogo</label><select id="exc"><option value="nucleo"${E.exCat==="nucleo"?" selected":""}>Núcleo</option><option value="extensao"${E.exCat==="extensao"?" selected":""}>Extensão</option><option value="todos"${E.exCat==="todos"?" selected":""}>Todos</option></select></div>
+     <button class="btn small ghost" data-a="excsv">Baixar planilha (CSV)</button><button class="btn small ghost" data-a="exnovo">+ novo exercício</button></div>
+   ${E.exAberto==="__novo"?formEx({id:"",nome:"",modalidade:"forca",unidade:"kg",incremento:2.5,funcao:"",cue:"",porque:"",video_youtube:"",ativo:true,musculos:{},substitutos:[],grupo:E.exGrupo||"",familia:""},true):""}
+   <div class="card"><div class="note" style="margin-bottom:6px">${lista.length} na lista${lista.length>mostra.length?`, mostrando os primeiros ${mostra.length}. Use a busca ou o grupo para afinar.`:""}</div><div class="scroll"><table><thead><tr><th>Exercício</th><th>Grupo · família</th><th>Tipo</th><th>Vídeo</th><th></th></tr></thead><tbody>
+   ${mostra.map(e=>{ const sg=e.video_sugestao||{}; return `<tr><td><b>${esc(e.nome)}</b>${e.ativo?"":` <span class="tag">inativo</span>`}${e.so_prescricao?` <span class="tag y">só por prescrição</span>`:""}${e.nivel===3?` <span class="tag">técnico</span>`:""}<div class="note">${esc(e.cue||e.nome_en||"")}</div></td><td>${esc(e.grupo||"")}<div class="note">${esc(e.familia||"")}${e.equipamento?" · "+esc(e.equipamento.replace("_"," ")):""}</div></td><td class="mono">${esc(e.modalidade)} · ${esc(e.unidade)}</td>
+     <td>${e.video_youtube?`<a href="https://www.youtube.com/watch?v=${esc(e.video_youtube)}" target="_blank" rel="noopener">assistir</a>${sg.id===e.video_youtube?`<div class="note">${esc(sg.canal||"")}${sg.idioma==="en"?" · em inglês":""}${sg.obs?`<br>${esc(sg.obs)}`:""}</div>`:""}`:(sg.id?`<span class="tag y">sugestão</span> <a href="https://www.youtube.com/watch?v=${esc(sg.id)}" target="_blank" rel="noopener">assistir</a><br><button class="btn small" data-a="exaprovar" data-v="${esc(e.id)}" style="margin-top:4px">Usar este vídeo</button>`:`<span class="note">sem vídeo</span>`)}</td>
+     <td><button class="btn small ghost" data-a="exabrir" data-v="${esc(e.id)}">${E.exAberto===e.id?"fechar":"editar"}</button></td></tr>${E.exAberto===e.id?`<tr><td colspan="5">${formEx(e,false)}</td></tr>`:""}`; }).join("")}
    </tbody></table></div></div>`;
+}
+function baixarCSV(){
+  const cols=["id","nome","nome_en","catalogo","ativo","modalidade","grupo","familia","padrao","equipamento","lateralidade","nivel","so_prescricao","unidade","incremento","funcao","musculos","substitutos","cue","porque","video_youtube","video_canal","video_obs"];
+  const cel=v=>{ v=v==null?"":(typeof v==="object"?(Array.isArray(v)?v.join(" | "):JSON.stringify(v)):String(v)); return '"'+v.replace(/"/g,'""')+'"'; };
+  const linhas=[cols.join(";")].concat(E.exs.map(e=>cols.map(c=>cel(c==="video_canal"?(e.video_sugestao||{}).canal:c==="video_obs"?(e.video_sugestao||{}).obs:e[c])).join(";")));
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["\ufeff"+linhas.join("\r\n")],{type:"text/csv;charset=utf-8"})); a.download="HAG Treino - catalogo de exercicios - "+hojeISO().split("-").reverse().join("-")+".csv"; document.body.appendChild(a); a.click(); a.remove();
 }
 function formEx(e,novo){
   const mus=Object.keys(MUSC).map(k=>`<label class="row" style="gap:4px"><span style="font-size:13px">${MUSC[k]}</span><select data-m="${k}"><option value="">não</option><option value="1"${+((e.musculos||{})[k])===1?" selected":""}>principal</option><option value="0.5"${+((e.musculos||{})[k])===.5?" selected":""}>ajudante</option></select></label>`).join("");
@@ -316,6 +332,9 @@ function formEx(e,novo){
     <div class="f"><label class="lbl">Unidade</label><select data-e="unidade"><option value="kg"${e.unidade==="kg"?" selected":""}>kg</option><option value="pc"${e.unidade==="pc"?" selected":""}>peso do corpo</option><option value="seg"${e.unidade==="seg"?" selected":""}>segundos</option></select></div>
     <div class="f" style="width:90px"><label class="lbl">Passo (kg)</label><input type="number" step="0.5" data-e="incremento" value="${esc(e.incremento)}"></div>
     <div class="f" style="flex:1;min-width:120px"><label class="lbl">Função</label><input type="text" data-e="funcao" value="${esc(e.funcao||"")}"></div></div>
+   <div class="row"><div class="f" style="flex:1;min-width:150px"><label class="lbl">Grupo</label><input type="text" data-e="grupo" value="${esc(e.grupo||"")}" list="grupos"></div><div class="f" style="flex:1;min-width:150px"><label class="lbl">Família</label><input type="text" data-e="familia" value="${esc(e.familia||"")}"></div>
+     <label class="row" style="gap:6px"><input type="checkbox" data-e="so_prescricao" ${e.so_prescricao?"checked":""}> só por prescrição (nunca substituto automático)</label></div>
+   <datalist id="grupos">${[...new Set(E.exs.map(x=>x.grupo).filter(Boolean))].sort().map(g=>`<option value="${esc(g)}">`).join("")}</datalist>
    <div class="f"><label class="lbl">Dica de execução (uma linha, o paciente lê)</label><input type="text" data-e="cue" value="${esc(e.cue||"")}"></div>
    <div class="f"><label class="lbl">Por que estou fazendo</label><input type="text" data-e="porque" value="${esc(e.porque||"")}"></div>
    <div class="f"><label class="lbl">Link do vídeo no YouTube</label><input type="text" data-e="video" value="${e.video_youtube?"https://youtu.be/"+esc(e.video_youtube):""}" placeholder="https://www.youtube.com/watch?v=…"></div>
@@ -327,7 +346,8 @@ async function salvarEx(){
   const v=ytId(g("video").value); if(v===undefined) throw new Error("não reconheci esse link do YouTube");
   const nome=g("nome").value.trim(); if(!nome) throw new Error("o exercício precisa de nome");
   const mus={}; f.querySelectorAll("[data-m]").forEach(s=>{ if(s.value) mus[s.dataset.m]=+s.value; });
-  const body={nome, modalidade:g("modalidade").value, unidade:g("unidade").value, incremento:num(g("incremento").value)??2.5, funcao:g("funcao").value.trim()||null, cue:g("cue").value.trim()||null, porque:g("porque").value.trim()||null, video_youtube:v, ativo:g("ativo").checked, musculos:mus};
+  const body={nome, modalidade:g("modalidade").value, unidade:g("unidade").value, incremento:num(g("incremento").value)??2.5, funcao:g("funcao").value.trim()||null, cue:g("cue").value.trim()||null, porque:g("porque").value.trim()||null, video_youtube:v, ativo:g("ativo").checked, musculos:mus, grupo:g("grupo").value.trim()||null, familia:g("familia").value.trim()||null, so_prescricao:g("so_prescricao").checked};
+  if(body.ativo) body.catalogo="nucleo";
   if(novo){ body.id=nome.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,48); if(E.exMap[body.id]) throw new Error("já existe um exercício com esse nome"); await api("treino_exercicios",{method:"POST",body}); }
   else await api(`treino_exercicios?id=eq.${encodeURIComponent(f.dataset.id)}`,{method:"PATCH",body});
   await carregarBase(); E.exAberto=null;
@@ -335,9 +355,9 @@ async function salvarEx(){
 
 /* ---------- carga e eventos ---------- */
 async function carregarBase(){
-  const [pac,progs,exs]=await Promise.all([api("patients?select=id,nome,status&order=nome"), api("treino_programas?select=id,patient_id,nome,objetivo,nivel,regra,sessoes_semana,observacao,modelo,status&order=nome"), api("treino_exercicios?select=*&order=nome")]);
+  const [pac,progs,exs,mets]=await Promise.all([api("patients?select=id,nome,status&order=nome"), api("treino_programas?select=id,patient_id,nome,objetivo,nivel,regra,sessoes_semana,observacao,modelo,status&order=nome"), api("treino_exercicios?select=*&order=nome&limit=2000"), api("treino_metodos?select=id,nome,modalidade,texto_paciente&ativo=is.true&order=nome").catch(()=>[])]);
   E.pacientes=pac||[]; E.modelos=(progs||[]).filter(p=>p.modelo); E.comProg=new Set((progs||[]).filter(p=>!p.modelo).map(p=>p.patient_id));
-  E.exs=exs||[]; E.exMap=Object.fromEntries(E.exs.map(e=>[e.id,e]));
+  E.metodos=mets||[]; E.exs=exs||[]; E.exMap=Object.fromEntries(E.exs.map(e=>[e.id,e]));
 }
 async function carregarPaciente(){ E.P=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } render(); }
 function render(){ if(E.aba==="pac") renderPaciente(); else if(E.aba==="mod") renderModelos(); else renderExs(); }
@@ -368,8 +388,9 @@ main.addEventListener("click",e=>{
   }
   if(a==="exabrir"){ E.exAberto=E.exAberto===v?null:v; return render(); }
   if(a==="exnovo"){ E.exAberto=E.exAberto==="__novo"?null:"__novo"; return render(); }
+  if(a==="excsv") return baixarCSV();
   if(a==="exsalvar") return acao(salvarEx,"Exercício salvo.");
-  if(a==="exaprovar") return acao(async()=>{ const e=E.exMap[v]; if(!e||!e.video_sugestao||!e.video_sugestao.id) throw new Error("sem sugestão para aprovar"); await api(`treino_exercicios?id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:{video_youtube:e.video_sugestao.id}}); e.video_youtube=e.video_sugestao.id; },"Vídeo aprovado. O paciente já vê no treino.");
+  if(a==="exaprovar") return acao(async()=>{ const e=E.exMap[v]; if(!e||!e.video_sugestao||!e.video_sugestao.id) throw new Error("sem sugestão para aprovar"); await api(`treino_exercicios?id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:{video_youtube:e.video_sugestao.id}}); e.video_youtube=e.video_sugestao.id; },"Vídeo no ar para o paciente.");
 });
 main.addEventListener("input",e=>{
   const t=e.target, p=E.edit;
@@ -384,6 +405,8 @@ main.addEventListener("input",e=>{
 main.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="pac"){ E.pid=t.value||null; E.msg=null; return carregarPaciente(); }
+  if(t.id==="exg"){ E.exGrupo=t.value; return render(); }
+  if(t.id==="exc"){ E.exCat=t.value; return render(); }
   if(t.id==="exsel"){ E.exSel=t.value; return render(); }
   if(E.edit && t.dataset.k==="ex"){ E.edit.dias[+t.dataset.d].itens[+t.dataset.i].ex=t.value; return render(); }
 });

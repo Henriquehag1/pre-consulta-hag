@@ -251,7 +251,9 @@ function render(){
   if(!TOKEN) return vHoje.innerHTML=`<div class="card"><h3>Abra pelo seu link</h3><p class="sub">Este aplicativo abre pelo link pessoal enviado pelo consultório do Dr. Henrique. Peça o link de novo se não o encontrar.</p></div>`;
   if(!CTX) return vHoje.innerHTML=`<p class="note">Carregando o seu treino…</p>`;
   if(CTX.ok===false) return vHoje.innerHTML=`<div class="card"><h3>Link não reconhecido</h3><p class="sub">Peça um link novo ao consultório do Dr. Henrique.</p></div>`;
-  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>`;
+  if(S.fase==="ativ") return renderAtiv();
+  if(S.fase==="fim" && S.salvo) return renderSalvo();
+  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div><button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
   if(S.fase==="inicio") return renderInicio();
   if(S.fase==="treino") return renderItem();
   if(S.fase==="fim") return S.salvo ? renderSalvo() : renderFim();
@@ -283,7 +285,8 @@ function renderInicio(){
     ${qz("sono","Sono",1,5,"1 péssimo · 5 ótimo")}${qz("energia","Energia",1,5,"1 sem energia · 5 ótima")}${qz("musc","Dor muscular",0,5,"0 nenhuma · 5 forte")}${qz("art","Dor articular",0,5,"0 nenhuma · 5 forte")}
     ${sm?`<div class="semaforo ${sm.c}" style="margin-top:8px"><i></i><div><b>${sm.t}</b><br>${sm.s}</div></div>`:""}</div>`}
   ${visto?"":`<div class="onb"><div class="kicker">Antes do primeiro treino · 20 segundos</div><p style="margin:6px 0 0;font-size:15px">Ao fim de cada série vamos perguntar <b>quantas repetições você ainda conseguiria fazer com boa técnica</b>. Se parou porque não sairia mais nenhuma, é 0. Se sobravam duas, é 2. É isso que diz se a carga deve subir. Na dúvida, escolha o número menor.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`}
-  <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>`;
+  <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
+  <button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje (esporte, aula, treino fora do programa)</button>`;
 }
 function cabecalhoItem(it, ex, n, total){
   const subs=(EX(it.orig).subs||[]).filter(s=>CTX.exercicios[s]);
@@ -296,7 +299,7 @@ function cabecalhoItem(it, ex, n, total){
        ${it.id!==it.orig?`<button type="button" class="link" data-a="sub" data-v="">voltar ao ${esc(EX(it.orig).nome)}</button>`:subs.map(s=>`<button type="button" class="link" data-a="sub" data-v="${s}">Aparelho ocupado? ${esc(EX(s).nome)}</button>`).join("")}
      </div>
      ${S.verPq&&ex.pq?`<div class="porque" style="margin-top:8px">${esc(ex.pq)}</div>`:""}
-     ${S.verVideo&&ex.video?`<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(ex.video)}?rel=0&playsinline=1" title="Execução: ${esc(ex.nome)}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`:""}`;
+     ${S.verVideo&&ex.video?`<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(ex.video)}?rel=0&playsinline=1" title="Execução: ${esc(ex.nome)}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div><p class="note" style="margin:6px 0 0">Vídeo de terceiro no YouTube, escolhido pelo consultório. Se ele disser algo diferente do seu plano, vale o plano.</p>`:""}`;
 }
 function rodapeTreino(){
   return `<div class="row between"><button type="button" class="link" data-a="volta" ${S.i===0?"disabled":""}>‹ anterior</button><button type="button" class="link" data-a="pulaex">${S.i<itens().length-1?"pular ›":"encerrar ›"}</button></div>
@@ -367,6 +370,24 @@ function renderHyrox(it,ex,its,barra){
     <div class="feitas">${v.length?v.map((x,j)=>`V${j+1} ${mmss(x.seg)}`).join("   "):"nenhum tempo ainda"}</div>
   </div>${rodapeTreino()}`;
   clearInterval(tickCrono); if(rodando) tickCrono=setInterval(()=>{ const el=document.getElementById("crono"); if(el&&S.crono) el.textContent=mmss((Date.now()-S.crono.t0)/1000); },500);
+}
+/* Esporte e aula não são exercício do catálogo: registram-se por tempo e esforço, e entram na carga da semana. */
+const ATIVS=["Futebol","Futsal","Basquete","Vôlei","Handebol","Tênis","Padel","Beach tennis","Boxe","Muay thai","Jiu-jitsu","Judô","MMA","Escalada","Pilates","Yoga","Dança","Natação livre","Pedal na rua","Trilha ou trekking","Aula de crossfit","Aula de funcional","Corrida livre","Caminhada livre","Musculação fora do programa","Outra"];
+function renderAtiv(){
+  const A=S.ativ||(S.ativ={nome:null,min:60,rpe:6});
+  vHoje.innerHTML=`<div><div class="kicker">Outra atividade</div><h2>O que você fez hoje?</h2><p class="sub">Esporte, aula ou treino fora do programa. Entra na sua carga da semana, junto com os treinos.</p></div>
+   <div class="card"><div class="chips">${ATIVS.map(n=>`<button type="button" class="chip" data-a="atv" data-v="${n}" aria-pressed="${A.nome===n}">${n}</button>`).join("")}</div></div>
+   <div class="card row between"><div class="lbl">Duração (min)</div><div class="step"><button type="button" data-a="am-" aria-label="Menos 5 minutos">−</button><output>${A.min}</output><button type="button" data-a="am+" aria-label="Mais 5 minutos">+</button></div></div>
+   <div class="card"><label for="arpe" class="lbl">Quão pesado foi? (0 a 10)</label><div class="row" style="margin-top:6px"><input type="range" id="arpe" min="0" max="10" value="${A.rpe}" style="flex:1"><div class="big" id="arpe-v">${A.rpe}</div></div><div class="note" id="arpe-t">${rpeTexto(A.rpe)}</div></div>
+   <button type="button" class="btn wide" data-a="asalvar" ${A.nome?"":"disabled"}>SALVAR ATIVIDADE</button>
+   <button type="button" class="link" data-a="acancela" style="align-self:center">voltar</button>`;
+}
+function salvarAtiv(){
+  const A=S.ativ; if(!A||!A.nome) return;
+  FILA.push({client_id:uid(), data:HOJE(), dia_id:null, dia:A.nome, tipo:"Atividade", inicio:null, dur:A.min, rpe:A.rpe, pront:null, cv:false, series:[], cardio:[], hyrox:[]});
+  store.set("hagtreino.fila",FILA);
+  S=novoEstado(); S.fase="fim"; S.salvo={n:0,um:0,rpe:A.rpe,dur:A.min,ci:A.rpe*A.min,rec:[],dor:[],prox:[],cv:false,partes:A.nome,enviada:false};
+  render(); enviarFila().then(()=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
 }
 const rpeTexto = v => ["repouso","muito, muito leve","muito leve","leve","moderado","um pouco pesado","pesado","pesado","muito pesado","muito, muito pesado","máximo"][v];
 function coletar(){
@@ -464,6 +485,11 @@ function salvar(){
 vHoje.addEventListener("click", e=>{
   const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a; if(!a) return;
   if(a==="recarregar") return carregar();
+  if(a==="ativ"){ S.fase="ativ"; S.ativ=null; return render(); }
+  if(a==="acancela"){ S=novoEstado(); return render(); }
+  if(a==="atv"){ S.ativ.nome=b.dataset.v; return render(); }
+  if(a==="am-"||a==="am+"){ S.ativ.min=Math.max(5,Math.min(600,S.ativ.min+(a==="am+"?5:-5))); return render(); }
+  if(a==="asalvar") return salvarAtiv();
   if(a==="enviar") return enviarFila().then(render);
   if(a==="pr"){ S.pront[b.dataset.k]=+b.dataset.v; return render(); }
   if(a==="pular"){ S.prontPulou=true; return render(); }
@@ -506,6 +532,7 @@ vHoje.addEventListener("click", e=>{
 });
 vHoje.addEventListener("input", e=>{
   const t=e.target;
+  if(t.id==="arpe" && S.ativ){ S.ativ.rpe=+t.value; document.getElementById("arpe-v").textContent=t.value; document.getElementById("arpe-t").textContent=rpeTexto(+t.value); }
   if(t.id==="rpe"){ document.getElementById("rpe-v").textContent=t.value; document.getElementById("rpe-t").textContent=rpeTexto(+t.value); }
   if(t.dataset.c && S.cardio[S.i]) S.cardio[S.i][t.dataset.c]=t.value;
 });
