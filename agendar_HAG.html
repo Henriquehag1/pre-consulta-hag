@@ -643,6 +643,13 @@ function rest(caminho){
   return fetch(SURL+'/rest/v1/'+caminho,{headers:H}).then(function(r){return r.json();});
 }
 
+/* HAG_AGENDA_BLOQUEIO_v1 (30/09/2026): dia fechado pelo consultorio (agenda_bloqueios).
+   Local nulo fecha o dia inteiro. O servidor tambem recusa; aqui e para nem oferecer. */
+var BLOQ={};
+function _bloqueado(iso, local){
+  var b=BLOQ[iso]; if(!b) return false;
+  return b.todos || (!!local && b.locais.indexOf(local)>=0);
+}
 var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null, ALVO=null, ALVOMED=false, LOCALMED=null;
 /* HAG_REMARCA_PACIENTE_v1 (11/09/2026): a mesma página serve para marcar e para
    remarcar. MODO diz qual das duas está acontecendo, e é a única diferença no
@@ -741,9 +748,15 @@ function tiraOMeuHorario(){
 function carregarAgenda(){
   Promise.all([
     rest('agenda_regras?ativo=eq.true&select=dia_semana,local,modalidade,hora_inicio,hora_fim,limite,prioridade&order=prioridade'),
-    rest('v_agenda_ocupacao?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,hora_inicio,hora_fim,tipo')
+    rest('v_agenda_ocupacao?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,hora_inicio,hora_fim,tipo'),
+    /* HAG_AGENDA_BLOQUEIO_v1: se a leitura falhar, segue sem bloqueio; o servidor recusa mesmo assim */
+    rest('agenda_bloqueios?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local').catch(function(){ return []; })
   ]).then(function(rs){
-    REGRAS=rs[0]||[]; OCUP={};
+    REGRAS=rs[0]||[]; OCUP={}; BLOQ={};
+    (Array.isArray(rs[2])?rs[2]:[]).forEach(function(b){
+      var x=(BLOQ[b.data]=BLOQ[b.data]||{todos:false,locais:[]});
+      if(!b.local) x.todos=true; else x.locais.push(b.local);
+    });
     (rs[1]||[]).forEach(function(o){
       (OCUP[o.data]=OCUP[o.data]||[]).push({inicio:hhmm(o.hora_inicio),fim:hhmm(o.hora_fim),tipo:o.tipo||'retorno'});
     });
@@ -775,11 +788,12 @@ function diasOfertados(modalidade){
     /* HAG_FERIADOS_v1 (14/09/2026): feriado não é oferecido. A Livance pode
        estar fechada, e o paciente que chega num prédio fechado já se deslocou
        e já mexeu na agenda dele: não tem conserto depois. */
-    if(iso>=minData && !S.ehFeriado(iso)){
+    if(iso>=minData && !S.ehFeriado(iso) && !_bloqueado(iso)){
       var dow=d.getDay();
       for(var i=0;i<REGRAS.length;i++){
         var rg=REGRAS[i];
         if(rg.dia_semana!==dow || rg.modalidade!==modalidade) continue;
+        if(_bloqueado(iso, rg.local)) continue; /* HAG_AGENDA_BLOQUEIO_v1 */
         /* HAG_DIAG_SINAL_v1: o tipo deixa de ser fixo. Diagnostica online usa
            o tipo proprio de 75 min, e nao o 'online' de 45 min do retorno. */
         var tipo = modalidade==='online'
@@ -1155,6 +1169,12 @@ function telaJaAgendado(){
   /* HAG_PLANO_NO_LINK_v1 */
   var _plTopo = (a.tipo!=='injetavel' && a.tipo!=='diagnostica')
       ? cartaoPlano(CTX.remarcacao && CTX.remarcacao.retorno ? CTX.remarcacao.retorno.id : null) : '';
+  /* HAG_AGENDA_BLOQUEIO_v1: o dia marcado foi fechado pelo consultorio */
+  if(CTX.remarcacao && CTX.remarcacao.dia_bloqueado){
+    _plTopo='<div class="aviso">O Dr. Henrique precisou reorganizar a agenda deste dia, e por isso esta '
+      +(a.tipo==='injetavel'?'aplicação':'consulta')+' vai mudar de data. Toque em <b>Preciso remarcar</b>, logo abaixo, e escolha o novo dia. '
+      +'O seu horário atual fica guardado até você confirmar o novo, e não há custo nenhum.</div>'+_plTopo;
+  }
   el(_plTopo+'<div class="cartao" style="text-align:center"><div class="ok-selo">✓</div>'
     +'<h2 style="text-align:center">Você já tem horário marcado</h2>'
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(a.data)+'</b></div>'
@@ -1276,7 +1296,8 @@ window.HAGpg={
     /* HAG_LINK_INJETAVEL_v1: remarcar uma aplicação não pode virar remarcar
        uma consulta. O tipo vem do que está marcado, e ele decide os 30 ou os
        60 minutos que a lista de horários vai respeitar. */
-    TIPOCON=(r.tipo==='injetavel')?'injetavel':'retorno';
+    TIPOCON=(r.tipo==='injetavel')?'injetavel'
+           :((r.tipo==='diagnostica'||r.tipo==='diagnostica_online')?'diagnostica':'retorno'); /* HAG_AGENDA_BLOQUEIO_v1 */
     tituloDaPagina();
     JANELA=S.diasElegiveis(ALVO, hojeSP(), {antes:7,depois:7});
     if(!JANELA || JANELA.situacao!=='aberta'){ telaForaDoPrazo(r); return; }
