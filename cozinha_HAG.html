@@ -220,16 +220,18 @@ async function rpc(nome,args){
   if(!r.ok) throw new Error('erro '+r.status);
   return r.json();
 }
-function aplicar(c){ COL=c; IDX={}; c.itens.forEach(function(i){IDX[i.id]=i}); }
+// Coleção sem nada aprovado chega com meta nula: nesse caso não há o que montar, e a página avisa em vez de quebrar.
+function aplicar(c){ if(!c||!c.meta||!Array.isArray(c.itens)||!c.itens.length){ COL=null; IDX={}; st.vazia=true; return false; } st.vazia=false; COL=c; IDX={}; c.itens.forEach(function(i){IDX[i.id]=i}); return true; }
 async function carregar(){
   var cache=ls.get('hagcozinha.col.indice');
-  if(cache&&cache.itens){ aplicar(cache); render(); }
-  var pf=carregarFotos();
+  if(cache&&cache.itens&&cache.meta){ try{ if(aplicar(cache)) render(); }catch(e){ COL=null; } }
+  var pf=carregarFotos(); st.carregandoIndice=true;
   try{
     var c=await rpc('hag_cozinha_colecao',{p_token:TOKEN});
     if(TOKEN&&!c.paciente){ st.linkInvalido=true; }
-    aplicar(c); ls.set('hagcozinha.col.indice',c); st.erro=null;
+    if(aplicar(c)) ls.set('hagcozinha.col.indice',c); st.erro=null;
   }catch(e){ if(!COL) st.erro='Não foi possível carregar a coleção. Confira a internet e tente de novo.'; }
+  st.carregandoIndice=false;
   await pf;
   var h=location.hash.slice(1); if(h&&IDX[h]&&!st.rec&&!st.guia) abrir(h); else render();
 }
@@ -387,7 +389,7 @@ function telaSobre(){
 function render(){
   document.querySelectorAll('nav.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===st.tab)});
   var n=$('#nlista'); n.hidden=!st.lista.length; n.textContent=st.lista.length;
-  if(!COL){ app.innerHTML='<div class="estado">'+esc(st.erro||'Carregando a coleção…')+'</div>'+(st.erro?'<button class="acao sec" id="tentar">Tentar de novo</button>':''); return; }
+  if(!COL){ app.innerHTML='<div class="estado">'+esc(st.erro||(st.vazia&&!st.carregandoIndice?'A coleção está sendo preparada. Volte em breve.':'Carregando a coleção…'))+'</div>'+(st.erro?'<button class="acao sec" id="tentar">Tentar de novo</button>':''); return; }
   if(st.tab==='lista') telaLista(); else if(st.tab==='sobre') telaSobre();
   else if(st.tab==='guias'){ if(st.guia) telaGuia(); else telaGuias(); }
   else if(st.rec) telaFicha(); else telaReceitas();
