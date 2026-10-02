@@ -144,6 +144,7 @@ ol.prep{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .busca{display:flex;gap:8px}
 .busca input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);padding:10px 12px;font-size:16px;border-radius:2px}
+.ilus{margin:6px 0 0;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#7a7f8c);text-align:right}
 .foto.vazia{border-style:solid;border-color:var(--line);font-family:var(--display);font-size:15px;letter-spacing:.2em;color:var(--gold-ui)}
 .card[aria-disabled="true"] .nm,.card[aria-disabled="true"] .res{opacity:.6}
 .cadeado{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--gold-ui);color:var(--gold);align-self:flex-start}
@@ -322,7 +323,7 @@ function telaFicha(){
   var h='<button class="voltar" id="voltar">&larr; '+esc(sit)+'</button><article class="ficha">';
   h+='<div class="so-print" style="font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase">Método HAG · Cozinha</div>';
   h+='<div class="cab"><h2>'+esc(r.nome)+(st.vari>=0?', '+esc(v.nome.replace(/^Destino \d: /,'')):'')+'</h2><p class="res">'+esc(st.vari<0?r.resumo:v.ideia)+'</p></div>';
-  h+='<div class="fotobox">'+fotoHTML(it||{},true)+'</div>';
+  h+='<div class="fotobox">'+fotoHTML(it||{},true)+(fotoDe(it||{},true)?'<p class="ilus">Imagem ilustrativa</p>':'')+'</div>';
   if(r.aviso) h+='<div class="avisobox">'+esc(r.aviso)+'</div>';
   if(r.var.length) h+='<div class="bloco nao-print"><h3>Uma base, '+(r.var.length+1)+' versões</h3><div class="seg">'+
      '<button aria-pressed="'+(st.vari<0)+'" data-vari="-1"><b>Receita base</b><span>'+fmt(r.n.kcal.v)+' kcal · '+fmt(r.n.ptn.v)+' g de proteína</span></button>'+
