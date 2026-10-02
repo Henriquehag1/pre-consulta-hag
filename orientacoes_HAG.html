@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Orientações · Método HAG</title>
+<!-- HAG_ORIENTACOES_v1 (02/10/2026)
+     Página do paciente. Abre só pelo link pessoal (?t=), o mesmo da Cozinha. Mostra apenas as folhas que o médico
+     aprovou e liberou para aquele paciente. Sem login, sem nome, sem dado cadastral. Nada fica guardado no aparelho
+     além do próprio link. Sem IA. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#F6F4EF;--surface:#FFFFFF;--cream:#FAF7F1;--ink:#1B2745;--ink-2:#4A5568;--muted:#6F7585;--line:#E3DED3;--gold:#9C7A36;--gold-ui:#B8924A;--navy:#1B2745;--on-navy:#F4EEDF;
+  --warn:#A86A12;--warn-bg:#F7EDDC;--btn:#1B2745;--on-btn:#F4EEDF;
+  --display:"Caladea",Georgia,serif;--body:"Carlito","Lato","Helvetica Neue",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#141B2E;--surface:#1C2540;--cream:#222C4A;--ink:#F1ECDF;--ink-2:#C9CBD6;--muted:#9AA0B4;--line:#2F3A5C;--gold:#D7B56D;--gold-ui:#C9A45A;--navy:#0F1526;--on-navy:#F4EEDF;--warn:#E8B45E;--warn-bg:#3A2F1A;--btn:#D7B56D;--on-btn:#141B2E}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold-ui);outline-offset:2px}
+header.top{background:var(--navy);color:var(--on-navy);padding:16px 20px}
+header.top .in,main{max-width:680px;margin:0 auto}
+.brand{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-ui)}
+h1{font-family:var(--display);font-size:26px;margin:2px 0 0}
+main{padding:18px 16px 80px;display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--display);font-size:22px;margin:10px 0 0;line-height:1.2}
+h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;font-weight:500}
+p{margin:0}
+.note{font-size:14.5px;color:var(--ink-2)}
+.estado{background:var(--surface);border:1px dashed var(--line);padding:16px;color:var(--ink-2)}
+.cartao{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);padding:14px 16px}
+.cartao .nm{font-family:var(--display);font-size:19px;font-weight:700;line-height:1.2}
+.cartao .rs{font-size:15px;color:var(--ink-2)}
+.novo{align-self:flex-start;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--gold-ui);color:var(--gold)}
+.voltar{align-self:flex-start;background:none;border:0;padding:6px 0;color:var(--gold);font-weight:700}
+.folha{background:var(--surface);border:1px solid var(--line);padding:18px 18px 20px;display:flex;flex-direction:column;gap:16px}
+.folha h2{margin:0;font-size:25px}
+.folha .res{font-size:17.5px;color:var(--ink-2)}
+.bloco ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px}
+.alerta{background:var(--warn-bg);border-left:3px solid var(--warn);padding:12px 14px}
+.alerta h3{color:var(--warn)}
+.alerta ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px}
+.links{display:flex;flex-direction:column;gap:6px}
+.links a{color:var(--ink);font-weight:700}
+.pe{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.acao{background:var(--btn);color:var(--on-btn);border:0;padding:11px 14px;font-weight:700;align-self:flex-start}
+.acao.sec{background:none;color:var(--ink);border:1px solid var(--ink);font-weight:400;text-decoration:none;display:inline-block}
+.so-print{display:none}
+@media print{
+  header.top,.voltar,.acao,.nao-print{display:none!important}
+  body{background:#fff;color:#000;font-size:11.5pt}
+  main{padding:0;max-width:none}
+  .folha{border:0;padding:0}
+  .so-print{display:block}
+  .alerta{background:none;border:1px solid #999;border-left:3px solid #000}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><div class="brand">Método HAG</div><h1>Suas orientações</h1></div></header>
+<main id="app"><div class="estado">Abrindo…</div></main>
+<script>
+(function(){
+"use strict";
+var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co', SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+var app=document.getElementById('app');
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var ls={get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+// O link pessoal é o mesmo da Cozinha: quem já abriu a Cozinha por ele não precisa do link de novo.
+var qs=new URLSearchParams(location.search), TOKEN=qs.get('t')||ls.get('hagcozinha.col.token')||null;
+if(qs.get('t')) ls.set('hagcozinha.col.token',qs.get('t'));
+var COZ='cozinha_HAG.html'+(TOKEN?'?t='+encodeURIComponent(TOKEN):'');
+var st={itens:[],meta:null,aberta:null,estado:'carregando'};
+
+async function rpc(nome,args){
+  var r=await fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  if(!r.ok) throw new Error('erro '+r.status); return r.json(); }
+function nomeGrupo(g){ var x=((st.meta&&st.meta.grupos)||[]).filter(function(s){return s.id===g})[0]; return x?x.nome:''; }
+
+function telaLista(){
+  var h='<p class="note">Estas orientações foram escolhidas pelo Dr. Henrique para o seu acompanhamento. Leia com calma e anote as dúvidas para a consulta.</p>';
+  var grupos=((st.meta&&st.meta.grupos)||[]).map(function(g){return g.id}); st.itens.forEach(function(i){ if(grupos.indexOf(i.grupo)<0) grupos.push(i.grupo); });
+  grupos.forEach(function(g){ var l=st.itens.filter(function(i){return i.grupo===g}); if(!l.length) return;
+    if(nomeGrupo(g)) h+='<h2>'+esc(nomeGrupo(g))+'</h2>';
+    l.forEach(function(i){ h+='<button class="cartao" data-abrir="'+esc(i.id)+'">'+(i.novo?'<span class="novo">nova</span>':'')+'<span class="nm">'+esc(i.nome)+'</span><span class="rs">'+esc(i.resumo)+'</span></button>'; }); });
+  h+='<a class="acao sec" href="'+esc(COZ)+'">Abrir a Cozinha: receitas e guias</a>';
+  return h; }
+function telaFolha(){
+  var i=st.itens.filter(function(x){return x.id===st.aberta})[0]; if(!i){ st.aberta=null; return telaLista(); }
+  var d=i.dados||{}, h='<button class="voltar" id="voltar">&larr; Suas orientações</button><article class="folha">';
+  h+='<div class="so-print" style="font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase">Método HAG · Orientações</div>';
+  h+='<div><h2>'+esc(i.nome)+'</h2><p class="res">'+esc(i.resumo)+'</p></div>';
+  (d.blocos||[]).forEach(function(b){ h+='<div class="bloco"><h3>'+esc(b.t)+'</h3><ul>'+b.itens.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>'; });
+  if((d.alerta||[]).length) h+='<div class="alerta"><h3>Quando avisar o consultório</h3><ul>'+d.alerta.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>';
+  if((d.cozinha||[]).length) h+='<div class="bloco nao-print"><h3>Na Cozinha do Método HAG</h3><div class="links">'+d.cozinha.map(function(c){return '<a href="'+esc(COZ)+'#'+encodeURIComponent(c.id)+'">'+esc(c.nome)+'</a>'}).join('')+'</div></div>';
+  h+='<p class="pe">Orientação liberada para você pelo Dr. Henrique Alves Gonzaga, CRM/SP 226530, como parte do seu acompanhamento no Método HAG. Não substitui a consulta e não altera a sua receita. Em caso de dúvida sobre sintomas ou medicação, fale com o consultório.</p>';
+  h+='<button class="acao" id="imprimir">Salvar em PDF ou imprimir</button></article>';
+  return h; }
+function render(){
+  if(st.estado==='carregando'){ app.innerHTML='<div class="estado">Abrindo as suas orientações…</div>'; return; }
+  if(st.estado==='semlink'){ app.innerHTML='<div class="estado">Esta página abre pelo seu link pessoal, enviado pelo consultório. Se você não tem o link ou ele parou de funcionar, peça um novo pelo WhatsApp do consultório.</div>'; return; }
+  if(st.estado==='erro'){ app.innerHTML='<div class="estado">Não foi possível abrir agora. Confira a internet e tente de novo.</div><button class="acao sec" id="tentar">Tentar de novo</button>'; return; }
+  if(!st.itens.length){ app.innerHTML='<div class="estado">Ainda não há orientações liberadas para você. Quando o Dr. Henrique liberar, elas aparecem aqui.</div><a class="acao sec" href="'+esc(COZ)+'">Abrir a Cozinha: receitas e guias</a>'; return; }
+  app.innerHTML=st.aberta?telaFolha():telaLista(); window.scrollTo(0,0);
+}
+function abrir(id){ st.aberta=id; try{ history.replaceState(null,'','#'+id); }catch(e){} render();
+  var i=st.itens.filter(function(x){return x.id===id})[0]; if(i&&i.novo){ i.novo=false; rpc('hag_orientacao_vista',{p_token:TOKEN,p_id:id}).catch(function(){}); } }
+async function carregar(){
+  if(!TOKEN){ st.estado='semlink'; return render(); }
+  st.estado='carregando'; render();
+  try{ var r=await rpc('hag_orientacoes_paciente',{p_token:TOKEN});
+    if(!r||!r.ok){ st.estado='semlink'; return render(); }
+    st.itens=r.itens||[]; st.meta=r.meta||null; st.estado='ok';
+    var h=decodeURIComponent(location.hash.slice(1)); if(h&&st.itens.some(function(x){return x.id===h})) return abrir(h);
+    render();
+  }catch(e){ st.estado='erro'; render(); }
+}
+app.addEventListener('click',function(e){
+  var t=e.target.closest('[data-abrir]'); if(t) return abrir(t.dataset.abrir);
+  if(e.target.id==='voltar'){ st.aberta=null; try{ history.replaceState(null,'',location.pathname+location.search); }catch(er){} return render(); }
+  if(e.target.id==='imprimir') return window.print();
+  if(e.target.id==='tentar') return carregar();
+});
+carregar();
+})();
+</script>
+</body>
+</html>

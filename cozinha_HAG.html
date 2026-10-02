@@ -144,6 +144,9 @@ ol.prep{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .busca{display:flex;gap:8px}
 .busca input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);padding:10px 12px;font-size:16px;border-radius:2px}
+.orib{display:flex;flex-direction:column;gap:2px;background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);padding:12px 14px;text-decoration:none;border-left:3px solid var(--gold-ui)}
+.orib b{font-family:var(--display);font-size:18px}
+.orib span{font-size:14.5px}
 .ilus{margin:6px 0 0;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#7a7f8c);text-align:right}
 .foto.vazia{border-style:solid;border-color:var(--line);font-family:var(--display);font-size:15px;letter-spacing:.2em;color:var(--gold-ui)}
 .card[aria-disabled="true"] .nm,.card[aria-disabled="true"] .res{opacity:.6}
@@ -230,6 +233,8 @@ async function carregar(){
   try{
     var c=await rpc('hag_cozinha_colecao',{p_token:TOKEN});
     if(TOKEN&&!c.paciente){ st.linkInvalido=true; }
+    // Orientações liberadas pelo médico para este paciente: só o aviso de que existem. O conteúdo fica na página própria.
+    if(TOKEN&&c.paciente) rpc('hag_orientacoes_paciente',{p_token:TOKEN}).then(function(o){ if(o&&o.ok&&o.itens&&o.itens.length){ st.ori={n:o.itens.length,novas:o.itens.filter(function(x){return x.novo}).length}; if(!st.rec&&!st.guia) render(); } }).catch(function(){});
     if(aplicar(c)) ls.set('hagcozinha.col.indice',c); st.erro=null;
   }catch(e){ if(!COL) st.erro='Não foi possível carregar a coleção. Confira a internet e tente de novo.'; }
   st.carregandoIndice=false;
@@ -263,6 +268,7 @@ function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ
 function telaReceitas(){
   var M=COL.meta, rs=COL.itens.filter(function(i){return i.tipo==='receita'}), q=norm(st.q.trim());
   var h='';
+  if(st.ori) h+='<a class="orib" href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'"><b>Suas orientações</b><span>'+(st.ori.novas?st.ori.novas+(st.ori.novas===1?' nova':' novas')+' do Dr. Henrique para você':st.ori.n+(st.ori.n===1?' orientação':' orientações')+' do Dr. Henrique para você')+' &rarr;</span></a>';
   if(st.linkInvalido) h+='<div class="aviso">Este link pessoal não está mais ativo. Você continua vendo a parte aberta. Peça um link novo à equipe do consultório.</div>';
   h+='<div class="busca"><input type="search" id="busca" placeholder="Buscar: frango, 10 minutos, doce…" value="'+esc(st.q)+'" autocomplete="off"></div>';
   h+='<div class="sits" role="group" aria-label="Situação"><button aria-pressed="'+(st.sit==='todas')+'" data-sit="todas">Todas</button>'+M.situacoes.map(function(s){return '<button aria-pressed="'+(st.sit===s.id)+'" data-sit="'+s.id+'">'+esc(s.nome)+'</button>'}).join('')+'</div>';

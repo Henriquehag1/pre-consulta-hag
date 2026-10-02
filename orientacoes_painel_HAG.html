@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Orientações · painel</title>
+<!-- HAG_ORIENTACOES_v1 (02/10/2026)
+     Painel das orientações por condição. Exige login da equipe: as duas linhas abaixo ficam ANTES de qualquer chamada,
+     o hag_auth.js remenda o fetch e injeta o token. Aqui o médico importa as folhas, lê, aprova uma a uma e libera para
+     cada paciente. Nada chega ao paciente sem a aprovação da folha E a liberação para ele. Sem IA. -->
+<script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
+<script src="hag_auth.js?v=20260922-1750"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#F6F4EF;--surface:#FFFFFF;--cream:#FAF7F1;--ink:#1B2745;--ink-2:#4A5568;--muted:#6F7585;--line:#E3DED3;--gold:#9C7A36;--gold-ui:#B8924A;--gold-soft:#EFE3C8;--navy:#1B2745;--on-navy:#F4EEDF;
+  --good:#2F7D5B;--warn:#A86A12;--crit:#B4413A;--good-bg:#E4F1EA;--warn-bg:#F7EDDC;--crit-bg:#F6E3E1;--btn:#1B2745;--on-btn:#F4EEDF;
+  --display:"Caladea",Georgia,serif;--body:"Carlito","Lato","Helvetica Neue",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold-ui);outline-offset:2px}
+header.top{background:var(--navy);color:var(--on-navy);padding:14px 20px}
+header.top .in,main{max-width:980px;margin:0 auto}
+.brand{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-ui)}
+h1{font-family:var(--display);font-size:24px;margin:2px 0 0}
+main{padding:18px 20px 80px;display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-size:21px;margin:0}
+h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+p{margin:0}
+.note{font-size:14px;color:var(--ink-2)}
+.card{background:var(--surface);border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--btn);color:var(--on-btn);border:0;padding:10px 14px;font-weight:700}
+.btn.sec{background:none;color:var(--ink);border:1px solid var(--ink);font-weight:400}
+.btn.peq{padding:6px 10px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:default}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);padding:10px 12px}
+.kpi b{display:block;font-family:var(--display);font-size:26px;line-height:1.1}
+.kpi span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.msg{background:var(--good-bg);border-left:3px solid var(--good);padding:8px 12px}
+.erro{background:var(--crit-bg);border-left:3px solid var(--crit);padding:8px 12px}
+.aviso{background:var(--warn-bg);border-left:3px solid var(--warn);padding:8px 12px;font-size:14.5px}
+.filtros button{background:var(--surface);border:1px solid var(--line);padding:6px 10px;font-size:14.5px}
+.filtros button[aria-pressed="true"]{background:var(--btn);color:var(--on-btn);border-color:var(--btn)}
+.grp{display:flex;flex-direction:column;gap:6px}
+.it{display:grid;grid-template-columns:1fr auto;gap:12px;background:var(--surface);border:1px solid var(--line);padding:10px 12px;align-items:start}
+.it.pend{border-left:3px solid var(--warn)}
+.it .tx{min-width:0;display:flex;flex-direction:column;gap:3px}
+.it .nm{font-family:var(--display);font-size:17px;font-weight:700;line-height:1.2}
+.it .rs{font-size:13.5px;color:var(--ink-2)}
+.it .mt{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.it .ac{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:150px}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--line);color:var(--muted)}
+.tag.ok{border-color:var(--good);color:var(--good)} .tag.pd{border-color:var(--warn);color:var(--warn)} .tag.sg{border-color:var(--gold-ui);color:var(--gold)}
+.prev{grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px;font-size:14.5px}
+.prev ul{margin:0;padding-left:20px}
+.lib{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--line)}
+.lib:last-child{border-bottom:0}
+.lib input{width:20px;height:20px;margin-top:2px}
+.lib .nm{font-weight:700}
+textarea{width:100%;min-height:96px;border:1px solid var(--line);padding:10px;font:inherit;background:var(--cream)}
+select,input[type=text]{border:1px solid var(--line);padding:8px 10px;background:var(--surface);min-width:0}
+table.res{border-collapse:collapse;width:100%;font-size:14.5px}
+table.res td,table.res th{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}
+table.res th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+@media (max-width:640px){.it{grid-template-columns:1fr}.it .ac{flex-direction:row;flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><div class="brand">Método HAG · equipe</div><h1>Orientações por condição</h1></div></header>
+<main id="main"><div class="card">Abrindo…</div></main>
+<script>
+(function(){
+"use strict";
+var SURL=window.SUPA_URL, SKEY=window.SUPA_KEY, Auth=window.HAGAuth||{};
+var APP=location.href.replace(/[^\/]*$/,'')+'orientacoes_HAG.html';
+var main=document.getElementById('main');
+function hd(extra){ var t=(Auth.token&&Auth.token())||SKEY; return Object.assign({'apikey':SKEY,'Authorization':'Bearer '+t,'Content-Type':'application/json'},extra||{}); }
+async function api(path,opt){ opt=opt||{}; var r=await fetch(SURL+'/rest/v1/'+path,{method:opt.method||'GET',headers:hd(opt.prefer?{'Prefer':opt.prefer}:null),body:opt.body?JSON.stringify(opt.body):undefined});
+  if(!r.ok){ var m='erro '+r.status; try{ var j=await r.json(); m=j.message||j.hint||m; }catch(e){} throw new Error(m); }
+  var t=await r.text(); return t?JSON.parse(t):null; }
+var rpc=function(n,a){return api('rpc/'+n,{method:'POST',body:a})};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var dataBR=function(s){ if(!s) return ''; var d=new Date(s); return isNaN(d)?'':d.toLocaleDateString('pt-BR'); };
+
+var D={itens:[],meta:null,pacientes:[],lib:[]};
+var S={filtro:'pendentes',aberto:null,msg:null,erro:null,ocupado:false,imp:null,link:null,
+       pid:new URLSearchParams(location.search).get('p')||'',pcids:[],pmeds:[],pcarregado:''};
+
+async function carregar(){
+  var r=await Promise.all([api('orientacoes?select=id,grupo,ordem,nome,resumo,dados,cids,meds,interna,aprovado,aprovado_em&order=ordem,id'),
+    api('orientacoes_meta?id=eq.1&select=dados'), api('patients?select=id,nome,status,interno&order=nome'),
+    api('orientacoes_paciente?select=patient_id,orientacao_id,liberado_em,visto_em')]);
+  D.itens=r[0]||[]; D.meta=(r[1]&&r[1][0]&&r[1][0].dados)||null; D.pacientes=r[2]||[]; D.lib=r[3]||[];
+}
+// CIDs ativos e medicações em uso do paciente escolhido: servem só para SUGERIR folhas. A escolha é do médico.
+async function carregarPaciente(){
+  S.pcids=[]; S.pmeds=[]; S.pcarregado=S.pid; if(!S.pid) return;
+  try{ var p=await api('patients?id=eq.'+encodeURIComponent(S.pid)+'&select=cids');
+    var c=(p&&p[0]&&Array.isArray(p[0].cids))?p[0].cids:[];
+    S.pcids=c.filter(function(x){return x&&x.codigo&&x.ativo!==false}).map(function(x){return String(x.codigo).toUpperCase()}); }catch(e){}
+  try{ var m=await api('hag_medicacoes_receitadas?patient_id=eq.'+encodeURIComponent(S.pid)+'&select=chave,situacao');
+    var vistos={}; (m||[]).forEach(function(x){ if(x.chave&&x.situacao!=='encerrada'&&x.situacao!=='substituida') vistos[String(x.chave).toLowerCase()]=1; });
+    S.pmeds=Object.keys(vistos); }catch(e){}
+}
+function nomeGrupo(g){ var x=((D.meta&&D.meta.grupos)||[]).filter(function(s){return s.id===g})[0]; return x?x.nome:g; }
+function ordemGrupos(){ var l=((D.meta&&D.meta.grupos)||[]).map(function(s){return s.id}); D.itens.forEach(function(i){ if(l.indexOf(i.grupo)<0) l.push(i.grupo); }); return l; }
+function visiveis(){ return D.itens.filter(function(i){ return S.filtro==='todos'||(S.filtro==='pendentes'&&!i.aprovado)||(S.filtro==='aprovados'&&i.aprovado); }); }
+function motivos(i){ var m=[];
+  (i.cids||[]).forEach(function(c){ var C=String(c).toUpperCase(); if(S.pcids.some(function(p){return p===C||p.indexOf(C)===0})) m.push(C); });
+  (i.meds||[]).forEach(function(k){ if(S.pmeds.indexOf(String(k).toLowerCase())>=0) m.push(k); });
+  return m; }
+function libDe(pid,oid){ return D.lib.filter(function(l){return l.patient_id===pid&&l.orientacao_id===oid})[0]; }
+
+function previa(i){ var d=i.dados||{}, h='<div class="prev">';
+  if(i.interna) h+='<div class="aviso"><b>Nota para o médico:</b> '+esc(i.interna)+'</div>';
+  h+=(d.blocos||[]).map(function(b){return '<div><b>'+esc(b.t)+'</b><ul>'+b.itens.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>'}).join('');
+  if((d.alerta||[]).length) h+='<div><b>Quando avisar o consultório</b><ul>'+d.alerta.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>';
+  if((d.cozinha||[]).length) h+='<p class="note"><b>Aponta para a Cozinha:</b> '+d.cozinha.map(function(c){return esc(c.nome)}).join('; ')+'</p>';
+  h+='<p class="note"><b>Sugerida para:</b> CID '+esc((i.cids||[]).join(', ')||'nenhum')+' · medicação '+esc((i.meds||[]).join(', ')||'nenhuma')+'</p>';
+  h+='<div class="row"><button class="btn peq'+(i.aprovado?' sec':'')+'" data-a="aprovar" data-v="'+i.id+'">'+(i.aprovado?'Retirar a aprovação':'Li e aprovo esta folha')+'</button></div>';
+  return h+'</div>'; }
+
+function render(){
+  var ap=D.itens.filter(function(i){return i.aprovado}).length, pacs={}; D.lib.forEach(function(l){pacs[l.patient_id]=1});
+  var naoVistas=D.lib.filter(function(l){return !l.visto_em}).length;
+  var h='';
+  if(S.msg) h+='<div class="msg">'+esc(S.msg)+'</div>';
+  if(S.erro) h+='<div class="erro">'+esc(S.erro)+'</div>';
+  h+='<div class="kpis"><div class="kpi"><b>'+D.itens.length+'</b><span>folhas</span></div><div class="kpi"><b>'+ap+'</b><span>aprovadas</span></div><div class="kpi"><b>'+(D.itens.length-ap)+'</b><span>a aprovar</span></div><div class="kpi"><b>'+Object.keys(pacs).length+'</b><span>pacientes com folhas</span></div><div class="kpi"><b>'+D.lib.length+'</b><span>liberações</span></div><div class="kpi"><b>'+naoVistas+'</b><span>ainda não lidas</span></div></div>';
+
+  h+='<div class="card"><h3>1. Trazer as folhas</h3><p class="note">Escolha o arquivo <b>orientacoes.json</b> (pasta Scripts/HAG/hag_orientacoes). Folha nova entra como "a aprovar". Folha que mudou de texto perde a aprovação e some do paciente até você aprovar de novo.</p><div class="row"><input type="file" id="arq" accept=".json,application/json"><button class="btn" data-a="importar" '+(S.ocupado?'disabled':'')+'>Importar</button></div>'+(S.imp?'<p class="note">'+esc(S.imp)+'</p>':'')+'</div>';
+
+  h+='<div class="card"><h3>2. Ler e aprovar</h3><p class="note">São orientações de conduta: cada folha é lida e aprovada uma a uma. Aprovar não envia nada a ninguém; só torna a folha disponível para liberação.</p><div class="row filtros">'+
+     [['pendentes','A aprovar'],['aprovados','Aprovadas'],['todos','Todas']].map(function(x){return '<button data-a="filtro" data-v="'+x[0]+'" aria-pressed="'+(S.filtro===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  var vis=visiveis();
+  if(!D.itens.length) h+='<p class="note">Ainda não há folhas. Importe o arquivo no passo 1.</p>';
+  else if(!vis.length) h+='<p class="note">Nada nesta lista.</p>';
+  ordemGrupos().forEach(function(g){
+    var l=vis.filter(function(i){return i.grupo===g}); if(!l.length) return;
+    h+='<div class="grp"><h2>'+esc(nomeGrupo(g))+' <span class="note">('+l.length+')</span></h2>';
+    l.forEach(function(i){ var n=D.lib.filter(function(x){return x.orientacao_id===i.id}).length;
+      h+='<div class="it '+(i.aprovado?'':'pend')+'"><div class="tx"><span class="nm">'+esc(i.nome)+'</span><span class="rs">'+esc(i.resumo)+'</span>'+
+         '<span class="row"><span class="tag '+(i.aprovado?'ok':'pd')+'">'+(i.aprovado?'aprovada'+(i.aprovado_em?' em '+dataBR(i.aprovado_em):''):'a aprovar')+'</span>'+(n?'<span class="tag">'+n+' paciente'+(n>1?'s':'')+'</span>':'')+'</span></div>'+
+         '<div class="ac"><button class="btn peq'+(S.aberto===i.id?' sec':'')+'" data-a="ver" data-v="'+i.id+'">'+(S.aberto===i.id?'Fechar':'Ler a folha')+'</button></div>'+
+         (S.aberto===i.id?previa(i):'')+'</div>'; });
+    h+='</div>'; });
+  h+='</div>';
+
+  h+='<div class="card"><h3>3. Liberar para o paciente</h3><p class="note">O paciente só vê as folhas marcadas aqui, e só as aprovadas. As sugestões vêm dos CIDs ativos e das medicações em uso; a escolha é sua.</p><div class="row"><select id="pac"><option value="">Escolha o paciente</option>'+
+     D.pacientes.map(function(p){return '<option value="'+esc(p.id)+'" '+(S.pid===p.id?'selected':'')+'>'+esc(p.nome)+(p.interno?' (interno)':'')+'</option>'}).join('')+'</select></div>';
+  if(S.pid){
+    var aprov=D.itens.filter(function(i){return i.aprovado}), sug=aprov.filter(function(i){return motivos(i).length&&!libDe(S.pid,i.id)});
+    if(!aprov.length) h+='<p class="note">Nenhuma folha aprovada ainda. Aprove no passo 2.</p>';
+    else{
+      h+='<p class="note">CIDs ativos: '+esc(S.pcids.join(', ')||'nenhum registrado')+' · em uso: '+esc(S.pmeds.join(', ')||'nada registrado')+'</p>';
+      if(sug.length) h+='<div class="row"><button class="btn" data-a="liberarsug" '+(S.ocupado?'disabled':'')+'>Liberar as '+sug.length+' sugeridas</button></div>';
+      ordemGrupos().forEach(function(g){ var l=aprov.filter(function(i){return i.grupo===g}); if(!l.length) return;
+        h+='<div><b>'+esc(nomeGrupo(g))+'</b>';
+        l.forEach(function(i){ var lb=libDe(S.pid,i.id), m=motivos(i);
+          h+='<label class="lib"><input type="checkbox" data-lib="'+i.id+'" '+(lb?'checked':'')+' '+(S.ocupado?'disabled':'')+'><span><span class="nm">'+esc(i.nome)+'</span>'+(m.length?' <span class="tag sg">sugerida: '+esc(m.join(', '))+'</span>':'')+'</span>'+
+             '<span class="note">'+(lb?(lb.visto_em?'lida em '+dataBR(lb.visto_em):'liberada em '+dataBR(lb.liberado_em)+', não lida'):'')+'</span></label>'; });
+        h+='</div>'; });
+      var pend=D.itens.filter(function(i){return !i.aprovado&&motivos(i).length});
+      if(pend.length) h+='<p class="note">Combinariam com este paciente, mas ainda não foram aprovadas: '+esc(pend.map(function(i){return i.nome}).join('; '))+'.</p>';
+      var qt=D.lib.filter(function(l){return l.patient_id===S.pid}).length;
+      h+='<div class="row"><button class="btn sec" data-a="gerarlink" '+(qt?'':'disabled')+'>Gerar o link e a mensagem</button><span class="note">'+qt+' folha'+(qt===1?'':'s')+' liberada'+(qt===1?'':'s')+'.</span></div>';
+      if(S.link){ var p=D.pacientes.filter(function(x){return x.id===S.pid})[0]||{}, pn=String(p.nome||'').split(' ')[0];
+        h+='<p class="note">Link de '+esc(p.nome||'')+' (é o mesmo link pessoal da Cozinha):</p><textarea id="linktxt" readonly>'+esc(S.link)+'</textarea>'+
+           '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique deixou orientações para você no seu espaço do Método HAG. O link é pessoal:\n\n'+esc(S.link)+'\n\nDá para salvar na tela inicial do celular. Qualquer dúvida sobre o conteúdo, é só anotar para a próxima consulta.</textarea>'+
+           '<div class="row"><button class="btn sec" data-a="copiar" data-v="linktxt">Copiar o link</button><button class="btn sec" data-a="copiar" data-v="msgtxt">Copiar a mensagem</button></div>'; }
+    }
+  }
+  h+='</div>';
+
+  var linhas=Object.keys(pacs).map(function(pid){ var p=D.pacientes.filter(function(x){return x.id===pid})[0]||{nome:pid}, l=D.lib.filter(function(x){return x.patient_id===pid});
+    return {pid:pid,nome:p.nome,n:l.length,nv:l.filter(function(x){return !x.visto_em}).length}; }).sort(function(a,b){return String(a.nome).localeCompare(String(b.nome))});
+  if(linhas.length) h+='<div class="card"><h3>Quem recebeu</h3><table class="res"><tr><th>Paciente</th><th>Folhas</th><th>Não lidas</th><th></th></tr>'+
+     linhas.map(function(x){return '<tr><td>'+esc(x.nome)+'</td><td>'+x.n+'</td><td>'+x.nv+'</td><td><button class="btn peq sec" data-a="abrirpac" data-v="'+esc(x.pid)+'">Abrir</button></td></tr>'}).join('')+'</table></div>';
+
+  h+='<div class="card"><h3>Atalhos</h3><div class="row"><a class="btn sec" style="text-decoration:none" href="cozinha_painel_HAG.html'+(S.pid?'?p='+encodeURIComponent(S.pid):'')+'">Painel da Cozinha</a></div></div>';
+  main.innerHTML=h;
+}
+
+async function tentar(fn){ S.erro=null; S.ocupado=true; try{ await fn(); }catch(e){ S.erro='Não deu certo: '+e.message+'. Se a sessão expirou, recarregue a página e entre de novo.'; } S.ocupado=false; render(); }
+async function liberar(oid){ var r=await api('orientacoes_paciente',{method:'POST',prefer:'return=representation,resolution=ignore-duplicates',body:{patient_id:S.pid,orientacao_id:oid}});
+  if(!libDe(S.pid,oid)) D.lib.push((r&&r[0])||{patient_id:S.pid,orientacao_id:oid,liberado_em:new Date().toISOString(),visto_em:null}); }
+async function retirar(oid){ await api('orientacoes_paciente?patient_id=eq.'+encodeURIComponent(S.pid)+'&orientacao_id=eq.'+encodeURIComponent(oid),{method:'DELETE'});
+  D.lib=D.lib.filter(function(l){return !(l.patient_id===S.pid&&l.orientacao_id===oid)}); }
+
+main.addEventListener('click',function(e){
+  var t=e.target.closest('[data-a]'); if(!t) return; var a=t.dataset.a, v=t.dataset.v; S.msg=null;
+  if(a==='filtro'){ S.filtro=v; S.aberto=null; return render(); }
+  if(a==='ver'){ S.aberto=(S.aberto===v?null:v); return render(); }
+  if(a==='aprovar') return tentar(async function(){ var i=D.itens.filter(function(x){return x.id===v})[0], novo=!i.aprovado, agora=new Date().toISOString();
+    await api('orientacoes?id=eq.'+encodeURIComponent(v),{method:'PATCH',body:{aprovado:novo,aprovado_em:novo?agora:null,atualizado_em:agora}});
+    i.aprovado=novo; i.aprovado_em=novo?agora:null; S.msg=novo?'Folha aprovada. Já pode ser liberada para pacientes.':'Aprovação retirada. A folha deixou de aparecer para quem a tinha.'; });
+  if(a==='importar'){ var f=document.getElementById('arq').files[0]; if(!f){ S.erro='Escolha o arquivo orientacoes.json antes.'; return render(); }
+    return tentar(async function(){ var c=JSON.parse(await f.text()); if(!c||!Array.isArray(c.itens)||!c.meta||!c.meta.grupos||!c.itens.every(function(x){return /^ori-/.test(x.id)})) throw new Error('este arquivo não é o das orientações');
+      var tot={novos:0,alterados:0,iguais:0};
+      for(var k=0;k<c.itens.length;k+=10){ S.imp='Importando '+Math.min(k+10,c.itens.length)+' de '+c.itens.length+'…'; render();
+        var r=await rpc('hag_orientacoes_importar',{p_itens:c.itens.slice(k,k+10),p_meta:k===0?c.meta:null}); tot.novos+=r.novos; tot.alterados+=r.alterados; tot.iguais+=r.iguais; }
+      await carregar(); S.imp=null; S.msg='Importado: '+tot.novos+' novas, '+tot.alterados+' alteradas (perderam a aprovação), '+tot.iguais+' sem mudança.'; }); }
+  if(a==='liberarsug') return tentar(async function(){ var l=D.itens.filter(function(i){return i.aprovado&&motivos(i).length&&!libDe(S.pid,i.id)});
+    for(var k=0;k<l.length;k++) await liberar(l[k].id); S.msg=l.length+' folhas liberadas.'; });
+  if(a==='gerarlink') return tentar(async function(){ var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; });
+  if(a==='abrirpac'){ S.pid=v; S.link=null; return tentar(carregarPaciente); }
+  if(a==='copiar'){ var el=document.getElementById(v); el.select(); try{ navigator.clipboard.writeText(el.value).then(function(){ S.msg='Copiado.'; render(); },function(){}); }catch(er){} return; }
+});
+main.addEventListener('change',function(e){
+  var t=e.target; S.msg=null;
+  if(t.id==='pac'){ S.pid=t.value; S.link=null; return tentar(carregarPaciente); }
+  if(t.dataset&&t.dataset.lib){ var oid=t.dataset.lib, marcar=t.checked;
+    return tentar(async function(){ if(marcar) await liberar(oid); else await retirar(oid); S.link=null; }); }
+});
+
+async function boot(){
+  for(var k=0;k<8 && !(Auth.valid&&Auth.valid());k++) await new Promise(function(r){setTimeout(r,400)});
+  if(!(Auth.valid&&Auth.valid())){ main.innerHTML='<div class="card"><h2>Acesso restrito à equipe</h2><p class="note">Faça login para abrir o painel. Se a tela de login não apareceu, recarregue a página.</p></div>'; return; }
+  try{ await carregar(); if(S.pid) await carregarPaciente(); if(D.itens.length && !D.itens.some(function(i){return !i.aprovado})) S.filtro='todos'; render(); }
+  catch(e){ main.innerHTML='<div class="erro">Não foi possível carregar: '+esc(e.message)+'. Se a sessão expirou, recarregue a página e entre de novo.</div>'; }
+}
+boot();
+})();
+</script>
+</body>
+</html>

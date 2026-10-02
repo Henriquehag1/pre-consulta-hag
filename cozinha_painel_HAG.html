@@ -155,7 +155,7 @@ function render(){
        '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique liberou para você o acesso à Cozinha do Método HAG: receitas e guias práticos para o dia a dia, com as porções e os números de cada uma. O link é pessoal:\n\n'+esc(S.link)+'\n\nDá para salvar na tela inicial do celular e abrir sempre que precisar.</textarea>'+
        '<div class="row"><button class="btn sec" data-a="copiar" data-v="linktxt">Copiar o link</button><button class="btn sec" data-a="copiar" data-v="msgtxt">Copiar a mensagem</button></div>'; }
   h+='</div>';
-  h+='<div class="card"><h3>Atalhos</h3><div class="row"><a class="btn sec" style="text-decoration:none" href="cozinha_HAG.html" target="_blank" rel="noopener">Abrir a coleção como o público vê</a><a class="btn sec" style="text-decoration:none" href="cozinha_plano_painel_HAG.html">Painel do plano (estacionado)</a></div></div>';
+  h+='<div class="card"><h3>Atalhos</h3><div class="row"><a class="btn sec" style="text-decoration:none" href="cozinha_HAG.html" target="_blank" rel="noopener">Abrir a coleção como o público vê</a><a class="btn sec" style="text-decoration:none" href="orientacoes_painel_HAG.html'+(S.pid?'?p='+encodeURIComponent(S.pid):'')+'">Orientações por condição</a><a class="btn sec" style="text-decoration:none" href="cozinha_plano_painel_HAG.html">Painel do plano (estacionado)</a></div></div>';
   main.innerHTML=h;
 }
 
