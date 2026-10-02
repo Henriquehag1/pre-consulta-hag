@@ -84,15 +84,20 @@ var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){re
 var fmt=function(v,d){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0})};
 
 var D={itens:[],meta:null,pacientes:[]};
-var S={filtro:'pendentes',tipo:'receita',aberto:null,dados:{},msg:null,erro:null,ocupado:false,pid:new URLSearchParams(location.search).get('p')||'',link:null,imp:null};
+var S={lote:null,filtro:'pendentes',tipo:'receita',aberto:null,dados:{},msg:null,erro:null,ocupado:false,pid:new URLSearchParams(location.search).get('p')||'',link:null,imp:null};
 
+// Fotos que já estão na pasta cozinha_fotos/ do site (lista.json). A foto subida aqui (foto_url) manda sobre elas.
+var FOTOS={};
+function fotoDe(i){ return i.foto_url||(FOTOS[i.id]?'cozinha_fotos/'+i.id+'.jpg':null); }
+async function carregarFotos(){ try{ var r=await fetch('cozinha_fotos/lista.json',{cache:'no-cache'}); if(!r.ok) return; var l=await r.json(); FOTOS={}; if(Array.isArray(l)) l.forEach(function(id){ if(/^[a-z0-9-]+$/.test(id)) FOTOS[id]=1; }); }catch(e){} }
 async function carregar(){
+  await carregarFotos();
   var r=await Promise.all([api('cozinha_itens?select=id,tipo,grupo,ordem,acesso,aprovado,resumo,foto_url,atualizado_em&order=ordem,id'),api('cozinha_colecao_meta?id=eq.1&select=dados'),api('patients?select=id,nome,status,interno&order=nome')]);
   D.itens=r[0]||[]; D.meta=(r[1]&&r[1][0]&&r[1][0].dados)||null; D.pacientes=(r[2]||[]);
 }
 function nomeGrupo(tipo,g){ var l=D.meta?(tipo==='guia'?D.meta.grupos_guia:D.meta.situacoes):[]; var x=(l||[]).filter(function(s){return s.id===g})[0]; return x?x.nome:g; }
 function ordemGrupos(tipo){ var l=D.meta?(tipo==='guia'?D.meta.grupos_guia:D.meta.situacoes):[]; return (l||[]).map(function(s){return s.id}); }
-function visiveis(){ return D.itens.filter(function(i){ return i.tipo===S.tipo && (S.filtro==='todos'||(S.filtro==='pendentes'&&!i.aprovado)||(S.filtro==='aprovados'&&i.aprovado)||(S.filtro==='semfoto'&&!i.foto_url)); }); }
+function visiveis(){ return D.itens.filter(function(i){ return i.tipo===S.tipo && (S.filtro==='todos'||(S.filtro==='pendentes'&&!i.aprovado)||(S.filtro==='aprovados'&&i.aprovado)||(S.filtro==='semfoto'&&!fotoDe(i))); }); }
 
 function previa(i){
   var d=S.dados[i.id]; if(!d) return '<div class="prev">Abrindo…</div>';
@@ -110,7 +115,7 @@ function previa(i){
 
 function render(){
   var rec=D.itens.filter(function(i){return i.tipo==='receita'}), gui=D.itens.filter(function(i){return i.tipo==='guia'});
-  var ap=D.itens.filter(function(i){return i.aprovado}).length, ab=D.itens.filter(function(i){return i.aprovado&&i.acesso==='aberta'}).length, sf=rec.filter(function(i){return !i.foto_url}).length;
+  var ap=D.itens.filter(function(i){return i.aprovado}).length, ab=D.itens.filter(function(i){return i.aprovado&&i.acesso==='aberta'}).length, sf=rec.filter(function(i){return !fotoDe(i)}).length;
   var h='';
   if(S.msg) h+='<div class="msg">'+esc(S.msg)+'</div>';
   if(S.erro) h+='<div class="erro">'+esc(S.erro)+'</div>';
@@ -121,6 +126,7 @@ function render(){
   h+='<div class="card"><h3>2. Conferir, aprovar e pôr a foto</h3><div class="row filtros">'+
      [['receita','Receitas'],['guia','Guias']].map(function(x){return '<button data-a="tipo" data-v="'+x[0]+'" aria-pressed="'+(S.tipo===x[0])+'">'+x[1]+'</button>'}).join('')+'<span class="note">|</span>'+
      [['pendentes','A aprovar'],['aprovados','Aprovados'],['semfoto','Sem foto'],['todos','Todos']].map(function(x){return '<button data-a="filtro" data-v="'+x[0]+'" aria-pressed="'+(S.filtro===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="row"><label class="btn sec">Subir várias fotos de uma vez<input type="file" id="lote" accept="image/*" multiple hidden></label><span class="note">O nome de cada arquivo precisa ser o código da receita, como <b>mingau-clara.jpg</b>. É o nome que está no roteiro de fotos.</span></div>'+(S.lote?'<p class="note">'+esc(S.lote)+'</p>':'');
   var vis=visiveis(), pend=vis.filter(function(i){return !i.aprovado});
   if(pend.length) h+='<div class="row"><button class="btn" data-a="aprovartodos" '+(S.ocupado?'disabled':'')+'>Aprovar os '+pend.length+' desta lista</button><span class="note">Aprovado vai para o ar na hora, na página da coleção.</span></div>';
   if(!D.itens.length) h+='<p class="note">Ainda não há nada. Importe o arquivo da coleção no passo 1.</p>';
@@ -130,13 +136,13 @@ function render(){
     var l=vis.filter(function(i){return i.grupo===g}); if(!l.length) return;
     h+='<div class="grp"><h2>'+esc(nomeGrupo(S.tipo,g))+' <span class="note">('+l.length+')</span></h2>';
     l.forEach(function(i){ var r=i.resumo||{};
-      h+='<div class="it '+(i.aprovado?'':'pend')+'"><div class="th">'+(i.foto_url?'<img alt="" src="'+esc(i.foto_url)+'">':(i.tipo==='receita'?'foto':'guia'))+'</div>'+
-         '<div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span>'+(i.tipo==='receita'?'<span class="mt">'+r.tempo+' min · '+fmt(r.kcal)+' kcal · '+fmt(r.ptn)+' g proteína · '+r.nvar+' variações</span>':'')+
+      h+='<div class="it '+(i.aprovado?'':'pend')+'"><div class="th">'+(fotoDe(i)?'<img alt="" src="'+esc(fotoDe(i))+'">':(i.tipo==='receita'?'foto':'guia'))+'</div>'+
+         '<div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span>'+(i.tipo==='receita'?'<span class="mt">'+esc(i.id)+' · '+r.tempo+' min · '+fmt(r.kcal)+' kcal · '+fmt(r.ptn)+' g proteína · '+r.nvar+' variações</span>':'')+
          '<span class="row"><span class="tag '+(i.aprovado?'ok':'pd')+'">'+(i.aprovado?'aprovado':'a aprovar')+'</span><span class="tag '+(i.acesso==='aberta'?'ab':'')+'">'+(i.acesso==='aberta'?'aberto ao público':'só paciente')+'</span></span></div>'+
          '<div class="ac"><button class="btn peq sec" data-a="ver" data-v="'+i.id+'">'+(S.aberto===i.id?'Fechar':'Conferir')+'</button>'+
          '<button class="btn peq'+(i.aprovado?' sec':'')+'" data-a="aprovar" data-v="'+i.id+'">'+(i.aprovado?'Tirar do ar':'Aprovar')+'</button>'+
          '<button class="btn peq sec" data-a="acesso" data-v="'+i.id+'">'+(i.acesso==='aberta'?'Tornar só paciente':'Abrir ao público')+'</button>'+
-         (i.tipo==='receita'?'<label class="btn peq sec" style="text-align:center">'+(i.foto_url?'Trocar foto':'Pôr foto')+'<input type="file" accept="image/*" data-foto="'+i.id+'" hidden></label>':'')+'</div>'+
+         (i.tipo==='receita'?'<label class="btn peq sec" style="text-align:center">'+(fotoDe(i)?'Trocar foto':'Pôr foto')+'<input type="file" accept="image/*" data-foto="'+i.id+'" hidden></label>':'')+'</div>'+
          (S.aberto===i.id?previa(i):'')+'</div>'; });
     h+='</div>';
   });
@@ -180,14 +186,26 @@ main.addEventListener('click',function(e){
     return tentar(async function(){ var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; }); }
   if(a==='copiar'){ var el=document.getElementById(v); el.select(); try{ navigator.clipboard.writeText(el.value).then(function(){ S.msg='Copiado.'; render(); },function(){}); }catch(er){} return; }
 });
+async function subirFoto(id,file){
+  var blob=await reduzir(file), nome=id+'-'+Date.now()+'.jpg';
+  var r=await fetch(SURL+'/storage/v1/object/cozinha/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+((Auth.token&&Auth.token())||SKEY),'Content-Type':'image/jpeg','x-upsert':'true'},body:blob});
+  if(!r.ok){ var m='erro '+r.status; try{ var j=await r.json(); m=j.message||j.error||m; }catch(er){} throw new Error('a foto não subiu ('+m+')'); }
+  var url=SURL+'/storage/v1/object/public/cozinha/'+nome;
+  await api('cozinha_itens?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:{foto_url:url,atualizado_em:new Date().toISOString()}});
+  D.itens.filter(function(x){return x.id===id})[0].foto_url=url;
+}
 main.addEventListener('change',function(e){
-  var t=e.target; if(!t.dataset||!t.dataset.foto||!t.files||!t.files[0]) return; var id=t.dataset.foto, file=t.files[0]; S.msg=null;
-  tentar(async function(){ var blob=await reduzir(file), nome=id+'-'+Date.now()+'.jpg';
-    var r=await fetch(SURL+'/storage/v1/object/cozinha/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+((Auth.token&&Auth.token())||SKEY),'Content-Type':'image/jpeg','x-upsert':'true'},body:blob});
-    if(!r.ok){ var m='erro '+r.status; try{ var j=await r.json(); m=j.message||j.error||m; }catch(er){} throw new Error('a foto não subiu ('+m+')'); }
-    var url=SURL+'/storage/v1/object/public/cozinha/'+nome;
-    await api('cozinha_itens?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:{foto_url:url,atualizado_em:new Date().toISOString()}});
-    D.itens.filter(function(x){return x.id===id})[0].foto_url=url; S.msg='Foto salva. Já aparece na coleção.'; });
+  var t=e.target; S.msg=null;
+  if(t.id==='lote'&&t.files&&t.files.length){ var arqs=Array.prototype.slice.call(t.files);
+    return tentar(async function(){ var ok=0, sem=[], falhou=[];
+      for(var k=0;k<arqs.length;k++){ var f=arqs[k], id=f.name.replace(/\.[^.]+$/,'').trim().toLowerCase();
+        var it=D.itens.filter(function(x){return x.id===id&&x.tipo==='receita'})[0];
+        if(!it){ sem.push(f.name); continue; }
+        S.lote='Enviando '+(k+1)+' de '+arqs.length+'…'; render();
+        try{ await subirFoto(id,f); ok++; }catch(er){ falhou.push(f.name+' ('+er.message+')'); } }
+      S.lote=null; S.msg=ok+' fotos salvas.'+(sem.length?' Sem receita com esse nome: '+sem.join(', ')+'.':'')+(falhou.length?' Não subiram: '+falhou.join(', ')+'.':''); }); }
+  if(!t.dataset||!t.dataset.foto||!t.files||!t.files[0]) return; var id=t.dataset.foto, file=t.files[0];
+  tentar(async function(){ await subirFoto(id,file); S.msg='Foto salva. Já aparece na coleção.'; });
 });
 
 async function boot(){

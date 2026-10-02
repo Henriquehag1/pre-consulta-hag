@@ -224,11 +224,13 @@ function aplicar(c){ COL=c; IDX={}; c.itens.forEach(function(i){IDX[i.id]=i}); }
 async function carregar(){
   var cache=ls.get('hagcozinha.col.indice');
   if(cache&&cache.itens){ aplicar(cache); render(); }
+  var pf=carregarFotos();
   try{
     var c=await rpc('hag_cozinha_colecao',{p_token:TOKEN});
     if(TOKEN&&!c.paciente){ st.linkInvalido=true; }
     aplicar(c); ls.set('hagcozinha.col.indice',c); st.erro=null;
   }catch(e){ if(!COL) st.erro='Não foi possível carregar a coleção. Confira a internet e tente de novo.'; }
+  await pf;
   var h=location.hash.slice(1); if(h&&IDX[h]&&!st.rec&&!st.guia) abrir(h); else render();
 }
 async function ficha(id){
@@ -243,7 +245,16 @@ async function ficha(id){
 
 function toast(t){var el=$('#toast'); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(function(){el.hidden=true},2400)}
 function gramas(g){ if(g<1) return fmt(g,1)+' g'; return g>=1000?fmt(g/1000,g%1000?1:0)+' kg':fmt(g)+' g'; }
-function fotoHTML(i,grande){ return i.foto?'<div class="foto"><img alt="" loading="lazy" src="'+esc(i.foto)+'"></div>':'<div class="foto vazia" aria-hidden="true">HAG</div>'; }
+// Fotos: a do banco (foto_url) manda; sem ela, vale a que está na pasta cozinha_fotos/ do site, listada em lista.json.
+var FOTOS={};
+function porFotos(l){ FOTOS={}; if(Array.isArray(l)) l.forEach(function(id){ if(/^[a-z0-9-]+$/.test(id)) FOTOS[id]=1; }); }
+porFotos(ls.get('hagcozinha.col.fotos'));
+function carregarFotos(){
+  return fetch('cozinha_fotos/lista.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; })
+    .then(function(l){ if(Array.isArray(l)){ porFotos(l); ls.set('hagcozinha.col.fotos',l); } }).catch(function(){});
+}
+function fotoDe(i){ return i.foto||(i.id&&FOTOS[i.id]?'cozinha_fotos/'+i.id+'.jpg':null); }
+function fotoHTML(i,grande){ var u=fotoDe(i); return u?'<div class="foto"><img alt="" loading="lazy" src="'+esc(u)+'"></div>':'<div class="foto vazia" aria-hidden="true">HAG</div>'; }
 function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
 
 function telaReceitas(){
@@ -334,7 +345,7 @@ function telaFicha(){
 function telaGuia(){
   var F=FICHAS[st.guia];
   if(!F){ app.innerHTML='<button class="voltar" id="voltar">&larr; Guias</button><div class="estado">'+(st.carregando===st.guia?'Abrindo o guia…':'Não foi possível abrir este guia agora. Confira a internet e tente de novo.')+'</div>'; return; }
-  var g=F.dados, h='<button class="voltar" id="voltar">&larr; Guias</button><article class="ficha '+(g.grupo==='pratico'?'pratico':'')+'">';
+  var g=F.dados, h='<button class="voltar" id="voltar">&larr; Guias</button><article class="ficha '+(g.grupo!=='fora'?'pratico':'')+'">';
   h+='<div class="so-print" style="font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase">Método HAG · Cozinha</div>';
   h+='<div class="cab"><h2>'+esc(g.nome)+'</h2><p class="res">'+esc(g.resumo)+'</p></div>';
   g.blocos.forEach(function(b,i){ h+='<div class="gbloco b'+i+'"><h3>'+esc(b.t)+'</h3><ul>'+b.itens.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>'; });
