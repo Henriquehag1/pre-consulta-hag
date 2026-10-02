@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>HAG Cozinha · painel</title>
+<!-- HAG_COZINHA_v1 (01/10/2026)
+     Painel do médico. MOSTRA dado de paciente, então exige login: as duas linhas abaixo ficam
+     ANTES de qualquer chamada, o hag_auth.js remenda o fetch e injeta o token da equipe.
+     Lê o texto do Plano Alimentar já emitido (documentos.texto), propõe a grade e a tabela de porções,
+     e só libera ao paciente depois de conferido. Não muda a skill nem o PDF. Sem IA. -->
+<script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
+<script src="hag_auth.js?v=20260922-1750"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#F6F4EF;--surface:#FFFFFF;--cream:#FAF7F1;--ink:#1B2745;--ink-2:#4A5568;--muted:#6F7585;--line:#E3DED3;--gold:#9C7A36;--gold-ui:#B8924A;--gold-soft:#EFE3C8;--navy:#1B2745;--on-navy:#F4EEDF;
+  --good:#2F7D5B;--warn:#A86A12;--crit:#B4413A;--good-bg:#E4F1EA;--warn-bg:#F7EDDC;--crit-bg:#F6E3E1;--btn:#1B2745;--on-btn:#F4EEDF;
+  --display:"Caladea",Georgia,serif;--body:"Carlito","Lato","Helvetica Neue",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){:root{--bg:#0F1524;--surface:#161E31;--cream:#1C2539;--ink:#ECE6D6;--ink-2:#B9BCC6;--muted:#9499A8;--line:#2A3450;--gold:#D4B06A;--gold-ui:#D4B06A;--gold-soft:#3A3322;--navy:#0B1020;--on-navy:#F0E7D2;
+  --good:#5DBB8E;--warn:#E0A84A;--crit:#E07B72;--good-bg:#16302A;--warn-bg:#3A2E18;--crit-bg:#3A1F1E;--btn:#ECE6D6;--on-btn:#0F1524;color-scheme:dark}}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0;width:100%}
+input[type=checkbox]{width:auto}
+textarea{resize:vertical;min-height:64px}
+header.top{background:var(--navy);color:var(--on-navy);padding:14px 16px 0}
+header.top .in,.wrap{max-width:980px;margin:0 auto}
+.wrap{padding:16px 16px 80px;display:flex;flex-direction:column;gap:14px}
+.brand{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-ui)}
+h1{font-family:var(--display);font-size:24px;margin:2px 0 0}
+nav.tabs{display:flex;gap:2px;margin-top:10px;overflow-x:auto}
+nav.tabs button{background:none;border:0;color:var(--on-navy);opacity:.72;padding:10px 12px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;font-size:15px}
+nav.tabs button[aria-selected="true"]{opacity:1;border-bottom-color:var(--gold-ui);font-weight:700}
+nav.tabs .n{font-family:var(--mono);font-size:11px;background:var(--gold-ui);color:#1B2745;border-radius:999px;padding:1px 7px;margin-left:5px}
+:focus-visible{outline:2px solid var(--gold-ui);outline-offset:2px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h2{font-family:var(--display);font-size:22px;margin:2px 0 0;line-height:1.2}
+h3{font-family:var(--display);font-size:18px;margin:0}
+.sub{color:var(--ink-2);font-size:14.5px;margin:4px 0 0}
+.note{font-size:13.5px;color:var(--ink-2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.btn{font-weight:700;padding:9px 14px;border-radius:10px;border:0;background:var(--btn);color:var(--on-btn);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.small{padding:6px 10px;font-size:14px}
+.btn[disabled]{opacity:.45;cursor:default}
+.link{background:none;border:0;padding:2px 0;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:14px}
+.lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px}
+.mono{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.tag{font-family:var(--mono);font-size:11.5px;border-radius:999px;padding:2px 9px;border:1px solid var(--line);white-space:nowrap}
+.tag.g{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+.tag.y{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.tag.r{background:var(--crit-bg);border-color:var(--crit);color:var(--crit)}
+.aviso{background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:10px 12px;font-size:14.5px}
+.erro{background:var(--crit-bg);border:1px solid var(--crit);border-radius:10px;padding:10px 12px;font-size:14.5px}
+.okmsg{background:var(--good-bg);border:1px solid var(--good);border-radius:10px;padding:10px 12px;font-size:14.5px}
+.hist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hist li{padding:9px 12px;border-radius:9px;background:var(--cream);font-size:15px}
+.hist li.g{background:var(--good-bg)} .hist li.y{background:var(--warn-bg)}
+.rolagem{overflow-x:auto}
+.grade{display:grid;gap:3px;font-size:12.5px;margin-top:8px;align-items:center;min-width:max-content}
+.grade .h{color:var(--muted);text-align:center;font-family:var(--mono);font-size:10.5px}
+.grade .c{text-align:center;border-radius:5px;padding:4px 0;font-weight:700;min-width:24px;background:var(--cream);color:var(--muted)}
+.grade .c.g{background:var(--good-bg);color:var(--good)} .grade .c.y{background:var(--warn-bg);color:var(--warn)} .grade .c.r{background:var(--crit-bg);color:var(--crit)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+td,th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+td.n input{width:64px;text-align:center}
+tr.duvida td{background:var(--warn-bg)}
+.lista{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto;margin-top:8px}
+.lista button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:left;cursor:pointer}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.item{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.item.pend{border-color:var(--warn)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="brand">Método HAG · painel do médico</div>
+  <h1>HAG Cozinha</h1>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+</div></header>
+<main class="wrap" id="main"><p class="note">Carregando…</p></main>
+<script>
+/* HAG_COZINHA_v1 · núcleo sem tela: leitor do Plano Alimentar, conta de porções, receita na medida, doce, resumo do médico.
+   Função pura, testada fora da página. Nenhuma chamada de rede e nenhuma IA aqui. */
+var HC=(function(){
+"use strict";
+const norm=s=>String(s==null?"":s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+const FR={"½":.5,"¼":.25,"¾":.75};
+function num(v){ if(v==null) return 0; if(typeof v==="number") return isFinite(v)?v:0; v=String(v).trim();
+  if(!v||/^[—–-]$/.test(v)||/livre|vontade/i.test(v)) return 0;
+  const m=v.match(/^(\d+)?\s*([½¼¾])$/); if(m) return (+(m[1]||0))+FR[m[2]];
+  const x=parseFloat(v.replace(",",".")); return isFinite(x)?x:0; }
+const fmt=x=>{ x=Math.round(x*100)/100; return String(x).replace(".",","); };
+const GR=["p","c","f","g"], SIG={p:"P",c:"C",f:"F",g:"G"}, NOME={p:"proteína",c:"carboidrato",f:"fruta",g:"gordura"}, NOMES={p:"proteínas",c:"carboidratos",f:"frutas",g:"gorduras"};
+const codigo=r=>GR.filter(k=>num(r[k])>0).map(k=>fmt(num(r[k]))+SIG[k]).join(" ")+(r.v?" · vegetais livres":"");
+const porcoes=(n,k)=>fmt(n)+" "+(n===1?"porção":"porções")+" de "+NOME[k];
+
+/* ---------- leitor do texto do Plano Alimentar (pdftotext) ---------- */
+const VAL=/^(—|–|-|livre|\d+(,\d+)?|\d*\s?[½¼¾])$/i;
+const RODAPE=/·\s*PLANO ALIMENTAR\s*$|^MÉTODO HAG\s*·|TABELA DE PORÇÕES\s*·\s*\d|^\[RODAPE\]/i;
+const REF_NOME=/^(caf[eé] da manh[aã]|almo[cç]o|lanche|jantar|ceia|ao acordar|antes de dormir|pr[eé][- ]treino|p[oó]s[- ]treino|desjejum|cola[cç][aã]o)/i;
+function lerGrade(texto){
+  const tk=texto.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+  let i=tk.findIndex((t,k)=>/^REFEIÇÃO$/i.test(t)&&tk.slice(k+1,k+7).some(x=>/^P PROTEÍNA$/i.test(x)));
+  if(i<0) return null;
+  while(i<tk.length&&!/VEGETAIS$/i.test(tk[i])) i++;
+  i++; const out=[]; let vazio=0;
+  for(;i<tk.length&&vazio<14&&out.length<12;){
+    const t=tk[i];
+    if(/^Total do dia/i.test(t)) break;
+    const vs=tk.slice(i+1,i+6);
+    if(/[a-zà-ú]/i.test(t)&&!VAL.test(t)&&!/^livre$/i.test(t)&&vs.length===5&&vs.every(x=>VAL.test(x))){
+      out.push({nome:t.replace(/\s+/g," "),p:num(vs[0]),c:num(vs[1]),f:num(vs[2]),g:num(vs[3]),v:/livre/i.test(vs[4])}); i+=6; vazio=0;
+    } else { i++; vazio++; }
+  }
+  return out.length?out:null;
+}
+function lerCabecalhos(texto){
+  const ls=texto.split(/\n/).map(s=>s.trim()).filter(Boolean), out=[], vistos={};
+  for(let i=0;i<ls.length;i++){
+    if(!REF_NOME.test(ls[i])||ls[i].length>40||/[.:]$/.test(ls[i])) continue;
+    const r={nome:ls[i],p:0,c:0,f:0,g:0,v:false}; let achou=0;
+    for(let j=i+1;j<Math.min(ls.length,i+10);j++){
+      const l=ls[j]; if(/^OPÇÃO/i.test(l)||REF_NOME.test(l)) break;
+      const m=l.match(/^(\d+(?:,\d+)?|\d*\s?[½¼¾])\s+(prote[ií]na|carboidrato|fruta|gordura)s?$/i);
+      if(m){ r[{p:"p",c:"c",f:"f",g:"g"}[norm(m[2])[0]]]=num(m[1]); achou++; }
+      else if(/^vegetais [àa] vontade$/i.test(l)) r.v=true;
+      else if(/^\d{1,2}\s?H(\d{2})?(\s?[ÀA]S\s?\d{1,2}\s?H(\d{2})?)?/i.test(l)&&!r.hora) r.hora=l.split("·")[0].trim().toLowerCase();
+    }
+    if(achou&&!vistos[norm(r.nome)]){ vistos[norm(r.nome)]=1; out.push(r); }
+  }
+  return out.length?out:null;
+}
+function lerTabela(texto,casa){
+  const ini=texto.search(/TROQUE DENTRO DO MESMO GRUPO/); if(ini<0) return null;
+  let corpo=texto.slice(ini); const fim=corpo.search(/\n\s*DOCES,?\s*\n|NENHUM É PROIBIDO/); if(fim>0) corpo=corpo.slice(0,fim);
+  const idx={}; (casa||[]).forEach(a=>{ idx[norm(a.nome)]=a.grupo; });
+  const ls=corpo.split(/\n/).map(s=>s.trim()).filter(Boolean), tab=[], defs={}, HDR={PROTEINAS:"P",CARBOIDRATOS:"C",FRUTAS:"F",GORDURAS:"G"};
+  let cur=null, prev=null;
+  const ehNome=l=>l.length<60&&!/[.]$/.test(l)&&!/^[A-Z]$/.test(l)&&!RODAPE.test(l)&&!/^(ALIMENTO|QUANTIDADE|MEDIDA CASEIRA)$/i.test(l)&&!/1 por[cç][aã]o =/i.test(l);
+  for(let i=0;i<ls.length;i++){
+    const l=ls[i], h=l.match(/^(PROTEÍNAS|CARBOIDRATOS|FRUTAS|GORDURAS)\b/);
+    if(h){ cur=HDR[norm(h[1]).toUpperCase()]; prev=null; }
+    const d=l.match(/1 por[cç][aã]o = (\d+(?:,\d+)?) g de (prote[ií]na|carboidrato|gordura)/i);
+    if(d&&cur){ defs[cur.toLowerCase()]=num(d[1]); continue; }
+    if(h) continue;
+    const g=l.match(/^(\d+(?:,\d+)?)\s?g(?![a-zà-ú])\s*(.*)$/i)||l.match(/^(\d+(?:,\d+)?) g([a-zà-ú].*)$/i), rot=l.match(/^ver rótulo\s*(.*)$/i);
+    if((g||rot)&&prev&&!/[.]$/.test(l)&&!(g&&/^,/.test(g[2]))){
+      let med=(g?g[2]:rot[1]).trim();
+      if(!med&&ls[i+1]&&!/^(\d+(?:,\d+)?)\s?g\b/i.test(ls[i+1])&&!/^(PROTEÍNAS|CARBOIDRATOS|FRUTAS|GORDURAS)\b/.test(ls[i+1])&&!RODAPE.test(ls[i+1])){ med=ls[i+1]; i++; }
+      const k=idx[norm(prev)], grupo=k&&k!=="X"?k:cur;
+      if(grupo) tab.push({g:grupo,nome:prev,gramas:g?num(g[1]):null,medida:med,duvida:!k});
+      prev=null; continue;
+    }
+    if(ehNome(l)) prev=l;
+  }
+  const notas=corpo.split(/\n\s*\n/).map(b=>b.replace(/\s*\n\s*/g," ").trim()).filter(b=>b.length>60&&/^(Feijão|Vegetais|Uma concha|Alface|Cenoura)/.test(b));
+  if(notas.some(n=>/110 g[^.]*meia\s+porção de proteína e meia de\s+carboidrato/i.test(n))&&!/não gosta do grão/i.test(notas.join(" ")))
+    tab.push({g:"X",nome:"Feijão cozido",gramas:110,medida:"1 concha média",vale:{p:.5,c:.5}});
+  return tab.length?{tabela:tab,defs,notas}:null;
+}
+function lerPlano(texto,casa){
+  const avisos=[]; texto=String(texto||"");
+  let refs=lerGrade(texto);
+  if(!refs){ refs=lerCabecalhos(texto); if(refs) avisos.push("Este plano não tem a grade de porções. As refeições foram lidas dos cabeçalhos: confira uma a uma."); }
+  if(!refs){ refs=[]; avisos.push("Não encontrei as refeições em porções neste documento. Preencha a grade à mão."); }
+  const t=lerTabela(texto,casa);
+  if(!t) avisos.push("Não encontrei a tabela de porções neste documento. Use a tabela da casa e ajuste.");
+  else { const d=t.tabela.filter(x=>x.duvida).length; if(d) avisos.push(d+(d===1?" alimento não está":" alimentos não estão")+" na tabela da casa: confira o grupo (marcados em amarelo)."); }
+  const defs=Object.assign({p:10,c:15,f:15,g:8},t?t.defs:{});
+  return {refeicoes:refs,tabela:t?t.tabela:[],defs,notas:t?t.notas:[],avisos};
+}
+
+/* ---------- conta de porções ---------- */
+function slotDe(nome){ const n=norm(nome); if(/cafe|desjejum|acordar/.test(n)) return "cafe"; if(/almoco/.test(n)) return "almoco"; if(/jantar/.test(n)) return "jantar"; if(/ceia|dormir/.test(n)) return "ceia"; return "lanche"; }
+/* meta da refeição hoje = plano menos o que um doce já descontou */
+function metaHoje(plano,idx,eventos){ const r=plano.refeicoes[idx], m={p:num(r.p),c:num(r.c),f:num(r.f),g:num(r.g),v:!!r.v};
+  ajustesDoces(eventos).forEach(a=>{ if(a.idx===idx){ m.c=Math.max(0,m.c-a.c); m.g=Math.max(0,m.g-a.g); } }); return m; }
+function ajustesDoces(eventos){ const desf={}, out=[]; (eventos||[]).forEach(e=>{ if(e.tipo==="doce_desfeito") desf[e.chave]=1; });
+  (eventos||[]).forEach(e=>{ if(e.tipo==="doce"&&!desf[e.cid]&&e.detalhe) (e.detalhe.ajustes||[]).forEach(a=>out.push({idx:a.idx,c:num(a.c),g:num(a.g),doce:e.chave})); }); return out; }
+const docesHoje=ev=>{ const desf={}; (ev||[]).forEach(e=>{ if(e.tipo==="doce_desfeito") desf[e.chave]=1; }); return (ev||[]).filter(e=>e.tipo==="doce"&&!desf[e.cid]); };
+function gramas(item,por){ return item&&item.gramas!=null?Math.round(num(item.gramas)*por):null; }
+function acharAlimento(tabela,nome,grupo){ const n=norm(nome); let a=tabela.find(x=>norm(x.nome)===n);
+  if(!a&&/whey|proteina em po/.test(n)) a=tabela.find(x=>x.g==="P"&&/whey|proteina em po/.test(norm(x.nome)));
+  return a||null; }
+/* prato montado: escolhas = [{nome, por}] ; devolve o que falta por grupo */
+function contaPrato(meta,tabela,escolhas){ const tem={p:0,c:0,f:0,g:0};
+  (escolhas||[]).forEach(e=>{ const a=acharAlimento(tabela,e.nome); if(!a) return;
+    if(a.g==="X"){ const v=a.vale||{}; GR.forEach(k=>{ tem[k]+=num(v[k])*e.por; }); } else tem[a.g.toLowerCase()]+=e.por; });
+  const falta={}, sobra={}; let fechado=true, algum=false;
+  GR.forEach(k=>{ const d=Math.round((meta[k]-tem[k])*100)/100; if(d>0.01){ falta[k]=d; fechado=false; } else if(d<-0.01) sobra[k]=-d; if(tem[k]>0) algum=true; });
+  return {tem,falta,sobra,fechado,algum}; }
+/* receita na medida da refeição: cada grupo da receita é escalado para as porções que a refeição pede */
+function receitaPara(rec,meta,tabela,regras,naoGosta){
+  regras=regras||{}; const mn=regras.escala_min||.5, mx=regras.escala_max||2, soma={p:0,c:0,f:0,g:0}, ng=(naoGosta||[]).map(norm);
+  const ing=(rec.ing||[]).map(i=>({alimento:i.alimento,k:String(i.grupo||"").toLowerCase(),por:num(i.por),item:acharAlimento(tabela,i.alimento)}));
+  const semItem=ing.find(i=>!i.item); if(semItem) return {serve:"fora",motivo:"usa "+semItem.alimento.toLowerCase()+", que não está na sua tabela"};
+  const ruim=ing.find(i=>ng.includes(norm(i.item.nome))); if(ruim) return {serve:"fora",motivo:"usa "+ruim.item.nome.toLowerCase()+", que você marcou como fora"};
+  ing.forEach(i=>{ soma[i.k]+=i.por; });
+  if(!soma.p||!meta.p) return {serve:"nao",motivo:meta.p?"a receita não tem proteína":"esta refeição não tem proteína no plano"};
+  const linhas=[], avisos=[], fator={};
+  for(const k of GR){ if(!soma[k]) continue;
+    if(!meta[k]){ avisos.push("faça sem "+ing.filter(i=>i.k===k).map(i=>i.item.nome.toLowerCase()).join(" e ")+": esta refeição não tem "+NOME[k]); fator[k]=0; continue; }
+    fator[k]=meta[k]/soma[k];
+    if(fator[k]<mn-1e-9||fator[k]>mx+1e-9) return {serve:"nao",motivo:"a receita não fecha na medida desta refeição ("+NOME[k]+")"}; }
+  ing.forEach(i=>{ if(!fator[i.k]) return; const por=Math.round(i.por*fator[i.k]*100)/100; linhas.push({nome:i.item.nome,k:i.k,por,gramas:gramas(i.item,por),medida:i.item.medida,rotulo:i.item.gramas==null}); });
+  GR.forEach(k=>{ if(meta[k]>0&&!soma[k]) avisos.push((k==="f"?"a fruta":"o "+NOME[k])+" da refeição fica à parte: "+porcoes(meta[k],k)); });
+  return {serve:avisos.length?"ajuste":"ok",linhas,avisos};
+}
+/* doce: de onde sai o C e o G. Tira das refeições ainda não feitas, da última para a primeira. */
+function encaixarDoce(doce,plano,eventos,feitas){
+  let c=num(doce.c), g=num(doce.g); const aj=[];
+  if(!c&&!g) return {ok:true,livre:true,ajustes:[]};
+  for(let i=plano.refeicoes.length-1;i>=0&&(c>0||g>0);i--){ if(feitas&&feitas[i]) continue; const m=metaHoje(plano,i,eventos);
+    const tc=Math.min(c,m.c), tg=Math.min(g,m.g); if(tc>0||tg>0){ aj.push({idx:i,c:tc,g:tg}); c=Math.round((c-tc)*100)/100; g=Math.round((g-tg)*100)/100; } }
+  return {ok:c<=0&&g<=0,ajustes:aj,falta:{c,g}}; }
+
+/* ---------- resumo do médico ---------- */
+const DS=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+const addDia=(s,n)=>{ const d=new Date(s+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+function resumo(plano,registros,eventos,hoje,janela){
+  janela=janela||28; const n=plano?plano.refeicoes.length:0, regs=(registros||[]).filter(r=>r.como!=="desfeito"&&r.idx<n);
+  if(!n||!regs.length) return {vazio:true,dias:[],n};
+  const primeira=regs.reduce((a,r)=>r.data<a?r.data:a,hoje), ini=primeira>addDia(hoje,-(janela-1))?primeira:addDia(hoje,-(janela-1));
+  const mapa={}; regs.forEach(r=>{ mapa[r.data+"|"+r.idx]=r; });
+  const dias=[]; for(let d=ini;d<=hoje;d=addDia(d,1)) dias.push(d);
+  const ref=plano.refeicoes.map(r=>({nome:r.nome,esp:0,plano:0,fora:0,pulei:0,sem:0,fome:0,cheio:0})), sem=DS.map(()=>({esp:0,plano:0}));
+  const como={plano:0,montei:0,receita:0,fora:0,pulei:0}, faltou={p:0,c:0,f:0,g:0}, alim={}, recs={}; let esp=0, noPlano=0, esp7=0, np7=0, doceMuito=0;
+  const d7=addDia(hoje,-6);
+  dias.forEach(d=>{ const dw=new Date(d+"T12:00:00Z").getUTCDay();
+    for(let i=0;i<n;i++){ const r=mapa[d+"|"+i]; if(d===hoje&&!r) continue;
+      esp++; ref[i].esp++; sem[dw].esp++; if(d>=d7) esp7++;
+      if(!r){ ref[i].sem++; continue; }
+      como[r.como]=(como[r.como]||0)+1;
+      if(r.como==="pulei") ref[i].pulei++; else if(r.como==="fora") ref[i].fora++; else { ref[i].plano++; noPlano++; sem[dw].plano++; if(d>=d7) np7++; }
+      if(/fome/.test(r.sac||"")) ref[i].fome++; if(/cheio|cheia/.test(r.sac||"")) ref[i].cheio++; if(r.doce==="muito") doceMuito++;
+      if(r.faltou) GR.forEach(k=>{ if(num(r.faltou[k])>0) faltou[k]++; });
+      const dt=r.detalhe||{}; (dt.itens||[]).forEach(x=>{ alim[x.nome]=(alim[x.nome]||0)+1; }); if(dt.receita) recs[dt.receita]=(recs[dt.receita]||0)+1; } });
+  const sos={}, doces=[]; (eventos||[]).forEach(e=>{ if(e.data<ini) return; if(e.tipo==="sos") sos[e.chave]=(sos[e.chave]||0)+1; if(e.tipo==="doce") doces.push(e.chave); });
+  const top=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
+  const taxa=x=>x.esp?x.plano/x.esp:null;
+  const piorRef=ref.filter(x=>x.esp>=3).sort((a,b)=>taxa(a)-taxa(b))[0], melhorRef=ref.filter(x=>x.esp>=3).sort((a,b)=>taxa(b)-taxa(a))[0];
+  const diasSem=sem.map((x,i)=>({nome:DS[i],esp:x.esp,plano:x.plano})).filter(x=>x.esp>=n), piorDia=diasSem.slice().sort((a,b)=>a.plano/a.esp-b.plano/b.esp)[0];
+  const fomeRef=ref.filter(x=>x.fome>=2).sort((a,b)=>b.fome-a.fome)[0];
+  let frase;
+  if(esp<n*3) frase="Ainda há pouco registro para concluir. São "+regs.length+" refeições marcadas em "+dias.length+(dias.length===1?" dia.":" dias.");
+  else { const pt=[]; if(melhorRef&&taxa(melhorRef)>=.8) pt.push("O plano se sustenta em "+melhorRef.nome.toLowerCase()+" ("+melhorRef.plano+" de "+melhorRef.esp+").");
+    if(piorRef&&taxa(piorRef)<.7) pt.push("Quebra mais em "+piorRef.nome.toLowerCase()+" ("+piorRef.plano+" de "+piorRef.esp+" no plano"+(piorRef.pulei?", "+piorRef.pulei+" puladas":"")+(piorRef.sem?", "+piorRef.sem+" sem registro":"")+").");
+    if(piorDia&&piorDia.plano/piorDia.esp<.6&&diasSem.length>=4) pt.push("O dia mais fraco é "+piorDia.nome+" ("+piorDia.plano+" de "+piorDia.esp+").");
+    if(fomeRef) pt.push("Fome depois de "+fomeRef.nome.toLowerCase()+" em "+fomeRef.fome+" registros.");
+    frase=pt.length?pt.join(" "):"Sem ponto de quebra claro no período: "+noPlano+" de "+esp+" refeições no plano."; }
+  return {vazio:false,n,dias,mapa,ref,esp,noPlano,esp7,np7,como,faltou,alimentos:top(alim).slice(0,5),receitas:top(recs).slice(0,3),sos:top(sos),doces,doceMuito,frase,ini};
+}
+return {norm,num,fmt,GR,SIG,NOME,NOMES,codigo,porcoes,lerPlano,lerGrade,lerCabecalhos,lerTabela,slotDe,metaHoje,ajustesDoces,docesHoje,gramas,acharAlimento,contaPrato,receitaPara,encaixarDoce,resumo,addDia,DS};
+})();
+if(typeof module!=="undefined") module.exports=HC;
+
+(function(){
+"use strict";
+var SURL=window.SUPA_URL, SKEY=window.SUPA_KEY, Auth=window.HAGAuth||{};
+function hd(extra){ var t=(Auth.token&&Auth.token())||SKEY; return Object.assign({'apikey':SKEY,'Authorization':'Bearer '+t,'Content-Type':'application/json'},extra||{}); }
+async function api(path,opt){ opt=opt||{}; const r=await fetch(SURL+'/rest/v1/'+path,{method:opt.method||'GET',headers:hd(opt.prefer?{'Prefer':opt.prefer}:null),body:opt.body?JSON.stringify(opt.body):undefined});
+  if(!r.ok){ let m='erro '+r.status; try{ const j=await r.json(); m=j.message||j.hint||m; }catch(e){} throw new Error(m); }
+  const t=await r.text(); return t?JSON.parse(t):null; }
+const rpc=(n,a)=>api('rpc/'+n,{method:'POST',body:a});
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const br=s=>s?String(s).slice(8,10)+"/"+String(s).slice(5,7)+"/"+String(s).slice(0,4):"";
+const hojeLocal=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const {num,fmt,GR,NOME}=HC;
+const main=document.getElementById("main"), tabs=document.getElementById("tabs");
+const APP=location.origin+location.pathname.replace(/[^/]*$/,"")+"cozinha_plano_HAG.html"; /* HAG_COZINHA_PLANO_RENOME_v1: o app do plano mudou de nome em 02/10 */
+const D={pacientes:[],casa:[],receitas:[],guias:[],doces:[],regras:{}};
+const S={aba:"pac",busca:"",pid:null,pac:null,ed:null,msg:null,erro:null,link:null,recEd:null};
+const ABAS=[["pac","Paciente"],["rec","Receitas"],["guias","Guias"],["doces","Doces"],["casa","Tabela da casa"],["regras","Regras"]];
+const pend=()=>({rec:D.receitas.filter(x=>x.ativo&&!x.aprovado).length,guias:D.guias.filter(x=>x.ativo&&!x.aprovado).length,doces:D.doces.filter(x=>x.ativo&&!x.aprovado).length});
+function renderTabs(){ const p=pend(); tabs.innerHTML=ABAS.map(([v,l])=>`<button role="tab" aria-selected="${S.aba===v}" data-v="${v}">${l}${p[v]?`<span class="n" title="a aprovar">${p[v]}</span>`:""}</button>`).join(""); }
+const flash=()=>(S.erro?`<div class="erro">${esc(S.erro)}</div>`:"")+(S.msg?`<div class="okmsg">${esc(S.msg)}</div>`:"");
+async function tentar(f){ S.erro=null; S.msg=null; try{ await f(); }catch(e){ S.erro="Não foi possível concluir: "+e.message; } render(); }
+
+/* ---------- carga ---------- */
+async function carregarBase(){
+  const [pac,casa,rec,gui,doc,cfg]=await Promise.all([
+    api('patients?select=id,nome,status,interno&order=nome'), api('cozinha_alimentos?order=ordem,nome'), api('cozinha_receitas?order=nome'),
+    api('cozinha_guias?order=ordem,titulo'), api('cozinha_doces?order=ordem,nome'), api('cozinha_config?id=eq.1')]);
+  D.pacientes=pac||[]; D.casa=casa||[]; D.receitas=rec||[]; D.guias=gui||[]; D.doces=doc||[]; D.regras=(cfg&&cfg[0]&&cfg[0].regras)||{};
+}
+async function abrirPaciente(pid){
+  S.pid=pid; S.ed=null; S.link=null; S.pac=null; render();
+  const desde=HC.addDia(hojeLocal(),-27), e=encodeURIComponent(pid);
+  const [planos,regs,evs,perfil,doc,acc]=await Promise.all([
+    api('cozinha_planos?patient_id=eq.'+e+'&order=criado_em.desc'), api('cozinha_registros?patient_id=eq.'+e+'&data=gte.'+desde+'&order=data,idx'),
+    api('cozinha_eventos?patient_id=eq.'+e+'&data=gte.'+desde+'&order=hora'), api('cozinha_perfil?patient_id=eq.'+e),
+    api('documentos?patient_id=eq.'+e+'&categoria=eq.plano_alimentar&select=id,data_prescricao,created_at,nome_arquivo&order=data_prescricao.desc.nullslast,created_at.desc&limit=1'),
+    api('cozinha_acessos?patient_id=eq.'+e+'&revogado=eq.false&select=token,ultimo_uso&limit=1')]);
+  S.pac={planos:planos||[],regs:(regs||[]).map(r=>({data:r.data,idx:r.idx,como:r.como,detalhe:r.detalhe,sac:r.saciedade,doce:r.doce,faltou:r.faltou})),evs:evs||[],perfil:(perfil&&perfil[0])||null,doc:(doc&&doc[0])||null,acesso:(acc&&acc[0])||null};
+  if(S.pac.acesso) S.link=APP+"?t="+S.pac.acesso.token;
+}
+
+/* ---------- aba Paciente ---------- */
+const nomePac=()=>(D.pacientes.find(p=>p.id===S.pid)||{}).nome||"";
+function resumoHTML(lib){
+  const P=S.pac, rs=HC.resumo(lib,P.regs,P.evs,hojeLocal(),28);
+  if(rs.vazio) return `<div class="card"><div class="kicker">Em 30 segundos</div><p class="sub">Ainda sem nenhum registro do paciente. ${P.acesso&&P.acesso.ultimo_uso?"Ele abriu o link pela última vez em "+br(P.acesso.ultimo_uso.slice(0,10))+".":"O link ainda não foi aberto."}</p></div>`;
+  const pct=(a,b)=>b?Math.round(a/b*100)+"%":"sem dado", dias=rs.dias.slice(-14), sosNome=k=>(D.guias.find(g=>g.chave===k)||{}).titulo||k;
+  const cel=(d,i)=>{ const r=rs.mapa[d+"|"+i]; if(!r) return `<div class="c" title="sem registro">·</div>`;
+    if(r.como==="pulei") return `<div class="c r" title="pulou">✕</div>`;
+    if(r.como==="fora"||/fome/.test(r.sac||"")||r.doce==="muito"||r.faltou) return `<div class="c y" title="${r.como==="fora"?"comeu fora":/fome/.test(r.sac||"")?"ficou com fome":r.faltou?"prato incompleto":"vontade de doce"}">~</div>`;
+    return `<div class="c g" title="no plano">✓</div>`; };
+  const L=(c,a,b)=>`<li class="${c}"><b>${a}</b> ${b}</li>`, t7=rs.esp7?rs.np7/rs.esp7:null;
+  const fal=GR.filter(k=>rs.faltou[k]).sort((a,b)=>rs.faltou[b]-rs.faltou[a]);
+  return `<div class="card"><div class="kicker">Em 30 segundos · desde ${br(rs.ini)}</div>
+    <p style="margin:6px 0 0;font-family:var(--display);font-size:20px;line-height:1.3">${esc(rs.frase)}</p>
+    <ul class="hist">
+      ${L(t7==null?"":t7>=.8?"g":"y","No plano, últimos 7 dias:",`${rs.np7} de ${rs.esp7} refeições (${pct(rs.np7,rs.esp7)}). No período: ${rs.noPlano} de ${rs.esp} (${pct(rs.noPlano,rs.esp)}).`)}
+      ${L("","Como comeu:",`opção do plano ${rs.como.plano||0} · prato montado ${rs.como.montei||0} · receita ${rs.como.receita||0} · fora ${rs.como.fora||0} · pulou ${rs.como.pulei||0}.`)}
+      ${rs.ref.some(x=>x.fome)?L("y","Fome depois de comer:",rs.ref.filter(x=>x.fome).map(x=>esc(x.nome.toLowerCase())+" "+x.fome).join(" · ")+"."):""}
+      ${fal.length?L("y","O que fica faltando no prato montado:",fal.map(k=>NOME[k]+" "+rs.faltou[k]+"x").join(" · ")+"."):""}
+      ${rs.alimentos.length?L("","Mais escolhidos:",rs.alimentos.map(a=>esc(a[0].toLowerCase())+" "+a[1]+"x").join(" · ")+"."):""}
+      ${rs.receitas.length?L("","Receitas usadas:",rs.receitas.map(a=>esc(a[0].toLowerCase())+" "+a[1]+"x").join(" · ")+"."):""}
+      ${rs.sos.length?L("y","Não conseguiu seguir:",rs.sos.map(a=>esc(sosNome(a[0]).toLowerCase())+" "+a[1]+"x").join(" · ")+"."):""}
+      ${rs.doces.length||rs.doceMuito?L("","Doce:",(rs.doces.length?rs.doces.length+" em porções ("+rs.doces.map(x=>esc(x.toLowerCase())).join(", ")+")":"nenhum registrado")+(rs.doceMuito?"; muita vontade depois do jantar em "+rs.doceMuito+" dias":"")+"."):""}
+    </ul>
+    <div class="rolagem"><div class="grade" style="grid-template-columns:minmax(110px,auto) repeat(${dias.length},1fr)" role="table" aria-label="Refeição por dia"><div></div>${dias.map(d=>`<div class="h" title="${br(d)}">${HC.DS[new Date(d+"T12:00:00Z").getUTCDay()][0].toUpperCase()}<br>${d.slice(8,10)}</div>`).join("")}
+      ${lib.refeicoes.map((r,i)=>`<div>${esc(r.nome)}</div>`+dias.map(d=>cel(d,i)).join("")).join("")}</div></div>
+    <p class="note" style="margin:8px 0 0">✓ no plano · ~ comeu fora, ficou com fome ou prato incompleto · ✕ pulou · ponto: sem registro. Sem registro não é o mesmo que pular. O mapa mede o plano, não o paciente.</p></div>`;
+}
+function editorHTML(){
+  const E=S.ed, T={P:"Proteínas",C:"Carboidratos",F:"Frutas",G:"Gorduras",X:"Conta em dois grupos"};
+  return `<div class="card" id="editor"><div class="row between"><div><div class="kicker">${E.id?"Rascunho":"Rascunho novo"}${E.origem_data?" · lido do Plano Alimentar de "+br(E.origem_data):""}</div><h3>Conferir e liberar</h3></div><button class="link" data-a="fechared">fechar sem salvar</button></div>
+    ${(E.avisos||[]).map(a=>`<div class="aviso" style="margin-top:8px">${esc(a)}</div>`).join("")}
+    <p class="note" style="margin:10px 0 4px">1. Porções por refeição, como estão no PDF. Use vírgula para meia porção (2,5).</p>
+    <div class="rolagem"><table id="tgrade"><thead><tr><th>Refeição</th><th>Horário</th><th>P</th><th>C</th><th>F</th><th>G</th><th>Vegetais livres</th><th></th></tr></thead><tbody>
+      ${E.refeicoes.map(r=>`<tr><td><input data-k="nome" value="${esc(r.nome)}"></td><td><input data-k="hora" value="${esc(r.hora||"")}" style="width:110px"></td>${GR.map(k=>`<td class="n"><input data-k="${k}" inputmode="decimal" value="${num(r[k])?fmt(num(r[k])):""}"></td>`).join("")}<td><input type="checkbox" data-k="v" ${r.v?"checked":""}></td><td><button class="link" data-a="rmlinha">tirar</button></td></tr>`).join("")}
+    </tbody></table></div>
+    <button class="btn small ghost" data-a="addref" style="margin-top:6px">＋ refeição</button>
+    <p class="note" style="margin:14px 0 4px">2. Tabela de porções do paciente. Cada linha vale 1 porção. Linha em amarelo: alimento que não está na tabela da casa, confira o grupo.</p>
+    <div class="row"><button class="btn small ghost" data-a="usarcasa">Usar a tabela da casa</button><label class="row note" style="gap:4px"><input type="checkbox" id="semlac"> sem os itens com lactose</label></div>
+    <div class="rolagem"><table id="ttab"><thead><tr><th style="width:150px">Grupo</th><th>Alimento</th><th>Gramas</th><th>Medida caseira</th><th></th></tr></thead><tbody>
+      ${E.tabela.map(a=>`<tr class="${a.duvida?"duvida":""}"${a.vale?` data-vale='${esc(JSON.stringify(a.vale))}'`:""}><td><select data-k="g">${["P","C","F","G","X"].map(g=>`<option value="${g}" ${a.g===g?"selected":""}>${T[g]}</option>`).join("")}</select></td><td><input data-k="nome" value="${esc(a.nome)}"></td><td class="n"><input data-k="gramas" inputmode="decimal" value="${a.gramas==null?"":fmt(num(a.gramas))}" placeholder="rótulo"></td><td><input data-k="medida" value="${esc(a.medida||"")}"></td><td><button class="link" data-a="rmlinha">tirar</button></td></tr>`).join("")}
+    </tbody></table></div>
+    <button class="btn small ghost" data-a="addali" style="margin-top:6px">＋ alimento</button>
+    <div class="cols" style="margin-top:14px">
+      <div><label class="lbl">Quanto vale 1 porção (g do nutriente)</label><div class="row">${GR.map(k=>`<label class="row note" style="gap:4px">${HC.SIG[k]} <input id="def_${k}" style="width:56px" inputmode="decimal" value="${fmt(num((E.defs||{})[k]))}"></label>`).join("")}</div></div>
+      <div><label class="lbl">Doces em porções</label><label class="row" style="gap:6px"><input type="checkbox" id="eddoces" ${E.doces?"checked":""}> liberar para este paciente</label><label class="row note" style="gap:6px;margin-top:4px">até <input id="eddocesdia" style="width:56px" inputmode="numeric" value="${E.doces_dia||1}"> por dia</label></div>
+    </div>
+    <label class="lbl" style="margin-top:12px">Notas da tabela (uma por linha; aparecem para o paciente)</label><textarea id="ednotas" rows="4">${esc((E.notas||[]).join("\n"))}</textarea>
+    <label class="row" style="gap:8px;margin-top:12px"><input type="checkbox" id="conferi"> Conferi a grade e a tabela com o PDF do Plano Alimentar deste paciente.</label>
+    <div class="row" style="margin-top:10px"><button class="btn ghost" data-a="salvared">Salvar rascunho</button><button class="btn" data-a="liberar">Liberar para o paciente</button></div></div>`;
+}
+function coletarEditor(){
+  const E=S.ed, ed=document.getElementById("editor"); if(!ed) return E;
+  E.refeicoes=[...ed.querySelectorAll("#tgrade tbody tr")].map(tr=>{ const g=k=>tr.querySelector(`[data-k="${k}"]`); const r={nome:g("nome").value.trim(),p:num(g("p").value),c:num(g("c").value),f:num(g("f").value),g:num(g("g").value),v:g("v").checked}; const h=g("hora").value.trim(); if(h) r.hora=h; return r; }).filter(r=>r.nome);
+  E.tabela=[...ed.querySelectorAll("#ttab tbody tr")].map(tr=>{ const g=k=>tr.querySelector(`[data-k="${k}"]`), gv=g("gramas").value.trim(); const a={g:g("g").value,nome:g("nome").value.trim(),gramas:gv===""?null:num(gv),medida:g("medida").value.trim()};
+    if(a.g==="X") a.vale=tr.dataset.vale?JSON.parse(tr.dataset.vale):{p:.5,c:.5}; if(tr.classList.contains("duvida")) a.duvida=true; return a; }).filter(a=>a.nome);
+  E.defs={}; GR.forEach(k=>{ E.defs[k]=num(document.getElementById("def_"+k).value); });
+  E.doces=document.getElementById("eddoces").checked; E.doces_dia=Math.max(1,Math.round(num(document.getElementById("eddocesdia").value))||1);
+  E.notas=document.getElementById("ednotas").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  E.conferi=document.getElementById("conferi").checked; return E;
+}
+function validar(E){ const er=[]; if(!E.refeicoes.length) er.push("Não há refeição na grade."); if(!E.refeicoes.some(r=>r.p>0)) er.push("Nenhuma refeição tem proteína.");
+  GR.forEach(k=>{ if(E.refeicoes.some(r=>r[k]>0)&&!E.tabela.some(a=>a.g===k.toUpperCase())) er.push("A grade pede "+NOME[k]+", mas a tabela não tem nenhum alimento desse grupo."); });
+  const v={}; E.tabela.forEach(a=>{ const n=HC.norm(a.nome); if(v[n]) er.push("Alimento repetido na tabela: "+a.nome+"."); v[n]=1; });
+  if(!E.conferi) er.push("Marque que conferiu com o PDF."); return er; }
+async function salvarEditor(){ const E=coletarEditor(), corpo={patient_id:S.pid,status:"rascunho",refeicoes:E.refeicoes,tabela:E.tabela.map(a=>{ const o=Object.assign({},a); delete o.duvida; return o; }),defs:E.defs,notas:E.notas,doces:E.doces,doces_dia:E.doces_dia,origem_documento:E.origem_documento||null,origem_data:E.origem_data||null,origem:E.origem||null,atualizado_em:new Date().toISOString()};
+  if(E.id) await api('cozinha_planos?id=eq.'+E.id+'&status=eq.rascunho',{method:'PATCH',body:corpo});
+  else { const r=await api('cozinha_planos',{method:'POST',body:corpo,prefer:'return=representation'}); E.id=r[0].id; }
+  return E; }
+const casaComoTabela=semLac=>D.casa.filter(a=>a.ativo&&!(semLac&&a.lactose)).map(a=>{ const o={g:a.grupo,nome:a.nome,gramas:a.gramas==null?null:num(a.gramas),medida:a.medida||""}; if(a.vale) o.vale=a.vale; return o; });
+function mensagemDaniela(){ const n=nomePac().split(" ")[0]; return `${n}, tudo bem? O Dr. Henrique liberou o seu HAG Cozinha, a versão de bolso do seu Plano Alimentar: ${S.link}\n\nPor ele você monta o prato com o que tem em casa, na medida certa do seu plano, e marca como foi o dia. Vale salvar o link na tela inicial do celular. Qualquer dificuldade para abrir, é só me chamar por aqui.`; }
+function renderPac(){
+  const q=HC.norm(S.busca), ach=q.length>=2?D.pacientes.filter(p=>HC.norm(p.nome).includes(q)).slice(0,12):[];
+  let h=`<div class="card"><label class="lbl" for="busca">Paciente</label><input id="busca" placeholder="Digite o nome" value="${esc(S.busca)}" autocomplete="off">
+    ${ach.length?`<div class="lista">${ach.map(p=>`<button data-a="abrir" data-v="${esc(p.id)}">${esc(p.nome)}${p.interno?` <span class="tag">interno</span>`:""}</button>`).join("")}</div>`:q.length>=2?`<p class="note">Ninguém com esse nome.</p>`:""}</div>`;
+  if(S.pid&&!S.pac) h+=`<p class="note">Carregando ${esc(nomePac())}…</p>`;
+  if(S.pid&&S.pac){ const P=S.pac, lib=P.planos.find(x=>x.status==="liberado"), ras=P.planos.find(x=>x.status==="rascunho");
+    h+=`<div><div class="kicker">Paciente</div><h2>${esc(nomePac())}</h2></div>${flash()}`;
+    if(lib) h+=resumoHTML(lib);
+    h+=`<div class="card"><div class="kicker">Plano na Cozinha</div>
+      <p style="margin:6px 0 0">${lib?`<span class="tag g">liberado</span> versão ${lib.versao}, em ${br((lib.liberado_em||"").slice(0,10))}${lib.origem_data?", lido do Plano Alimentar de "+br(lib.origem_data):""}. ${lib.refeicoes.length} refeições, ${lib.tabela.length} alimentos${lib.doces?", doces em porções ligados":""}.`:`<span class="tag">nada liberado</span> O paciente ainda não vê nada no HAG Cozinha.`}</p>
+      ${ras?`<p class="note" style="margin:6px 0 0">Há um rascunho salvo em ${br(ras.atualizado_em.slice(0,10))}, ainda não liberado.</p>`:""}
+      ${P.doc?`<p class="note" style="margin:6px 0 0">Último Plano Alimentar emitido: ${br(P.doc.data_prescricao||P.doc.created_at.slice(0,10))}${lib&&lib.origem_documento===P.doc.id?" (é o que está liberado)":lib?" · mais novo que o liberado, vale reler":""}.</p>`:`<p class="note" style="margin:6px 0 0">Nenhum Plano Alimentar com texto no HAG OS para este paciente. Dá para preencher à mão.</p>`}
+      <div class="row" style="margin-top:10px">${P.doc?`<button class="btn" data-a="ler">Ler do Plano Alimentar de ${br(P.doc.data_prescricao||P.doc.created_at.slice(0,10))}</button>`:""}${ras?`<button class="btn ghost" data-a="abrirras">Abrir o rascunho</button>`:""}${lib?`<button class="btn ghost" data-a="editarlib">Ajustar o liberado (vira rascunho)</button>`:""}<button class="btn ghost" data-a="emmaos">Preencher à mão</button></div></div>`;
+    if(S.ed) h+=editorHTML();
+    if(lib) h+=`<div class="card"><div class="kicker">Link do paciente</div>${S.link?`<p class="mono" style="word-break:break-all;margin:6px 0 0">${esc(S.link)}</p><div class="row" style="margin-top:8px"><button class="btn small" data-a="copiar" data-v="link">Copiar o link</button><button class="btn small ghost" data-a="copiar" data-v="msg">Copiar a mensagem para a Daniela enviar</button></div><p class="note" style="margin:8px 0 0">O envio do link é contato administrativo: sai da Daniela, não do médico. ${P.acesso&&P.acesso.ultimo_uso?"Último acesso do paciente: "+br(P.acesso.ultimo_uso.slice(0,10))+".":"O paciente ainda não abriu."}</p>`:`<button class="btn small" data-a="gerarlink" style="margin-top:6px">Gerar o link</button>`}</div>`;
+    if(P.perfil&&P.perfil.nao_gosta.length) h+=`<div class="card"><div class="kicker">O paciente tirou das sugestões</div><p style="margin:6px 0 0">${P.perfil.nao_gosta.map(esc).join(" · ")}</p><p class="note" style="margin:6px 0 0">Marcado por ele na aba "Minha tabela". Serve para montar o próximo plano.</p></div>`;
+  }
+  main.innerHTML=h;
+}
+
+/* ---------- listas editáveis (guias, doces, tabela da casa) ---------- */
+const pega=(o,p)=>p.split(".").reduce((a,k)=>a==null?a:a[k],o);
+function poe(o,p,v){ const ks=p.split("."); let a=o; ks.slice(0,-1).forEach(k=>{ a[k]=Object.assign({},a[k]); a=a[k]; }); a[ks[ks.length-1]]=v; }
+const LISTAS={
+  fora:{tabela:"cozinha_guias",dados:()=>D.guias.filter(g=>g.tipo==="fora"),novo:()=>({tipo:"fora",chave:"fora_"+Date.now(),titulo:"",conteudo:{},ordem:50,aprovado:false,ativo:true}),aprova:true,
+    campos:[["titulo","Lugar","text"],["conteudo.melhor","Melhor escolha","area"],["conteudo.boa","Boa escolha","area"],["conteudo.ajuste","Possível com ajuste","area"]]},
+  sos:{tabela:"cozinha_guias",dados:()=>D.guias.filter(g=>g.tipo==="sos"),novo:()=>({tipo:"sos",chave:"sos_"+Date.now(),titulo:"",conteudo:{destino:""},ordem:150,aprovado:false,ativo:true}),aprova:true,
+    campos:[["titulo","Situação","text"],["conteudo.texto","O que o paciente lê","area"],["conteudo.destino","Para onde leva","sel",[["","só o texto"],["fora","guia de comer fora"],["receitas:rápida","receitas rápidas"],["doces","doces em porções"]]]]},
+  doces:{tabela:"cozinha_doces",dados:()=>D.doces,novo:()=>({nome:"",medida:"",c:0,g:0,categoria:"",ordem:99,aprovado:false,ativo:true}),aprova:true,linha:true,
+    campos:[["nome","Doce","text"],["medida","Medida","text"],["c","Custa em C","num"],["g","Custa em G","num"],["categoria","Categoria","text"]]},
+  casa:{tabela:"cozinha_alimentos",dados:()=>D.casa,novo:()=>({grupo:"P",nome:"",gramas:null,medida:"",lactose:false,ordem:999,ativo:true}),linha:true,
+    campos:[["grupo","Grupo","sel",[["P","Proteína"],["C","Carboidrato"],["F","Fruta"],["G","Gordura"],["X","Dois grupos"]]],["nome","Alimento","text"],["gramas","Gramas por porção","num"],["medida","Medida caseira","text"],["lactose","Tem lactose","bool"]]}
+};
+function campoHTML(it,[p,rot,tipo,op]){ const v=pega(it,p), at=`data-p="${p}" data-t="${tipo}"`;
+  if(tipo==="area") return `<div><label class="lbl">${rot}</label><textarea ${at} rows="2">${esc(v||"")}</textarea></div>`;
+  if(tipo==="bool") return `<label class="row note" style="gap:5px"><input type="checkbox" ${at} ${v?"checked":""}> ${rot}</label>`;
+  if(tipo==="sel") return `<div><label class="lbl">${rot}</label><select ${at}>${op.map(o=>`<option value="${esc(o[0])}" ${String(v||"")===o[0]?"selected":""}>${esc(o[1])}</option>`).join("")}</select></div>`;
+  return `<div><label class="lbl">${rot}</label><input ${at} ${tipo==="num"?'inputmode="decimal"':""} value="${esc(tipo==="num"?(v==null?"":fmt(num(v))):(v||""))}"></div>`; }
+function listaHTML(chave,titulo,sub){ const L=LISTAS[chave], its=L.dados(), pendN=L.aprova?its.filter(x=>x.ativo&&!x.aprovado).length:0;
+  return `<div class="row between"><div><h2>${titulo}</h2><p class="sub">${sub}</p></div><div class="row">${pendN?`<button class="btn small" data-a="aprovartodos" data-l="${chave}">Aprovar os ${pendN} pendentes</button>`:""}<button class="btn small ghost" data-a="novoitem" data-l="${chave}">＋ novo</button></div></div>
+    ${its.map((it,i)=>`<div class="item${L.aprova&&!it.aprovado&&it.ativo?" pend":""}" data-l="${chave}" data-id="${esc(it.id||"")}" data-i="${i}" style="${it.ativo?"":"opacity:.55"}">
+      <div class="${L.linha?"cols":""}" style="${L.linha?"":"display:flex;flex-direction:column;gap:8px"}">${L.campos.map(c=>campoHTML(it,c)).join("")}</div>
+      <div class="row between"><div class="row">${L.aprova?`<label class="row" style="gap:5px"><input type="checkbox" data-p="aprovado" data-t="bool" ${it.aprovado?"checked":""}> aprovado, o paciente vê</label>`:""}<label class="row note" style="gap:5px"><input type="checkbox" data-p="ativo" data-t="bool" ${it.ativo?"checked":""}> ativo</label></div><button class="btn small" data-a="salvaritem">Salvar</button></div></div>`).join("")||`<p class="note">Nada aqui ainda.</p>`}`; }
+function lerItem(el){ const L=LISTAS[el.dataset.l], base=el.dataset.id?L.dados().find(x=>x.id===el.dataset.id):L.novo(), o=JSON.parse(JSON.stringify(base));
+  el.querySelectorAll("[data-p]").forEach(c=>{ const t=c.dataset.t; poe(o,c.dataset.p,t==="bool"?c.checked:t==="num"?(c.value.trim()===""?null:num(c.value)):c.value.trim()); }); return o; }
+
+/* ---------- receitas ---------- */
+const SLOTS=[["cafe","café da manhã"],["almoco","almoço"],["lanche","lanche"],["jantar","jantar"],["ceia","ceia"]];
+function receitaVetor(r){ const v={p:0,c:0,f:0,g:0}; (r.ingredientes||[]).forEach(i=>{ v[String(i.grupo).toLowerCase()]+=num(i.por); }); return HC.codigo(v); }
+function recEditorHTML(){ const r=S.recEd;
+  return `<div class="card" id="receditor"><div class="row between"><h3>${r.id?"Editar receita":"Receita nova"}</h3><button class="link" data-a="fecharrec">fechar sem salvar</button></div>
+    <div class="cols" style="margin-top:8px"><div><label class="lbl">Nome</label><input id="rnome" value="${esc(r.nome||"")}"></div><div><label class="lbl">Tempo (min)</label><input id="rtempo" inputmode="numeric" value="${r.tempo_min||""}"></div><div><label class="lbl">Etiquetas (vírgula)</label><input id="rtags" value="${esc((r.tags||[]).join(", "))}"></div></div>
+    <div class="row" style="margin-top:8px">${SLOTS.map(s=>`<label class="row note" style="gap:4px"><input type="checkbox" data-slot="${s[0]}" ${(r.slots||[]).includes(s[0])?"checked":""}> ${s[1]}</label>`).join("")}</div>
+    <label class="lbl" style="margin-top:10px">Por que esta receita (uma frase para o paciente)</label><input id="rporque" value="${esc(r.porque||"")}">
+    <label class="lbl" style="margin-top:10px">Ingredientes que contam porção: uma linha cada, no formato  porções | grupo | alimento da tabela da casa</label>
+    <textarea id="ring" rows="5" class="mono">${esc((r.ingredientes||[]).map(i=>fmt(num(i.por))+" | "+i.grupo+" | "+i.alimento).join("\n"))}</textarea>
+    <p class="note" style="margin:4px 0 0">O paciente não vê estas porções: o app recalcula cada grupo para a refeição dele e mostra os gramas da tabela dele.</p>
+    <div class="cols" style="margin-top:10px"><div><label class="lbl">Livres e temperos (um por linha)</label><textarea id="rlivres" rows="3">${esc((r.livres||[]).join("\n"))}</textarea></div><div><label class="lbl">Preparo (um passo por linha)</label><textarea id="rprep" rows="3">${esc((r.preparo||[]).join("\n"))}</textarea></div></div>
+    <label class="lbl" style="margin-top:10px">Como guardar</label><input id="rcons" value="${esc(r.conservacao||"")}">
+    <div class="row between" style="margin-top:12px"><div class="row"><label class="row" style="gap:5px"><input type="checkbox" id="raprov" ${r.aprovado?"checked":""}> aprovada, o paciente vê</label><label class="row note" style="gap:5px"><input type="checkbox" id="rativo" ${r.ativo!==false?"checked":""}> ativa</label></div><button class="btn" data-a="salvarrec">Salvar receita</button></div></div>`; }
+function lerReceita(){ const g=id=>document.getElementById(id), linhas=s=>s.split("\n").map(x=>x.trim()).filter(Boolean), er=[];
+  const ing=linhas(g("ring").value).map(l=>{ const a=l.split("|").map(x=>x.trim()); const o={alimento:a.slice(2).join("|"),grupo:(a[1]||"").toUpperCase(),por:num(a[0])};
+    if(!o.por||!"PCFG".includes(o.grupo)||o.grupo.length!==1||!o.alimento) er.push("Linha de ingrediente fora do formato: "+l); else if(!D.casa.some(c=>HC.norm(c.nome)===HC.norm(o.alimento))) er.push("\""+o.alimento+"\" não está na tabela da casa."); return o; });
+  const r={nome:g("rnome").value.trim(),tempo_min:Math.round(num(g("rtempo").value))||null,tags:g("rtags").value.split(",").map(x=>x.trim()).filter(Boolean),slots:[...document.querySelectorAll("[data-slot]")].filter(c=>c.checked).map(c=>c.dataset.slot),
+    porque:g("rporque").value.trim(),ingredientes:ing,livres:linhas(g("rlivres").value),preparo:linhas(g("rprep").value),conservacao:g("rcons").value.trim(),aprovado:g("raprov").checked,ativo:g("rativo").checked,atualizado_em:new Date().toISOString()};
+  if(!r.nome) er.push("Falta o nome."); if(!ing.some(i=>i.grupo==="P")) er.push("A receita precisa de pelo menos um ingrediente de proteína."); if(!r.slots.length) er.push("Marque em qual refeição ela entra.");
+  return {r,er}; }
+function renderRec(){ const pn=pend().rec;
+  main.innerHTML=`${flash()}<div class="row between"><div><h2>Receitas</h2><p class="sub">Escritas em porções. O paciente só vê as aprovadas, já recalculadas para a refeição e a tabela dele.</p></div><div class="row">${pn?`<button class="btn small" data-a="aprovarrecs">Aprovar as ${pn} pendentes</button>`:""}<button class="btn small ghost" data-a="novarec">＋ nova</button></div></div>
+    ${S.recEd?recEditorHTML():""}
+    ${D.receitas.map(r=>`<div class="item${r.ativo&&!r.aprovado?" pend":""}" style="${r.ativo?"":"opacity:.55"}"><div class="row between"><div><b>${esc(r.nome)}</b> <span class="mono">${esc(receitaVetor(r))}</span><div class="note">${(r.slots||[]).map(s=>(SLOTS.find(x=>x[0]===s)||[0,s])[1]).join(", ")}${r.tempo_min?" · "+r.tempo_min+" min":""}${(r.tags||[]).length?" · "+r.tags.map(esc).join(", "):""}</div></div>
+      <div class="row"><span class="tag ${r.aprovado?"g":"y"}">${r.aprovado?"aprovada":"a aprovar"}</span><button class="btn small ghost" data-a="editarrec" data-v="${esc(r.id)}">Abrir</button>${r.aprovado?"":`<button class="btn small" data-a="aprovarrec" data-v="${esc(r.id)}">Aprovar</button>`}</div></div></div>`).join("")}`; }
+function renderRegras(){ const R=D.regras;
+  main.innerHTML=`${flash()}<div><h2>Regras em vigor</h2><p class="sub">Tudo o que o app decide sozinho está aqui, e é conta. Nada é liberado por fora do plano, da tabela e das receitas que você aprovou.</p></div>
+    <div class="card"><div class="cols">
+      <div><label class="lbl">Receita: menor escala por grupo</label><input id="g_min" inputmode="decimal" value="${fmt(num(R.escala_min||.5))}"><p class="note" style="margin:4px 0 0">Abaixo disso a receita não é oferecida para a refeição.</p></div>
+      <div><label class="lbl">Receita: maior escala por grupo</label><input id="g_max" inputmode="decimal" value="${fmt(num(R.escala_max||2))}"><p class="note" style="margin:4px 0 0">Ex.: receita de 2 porções de proteína serve refeições de 1 a 4.</p></div>
+    </div>
+    <div class="row" style="margin-top:12px"><label class="row" style="gap:6px"><input type="checkbox" id="g_sac" ${R.perguntar_saciedade!==false?"checked":""}> perguntar como ficou depois de comer (opcional para o paciente)</label></div>
+    <div class="row" style="margin-top:6px"><label class="row" style="gap:6px"><input type="checkbox" id="g_doce" ${R.perguntar_doce!==false?"checked":""}> perguntar da vontade de doce depois do jantar e da ceia</label></div>
+    <button class="btn" data-a="salvarregras" style="margin-top:12px">Salvar</button></div>
+    <div class="card"><h3>O que é fixo, por desenho</h3><ul class="hist">
+      <li><b>Prato montado:</b> o paciente só soma porções de alimentos da tabela do plano dele, até o que a refeição pede. O app multiplica os gramas, não estima nada.</li>
+      <li><b>Receita:</b> cada grupo é recalculado para as porções da refeição. Ingrediente fora da tabela do paciente esconde a receita para ele.</li>
+      <li><b>Doce:</b> só para quem você ligou no plano. Sai do carboidrato e da gordura de uma refeição do mesmo dia, da última para a primeira. Proteína e fruta nunca entram.</li>
+      <li><b>Calorias:</b> o app não mostra nem calcula. Fala a língua do seu plano: porções e gramas.</li>
+      <li><b>IA:</b> nenhuma. Nenhuma chamada paga.</li></ul></div>`; }
+function render(){
+  renderTabs();
+  if(S.aba==="pac") return renderPac();
+  if(S.aba==="rec") return renderRec();
+  if(S.aba==="regras") return renderRegras();
+  if(S.aba==="guias") return void(main.innerHTML=flash()+listaHTML("sos","Não consigo seguir o plano agora","As saídas que o paciente vê quando aperta o botão. Escritas por você, uma vez.")+`<div style="height:10px"></div>`+listaHTML("fora","Comer fora","Três saídas por tipo de lugar."));
+  if(S.aba==="doces") return void(main.innerHTML=flash()+listaHTML("doces","Doces em porções","Quanto cada doce custa em carboidrato e gordura. Só aparece para o paciente que tem doces ligados no plano."));
+  if(S.aba==="casa") return void(main.innerHTML=flash()+listaHTML("casa","Tabela de porções da casa","A tabela-mãe. Serve para reconhecer os alimentos na leitura do PDF, para as receitas e para o plano preenchido à mão. A tabela de cada paciente é a do plano dele."));
+}
+
+/* ---------- eventos ---------- */
+tabs.addEventListener("click",e=>{ const b=e.target.closest("button"); if(b){ S.aba=b.dataset.v; S.msg=S.erro=null; S.recEd=null; render(); } });
+main.addEventListener("input",e=>{ if(e.target.id==="busca"){ S.busca=e.target.value; const pos=e.target.selectionStart; renderPac(); const el=document.getElementById("busca"); el.focus(); el.setSelectionRange(pos,pos); } });
+main.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]"); if(!b||b.disabled) return; const a=b.dataset.a, v=b.dataset.v;
+  if(a==="abrir"){ S.busca=""; S.msg=S.erro=null; return tentar(()=>abrirPaciente(v)); }
+  if(a==="ler") return tentar(async()=>{ const d=await api('documentos?id=eq.'+S.pac.doc.id+'&select=id,texto,data_prescricao,created_at'); const txt=(d&&d[0]&&d[0].texto)||"";
+    const r=HC.lerPlano(txt,D.casa); S.ed={id:null,refeicoes:r.refeicoes,tabela:r.tabela,defs:r.defs,notas:r.notas,doces:false,doces_dia:1,avisos:r.avisos.concat(r.refeicoes.length&&r.tabela.length?["Leitura automática: "+r.refeicoes.length+" refeições e "+r.tabela.length+" alimentos. As opções prontas de cada refeição continuam só no PDF."]:[]),origem_documento:d[0].id,origem_data:d[0].data_prescricao||d[0].created_at.slice(0,10),origem:"pdf"};
+    const ras=S.pac.planos.find(x=>x.status==="rascunho"); if(ras) S.ed.id=ras.id; });
+  if(a==="abrirras"||a==="editarlib"){ const o=S.pac.planos.find(x=>x.status===(a==="abrirras"?"rascunho":"liberado")), ras=S.pac.planos.find(x=>x.status==="rascunho");
+    S.ed={id:a==="abrirras"?o.id:(ras?ras.id:null),refeicoes:JSON.parse(JSON.stringify(o.refeicoes)),tabela:JSON.parse(JSON.stringify(o.tabela)),defs:o.defs,notas:o.notas,doces:o.doces,doces_dia:o.doces_dia,avisos:a==="editarlib"?["Você está ajustando uma cópia do plano liberado. O paciente só vê a mudança depois de liberar de novo."+(ras?" Isso substitui o rascunho que já existia.":"")]:[],origem_documento:o.origem_documento,origem_data:o.origem_data,origem:o.origem}; return render(); }
+  if(a==="emmaos"){ const ras=S.pac.planos.find(x=>x.status==="rascunho"); S.ed={id:ras?ras.id:null,refeicoes:["Café da manhã","Almoço","Lanche da tarde","Jantar"].map(n=>({nome:n,p:0,c:0,f:0,g:0,v:/Almoço|Jantar/.test(n)})),tabela:casaComoTabela(false),defs:{p:10,c:15,f:15,g:8},notas:[],doces:false,doces_dia:1,avisos:["Grade em branco com a tabela da casa. Preencha as porções de cada refeição."+(ras?" Isso substitui o rascunho que já existia.":"")],origem:"manual"}; return render(); }
+  if(a==="fechared"){ S.ed=null; return render(); }
+  if(a==="rmlinha"){ coletarEditor(); const tr=b.closest("tr"), tb=tr.parentNode, i=[...tb.children].indexOf(tr); (tb.parentNode.id==="tgrade"?S.ed.refeicoes:S.ed.tabela).splice(i,1); return render(); }
+  if(a==="addref"){ coletarEditor(); S.ed.refeicoes.push({nome:"Nova refeição",p:0,c:0,f:0,g:0,v:false}); return render(); }
+  if(a==="addali"){ coletarEditor(); S.ed.tabela.push({g:"P",nome:"Novo alimento",gramas:null,medida:"",duvida:true}); return render(); }
+  if(a==="usarcasa"){ const sl=document.getElementById("semlac").checked; coletarEditor(); S.ed.tabela=casaComoTabela(sl); return render(); }
+  if(a==="salvared") return tentar(async()=>{ await salvarEditor(); S.msg="Rascunho salvo. O paciente ainda não vê."; const ed=S.ed; await abrirPaciente(S.pid); S.ed=ed; });
+  if(a==="liberar"){ const er=validar(coletarEditor()); if(er.length){ S.erro=er.join(" "); S.msg=null; return render(); }
+    return tentar(async()=>{ const E=await salvarEditor(), r=await rpc('hag_cozinha_liberar',{p_plano:E.id}); if(!r||!r.ok) throw new Error((r&&r.erro)||"não liberou"); await abrirPaciente(S.pid); S.link=APP+"?t="+r.token; S.msg="Plano liberado, versão "+r.versao+". O link do paciente está logo abaixo."; }); }
+  if(a==="gerarlink") return tentar(async()=>{ const t=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+"?t="+t; });
+  if(a==="copiar"){ const txt=v==="msg"?mensagemDaniela():S.link; (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{ S.msg=v==="msg"?"Mensagem copiada. Ela sai da Daniela.":"Link copiado."; S.erro=null; render(); }).catch(()=>{ S.erro="O navegador não deixou copiar. Selecione o texto e copie à mão."; render(); }); return; }
+  if(a==="novoitem"){ const L=LISTAS[b.dataset.l], it=L.novo(); if(L.tabela==="cozinha_guias") D.guias.unshift(it); else if(L.tabela==="cozinha_doces") D.doces.unshift(it); else D.casa.unshift(it); return render(); }
+  if(a==="salvaritem"){ const el=b.closest(".item"), L=LISTAS[el.dataset.l], o=lerItem(el); const nomeK=L.campos.find(c=>c[0]==="nome"||c[0]==="titulo")[0];
+    if(!pega(o,nomeK)){ S.erro="Falta o nome."; return render(); }
+    return tentar(async()=>{ const id=o.id; delete o.id; o.atualizado_em=new Date().toISOString(); if(id) await api(L.tabela+'?id=eq.'+id,{method:'PATCH',body:o}); else await api(L.tabela,{method:'POST',body:o}); await carregarBase(); S.msg="Salvo."; }); }
+  if(a==="aprovartodos"){ const L=LISTAS[b.dataset.l], tipo=b.dataset.l; return tentar(async()=>{ await api(L.tabela+'?aprovado=eq.false&ativo=eq.true'+(L.tabela==="cozinha_guias"?'&tipo=eq.'+tipo:''),{method:'PATCH',body:{aprovado:true,atualizado_em:new Date().toISOString()}}); await carregarBase(); S.msg="Aprovados. O paciente passa a ver."; }); }
+  if(a==="novarec"){ S.recEd={slots:[],tags:[],ingredientes:[],livres:[],preparo:[],ativo:true,aprovado:false}; return render(); }
+  if(a==="editarrec"){ S.recEd=JSON.parse(JSON.stringify(D.receitas.find(r=>r.id===v))); render(); return window.scrollTo(0,0); }
+  if(a==="fecharrec"){ S.recEd=null; return render(); }
+  if(a==="salvarrec"){ const {r,er}=lerReceita(); if(er.length){ S.erro=er.join(" "); S.msg=null; S.recEd=Object.assign(S.recEd,r); return render(); }
+    return tentar(async()=>{ if(S.recEd.id) await api('cozinha_receitas?id=eq.'+S.recEd.id,{method:'PATCH',body:r}); else await api('cozinha_receitas',{method:'POST',body:r}); S.recEd=null; await carregarBase(); S.msg="Receita salva."; }); }
+  if(a==="aprovarrec") return tentar(async()=>{ await api('cozinha_receitas?id=eq.'+v,{method:'PATCH',body:{aprovado:true,atualizado_em:new Date().toISOString()}}); await carregarBase(); });
+  if(a==="aprovarrecs") return tentar(async()=>{ await api('cozinha_receitas?aprovado=eq.false&ativo=eq.true',{method:'PATCH',body:{aprovado:true,atualizado_em:new Date().toISOString()}}); await carregarBase(); S.msg="Receitas aprovadas. O paciente passa a ver."; });
+  if(a==="salvarregras"){ const g=id=>document.getElementById(id), R=Object.assign({},D.regras,{escala_min:num(g("g_min").value)||.5,escala_max:num(g("g_max").value)||2,perguntar_saciedade:g("g_sac").checked,perguntar_doce:g("g_doce").checked});
+    return tentar(async()=>{ await api('cozinha_config?id=eq.1',{method:'PATCH',body:{regras:R,atualizado_em:new Date().toISOString()}}); D.regras=R; S.msg="Regras salvas."; }); }
+});
+async function boot(){
+  for(let k=0;k<8 && !(Auth.valid&&Auth.valid());k++) await new Promise(r=>setTimeout(r,400));
+  if(!(Auth.valid&&Auth.valid())){ main.innerHTML=`<div class="card"><h3>Acesso restrito à equipe</h3><p class="note">Faça login para abrir o painel. Se a tela de login não apareceu, recarregue a página.</p></div>`; return; }
+  try{ await carregarBase(); const p=new URLSearchParams(location.search).get("p"); render(); if(p&&D.pacientes.some(x=>x.id===p)) await tentar(()=>abrirPaciente(p)); }
+  catch(e){ main.innerHTML=`<div class="erro">Não foi possível carregar: ${esc(e.message)}. Se a sessão expirou, recarregue a página e entre de novo.</div>`; } }
+boot();
+})();
+</script>
+</body>
+</html>
