@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1B2745">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HAG Cozinha">
+<title>HAG Cozinha</title>
+<!-- HAG_COZINHA_v1 (01/10/2026)
+     App do paciente. Entra pelo link pessoal (?t=TOKEN), nunca por login: as duas únicas funções que
+     respondem sem login são hag_cozinha_contexto e hag_cozinha_salvar, e só com o token.
+     Lê o plano que o Dr. Henrique liberou (porções por refeição + tabela de porções) e devolve o que
+     aconteceu no dia. Não prescreve, não calcula caloria, não usa IA: a conta é feita neste aparelho. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#F6F4EF;--surface:#FFFFFF;--cream:#FAF7F1;--ink:#1B2745;--ink-2:#4A5568;--muted:#6F7585;--line:#E3DED3;--gold:#9C7A36;--gold-ui:#B8924A;--gold-soft:#EFE3C8;--navy:#1B2745;--on-navy:#F4EEDF;
+  --good:#2F7D5B;--warn:#A86A12;--crit:#B4413A;--good-bg:#E4F1EA;--warn-bg:#F7EDDC;--crit-bg:#F6E3E1;--btn:#1B2745;--on-btn:#F4EEDF;
+  --gp:#1B2745;--gc:#9C7A36;--gf:#B4413A;--gg:#2F7D5B;
+  --display:"Caladea",Georgia,serif;--body:"Carlito","Lato","Helvetica Neue",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){:root{--bg:#0F1524;--surface:#161E31;--cream:#1C2539;--ink:#ECE6D6;--ink-2:#B9BCC6;--muted:#9499A8;--line:#2A3450;--gold:#D4B06A;--gold-ui:#D4B06A;--gold-soft:#3A3322;--navy:#0B1020;--on-navy:#F0E7D2;
+  --good:#5DBB8E;--warn:#E0A84A;--crit:#E07B72;--good-bg:#16302A;--warn-bg:#3A2E18;--crit-bg:#3A1F1E;--btn:#ECE6D6;--on-btn:#0F1524;--gp:#C9D2EC;--gc:#D4B06A;--gf:#E07B72;--gg:#5DBB8E;color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;margin:0}
+button,input,select{font:inherit;color:inherit}
+header.top{background:var(--navy);color:var(--on-navy);padding:calc(12px + env(safe-area-inset-top)) 16px 0;position:sticky;top:0;z-index:5}
+header.top .in,.wrap{max-width:560px;margin:0 auto}
+.wrap{padding:16px 16px calc(80px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+.brand{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-ui)}
+h1{font-family:var(--display);font-size:22px;margin:2px 0 0}
+nav.tabs{display:flex;gap:2px;margin-top:8px;overflow-x:auto}
+nav.tabs button{background:none;border:0;color:var(--on-navy);opacity:.72;padding:10px 11px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;font-size:15px}
+nav.tabs button[aria-selected="true"]{opacity:1;border-bottom-color:var(--gold-ui);font-weight:700}
+:focus-visible{outline:2px solid var(--gold-ui);outline-offset:2px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h2{font-family:var(--display);font-size:22px;margin:2px 0 0;line-height:1.2}
+h3{font-family:var(--display);font-size:19px;margin:0}
+.sub{color:var(--ink-2);font-size:14.5px;margin:4px 0 0}
+.note{font-size:13.5px;color:var(--ink-2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.btn{font-weight:700;padding:11px 15px;border-radius:10px;border:0;background:var(--btn);color:var(--on-btn);cursor:pointer;min-height:44px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.small{padding:8px 12px;font-size:14.5px;min-height:38px}
+.btn[disabled]{opacity:.45;cursor:default}
+.link{background:none;border:0;padding:4px 0;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:14px}
+.chip{font-size:14px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;cursor:pointer;min-height:36px}
+.chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold-ui)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.mono{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.tag{font-family:var(--mono);font-size:11.5px;border-radius:999px;padding:2px 9px;border:1px solid var(--line);white-space:nowrap}
+.tag.g{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+.tag.y{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.tag.r{background:var(--crit-bg);border-color:var(--crit);color:var(--crit)}
+.por{display:inline-flex;align-items:center;gap:6px;font-size:14px;border-radius:8px;padding:4px 9px;background:var(--cream);border:1px solid var(--line)}
+.por b{font-family:var(--mono);font-size:13px}
+.por i{width:9px;height:9px;border-radius:50%;flex:none}
+.por.p i{background:var(--gp)} .por.c i{background:var(--gc)} .por.f i{background:var(--gf)} .por.g i{background:var(--gg)} .por.v i{background:var(--muted)}
+.ref .hora{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.ref .nome{font-family:var(--display);font-size:20px;font-weight:700}
+.ref.feita{background:var(--cream)}
+.rodape{border-top:1px solid var(--line);padding-top:10px;margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.drawer{border:1px dashed var(--gold-ui);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--surface);margin-top:10px}
+.linha{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-top:1px solid var(--line);align-items:center}
+.linha:first-child{border-top:0}
+.prato{border-radius:10px;background:var(--cream);border:1px solid var(--line);padding:12px}
+.esc{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.esc div{padding:9px 12px;border-radius:9px;font-size:14.5px}
+.esc .m{background:var(--good-bg)} .esc .b{background:var(--cream)} .esc .p{background:var(--warn-bg)}
+ol.passos{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.fora{text-decoration:line-through;opacity:.55}
+.aviso{background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:10px 12px;font-size:14px}
+.fila{background:var(--gold-soft);border-radius:10px;padding:9px 12px;font-size:13.5px}
+.centro{text-align:center;padding:40px 16px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="brand">Método HAG</div>
+  <h1 id="titulo">HAG Cozinha</h1>
+  <nav class="tabs" role="tablist" id="tabs" hidden>
+    <button role="tab" aria-selected="true" data-v="hoje">Hoje</button>
+    <button role="tab" aria-selected="false" data-v="rec">Receitas</button>
+    <button role="tab" aria-selected="false" data-v="fora">Fora de casa</button>
+    <button role="tab" aria-selected="false" data-v="tab">Minha tabela</button>
+  </nav>
+</div></header>
+<main class="wrap" id="main"><div class="centro note">Carregando o seu plano…</div></main>
+<script>
+/* HAG_COZINHA_v1 · núcleo sem tela: leitor do Plano Alimentar, conta de porções, receita na medida, doce, resumo do médico.
+   Função pura, testada fora da página. Nenhuma chamada de rede e nenhuma IA aqui. */
+var HC=(function(){
+"use strict";
+const norm=s=>String(s==null?"":s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+const FR={"½":.5,"¼":.25,"¾":.75};
+function num(v){ if(v==null) return 0; if(typeof v==="number") return isFinite(v)?v:0; v=String(v).trim();
+  if(!v||/^[—–-]$/.test(v)||/livre|vontade/i.test(v)) return 0;
+  const m=v.match(/^(\d+)?\s*([½¼¾])$/); if(m) return (+(m[1]||0))+FR[m[2]];
+  const x=parseFloat(v.replace(",",".")); return isFinite(x)?x:0; }
+const fmt=x=>{ x=Math.round(x*100)/100; return String(x).replace(".",","); };
+const GR=["p","c","f","g"], SIG={p:"P",c:"C",f:"F",g:"G"}, NOME={p:"proteína",c:"carboidrato",f:"fruta",g:"gordura"}, NOMES={p:"proteínas",c:"carboidratos",f:"frutas",g:"gorduras"};
+const codigo=r=>GR.filter(k=>num(r[k])>0).map(k=>fmt(num(r[k]))+SIG[k]).join(" ")+(r.v?" · vegetais livres":"");
+const porcoes=(n,k)=>fmt(n)+" "+(n===1?"porção":"porções")+" de "+NOME[k];
+
+/* ---------- leitor do texto do Plano Alimentar (pdftotext) ---------- */
+const VAL=/^(—|–|-|livre|\d+(,\d+)?|\d*\s?[½¼¾])$/i;
+const RODAPE=/·\s*PLANO ALIMENTAR\s*$|^MÉTODO HAG\s*·|TABELA DE PORÇÕES\s*·\s*\d|^\[RODAPE\]/i;
+const REF_NOME=/^(caf[eé] da manh[aã]|almo[cç]o|lanche|jantar|ceia|ao acordar|antes de dormir|pr[eé][- ]treino|p[oó]s[- ]treino|desjejum|cola[cç][aã]o)/i;
+function lerGrade(texto){
+  const tk=texto.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+  let i=tk.findIndex((t,k)=>/^REFEIÇÃO$/i.test(t)&&tk.slice(k+1,k+7).some(x=>/^P PROTEÍNA$/i.test(x)));
+  if(i<0) return null;
+  while(i<tk.length&&!/VEGETAIS$/i.test(tk[i])) i++;
+  i++; const out=[]; let vazio=0;
+  for(;i<tk.length&&vazio<14&&out.length<12;){
+    const t=tk[i];
+    if(/^Total do dia/i.test(t)) break;
+    const vs=tk.slice(i+1,i+6);
+    if(/[a-zà-ú]/i.test(t)&&!VAL.test(t)&&!/^livre$/i.test(t)&&vs.length===5&&vs.every(x=>VAL.test(x))){
+      out.push({nome:t.replace(/\s+/g," "),p:num(vs[0]),c:num(vs[1]),f:num(vs[2]),g:num(vs[3]),v:/livre/i.test(vs[4])}); i+=6; vazio=0;
+    } else { i++; vazio++; }
+  }
+  return out.length?out:null;
+}
+function lerCabecalhos(texto){
+  const ls=texto.split(/\n/).map(s=>s.trim()).filter(Boolean), out=[], vistos={};
+  for(let i=0;i<ls.length;i++){
+    if(!REF_NOME.test(ls[i])||ls[i].length>40||/[.:]$/.test(ls[i])) continue;
+    const r={nome:ls[i],p:0,c:0,f:0,g:0,v:false}; let achou=0;
+    for(let j=i+1;j<Math.min(ls.length,i+10);j++){
+      const l=ls[j]; if(/^OPÇÃO/i.test(l)||REF_NOME.test(l)) break;
+      const m=l.match(/^(\d+(?:,\d+)?|\d*\s?[½¼¾])\s+(prote[ií]na|carboidrato|fruta|gordura)s?$/i);
+      if(m){ r[{p:"p",c:"c",f:"f",g:"g"}[norm(m[2])[0]]]=num(m[1]); achou++; }
+      else if(/^vegetais [àa] vontade$/i.test(l)) r.v=true;
+      else if(/^\d{1,2}\s?H(\d{2})?(\s?[ÀA]S\s?\d{1,2}\s?H(\d{2})?)?/i.test(l)&&!r.hora) r.hora=l.split("·")[0].trim().toLowerCase();
+    }
+    if(achou&&!vistos[norm(r.nome)]){ vistos[norm(r.nome)]=1; out.push(r); }
+  }
+  return out.length?out:null;
+}
+function lerTabela(texto,casa){
+  const ini=texto.search(/TROQUE DENTRO DO MESMO GRUPO/); if(ini<0) return null;
+  let corpo=texto.slice(ini); const fim=corpo.search(/\n\s*DOCES,?\s*\n|NENHUM É PROIBIDO/); if(fim>0) corpo=corpo.slice(0,fim);
+  const idx={}; (casa||[]).forEach(a=>{ idx[norm(a.nome)]=a.grupo; });
+  const ls=corpo.split(/\n/).map(s=>s.trim()).filter(Boolean), tab=[], defs={}, HDR={PROTEINAS:"P",CARBOIDRATOS:"C",FRUTAS:"F",GORDURAS:"G"};
+  let cur=null, prev=null;
+  const ehNome=l=>l.length<60&&!/[.]$/.test(l)&&!/^[A-Z]$/.test(l)&&!RODAPE.test(l)&&!/^(ALIMENTO|QUANTIDADE|MEDIDA CASEIRA)$/i.test(l)&&!/1 por[cç][aã]o =/i.test(l);
+  for(let i=0;i<ls.length;i++){
+    const l=ls[i], h=l.match(/^(PROTEÍNAS|CARBOIDRATOS|FRUTAS|GORDURAS)\b/);
+    if(h){ cur=HDR[norm(h[1]).toUpperCase()]; prev=null; }
+    const d=l.match(/1 por[cç][aã]o = (\d+(?:,\d+)?) g de (prote[ií]na|carboidrato|gordura)/i);
+    if(d&&cur){ defs[cur.toLowerCase()]=num(d[1]); continue; }
+    if(h) continue;
+    const g=l.match(/^(\d+(?:,\d+)?)\s?g(?![a-zà-ú])\s*(.*)$/i)||l.match(/^(\d+(?:,\d+)?) g([a-zà-ú].*)$/i), rot=l.match(/^ver rótulo\s*(.*)$/i);
+    if((g||rot)&&prev&&!/[.]$/.test(l)&&!(g&&/^,/.test(g[2]))){
+      let med=(g?g[2]:rot[1]).trim();
+      if(!med&&ls[i+1]&&!/^(\d+(?:,\d+)?)\s?g\b/i.test(ls[i+1])&&!/^(PROTEÍNAS|CARBOIDRATOS|FRUTAS|GORDURAS)\b/.test(ls[i+1])&&!RODAPE.test(ls[i+1])){ med=ls[i+1]; i++; }
+      const k=idx[norm(prev)], grupo=k&&k!=="X"?k:cur;
+      if(grupo) tab.push({g:grupo,nome:prev,gramas:g?num(g[1]):null,medida:med,duvida:!k});
+      prev=null; continue;
+    }
+    if(ehNome(l)) prev=l;
+  }
+  const notas=corpo.split(/\n\s*\n/).map(b=>b.replace(/\s*\n\s*/g," ").trim()).filter(b=>b.length>60&&/^(Feijão|Vegetais|Uma concha|Alface|Cenoura)/.test(b));
+  if(notas.some(n=>/110 g[^.]*meia\s+porção de proteína e meia de\s+carboidrato/i.test(n))&&!/não gosta do grão/i.test(notas.join(" ")))
+    tab.push({g:"X",nome:"Feijão cozido",gramas:110,medida:"1 concha média",vale:{p:.5,c:.5}});
+  return tab.length?{tabela:tab,defs,notas}:null;
+}
+function lerPlano(texto,casa){
+  const avisos=[]; texto=String(texto||"");
+  let refs=lerGrade(texto);
+  if(!refs){ refs=lerCabecalhos(texto); if(refs) avisos.push("Este plano não tem a grade de porções. As refeições foram lidas dos cabeçalhos: confira uma a uma."); }
+  if(!refs){ refs=[]; avisos.push("Não encontrei as refeições em porções neste documento. Preencha a grade à mão."); }
+  const t=lerTabela(texto,casa);
+  if(!t) avisos.push("Não encontrei a tabela de porções neste documento. Use a tabela da casa e ajuste.");
+  else { const d=t.tabela.filter(x=>x.duvida).length; if(d) avisos.push(d+(d===1?" alimento não está":" alimentos não estão")+" na tabela da casa: confira o grupo (marcados em amarelo)."); }
+  const defs=Object.assign({p:10,c:15,f:15,g:8},t?t.defs:{});
+  return {refeicoes:refs,tabela:t?t.tabela:[],defs,notas:t?t.notas:[],avisos};
+}
+
+/* ---------- conta de porções ---------- */
+function slotDe(nome){ const n=norm(nome); if(/cafe|desjejum|acordar/.test(n)) return "cafe"; if(/almoco/.test(n)) return "almoco"; if(/jantar/.test(n)) return "jantar"; if(/ceia|dormir/.test(n)) return "ceia"; return "lanche"; }
+/* meta da refeição hoje = plano menos o que um doce já descontou */
+function metaHoje(plano,idx,eventos){ const r=plano.refeicoes[idx], m={p:num(r.p),c:num(r.c),f:num(r.f),g:num(r.g),v:!!r.v};
+  ajustesDoces(eventos).forEach(a=>{ if(a.idx===idx){ m.c=Math.max(0,m.c-a.c); m.g=Math.max(0,m.g-a.g); } }); return m; }
+function ajustesDoces(eventos){ const desf={}, out=[]; (eventos||[]).forEach(e=>{ if(e.tipo==="doce_desfeito") desf[e.chave]=1; });
+  (eventos||[]).forEach(e=>{ if(e.tipo==="doce"&&!desf[e.cid]&&e.detalhe) (e.detalhe.ajustes||[]).forEach(a=>out.push({idx:a.idx,c:num(a.c),g:num(a.g),doce:e.chave})); }); return out; }
+const docesHoje=ev=>{ const desf={}; (ev||[]).forEach(e=>{ if(e.tipo==="doce_desfeito") desf[e.chave]=1; }); return (ev||[]).filter(e=>e.tipo==="doce"&&!desf[e.cid]); };
+function gramas(item,por){ return item&&item.gramas!=null?Math.round(num(item.gramas)*por):null; }
+function acharAlimento(tabela,nome,grupo){ const n=norm(nome); let a=tabela.find(x=>norm(x.nome)===n);
+  if(!a&&/whey|proteina em po/.test(n)) a=tabela.find(x=>x.g==="P"&&/whey|proteina em po/.test(norm(x.nome)));
+  return a||null; }
+/* prato montado: escolhas = [{nome, por}] ; devolve o que falta por grupo */
+function contaPrato(meta,tabela,escolhas){ const tem={p:0,c:0,f:0,g:0};
+  (escolhas||[]).forEach(e=>{ const a=acharAlimento(tabela,e.nome); if(!a) return;
+    if(a.g==="X"){ const v=a.vale||{}; GR.forEach(k=>{ tem[k]+=num(v[k])*e.por; }); } else tem[a.g.toLowerCase()]+=e.por; });
+  const falta={}, sobra={}; let fechado=true, algum=false;
+  GR.forEach(k=>{ const d=Math.round((meta[k]-tem[k])*100)/100; if(d>0.01){ falta[k]=d; fechado=false; } else if(d<-0.01) sobra[k]=-d; if(tem[k]>0) algum=true; });
+  return {tem,falta,sobra,fechado,algum}; }
+/* receita na medida da refeição: cada grupo da receita é escalado para as porções que a refeição pede */
+function receitaPara(rec,meta,tabela,regras,naoGosta){
+  regras=regras||{}; const mn=regras.escala_min||.5, mx=regras.escala_max||2, soma={p:0,c:0,f:0,g:0}, ng=(naoGosta||[]).map(norm);
+  const ing=(rec.ing||[]).map(i=>({alimento:i.alimento,k:String(i.grupo||"").toLowerCase(),por:num(i.por),item:acharAlimento(tabela,i.alimento)}));
+  const semItem=ing.find(i=>!i.item); if(semItem) return {serve:"fora",motivo:"usa "+semItem.alimento.toLowerCase()+", que não está na sua tabela"};
+  const ruim=ing.find(i=>ng.includes(norm(i.item.nome))); if(ruim) return {serve:"fora",motivo:"usa "+ruim.item.nome.toLowerCase()+", que você marcou como fora"};
+  ing.forEach(i=>{ soma[i.k]+=i.por; });
+  if(!soma.p||!meta.p) return {serve:"nao",motivo:meta.p?"a receita não tem proteína":"esta refeição não tem proteína no plano"};
+  const linhas=[], avisos=[], fator={};
+  for(const k of GR){ if(!soma[k]) continue;
+    if(!meta[k]){ avisos.push("faça sem "+ing.filter(i=>i.k===k).map(i=>i.item.nome.toLowerCase()).join(" e ")+": esta refeição não tem "+NOME[k]); fator[k]=0; continue; }
+    fator[k]=meta[k]/soma[k];
+    if(fator[k]<mn-1e-9||fator[k]>mx+1e-9) return {serve:"nao",motivo:"a receita não fecha na medida desta refeição ("+NOME[k]+")"}; }
+  ing.forEach(i=>{ if(!fator[i.k]) return; const por=Math.round(i.por*fator[i.k]*100)/100; linhas.push({nome:i.item.nome,k:i.k,por,gramas:gramas(i.item,por),medida:i.item.medida,rotulo:i.item.gramas==null}); });
+  GR.forEach(k=>{ if(meta[k]>0&&!soma[k]) avisos.push((k==="f"?"a fruta":"o "+NOME[k])+" da refeição fica à parte: "+porcoes(meta[k],k)); });
+  return {serve:avisos.length?"ajuste":"ok",linhas,avisos};
+}
+/* doce: de onde sai o C e o G. Tira das refeições ainda não feitas, da última para a primeira. */
+function encaixarDoce(doce,plano,eventos,feitas){
+  let c=num(doce.c), g=num(doce.g); const aj=[];
+  if(!c&&!g) return {ok:true,livre:true,ajustes:[]};
+  for(let i=plano.refeicoes.length-1;i>=0&&(c>0||g>0);i--){ if(feitas&&feitas[i]) continue; const m=metaHoje(plano,i,eventos);
+    const tc=Math.min(c,m.c), tg=Math.min(g,m.g); if(tc>0||tg>0){ aj.push({idx:i,c:tc,g:tg}); c=Math.round((c-tc)*100)/100; g=Math.round((g-tg)*100)/100; } }
+  return {ok:c<=0&&g<=0,ajustes:aj,falta:{c,g}}; }
+
+/* ---------- resumo do médico ---------- */
+const DS=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+const addDia=(s,n)=>{ const d=new Date(s+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+function resumo(plano,registros,eventos,hoje,janela){
+  janela=janela||28; const n=plano?plano.refeicoes.length:0, regs=(registros||[]).filter(r=>r.como!=="desfeito"&&r.idx<n);
+  if(!n||!regs.length) return {vazio:true,dias:[],n};
+  const primeira=regs.reduce((a,r)=>r.data<a?r.data:a,hoje), ini=primeira>addDia(hoje,-(janela-1))?primeira:addDia(hoje,-(janela-1));
+  const mapa={}; regs.forEach(r=>{ mapa[r.data+"|"+r.idx]=r; });
+  const dias=[]; for(let d=ini;d<=hoje;d=addDia(d,1)) dias.push(d);
+  const ref=plano.refeicoes.map(r=>({nome:r.nome,esp:0,plano:0,fora:0,pulei:0,sem:0,fome:0,cheio:0})), sem=DS.map(()=>({esp:0,plano:0}));
+  const como={plano:0,montei:0,receita:0,fora:0,pulei:0}, faltou={p:0,c:0,f:0,g:0}, alim={}, recs={}; let esp=0, noPlano=0, esp7=0, np7=0, doceMuito=0;
+  const d7=addDia(hoje,-6);
+  dias.forEach(d=>{ const dw=new Date(d+"T12:00:00Z").getUTCDay();
+    for(let i=0;i<n;i++){ const r=mapa[d+"|"+i]; if(d===hoje&&!r) continue;
+      esp++; ref[i].esp++; sem[dw].esp++; if(d>=d7) esp7++;
+      if(!r){ ref[i].sem++; continue; }
+      como[r.como]=(como[r.como]||0)+1;
+      if(r.como==="pulei") ref[i].pulei++; else if(r.como==="fora") ref[i].fora++; else { ref[i].plano++; noPlano++; sem[dw].plano++; if(d>=d7) np7++; }
+      if(/fome/.test(r.sac||"")) ref[i].fome++; if(/cheio|cheia/.test(r.sac||"")) ref[i].cheio++; if(r.doce==="muito") doceMuito++;
+      if(r.faltou) GR.forEach(k=>{ if(num(r.faltou[k])>0) faltou[k]++; });
+      const dt=r.detalhe||{}; (dt.itens||[]).forEach(x=>{ alim[x.nome]=(alim[x.nome]||0)+1; }); if(dt.receita) recs[dt.receita]=(recs[dt.receita]||0)+1; } });
+  const sos={}, doces=[]; (eventos||[]).forEach(e=>{ if(e.data<ini) return; if(e.tipo==="sos") sos[e.chave]=(sos[e.chave]||0)+1; if(e.tipo==="doce") doces.push(e.chave); });
+  const top=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
+  const taxa=x=>x.esp?x.plano/x.esp:null;
+  const piorRef=ref.filter(x=>x.esp>=3).sort((a,b)=>taxa(a)-taxa(b))[0], melhorRef=ref.filter(x=>x.esp>=3).sort((a,b)=>taxa(b)-taxa(a))[0];
+  const diasSem=sem.map((x,i)=>({nome:DS[i],esp:x.esp,plano:x.plano})).filter(x=>x.esp>=n), piorDia=diasSem.slice().sort((a,b)=>a.plano/a.esp-b.plano/b.esp)[0];
+  const fomeRef=ref.filter(x=>x.fome>=2).sort((a,b)=>b.fome-a.fome)[0];
+  let frase;
+  if(esp<n*3) frase="Ainda há pouco registro para concluir. São "+regs.length+" refeições marcadas em "+dias.length+(dias.length===1?" dia.":" dias.");
+  else { const pt=[]; if(melhorRef&&taxa(melhorRef)>=.8) pt.push("O plano se sustenta em "+melhorRef.nome.toLowerCase()+" ("+melhorRef.plano+" de "+melhorRef.esp+").");
+    if(piorRef&&taxa(piorRef)<.7) pt.push("Quebra mais em "+piorRef.nome.toLowerCase()+" ("+piorRef.plano+" de "+piorRef.esp+" no plano"+(piorRef.pulei?", "+piorRef.pulei+" puladas":"")+(piorRef.sem?", "+piorRef.sem+" sem registro":"")+").");
+    if(piorDia&&piorDia.plano/piorDia.esp<.6&&diasSem.length>=4) pt.push("O dia mais fraco é "+piorDia.nome+" ("+piorDia.plano+" de "+piorDia.esp+").");
+    if(fomeRef) pt.push("Fome depois de "+fomeRef.nome.toLowerCase()+" em "+fomeRef.fome+" registros.");
+    frase=pt.length?pt.join(" "):"Sem ponto de quebra claro no período: "+noPlano+" de "+esp+" refeições no plano."; }
+  return {vazio:false,n,dias,mapa,ref,esp,noPlano,esp7,np7,como,faltou,alimentos:top(alim).slice(0,5),receitas:top(recs).slice(0,3),sos:top(sos),doces,doceMuito,frase,ini};
+}
+return {norm,num,fmt,GR,SIG,NOME,NOMES,codigo,porcoes,lerPlano,lerGrade,lerCabecalhos,lerTabela,slotDe,metaHoje,ajustesDoces,docesHoje,gramas,acharAlimento,contaPrato,receitaPara,encaixarDoce,resumo,addDia,DS};
+})();
+if(typeof module!=="undefined") module.exports=HC;
+
+(function(){
+"use strict";
+var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+var SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+var H={'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'};
+function rpc(nome,args){ return fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:H,body:JSON.stringify(args)}).then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); }); }
+const store={ get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+const q=new URLSearchParams(location.search);
+let TOKEN=String(q.get('t')||'').replace(/[^a-f0-9]/gi,'').slice(0,64);
+if(TOKEN) store.set('hagcozinha.token',TOKEN); else TOKEN=store.get('hagcozinha.token','')||'';
+let CTX=store.get('hagcozinha.ctx',null);
+let FILA=store.get('hagcozinha.fila',[]); if(!Array.isArray(FILA)) FILA=[];
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const HOJE=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():(Date.now()+"-"+Math.random().toString(16).slice(2)));
+const {num,fmt,GR,NOME,NOMES}=HC;
+const main=document.getElementById("main"), tabs=document.getElementById("tabs");
+const S={aba:"hoje",montar:null,menu:null,sos:false,sosMsg:null,doces:false,doceSel:null,recIdx:null,recTag:null,recAberta:null,erro:null};
+
+/* ---------- dados do dia: o que o servidor tem + o que ainda está na fila deste aparelho ---------- */
+const P=()=>CTX&&CTX.plano;
+function regsHoje(){ const h=HOJE(), m={}; ((CTX&&CTX.registros)||[]).forEach(r=>{ if(r.data===h) m[r.idx]=r; });
+  FILA.forEach(f=>{ if(f.tipo==="refeicao"&&f.data===h) m[f.idx]={data:h,idx:f.idx,como:f.como,detalhe:f.detalhe,sac:f.sac,doce:f.doce,faltou:f.faltou}; });
+  Object.keys(m).forEach(k=>{ if(m[k].como==="desfeito") delete m[k]; }); return m; }
+function eventosHoje(){ const h=HOJE(), vistos={}, out=[]; ((CTX&&CTX.hoje===h&&CTX.eventos)||[]).forEach(e=>{ vistos[e.cid]=1; out.push(e); });
+  FILA.forEach(f=>{ if(f.tipo==="evento"&&f.data===h&&!vistos[f.client_id]) out.push({tipo:f.evento,chave:f.chave,detalhe:f.detalhe,cid:f.client_id}); }); return out; }
+function naoGosta(){ const f=FILA.filter(x=>x.tipo==="pref").pop(); return f?f.nao_gosta:((CTX&&CTX.nao_gosta)||[]); }
+const tabela=()=>P().tabela||[];
+const visiveis=K=>{ const ng=naoGosta().map(HC.norm); return tabela().filter(a=>a.g===K&&!ng.includes(HC.norm(a.nome))); };
+
+/* ---------- fila e envio ---------- */
+function enfileirar(p){ if(p.tipo==="pref") FILA=FILA.filter(x=>x.tipo!=="pref"); FILA.push(p); store.set('hagcozinha.fila',FILA); render(); enviarFila(); }
+function enviarFila(){
+  if(!FILA.length||enviarFila.ocupado||!TOKEN) return Promise.resolve(false);
+  enviarFila.ocupado=true; const p=FILA[0];
+  return rpc("hag_cozinha_salvar",{p_token:TOKEN,p:p}).then(r=>{ enviarFila.ocupado=false;
+    if(r&&(r.ok||["sem_client_id","data_fora","tamanho","refeicao_invalida","evento_invalido","tipo_invalido"].includes(r.erro))){ FILA=FILA.filter(x=>x!==p); store.set('hagcozinha.fila',FILA); return FILA.length?enviarFila():carregar(); }
+    return false; }).catch(()=>{ enviarFila.ocupado=false; return false; }); }
+function carregar(){ if(!TOKEN){ render(); return Promise.resolve(false); }
+  return rpc("hag_cozinha_contexto",{p_token:TOKEN}).then(r=>{ if(r&&r.ok){ CTX=r; store.set('hagcozinha.ctx',CTX); S.erro=null; } else { S.erro=(r&&r.erro)||"erro"; if(S.erro==="link_invalido") CTX=null; } render(); return true; })
+    .catch(()=>{ S.erro=CTX?null:"rede"; render(); return false; }); }
+function salvarRef(idx,campos){ const p=P(), atual=regsHoje()[idx]||{};
+  enfileirar(Object.assign({tipo:"refeicao",client_id:uid(),data:HOJE(),idx:idx,refeicao:p.refeicoes[idx].nome,como:atual.como,detalhe:atual.detalhe||null,sac:atual.sac||null,doce:atual.doce||null,faltou:atual.faltou||null},campos)); }
+
+/* ---------- pedaços de tela ---------- */
+const pill=(k,n)=>`<span class="por ${k}"><i></i><b>${fmt(n)}</b> ${n===1?NOME[k]:NOMES[k]}</span>`;
+const pills=m=>GR.filter(k=>m[k]>0).map(k=>pill(k,m[k])).join("")+(m.v?`<span class="por v"><i></i>vegetais à vontade</span>`:"");
+function qtd(a,por){ const p=P(); if(a.g==="X") return HC.gramas(a,por)+" g"; if(a.gramas==null) return "a medida do rótulo que dá "+fmt(por*num((p.defs||{})[a.g.toLowerCase()]||10))+" g";
+  return HC.gramas(a,por)+" g"; }
+const umaPor=a=>a.gramas==null?esc(a.medida||""):`1 porção = ${fmt(num(a.gramas))} g${a.medida?" = "+esc(a.medida):""}`;
+const filaHTML=()=>FILA.length?`<div class="fila">${FILA.length===1?"1 registro guardado":FILA.length+" registros guardados"} neste aparelho, esperando sinal para enviar. <button class="link" data-a="reenviar">tentar agora</button></div>`:"";
+const SAC=[["fome","ainda com fome"],["bem","bem"],["cheio","cheio demais"]], DOCE=["não","pouco","muito"];
+function descReg(r){ const d=r.detalhe||{};
+  if(r.como==="plano") return "Comi a opção do plano";
+  if(r.como==="montei") return "Prato montado: "+(d.itens||[]).map(x=>{ const a=HC.acharAlimento(tabela(),x.nome); return esc(x.nome.split(",")[0].toLowerCase())+(a&&a.gramas!=null?" "+HC.gramas(a,x.por)+" g":""); }).join(", ");
+  if(r.como==="receita") return "Receita: "+esc(d.receita||"");
+  if(r.como==="fora") return "Comi fora";
+  return "Pulei esta refeição"; }
+
+function refHTML(r,i,regs,evs){
+  const m=HC.metaHoje(P(),i,evs), reg=regs[i], aj=HC.ajustesDoces(evs).filter(a=>a.idx===i), prox=!reg&&i===P().refeicoes.findIndex((x,k)=>!regs[k]);
+  const regras=CTX.regras||{}, slot=HC.slotDe(r.nome);
+  let h=`<div class="card ref${reg?" feita":""}"><div class="row between"><div><div class="hora">${esc(r.hora||"")}${prox?`${r.hora?" · ":""}<b style="color:var(--gold)">próxima</b>`:""}</div><div class="nome">${esc(r.nome)}</div></div>${reg?`<span class="tag ${reg.como==="pulei"?"r":reg.como==="fora"?"y":"g"}">${reg.como==="pulei"?"pulei":reg.como==="fora"?"fora":"feito"}</span>`:""}</div>
+    <div class="chips" style="margin-top:8px">${pills(m)}</div>
+    ${aj.length?`<div class="note" style="margin-top:6px">Hoje com menos ${aj.map(a=>[a.c?fmt(a.c)+"C":"",a.g?fmt(a.g)+"G":""].filter(Boolean).join(" e ")+" ("+esc(a.doce.toLowerCase())+")").join("; ")}.</div>`:""}`;
+  if(S.montar&&S.montar.idx===i) h+=montarHTML(i,m);
+  h+=`<div class="rodape">`;
+  if(!reg){
+    h+=`<div class="row"><button class="btn small" data-a="plano" data-i="${i}">✓ Comi a opção do plano</button><button class="btn small ghost" data-a="montar" data-i="${i}">Montar meu prato</button>${CTX.receitas.length?`<button class="btn small ghost" data-a="recde" data-i="${i}">Receita na minha medida</button>`:""}</div>
+      ${S.menu===i?`<div class="row"><button class="chip" data-a="fora" data-i="${i}">Comi fora</button><button class="chip" data-a="pulei" data-i="${i}">Pulei</button></div>`:`<button class="link" data-a="menu" data-i="${i}" style="align-self:flex-start">foi diferente disso</button>`}`;
+  } else {
+    h+=`<div>${descReg(reg)}.${reg.faltou&&GR.some(k=>num(reg.faltou[k])>0)?` <span class="note">Ficou faltando ${GR.filter(k=>num(reg.faltou[k])>0).map(k=>HC.porcoes(num(reg.faltou[k]),k)).join(" e ")}.</span>`:""} <button class="link" data-a="desfazer" data-i="${i}">desfazer</button></div>`;
+    if(reg.como!=="pulei"&&regras.perguntar_saciedade!==false) h+=reg.sac?`<div class="note">Depois de comer: ${esc((SAC.find(x=>x[0]===reg.sac)||[0,reg.sac])[1])}.</div>`:`<div><div class="lbl" style="margin-bottom:4px">Como ficou depois? (opcional)</div><div class="chips">${SAC.map(x=>`<button class="chip" data-a="sac" data-i="${i}" data-v="${x[0]}">${x[1]}</button>`).join("")}</div></div>`;
+    if(reg.como!=="pulei"&&regras.perguntar_doce!==false&&(slot==="jantar"||slot==="ceia")) h+=reg.doce?`<div class="note">Vontade de doce depois: ${esc(reg.doce)}.</div>`:`<div><div class="lbl" style="margin-bottom:4px">Vontade de doce depois? (opcional)</div><div class="chips">${DOCE.map(x=>`<button class="chip" data-a="doce" data-i="${i}" data-v="${x}">${x}</button>`).join("")}</div></div>`;
+  }
+  return h+`</div></div>`;
+}
+function montarHTML(i,m){
+  const esco=S.montar.esc, ct=HC.contaPrato(m,tabela(),esco), X=visiveis("X");
+  const grupo=k=>{ const K=k.toUpperCase(), falta=ct.falta[k]||0, meus=esco.filter(e=>{ const a=HC.acharAlimento(tabela(),e.nome); return a&&a.g===K; });
+    return `<div><div class="row between"><div class="lbl">${NOME[k]} · ${falta?`faltam ${fmt(falta)} de ${fmt(m[k])}`:"fechado"}</div>${falta?"":`<span class="tag g">ok</span>`}</div>
+      ${meus.map(e=>{ const a=HC.acharAlimento(tabela(),e.nome); return `<div class="linha"><div><b>${esc(a.nome)}</b><div class="note">${fmt(e.por)} ${e.por===1?"porção":"porções"} · ${umaPor(a)}</div></div><div class="row"><span class="mono"><b>${esc(qtd(a,e.por))}</b></span><button class="chip" data-a="menos" data-n="${esc(e.nome)}" aria-label="Tirar uma porção">−</button></div></div>`; }).join("")}
+      ${falta?`<div class="chips" style="margin-top:6px">${visiveis(K).map(a=>`<button class="chip" data-a="mais" data-n="${esc(a.nome)}">${esc(a.nome)}</button>`).join("")}</div>`:""}</div>`; };
+  const mx=esco.filter(e=>{ const a=HC.acharAlimento(tabela(),e.nome); return a&&a.g==="X"; });
+  const faltaTxt=GR.filter(k=>ct.falta[k]).map(k=>HC.porcoes(ct.falta[k],k)).join(" e ");
+  return `<div class="drawer"><div class="row between"><div class="lbl">Montar meu prato</div><button class="link" data-a="fecharmontar">fechar</button></div>
+    <div class="note">Toque no que você tem. Cada toque soma 1 porção, e o app mostra quanto pesar.</div>
+    ${GR.filter(k=>m[k]>0).map(grupo).join("")}
+    ${X.length&&m.p>0&&m.c>0?`<div><div class="lbl">Conta em dois grupos</div>${mx.map(e=>{ const a=HC.acharAlimento(tabela(),e.nome); return `<div class="linha"><div><b>${esc(a.nome)}</b><div class="note">${esc(a.medida||"")} vale meia proteína e meio carboidrato</div></div><div class="row"><span class="mono"><b>${HC.gramas(a,e.por)} g</b></span><button class="chip" data-a="menos" data-n="${esc(e.nome)}">−</button></div></div>`; }).join("")}
+      ${(ct.falta.p||0)>=.5&&(ct.falta.c||0)>=.5?`<div class="chips" style="margin-top:6px">${X.map(a=>`<button class="chip" data-a="mais" data-n="${esc(a.nome)}">${esc(a.nome)}, ${esc(a.medida||"")}</button>`).join("")}</div>`:""}</div>`:""}
+    ${m.v?`<div class="note">Vegetais à vontade, metade do prato.</div>`:""}
+    <button class="btn" data-a="comimontado" data-i="${i}" ${ct.algum?"":"disabled"}>${ct.fechado?"✓ Comi este prato":ct.algum?"Comi assim (faltou "+faltaTxt+")":"Escolha os alimentos"}</button></div>`;
+}
+function docesHTML(regs,evs){
+  const p=P(), usados=HC.docesHoje(evs), feitas={}; Object.keys(regs).forEach(k=>feitas[k]=true);
+  const custo=d=>(!num(d.c)&&!num(d.g))?"livre":[num(d.c)?fmt(num(d.c))+"C":"",num(d.g)?fmt(num(d.g))+"G":""].filter(Boolean).join(" + ");
+  let h=`<div class="drawer"><div class="row between"><div class="lbl">Doces em porções</div><button class="link" data-a="fechardoces">fechar</button></div>
+    <div class="note">Nenhum é proibido. O doce entra no lugar do carboidrato e da gordura de uma refeição do mesmo dia, nunca somado por cima. Proteína e fruta nunca entram na troca.</div>
+    ${usados.length?`<div>${usados.map(e=>`<div class="linha"><div><b>${esc(e.chave)}</b><div class="note">${(e.detalhe.ajustes||[]).map(a=>"saiu de "+esc(p.refeicoes[a.idx].nome.toLowerCase())).join(" e ")||"livre"}</div></div><button class="link" data-a="docedesfaz" data-v="${esc(e.cid)}">desfazer</button></div>`).join("")}</div>`:""}`;
+  if(S.doceSel){ const d=CTX.doces.find(x=>x.nome===S.doceSel), r=HC.encaixarDoce(d,p,evs,feitas), nPagos=usados.filter(e=>(e.detalhe.ajustes||[]).length).length;
+    h+=`<div class="prato"><b>${esc(d.nome)}</b> <span class="note">${esc(d.medida||"")}</span><div style="margin-top:6px">`;
+    if(r.livre) h+=`É livre, não custa porção.</div><div class="row" style="margin-top:8px"><button class="btn small" data-a="doceok">Registrar</button>`;
+    else if(nPagos>=(p.doces_dia||1)) h+=`O desenho desta fase é ${p.doces_dia===1?"um doce":p.doces_dia+" doces"} por dia, e o de hoje já foi.</div><div class="row" style="margin-top:8px">`;
+    else if(!r.ok) h+=`Custa ${custo(d)}. Hoje não cabe: o que resta do dia não cobre essa conta.</div><div class="row" style="margin-top:8px">`;
+    else h+=`Custa ${custo(d)}. ${r.ajustes.map(a=>"Sai de <b>"+esc(p.refeicoes[a.idx].nome.toLowerCase())+"</b>: "+[a.c?HC.porcoes(a.c,"c"):"",a.g?HC.porcoes(a.g,"g"):""].filter(Boolean).join(" e ")).join(". ")}.</div><div class="row" style="margin-top:8px"><button class="btn small" data-a="doceok">Confirmar</button>`;
+    h+=`<button class="btn small ghost" data-a="docecancela">voltar</button></div></div>`;
+  } else { const cats=[]; CTX.doces.forEach(d=>{ if(!cats.includes(d.cat)) cats.push(d.cat); });
+    h+=cats.map(c=>`<div><div class="lbl" style="margin-bottom:4px">${esc(c||"Doces")}</div>${CTX.doces.filter(d=>d.cat===c).map(d=>`<button class="linha" data-a="docesel" data-v="${esc(d.nome)}" style="width:100%;background:none;border:0;border-top:1px solid var(--line);text-align:left;cursor:pointer"><div><b>${esc(d.nome)}</b><div class="note">${esc(d.medida||"")}</div></div><span class="mono">${custo(d)}</span></button>`).join("")}</div>`).join(""); }
+  return h+`</div>`;
+}
+function renderHoje(){
+  const p=P(), regs=regsHoje(), evs=eventosHoje(), sos=CTX.guias.filter(g=>g.tipo==="sos"), n=p.refeicoes.length, feitas=Object.keys(regs).length;
+  const dt=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  main.innerHTML=`<div><div class="kicker">${esc(dt)}</div><h2>${feitas===n?"Dia fechado.":feitas?feitas+" de "+n+" refeições marcadas":"Seu dia, em porções"}</h2></div>
+    ${filaHTML()}
+    <div class="row">${sos.length?`<button class="btn ghost" data-a="sos" aria-expanded="${S.sos}">Não consigo seguir o plano agora</button>`:""}${p.doces&&CTX.doces.length?`<button class="btn ghost" data-a="doces" aria-expanded="${S.doces}">Quero um doce hoje</button>`:""}</div>
+    ${S.sos?`<div class="drawer" style="margin-top:0"><div class="lbl">O que está acontecendo?</div><div class="chips">${sos.map(g=>`<button class="chip" data-a="sosop" data-v="${esc(g.chave)}" aria-pressed="${S.sosMsg===g.chave}">${esc(g.titulo)}</button>`).join("")}</div>${(()=>{ const g=sos.find(x=>x.chave===S.sosMsg); if(!g) return ""; const d=(g.c||{}).destino||"";
+       return `<p style="margin:0">${esc((g.c||{}).texto||"")}</p>${d==="fora"?`<button class="btn small" data-a="ir" data-v="fora">Ver as saídas fora de casa</button>`:d.indexOf("receitas")===0&&CTX.receitas.length?`<button class="btn small" data-a="irrec" data-v="${esc(d.split(":")[1]||"")}">Ver receitas</button>`:d==="doces"&&p.doces&&CTX.doces.length?`<button class="btn small" data-a="doces">Escolher um doce</button>`:""}`; })()}</div>`:""}
+    ${S.doces&&p.doces&&CTX.doces.length?docesHTML(regs,evs).replace('class="drawer"','class="drawer" style="margin-top:0"'):""}
+    ${p.refeicoes.map((r,i)=>refHTML(r,i,regs,evs)).join("")}
+    <p class="note" style="margin:0">O Plano Alimentar que o Dr. Henrique entregou é a referência, com as opções prontas de cada refeição. Aqui você executa o dia.</p>`;
+}
+function proxima(){ const regs=regsHoje(), i=P().refeicoes.findIndex((x,k)=>!regs[k]); return i<0?0:i; }
+function renderRec(){
+  const p=P(), regs=regsHoje(), evs=eventosHoje(); if(S.recIdx==null||S.recIdx>=p.refeicoes.length) S.recIdx=proxima();
+  const i=S.recIdx, r=p.refeicoes[i], m=HC.metaHoje(p,i,evs), slot=HC.slotDe(r.nome), ng=naoGosta();
+  if(S.recAberta){ const rc=CTX.receitas.find(x=>x.id===S.recAberta), f=HC.receitaPara(rc,m,tabela(),CTX.regras,ng);
+    main.innerHTML=`<button class="link" data-a="voltarrec" style="align-self:flex-start">‹ todas as receitas</button>
+     <div class="prato"><div class="lbl">${rc.tempo?rc.tempo+" min · ":""}${rc.tags.map(esc).join(" · ")}</div><h2 style="margin-top:2px">${esc(rc.nome)}</h2><p class="sub">${esc(rc.porque||"")}</p></div>
+     <div class="card"><div class="kicker">Na medida do seu ${esc(r.nome.toLowerCase())}</div>
+       ${f.linhas?`<div style="margin-top:6px">${f.linhas.map(l=>`<div class="linha"><div><b>${esc(l.nome)}</b><div class="note">${fmt(l.por)} ${l.por===1?"porção":"porções"} de ${NOME[l.k]}</div></div><span class="mono"><b>${l.rotulo?"medida do rótulo: "+fmt(l.por*num((p.defs||{}).p||10))+" g":l.gramas+" g"}</b></span></div>`).join("")}
+         ${(rc.livres||[]).map(x=>`<div class="linha"><div>${esc(x)}</div><span class="note">livre</span></div>`).join("")}</div>
+         ${(f.avisos||[]).map(a=>`<div class="aviso" style="margin-top:8px">Ajuste: ${esc(a)}.</div>`).join("")}
+         ${regs[i]?`<p class="note" style="margin:10px 0 0">Esta refeição já está marcada hoje.</p>`:`<button class="btn" data-a="comirec" style="margin-top:12px">✓ Comi esta receita no ${esc(r.nome.toLowerCase())}</button>`}`
+       :`<p style="margin:6px 0 0">Não serve para esta refeição: ${esc(f.motivo)}.</p>`}</div>
+     <div class="card"><h3>Preparo</h3><ol class="passos">${(rc.preparo||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>
+     ${rc.cons?`<div class="card"><h3>Guardar</h3><p style="margin:6px 0 0">${esc(rc.cons)}</p></div>`:""}`; return; }
+  const tags=[]; CTX.receitas.forEach(x=>x.tags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); }));
+  const lista=CTX.receitas.map(rc=>({rc,f:HC.receitaPara(rc,m,tabela(),CTX.regras,ng),doSlot:rc.slots.includes(slot)})).filter(x=>x.f.serve!=="fora"&&(!S.recTag||x.rc.tags.includes(S.recTag)))
+    .sort((a,b)=>(b.doSlot-a.doSlot)||("ok ajuste nao".indexOf(a.f.serve)-"ok ajuste nao".indexOf(b.f.serve)));
+  main.innerHTML=`<div><div class="kicker">Receitas aprovadas pelo Dr. Henrique</div><h2>Receita na medida de qual refeição?</h2></div>
+    <div class="chips">${p.refeicoes.map((x,k)=>`<button class="chip" data-a="recref" data-i="${k}" aria-pressed="${k===i}">${esc(x.nome)}</button>`).join("")}</div>
+    <div class="chips">${pills(m)}</div>
+    ${tags.length?`<div class="chips">${tags.map(t=>`<button class="chip" data-a="rectag" data-v="${esc(t)}" aria-pressed="${S.recTag===t}">${esc(t)}</button>`).join("")}</div>`:""}
+    ${lista.length?lista.map(({rc,f,doSlot})=>`<div class="card"><div class="row between"><div class="lbl">${rc.tempo?rc.tempo+" min":""}${doSlot?"":" · de outra refeição"}</div><span class="tag ${f.serve==="ok"?"g":f.serve==="ajuste"?"y":"r"}">${f.serve==="ok"?"na sua medida":f.serve==="ajuste"?"com ajuste":"não fecha aqui"}</span></div>
+       <h3 style="margin-top:4px">${esc(rc.nome)}</h3><div class="note">${esc(rc.porque||"")}</div>
+       <button class="btn small${f.serve==="nao"?" ghost":""}" data-a="verrec" data-v="${esc(rc.id)}" style="margin-top:10px">Ver na minha medida</button></div>`).join("")
+     :`<div class="card"><p class="note" style="margin:0">Nenhuma receita com esse filtro. O banco cresce a cada receita que o Dr. Henrique aprova.</p></div>`}`;
+}
+function renderFora(){
+  const gs=CTX.guias.filter(g=>g.tipo==="fora");
+  main.innerHTML=`<div><div class="kicker">Vida real</div><h2>Vou comer fora. O que eu peço?</h2><p class="sub">Três saídas por tipo de lugar. Depois, marque a refeição em Hoje como "comi fora".</p></div>
+    ${gs.length?gs.map(g=>`<div class="card"><h3>${esc(g.titulo)}</h3><div class="esc"><div class="m"><b>Melhor escolha.</b> ${esc(g.c.melhor||"")}</div><div class="b"><b>Boa escolha.</b> ${esc(g.c.boa||"")}</div><div class="p"><b>Possível com ajuste.</b> ${esc(g.c.ajuste||"")}</div></div></div>`).join("")
+     :`<div class="card"><p class="note" style="margin:0">O guia de comer fora ainda não foi liberado.</p></div>`}`;
+}
+function renderTab(){
+  const p=P(), ng=naoGosta().map(HC.norm), d=p.defs||{}, U={P:"proteína",C:"carboidrato",F:"carboidrato",G:"gordura"}, T={P:"Proteínas",C:"Carboidratos",F:"Frutas",G:"Gorduras",X:"Contam em dois grupos"};
+  main.innerHTML=`<div><div class="kicker">A sua tabela de porções</div><h2>Troque dentro do mesmo grupo</h2><p class="sub">Cada linha vale 1 porção. Precisa de 2? Use o dobro. Toque em um alimento que você não come para tirá-lo das sugestões.</p></div>
+    ${["P","C","F","G","X"].filter(K=>tabela().some(a=>a.g===K)).map(K=>`<div class="card"><div class="kicker">${T[K]}${K!=="X"&&d[K.toLowerCase()]?` · 1 porção = ${fmt(num(d[K.toLowerCase()]))} g de ${U[K]}`:""}</div>
+      ${tabela().filter(a=>a.g===K).map(a=>{ const f=ng.includes(HC.norm(a.nome)); return `<button class="linha" data-a="pref" data-n="${esc(a.nome)}" aria-pressed="${f}" style="width:100%;background:none;border:0;border-top:1px solid var(--line);text-align:left;cursor:pointer"><div class="${f?"fora":""}"><b>${esc(a.nome)}</b><div class="note">${esc(a.medida||"")}</div></div><span class="mono">${f?"fora":a.gramas==null?"rótulo":fmt(num(a.gramas))+" g"}</span></button>`; }).join("")}</div>`).join("")}
+    ${(p.notas||[]).length?`<div class="card">${p.notas.map(n=>`<p style="margin:0 0 8px">${esc(n)}</p>`).join("")}</div>`:""}`;
+}
+function render(){
+  document.getElementById("titulo").textContent=CTX&&CTX.paciente?"HAG Cozinha · "+CTX.paciente.nome:"HAG Cozinha";
+  if(!TOKEN||S.erro==="link_invalido"){ tabs.hidden=true; main.innerHTML=`<div class="card centro"><h2>Link não reconhecido</h2><p class="sub">Abra o HAG Cozinha pelo link pessoal que o consultório enviou. Se ele parou de funcionar, peça um novo pelo WhatsApp do consultório.</p></div>`; return; }
+  if(!CTX){ tabs.hidden=true; main.innerHTML=`<div class="card centro"><p class="sub">${S.erro==="rede"?"Sem conexão agora. Abra de novo quando tiver sinal.":"Carregando o seu plano…"}</p>${S.erro?`<button class="btn" data-a="recarregar">Tentar de novo</button>`:""}</div>`; return; }
+  if(!P()){ tabs.hidden=true; main.innerHTML=`<div class="card centro"><h2>Seu plano ainda não chegou aqui</h2><p class="sub">O Dr. Henrique libera o plano no HAG Cozinha depois da consulta. Enquanto isso, siga o Plano Alimentar que você recebeu.</p><button class="btn ghost" data-a="recarregar">Atualizar</button></div>`; return; }
+  tabs.hidden=false; tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.v===S.aba)));
+  ({hoje:renderHoje,rec:renderRec,fora:renderFora,tab:renderTab})[S.aba]();
+}
+function ir(v){ S.aba=v; S.recAberta=null; render(); window.scrollTo(0,0); }
+tabs.addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) ir(b.dataset.v); });
+main.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]"); if(!b||b.disabled) return; const a=b.dataset.a, i=+b.dataset.i, v=b.dataset.v, nm=b.dataset.n;
+  if(a==="recarregar"||a==="reenviar"){ enviarFila().then(ok=>{ if(!ok) carregar(); }); return; }
+  if(a==="plano"){ S.menu=null; return salvarRef(i,{como:"plano",detalhe:null,faltou:null}); }
+  if(a==="fora"||a==="pulei"){ S.menu=null; return salvarRef(i,{como:a,detalhe:null,faltou:null,sac:null,doce:null}); }
+  if(a==="desfazer") return salvarRef(i,{como:"desfeito",detalhe:null,faltou:null,sac:null,doce:null});
+  if(a==="menu"){ S.menu=i; return render(); }
+  if(a==="sac") return salvarRef(i,{sac:v});
+  if(a==="doce") return salvarRef(i,{doce:v});
+  if(a==="montar"){ S.montar=S.montar&&S.montar.idx===i?null:{idx:i,esc:[]}; return render(); }
+  if(a==="fecharmontar"){ S.montar=null; return render(); }
+  if(a==="mais"||a==="menos"){ const M=S.montar, al=HC.acharAlimento(tabela(),nm), m=HC.metaHoje(P(),M.idx,eventosHoje()); let e=M.esc.find(x=>x.nome===nm);
+    if(a==="mais"){ const ct=HC.contaPrato(m,tabela(),M.esc), falta=al.g==="X"?1:(ct.falta[al.g.toLowerCase()]||0), passo=al.g==="X"?1:Math.min(1,falta); if(passo<=0) return;
+      if(e) e.por=Math.round((e.por+passo)*100)/100; else M.esc.push({nome:nm,por:passo}); }
+    else if(e){ e.por=Math.round((e.por-(e.por%1||1))*100)/100; if(e.por<=0) M.esc=M.esc.filter(x=>x!==e); }
+    return render(); }
+  if(a==="comimontado"){ const M=S.montar, m=HC.metaHoje(P(),i,eventosHoje()), ct=HC.contaPrato(m,tabela(),M.esc); S.montar=null;
+    return salvarRef(i,{como:"montei",detalhe:{itens:M.esc.map(x=>({nome:x.nome,por:x.por}))},faltou:ct.fechado?null:ct.falta}); }
+  if(a==="sos"){ S.sos=!S.sos; S.sosMsg=null; return render(); }
+  if(a==="sosop"){ S.sosMsg=v; enfileirar({tipo:"evento",client_id:uid(),data:HOJE(),evento:"sos",chave:v,detalhe:null}); return; }
+  if(a==="ir") return ir(v);
+  if(a==="irrec"){ S.recTag=CTX.receitas.some(r=>r.tags.includes(v))?v:null; S.recIdx=proxima(); return ir("rec"); }
+  if(a==="doces"){ S.doces=!S.doces||b.closest(".drawer")!=null; S.doceSel=null; if(b.closest(".drawer")) S.sos=false; return render(); }
+  if(a==="fechardoces"){ S.doces=false; S.doceSel=null; return render(); }
+  if(a==="docesel"){ S.doceSel=v; return render(); }
+  if(a==="docecancela"){ S.doceSel=null; return render(); }
+  if(a==="doceok"){ const d=CTX.doces.find(x=>x.nome===S.doceSel), feitas={}; Object.keys(regsHoje()).forEach(k=>feitas[k]=true); const r=HC.encaixarDoce(d,P(),eventosHoje(),feitas); S.doceSel=null;
+    if(r.ok) enfileirar({tipo:"evento",client_id:uid(),data:HOJE(),evento:"doce",chave:d.nome,detalhe:{custo:{c:num(d.c),g:num(d.g)},ajustes:r.ajustes}}); else render(); return; }
+  if(a==="docedesfaz") return enfileirar({tipo:"evento",client_id:uid(),data:HOJE(),evento:"doce_desfeito",chave:v,detalhe:null});
+  if(a==="recde"){ S.recIdx=i; S.recTag=null; return ir("rec"); }
+  if(a==="recref"){ S.recIdx=i; return render(); }
+  if(a==="rectag"){ S.recTag=S.recTag===v?null:v; return render(); }
+  if(a==="verrec"){ S.recAberta=v; render(); return window.scrollTo(0,0); }
+  if(a==="voltarrec"){ S.recAberta=null; return render(); }
+  if(a==="comirec"){ const rc=CTX.receitas.find(x=>x.id===S.recAberta), idx=S.recIdx, f=HC.receitaPara(rc,HC.metaHoje(P(),idx,eventosHoje()),tabela(),CTX.regras,naoGosta()); S.recAberta=null; S.aba="hoje";
+    return salvarRef(idx,{como:"receita",detalhe:{receita:rc.nome,itens:(f.linhas||[]).map(l=>({nome:l.nome,por:l.por}))},faltou:null}); }
+  if(a==="pref"){ let ng=naoGosta().slice(); const k=HC.norm(nm); if(ng.map(HC.norm).includes(k)) ng=ng.filter(x=>HC.norm(x)!==k); else ng.push(nm); return enfileirar({tipo:"pref",nao_gosta:ng}); }
+});
+window.addEventListener("online",()=>enviarFila());
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ enviarFila().then(ok=>{ if(!ok) carregar(); }); } });
+render(); enviarFila().then(ok=>{ if(!ok) carregar(); });
+})();
+</script>
+</body>
+</html>
