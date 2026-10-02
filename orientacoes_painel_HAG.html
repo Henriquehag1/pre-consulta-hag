@@ -87,8 +87,8 @@ var rpc=function(n,a){return api('rpc/'+n,{method:'POST',body:a})};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var dataBR=function(s){ if(!s) return ''; var d=new Date(s); return isNaN(d)?'':d.toLocaleDateString('pt-BR'); };
 
-var D={itens:[],meta:null,pacientes:[],lib:[]};
-var S={filtro:'pendentes',aberto:null,msg:null,erro:null,ocupado:false,imp:null,link:null,
+var D={itens:[],meta:null,pacientes:[],lib:[],prop:null};
+var S={filtro:'pendentes',aberto:null,msg:null,erro:null,ocupado:false,imp:null,link:null,confNovo:false,
        pid:new URLSearchParams(location.search).get('p')||'',pcids:[],pmeds:[],pcarregado:''};
 
 async function carregar(){
@@ -96,10 +96,14 @@ async function carregar(){
     api('orientacoes_meta?id=eq.1&select=dados'), api('patients?select=id,nome,status,interno&order=nome'),
     api('orientacoes_paciente?select=patient_id,orientacao_id,liberado_em,visto_em')]);
   D.itens=r[0]||[]; D.meta=(r[1]&&r[1][0]&&r[1][0].dados)||null; D.pacientes=r[2]||[]; D.lib=r[3]||[];
+  // Proposta pela regra do consultório (visão v_orientacoes_proposta): só pacientes ativos e folhas aprovadas.
+  try{ D.prop=await api('v_orientacoes_proposta?select=patient_id,orientacao_id'); }catch(e){ D.prop=null; }
 }
 // CIDs ativos e medicações em uso do paciente escolhido: servem só para SUGERIR folhas. A escolha é do médico.
 async function carregarPaciente(){
-  S.pcids=[]; S.pmeds=[]; S.pcarregado=S.pid; if(!S.pid) return;
+  S.pcids=[]; S.pmeds=[]; S.pcarregado=S.pid;
+  try{ D.prop=await api('v_orientacoes_proposta?select=patient_id,orientacao_id'); }catch(e){ D.prop=null; }
+  if(!S.pid) return;
   try{ var p=await api('patients?id=eq.'+encodeURIComponent(S.pid)+'&select=cids');
     var c=(p&&p[0]&&Array.isArray(p[0].cids))?p[0].cids:[];
     S.pcids=c.filter(function(x){return x&&x.codigo&&x.ativo!==false}).map(function(x){return String(x.codigo).toUpperCase()}); }catch(e){}
@@ -111,6 +115,7 @@ function nomeGrupo(g){ var x=((D.meta&&D.meta.grupos)||[]).filter(function(s){re
 function ordemGrupos(){ var l=((D.meta&&D.meta.grupos)||[]).map(function(s){return s.id}); D.itens.forEach(function(i){ if(l.indexOf(i.grupo)<0) l.push(i.grupo); }); return l; }
 function visiveis(){ return D.itens.filter(function(i){ return S.filtro==='todos'||(S.filtro==='pendentes'&&!i.aprovado)||(S.filtro==='aprovados'&&i.aprovado); }); }
 function motivos(i){ var m=[];
+  if(Array.isArray(D.prop)) return D.prop.some(function(x){return x.patient_id===S.pid&&x.orientacao_id===i.id})?['regra do consultório']:[];
   (i.cids||[]).forEach(function(c){ var C=String(c).toUpperCase(); if(S.pcids.some(function(p){return p===C||p.indexOf(C)===0})) m.push(C); });
   (i.meds||[]).forEach(function(k){ if(S.pmeds.indexOf(String(k).toLowerCase())>=0) m.push(k); });
   return m; }
@@ -168,7 +173,8 @@ function render(){
       var pend=D.itens.filter(function(i){return !i.aprovado&&motivos(i).length});
       if(pend.length) h+='<p class="note">Combinariam com este paciente, mas ainda não foram aprovadas: '+esc(pend.map(function(i){return i.nome}).join('; '))+'.</p>';
       var qt=D.lib.filter(function(l){return l.patient_id===S.pid}).length;
-      h+='<div class="row"><button class="btn sec" data-a="gerarlink" '+(qt?'':'disabled')+'>Gerar o link e a mensagem</button><span class="note">'+qt+' folha'+(qt===1?'':'s')+' liberada'+(qt===1?'':'s')+'.</span></div>';
+      h+='<div class="row"><button class="btn sec" data-a="gerarlink" '+(qt?'':'disabled')+'>Gerar o link e a mensagem</button><button class="btn sec" data-a="pedirnovo">Trocar o link deste paciente</button><span class="note">'+qt+' folha'+(qt===1?'':'s')+' liberada'+(qt===1?'':'s')+'.</span></div>';
+      if(S.confNovo) h+='<div class="aviso">O link atual deste paciente deixa de funcionar na hora, na Cozinha e nas Orientações. Use quando o link foi enviado para a pessoa errada ou parou de abrir. <span class="row" style="margin-top:6px"><button class="btn peq" data-a="linknovo">Confirmar: gerar link novo</button><button class="btn peq sec" data-a="cancelanovo">Cancelar</button></span></div>';
       if(S.link){ var p=D.pacientes.filter(function(x){return x.id===S.pid})[0]||{}, pn=String(p.nome||'').split(' ')[0];
         h+='<p class="note">Link de '+esc(p.nome||'')+' (é o mesmo link pessoal da Cozinha):</p><textarea id="linktxt" readonly>'+esc(S.link)+'</textarea>'+
            '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique deixou orientações para você no seu espaço do Método HAG. O link é pessoal:\n\n'+esc(S.link)+'\n\nDá para salvar na tela inicial do celular. Qualquer dúvida sobre o conteúdo, é só anotar para a próxima consulta.</textarea>'+
@@ -177,6 +183,10 @@ function render(){
   }
   h+='</div>';
 
+  if(Array.isArray(D.prop)){ var pend={}; D.prop.forEach(function(x){ if(!libDe(x.patient_id,x.orientacao_id)) (pend[x.patient_id]=pend[x.patient_id]||[]).push(x.orientacao_id); });
+    var lp=Object.keys(pend).map(function(pid){ var p=D.pacientes.filter(function(x){return x.id===pid})[0]||{nome:pid}; return {pid:pid,nome:p.nome,n:pend[pid].length,nomes:pend[pid].map(function(o){ var i=D.itens.filter(function(x){return x.id===o})[0]; return i?i.nome:o; })}; }).sort(function(a,b){return String(a.nome).localeCompare(String(b.nome))});
+    h+='<div class="card"><h3>Sugestões ainda não liberadas</h3><p class="note">Pela regra do consultório (CIDs ativos, medicação em uso, plano e objetivo). Aparece aqui quando um paciente ganha um diagnóstico ou uma receita nova.</p>'+
+       (lp.length?'<table class="res"><tr><th>Paciente</th><th>Folhas sugeridas</th><th></th></tr>'+lp.map(function(x){return '<tr><td>'+esc(x.nome)+'</td><td>'+esc(x.nomes.join('; '))+'</td><td><button class="btn peq sec" data-a="abrirpac" data-v="'+esc(x.pid)+'">Abrir</button></td></tr>'}).join('')+'</table>':'<p class="note">Nenhuma. Todos os pacientes ativos estão com as folhas sugeridas liberadas.</p>')+'</div>'; }
   var linhas=Object.keys(pacs).map(function(pid){ var p=D.pacientes.filter(function(x){return x.id===pid})[0]||{nome:pid}, l=D.lib.filter(function(x){return x.patient_id===pid});
     return {pid:pid,nome:p.nome,n:l.length,nv:l.filter(function(x){return !x.visto_em}).length}; }).sort(function(a,b){return String(a.nome).localeCompare(String(b.nome))});
   if(linhas.length) h+='<div class="card"><h3>Quem recebeu</h3><table class="res"><tr><th>Paciente</th><th>Folhas</th><th>Não lidas</th><th></th></tr>'+
@@ -208,12 +218,16 @@ main.addEventListener('click',function(e){
   if(a==='liberarsug') return tentar(async function(){ var l=D.itens.filter(function(i){return i.aprovado&&motivos(i).length&&!libDe(S.pid,i.id)});
     for(var k=0;k<l.length;k++) await liberar(l[k].id); S.msg=l.length+' folhas liberadas.'; });
   if(a==='gerarlink') return tentar(async function(){ var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; });
-  if(a==='abrirpac'){ S.pid=v; S.link=null; return tentar(carregarPaciente); }
+  if(a==='abrirpac'){ S.pid=v; S.link=null; S.confNovo=false; return tentar(carregarPaciente); }
+  if(a==='pedirnovo'){ S.confNovo=true; return render(); }
+  if(a==='cancelanovo'){ S.confNovo=false; return render(); }
+  if(a==='linknovo') return tentar(async function(){ await api('cozinha_acessos?patient_id=eq.'+encodeURIComponent(S.pid)+'&revogado=eq.false',{method:'PATCH',body:{revogado:true}});
+    var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; S.confNovo=false; S.msg='Link novo gerado. O anterior parou de funcionar.'; });
   if(a==='copiar'){ var el=document.getElementById(v); el.select(); try{ navigator.clipboard.writeText(el.value).then(function(){ S.msg='Copiado.'; render(); },function(){}); }catch(er){} return; }
 });
 main.addEventListener('change',function(e){
   var t=e.target; S.msg=null;
-  if(t.id==='pac'){ S.pid=t.value; S.link=null; return tentar(carregarPaciente); }
+  if(t.id==='pac'){ S.pid=t.value; S.link=null; S.confNovo=false; return tentar(carregarPaciente); }
   if(t.dataset&&t.dataset.lib){ var oid=t.dataset.lib, marcar=t.checked;
     return tentar(async function(){ if(marcar) await liberar(oid); else await retirar(oid); S.link=null; }); }
 });

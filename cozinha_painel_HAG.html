@@ -149,7 +149,8 @@ function render(){
   h+='</div>';
 
   h+='<div class="card"><h3>3. Link pessoal do paciente</h3><p class="note">Quem abre a página sem link vê só o que está "aberto ao público". O link pessoal libera também o que é "só paciente". O envio é da Daniela.</p><div class="row"><select id="pac"><option value="">Escolha o paciente</option>'+
-     D.pacientes.map(function(p){return '<option value="'+esc(p.id)+'" '+(S.pid===p.id?'selected':'')+'>'+esc(p.nome)+(p.interno?' (interno)':'')+'</option>'}).join('')+'</select><button class="btn" data-a="gerarlink">Gerar link</button></div>';
+     D.pacientes.map(function(p){return '<option value="'+esc(p.id)+'" '+(S.pid===p.id?'selected':'')+'>'+esc(p.nome)+(p.interno?' (interno)':'')+'</option>'}).join('')+'</select><button class="btn" data-a="gerarlink">Gerar link</button><button class="btn sec" data-a="pedirnovo">Trocar o link deste paciente</button></div>';
+  if(S.confNovo) h+='<div class="erro">O link atual deste paciente deixa de funcionar na hora, na Cozinha e nas Orientações. Use quando o link foi para a pessoa errada ou parou de abrir. <span class="row" style="margin-top:6px"><button class="btn peq" data-a="linknovo">Confirmar: gerar link novo</button><button class="btn peq sec" data-a="cancelanovo">Cancelar</button></span></div>';
   if(S.link){ var p=D.pacientes.filter(function(x){return x.id===S.pid})[0]||{}, pn=String(p.nome||'').split(' ')[0];
     h+='<p class="note">Link de '+esc(p.nome||'')+':</p><textarea id="linktxt" readonly>'+esc(S.link)+'</textarea>'+
        '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique liberou para você o acesso à Cozinha do Método HAG: receitas e guias práticos para o dia a dia, com as porções e os números de cada uma. O link é pessoal:\n\n'+esc(S.link)+'\n\nDá para salvar na tela inicial do celular e abrir sempre que precisar.</textarea>'+
@@ -182,6 +183,10 @@ main.addEventListener('click',function(e){
       for(var k=0;k<c.itens.length;k+=12){ S.imp='Importando '+Math.min(k+12,c.itens.length)+' de '+c.itens.length+'…'; render();
         var r=await rpc('hag_cozinha_importar',{p_itens:c.itens.slice(k,k+12),p_meta:k===0?c.meta:null}); tot.novos+=r.novos; tot.alterados+=r.alterados; tot.iguais+=r.iguais; }
       await carregar(); S.dados={}; S.imp=null; S.msg='Importado: '+tot.novos+' novos, '+tot.alterados+' alterados (voltaram para "a aprovar"), '+tot.iguais+' sem mudança.'; }); }
+  if(a==='pedirnovo'){ S.pid=document.getElementById('pac').value; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); } S.confNovo=true; return render(); }
+  if(a==='cancelanovo'){ S.confNovo=false; return render(); }
+  if(a==='linknovo') return tentar(async function(){ await api('cozinha_acessos?patient_id=eq.'+encodeURIComponent(S.pid)+'&revogado=eq.false',{method:'PATCH',body:{revogado:true}});
+    var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; S.confNovo=false; S.msg='Link novo gerado. O anterior parou de funcionar.'; });
   if(a==='gerarlink'){ S.pid=document.getElementById('pac').value; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); }
     return tentar(async function(){ var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; }); }
   if(a==='copiar'){ var el=document.getElementById(v); el.select(); try{ navigator.clipboard.writeText(el.value).then(function(){ S.msg='Copiado.'; render(); },function(){}); }catch(er){} return; }
