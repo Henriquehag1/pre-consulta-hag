@@ -88,7 +88,7 @@ var S={lote:null,filtro:'pendentes',tipo:'receita',aberto:null,dados:{},msg:null
 
 // Fotos que já estão na pasta cozinha_fotos/ do site (lista.json). A foto subida aqui (foto_url) manda sobre elas.
 var FOTOS={};
-function fotoDe(i){ return i.foto_url||(FOTOS[i.id]?'cozinha_fotos/'+i.id+'.jpg':null); }
+function fotoDe(i){ return i.foto_url||(FOTOS[i.id]?'cozinha_fotos/p/'+i.id+'.jpg':null); }
 async function carregarFotos(){ try{ var r=await fetch('cozinha_fotos/lista.json',{cache:'no-cache'}); if(!r.ok) return; var l=await r.json(); FOTOS={}; if(Array.isArray(l)) l.forEach(function(id){ if(/^[a-z0-9-]+$/.test(id)) FOTOS[id]=1; }); }catch(e){} }
 async function carregar(){
   await carregarFotos();

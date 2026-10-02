@@ -255,8 +255,8 @@ function carregarFotos(){
   return fetch('cozinha_fotos/lista.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; })
     .then(function(l){ if(Array.isArray(l)){ porFotos(l); ls.set('hagcozinha.col.fotos',l); } }).catch(function(){});
 }
-function fotoDe(i){ return i.foto||(i.id&&FOTOS[i.id]?'cozinha_fotos/'+i.id+'.jpg':null); }
-function fotoHTML(i,grande){ var u=fotoDe(i); return u?'<div class="foto"><img alt="" loading="lazy" src="'+esc(u)+'"></div>':'<div class="foto vazia" aria-hidden="true">HAG</div>'; }
+function fotoDe(i,grande){ return i.foto||(i.id&&FOTOS[i.id]?'cozinha_fotos/'+(grande?'':'p/')+i.id+'.jpg':null); }
+function fotoHTML(i,grande){ var u=fotoDe(i,grande); return u?'<div class="foto"><img alt="" loading="lazy" src="'+esc(u)+'"></div>':'<div class="foto vazia" aria-hidden="true">HAG</div>'; }
 function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
 
 function telaReceitas(){
