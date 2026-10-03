@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20260922-1750"></script>
+<script src="hag_auth.js?v=20261003-0853"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1301,6 +1301,13 @@ var DAN_TPL=[
   {id:'desmarcou_usar_plano_antecipa',cat:'remarcacao',nome:"Contou no plano · próxima antecipada",sub:"Sem cobrança, link das duas próximas semanas",texto:"[nome], combinado. A consulta desmarcada fica registrada como uma das consultas do seu plano, sem cobrança, e a próxima foi antecipada para você.\n\nÉ só escolher a data pelo link abaixo, entre os horários disponíveis na agenda do Dr. Henrique:\n\n[link]"},
   {id:'desmarcou_taxa',cat:'remarcacao',nome:"Escolheu a taxa de R$ 350",sub:"Cobrança; o link vai depois do pagamento",texto:"[nome], combinado. Segue abaixo o pagamento da taxa de reserva de agenda, de R$ 350.\n\nAssim que ele entrar, eu te envio o link para você escolher a nova data desta mesma consulta."},
   {id:'desmarcou_taxa_paga',cat:'remarcacao',nome:"Taxa recebida · nova data",sub:"Pagamento confirmado, com o link",texto:"[nome], pagamento recebido, obrigada.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]"},
+  /* HAG_DESMARCAR_DIAG_v1 (03/10/2026, caso Cintia): quem desmarca a CONSULTA DIAGNOSTICA fora do prazo ainda nao tem
+     plano nem contrato, entao os modelos acima ("o contrato preve", "consulta do seu plano") nao servem. O que esta em
+     jogo e o sinal. Nao ha menu de opcoes para o paciente: ele informa o motivo, e manter ou reter o sinal e decisao
+     do Dr. Henrique. */
+  {id:'diag_desmarcou_fora_prazo',cat:'remarcacao',nome:"Diagnóstica · desmarcou fora do prazo",sub:"Primeira consulta, menos de 72 h: recebe o aviso e pergunta do comprovante",texto:"[nome], recebi o seu aviso, obrigada por me avisar.\n\nO horário do dia [data] estava reservado no seu nome, e com menos de 72 horas ele não consegue mais ser oferecido a outro paciente.\n\nSe o motivo foi de saúde, me envie o comprovante médico (atestado ou declaração), que a nova data sai sem custo nenhum.\n\nSe foi outro imprevisto, me conta por aqui que eu verifico como fica a sua reserva e já te retorno com o próximo passo."},
+  {id:'diag_desmarcou_mantem_sinal',cat:'remarcacao',nome:"Diagnóstica · remarca mantendo o sinal",sub:"Primeira vez fora do prazo: sem cobrança, com o link e a regra",texto:"[nome], combinado. Como é a primeira vez, eu consigo reorganizar a sua consulta diagnóstica sem custo, e o sinal que você já pagou vale para a nova data.\n\nÉ só escolher o dia pelo link abaixo, entre os horários disponíveis na agenda do Dr. Henrique:\n\n[link]\n\nSó deixo registrado como funciona daqui para frente: mudança de data pedida com até 72 horas de antecedência eu organizo sem custo. Com menos de 72 horas o horário fica bloqueado, e o sinal passa a valer como a reserva dele, salvo motivo de saúde comprovado."},
+  {id:'diag_desmarcou_sinal_retido',cat:'remarcacao',nome:"Diagnóstica · sinal fica como reserva",sub:"Decisão do Dr. Henrique: novo sinal para a nova data",texto:"[nome], obrigada pelo retorno.\n\nComo a desmarcação veio com menos de 72 horas, o horário do dia [data] ficou bloqueado e não pôde ser oferecido a outro paciente. Por isso o sinal já pago fica como a reserva desse horário.\n\nPara marcar a nova data, é só abrir o link abaixo e escolher o dia. A reserva se confirma com um novo sinal, e o Pix aparece na própria tela:\n\n[link]\n\nSe o motivo foi de saúde, me envie o comprovante médico, que eu reorganizo sem custo."},
   {id:'atraso_paciente',cat:'remarcacao',nome:'Paciente atrasado',sub:'Pode inviabilizar a consulta',texto:'[nome], vi que você está atrasado(a) para a consulta. Vou verificar com o Dr. Henrique se ainda há janela para te atender hoje.\n\nSe não der, eu já organizo o reagendamento. Me aguarda um instante que eu te retorno.'},
   {id:'sumiu_2sem',cat:'resgate',nome:'Sumiu por duas semanas',sub:'Regra de ouro do método',texto:'Oi [nome], tudo bem por aí? Senti a sua falta nos últimos check-ins.\n\nO Dr. Henrique pediu para eu te lembrar de uma regra do Método HAG: não buscamos perfeição, buscamos repetição.\n\nSe os últimos dias foram difíceis ou fora do plano, tudo bem. O que não pode é abandonar o processo.\n\nComo eu posso te ajudar a retomar hoje?'},
   {id:'voltou_envergonhado',cat:'resgate',nome:'Voltou constrangido',sub:'Acolhimento, sem lição de moral',texto:'Fica tranquilo(a), [nome]. Isso acontece, e faz parte do processo.\n\nA diferença aqui é que você não precisa resolver sozinho(a): é justamente para isso que existe o acompanhamento.\n\nJá liberei a sua agenda para vocês alinharem a rota. Escolha pelo link o dia e o horário que ficarem melhores para você:\n\n[link]'},
@@ -2697,7 +2704,7 @@ var _CRIADORES={
   pedido_remarcacao: {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que pediu para remarcar'},
   pedido_ajuda:      {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que nao achou horario'},
   vaga_aberta:       {curto:'&#x26a0; Vaga aberta', longo:'pelo sistema, quando a vaga abriu'},
-  desmarcacao:       {curto:'&#x2715; Desmarcação', longo:'pelo painel Desmarcou, antecipando o controle seguinte'} /* HAG_DESMARCAR_ANTECIPA_v1 */
+  desmarcacao:       {curto:'&#x2715; Desmarcação', longo:'pelo painel Desmarcou (controle antecipado ou diagnóstica a remarcar)'} /* HAG_DESMARCAR_ANTECIPA_v1 */
 };
 function _quemCriou(cp){
   return _CRIADORES[String(cp||'')] || {curto:'&#x1f9ba; Medico', longo:'pelo Dr. Henrique'};
@@ -3426,8 +3433,12 @@ function _dsmAlvoAntecipado(local){
   while(d.getDay()!==alvoDow) d.setDate(d.getDate()+1);
   return d.getFullYear()+'-'+_dsmZ(d.getMonth()+1)+'-'+_dsmZ(d.getDate());
 }
-var _DSM_ROT={prazo:'no prazo, sem custo', atestado:'comprovante médico, sem custo', plano:'contada como consulta do plano, sem cobrança', taxa:'taxa de reserva de agenda, R$ 350'};
-var _DSM_MSG_DEPOIS={prazo:'desmarcou_no_prazo', atestado:'desmarcou_comprovante', plano:'desmarcou_usar_plano', taxa:'desmarcou_taxa'};
+var _DSM_ROT={prazo:'no prazo, sem custo', atestado:'comprovante médico, sem custo', plano:'contada como consulta do plano, sem cobrança', taxa:'taxa de reserva de agenda, R$ 350',
+              cortesia:'diagnóstica remarcada uma vez mantendo o sinal, sem cobrança', sinal:'diagnóstica: sinal retido como reserva de agenda'}; /* HAG_DESMARCAR_DIAG_v1 */
+var _DSM_MSG_DEPOIS={prazo:'desmarcou_no_prazo', atestado:'desmarcou_comprovante', plano:'desmarcou_usar_plano', taxa:'desmarcou_taxa',
+                     cortesia:'diag_desmarcou_mantem_sinal', sinal:'diag_desmarcou_sinal_retido'}; /* HAG_DESMARCAR_DIAG_v1 */
+/* HAG_DESMARCAR_DIAG_v1: consulta diagnostica = paciente de primeira consulta, sem plano e sem contrato. */
+function _dsmDiag(){ return !!(_dsm && _dsm.t && _dsm.t.tipo_evento==='diagnostica'); }
 function _dsmZ(n){ return ('0'+n).slice(-2); }
 function _dsmAgoraLocal(){ var d=new Date(); return d.getFullYear()+'-'+_dsmZ(d.getMonth()+1)+'-'+_dsmZ(d.getDate())+'T'+_dsmZ(d.getHours())+':'+_dsmZ(d.getMinutes()); }
 function _dsmHojeISO(){ return _dsmAgoraLocal().slice(0,10); }
@@ -3483,6 +3494,12 @@ function _dsmOpcoes(){
   var h=_dsmHoras(), ret=_dsm.ret;
   if(_dsmBloq()) return [{id:'prazo', tit:'Remarcar sem custo', sub:'Dia fechado pelo consultório. O controle volta para "agendar" e o link oferece novas datas.'}]; /* HAG_AGENDA_BLOQUEIO_v1 */
   if(h>=72) return [{id:'prazo', tit:'Cancelar sem custo', sub:'Aviso dentro das 72 h. O controle volta para "agendar" e o link oferece novas datas.'}];
+  /* HAG_DESMARCAR_DIAG_v1: na diagnostica nao existe "contar no plano" nem taxa de contrato. As saidas giram em torno do sinal. */
+  if(_dsmDiag()) return [
+    {id:'atestado', tit:'Apresentou comprovante médico', sub:'Sem custo. O sinal já pago vale para a nova data. Guarde o comprovante.'},
+    {id:'cortesia', tit:'Remarcar uma vez mantendo o sinal', sub:'Primeira desmarcação fora do prazo. Sem cobrança; o sinal vale para a nova data e a mensagem já avisa a regra para a próxima.'},
+    {id:'sinal', tit:'Reter o sinal como reserva de agenda', sub:'Decisão do Dr. Henrique (reincidência ou aviso em cima da hora). O sinal pago cobre o horário perdido e o link pede novo sinal.'}
+  ];
   var planoOff = _dsm.carregando ? 'Conferindo o controle do plano...'
                : !ret ? 'Sem controle do plano nesta data: vale só para consulta de ciclo.'
                : ret.eh_fechamento ? 'É a consulta de fechamento do ciclo: não se conta como usada sem falar com o Dr. Henrique.'
@@ -3506,8 +3523,12 @@ function _dsmRender(){
   html+='<div class="dsm-nota">'+(_dsm.carregando ? 'Procurando o controle do plano ligado a esta data...'
         : _dsm.retErro ? '⚠ Não consegui conferir o controle do plano. Cancelar funciona, mas confira a pasta do paciente depois.'
         : _dsm.ret ? ('Controle do plano: <b>'+_dsmEsc(_dsm.ret.nome_retorno||'')+'</b>')
-        : 'Nenhum controle do plano nesta data (consulta avulsa, diagnóstica ou aplicação).')+'</div>';
-  if(h<72 && !_dsmBloq()){
+        : _dsmDiag() ? 'Consulta diagnóstica: paciente de primeira consulta, ainda sem plano e sem contrato. O que está em jogo aqui é o sinal.'
+        : 'Nenhum controle do plano nesta data (consulta avulsa ou aplicação).')+'</div>';
+  if(h<72 && !_dsmBloq() && _dsmDiag()){ /* HAG_DESMARCAR_DIAG_v1 */
+    html+='<div class="dsm-nota">Ainda não sabe o motivo? Envie o aviso e volte aqui quando o paciente responder. Manter ou reter o sinal é decisão do Dr. Henrique: na dúvida, pergunte a ele antes de confirmar. Nada é alterado até você confirmar.</div>'
+      +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'diag_desmarcou_fora_prazo\')"><span class="g">&#x1f4f2;</span>Enviar o aviso e perguntar o motivo</button></div>';
+  } else if(h<72 && !_dsmBloq()){
     html+='<div class="dsm-nota">Ainda não sabe o que o paciente prefere? Envie as três opções e volte aqui quando ele responder. Nada é alterado até você confirmar.</div>'
       +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_fora_prazo\')"><span class="g">&#x1f4f2;</span>Enviar as 3 opções</button></div>';
   }
@@ -3554,6 +3575,28 @@ async function dsmConfirmar(){
       var u=await db.from('retornos').update(upd).eq('id',ret.id);
       if(u&&u.error) throw new Error('o agendamento foi cancelado, mas o controle do plano não foi acertado ('+u.error.message+'). Avise o Dr. Henrique.');
     }
+    /* HAG_DESMARCAR_DIAG_v1: (a) sinal retido = patients.sinal_pago volta a falso, e o link pede novo sinal
+       (hag_sinal_ja_pago le esse campo); (b) o link so oferece datas de diagnostica se existir uma tarefa de
+       agendamento de diagnostica aberta (hag_agendamento_contexto_diag), e a desmarcacao fechava a unica que havia:
+       sem esta tarefa nova o paciente abria o link e nao via data nenhuma. */
+    if(t.tipo_evento==='diagnostica'){
+      if(dec==='sinal'){
+        var us=await db.from('patients').update({sinal_pago:false}).eq('id',t.patient_id);
+        if(us&&us.error) throw new Error('desmarcado, mas não consegui registrar o sinal como retido ('+us.error.message+'). O link ainda aceita o sinal antigo: avise o Dr. Henrique.');
+      }
+      var ja=await db.from('tarefas').select('id').eq('patient_id',t.patient_id).eq('tipo','agendamento').eq('tipo_evento','diagnostica')
+                     .in('status',['pendente','aguardando','andamento']).neq('id',t.id).limit(1);
+      if(ja&&ja.error) throw new Error('desmarcado, mas não consegui conferir a fila ('+ja.error.message+'). Crie a tarefa de agendar a diagnóstica à mão.');
+      if(((ja&&ja.data)||[]).length){ if(_dsm) _dsm.diagTid=ja.data[0].id; }
+      else {
+        var agd=new Date().toISOString(), tdid='t_'+Date.now();
+        var insd=await db.from('tarefas').insert({id:tdid, patient_id:t.patient_id, patient_nome:t.patient_nome, tipo:'agendamento',
+          descricao:'Remarcar consulta diagnóstica', status:'pendente', prioridade:'alta', criado_por:'desmarcacao',
+          criado_em:agd, atualizado_em:agd, tipo_evento:'diagnostica', local:t.local||null, obs:linha});
+        if(insd&&insd.error) throw new Error('desmarcado, mas a tarefa de remarcar não foi criada ('+insd.error.message+'). Sem ela o link não oferece datas: crie à mão.');
+        if(_dsm) _dsm.diagTid=tdid;
+      }
+    }
     /* HAG_DESMARCAR_ANTECIPA_v1 */
     if(dec==='plano' && _dsm && _dsm.antecipar && _dsm.prox && !_dsm.prox.eh_fechamento){
       var px=_dsm.prox, alvo=_dsmAlvoAntecipado(t.local), agora=new Date().toISOString();
@@ -3583,6 +3626,14 @@ async function dsmConfirmar(){
 function _dsmHtmlFeito(){
   var dec=_dsm.feito, nome=String(_dsm.t.patient_nome||'').split(' ')[0];
   var h='<div class="dsm-info"><b>✓ '+_dsmEsc(nome)+' desmarcado</b><br>'+_DSM_ROT[dec]+'. O horário foi liberado e o evento sai da agenda em até 10 minutos.</div>';
+  if(_dsmDiag()){ /* HAG_DESMARCAR_DIAG_v1 */
+    var tpd=(dec==='prazo'&&_dsmBloq())?'consultorio_remarca_cancelado':_DSM_MSG_DEPOIS[dec];
+    h+='<div class="dsm-nota">'+(dec==='sinal' ? 'O sinal já pago ficou como reserva do horário perdido. O link agora pede um novo sinal para confirmar a nova data.'
+                                              : 'Se o sinal já foi pago, ele continua valendo: o link oferece as novas datas e confirma sem cobrar de novo.')
+     +' A tarefa de remarcar está em A agendar e fecha sozinha quando o paciente marcar.</div>'
+     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\''+tpd+'\')"><span class="g">&#x1f4f2;</span>Enviar o link da nova data</button></div>';
+    return h+'<button class="btn-save" onclick="dsmFechar()">Fechar</button>';
+  }
   if(dec==='taxa'){
     h+='<div class="dsm-nota">Próximo passo: enviar a cobrança. Quando o pagamento entrar, registre em 💰 e envie o modelo <b>Taxa recebida · nova data</b> (aba Remarcação das mensagens), que leva o link.</div>'
      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_taxa\')"><span class="g">&#x1f4f2;</span>Enviar a cobrança</button>'
@@ -3618,6 +3669,11 @@ function dsmWhats(tplId){
     return;
   }
   window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+  /* HAG_DESMARCAR_DIAG_v1: idem para a tarefa de remarcar a diagnostica */
+  if(_dsm.diagTid && tpl.texto.indexOf('[link]')>=0){
+    db.from('tarefas').update({status:'aguardando', atualizado_em:new Date().toISOString()}).eq('id',_dsm.diagTid)
+      .then(function(){ return loadFila(); }).then(function(f){ _fila=f; render(); }).catch(function(){});
+  }
   /* a tarefa da antecipacao vira "comunicado" quando o link sai */
   if(tplId==='desmarcou_usar_plano_antecipa' && _dsm.antecipou){
     db.from('tarefas').update({status:'aguardando', atualizado_em:new Date().toISOString()}).eq('id',_dsm.antecipou.tid)
@@ -4484,7 +4540,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261001-1211';
+  var VERSAO = '20261003-0853';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
