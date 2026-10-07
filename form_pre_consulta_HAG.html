@@ -1210,6 +1210,18 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <label class="fl">Alergias ou intolerâncias</label>
     <input class="finput" id="f_alergias" type="text" placeholder="Ex: Dipirona · Lactose · Glúten...">
   </div>
+  <!-- HAG_FLUXO_SINAL_v1 (07/10/2026): a resposta escolhe as datas que o link de agendamento oferece (com exames, a partir de 3 dias;
+       sem exames, a partir de 14). Nao e pergunta clinica nem promessa de pedido: o pedido de exames so sai depois do sinal. -->
+  <div class="field">
+    <label class="fl">Você tem exames de sangue feitos nos últimos 6 meses? <span class="req">*</span></label>
+    <div class="fh">Se tiver, envie em PDF pelo WhatsApp do consultório.</div>
+    <select class="finput" id="f_exames_recentes">
+      <option value="">Selecione</option>
+      <option value="sim">Sim, tenho</option>
+      <option value="nao">Não tenho</option>
+    </select>
+    <div class="req-msg">Campo obrigatório</div>
+  </div>
 
   <div class="nav-row">
     <button class="btn-back" onclick="goBack(4)">Voltar</button>
@@ -1705,6 +1717,8 @@ function validateStep(n){
     ok=reqChips('c_incomoda')&req('f_uma_coisa');
   } else if(n===3){
     ok=req('f_peso');
+  } else if(n===4){
+    ok=req('f_exames_recentes'); /* HAG_FLUXO_SINAL_v1 */
   } else if(n===10){
     ok=reqScale('r_motivacao');
   }
@@ -1900,6 +1914,7 @@ function buildSoapText(){
     'Medicamentos: '+fv('f_meds'),
     'Medicamentos anteriores: '+fv('f_meds_ant'),
     'Alergias: '+fv('f_alergias'),
+    'Exames de sangue nos últimos 6 meses: '+({sim:'sim',nao:'não'}[fv('f_exames_recentes')]||'não respondeu'),
     '',L,
     'ESTILO DE VIDA',
     'Atividade física: '+fv('f_exercicio'),
@@ -2045,7 +2060,7 @@ async function submitForm(){
       var _chk = { patient_nome:nomeP, semana:'Pre-consulta', data_envio:new Date().toISOString().slice(0,10),
         padroes:[], peso:fvp('f_peso'), mensagem:(fvp('f_mensagem')||fvp('f_uma_coisa')), interpretacao:interpretacao||'',
         texto_completo:soapTxt||'', tipo:'pre-consulta',
-        respostas:(function(){ try{ return { escalas: escalasColeta() }; }catch(e){ return null; } })() };   /*HAG_ESCALAS_v1*/
+        respostas:(function(){ var ex=fvp('f_exames_recentes'); try{ return { escalas: escalasColeta(), exames_recentes: ex }; }catch(e){ return ex ? { exames_recentes: ex } : null; } })() };   /*HAG_ESCALAS_v1 HAG_FLUXO_SINAL_v1*/
       try{
         var _rpc = await fetch(SURL+'/rest/v1/rpc/upsert_pre_consulta', {
           method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
@@ -2174,7 +2189,7 @@ async function submitForm(){
       criado: new Date().toISOString(),
       tipo: 'pre-consulta',
       /*HAG_ESCALAS_v1: escore estruturado, para automacao futura ler sem parse*/
-      respostas: (function(){ try{ return { escalas: escalasColeta() }; }catch(e){ return null; } })()
+      respostas: (function(){ var ex=fvp('f_exames_recentes'); try{ return { escalas: escalasColeta(), exames_recentes: ex }; }catch(e){ return ex ? { exames_recentes: ex } : null; } })()
     };
     // _HAG_PATCH_BLINDAGEM_v1 : so grava checkin se o paciente existe de fato
     // (a tabela checkins tem FK para patients; sem paciente, o checkin e rejeitado)
