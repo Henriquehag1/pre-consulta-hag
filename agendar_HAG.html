@@ -1092,8 +1092,9 @@ function telaConfirma(dia,slot){
     +'<div class="conf-linha"><span>Horário</span><b>'+slot.hora+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+(TAB==='online'?'Online, o link chega pelo WhatsApp':LOCAIS[dia.local])+'</b></div>'
     +((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)
-        ? '<div class="conf-linha"><span>Para confirmar</span><b>sinal de '+brl(c.sinal.valor)+'</b></div>'
-          +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Guardamos o horário para você e mostramos o Pix na tela seguinte.</p>'
+        ? '<div class="conf-linha"><span>Para confirmar</span><b>sinal de '+brl(c.sinal.valor)+(sinalCartao(c.sinal)?' no Pix':'')+'</b></div>'
+          +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Guardamos o horário para você e mostramos o Pix na tela seguinte.'
+          +(sinalCartao(c.sinal)?' Se preferir o cartão, o sinal é '+sinalCartao(c.sinal)+'.':'')+'</p>' /* HAG_SINAL_CARTAO_v1 */
         : '')
     +'</div>'
     +'<button class="btn" onclick="HAGpg.confirmar()">'
@@ -1108,6 +1109,16 @@ function telaConfirma(dia,slot){
    Escolha de UX: Pix copia e cola, nao QR, porque o paciente esta no celular e
    nao consegue ler um QR da propria tela. E o prazo aparece com hora e dia, para
    ele saber exatamente ate quando o horario esta guardado. */
+/* HAG_SINAL_CARTAO_v1 (07/10/2026): decisao do Dr. Henrique. O sinal e R$ 450 no Pix ou
+   R$ 480 no cartao, em ate 3x de R$ 160 (cada metade da consulta carrega a sua metade do
+   acrescimo do cartao). Os numeros vem do banco (hag_config diagnostica_sinal.sinal_cartao,
+   entregue em sinal.cartao); sem eles, a pagina nao fala em cartao. O cartao nao e pago aqui:
+   o link e enviado pela Daniela, e por isso o botao abre o WhatsApp do consultorio. */
+function sinalCartao(sn){
+  var k=sn&&sn.cartao;
+  if(!k||!(Number(k.total)>0)) return '';
+  return brl(k.total)+(Number(k.parcela_3x)>0?', em até 3x de '+brl(k.parcela_3x):'');
+}
 function telaSinal(info){
   var sn=(CTX&&CTX.sinal)?CTX.sinal:{};
   var valor=info.sinal_valor||sn.valor;
@@ -1120,8 +1131,8 @@ function telaSinal(info){
     +'<div class="conf-linha"><span>Dia</span><b style="text-transform:capitalize">'+dataBR(info.data)+'</b></div>'
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(info.inicio)+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+esc(onde)+'</b></div>'
-    +'<div class="conf-linha"><span>Sinal agora</span><b>'+brl(valor)+'</b></div>'
-    +(sn.valor_total?'<div class="conf-linha"><span>No dia da consulta</span><b>'+brl(sn.valor_total-valor)+'</b></div>':'')
+    +'<div class="conf-linha"><span>Sinal agora</span><b>'+brl(valor)+(sinalCartao(sn)?' no Pix':'')+'</b></div>'
+    +(sn.valor_total?'<div class="conf-linha"><span>No dia da consulta</span><b>'+brl(sn.valor_total-valor)+(sinalCartao(sn)?' no Pix':'')+'</b></div>':'')
     +'</div>'
     +(codigo
       ? '<div class="cartao"><p style="font-size:13.5px;color:var(--ink3);margin:0 0 10px">'
@@ -1131,6 +1142,14 @@ function telaSinal(info){
         +esc(codigo)+'</div>'
         +'<button class="btn" style="margin-top:12px" onclick="HAGpg.copiarPix()">Copiar código Pix</button>'
         +'<p id="pixAviso" style="font-size:13px;color:var(--ink4);margin:10px 0 0"></p></div>'
+      : '')
+    /* HAG_SINAL_CARTAO_v1 */
+    +(sinalCartao(sn)
+      ? '<div class="cartao"><p style="font-size:14px;color:var(--ink3);margin:0 0 10px">'
+        +'Prefere pagar o sinal no cartão? O valor é '+sinalCartao(sn)+'. A Daniela envia o link de pagamento pelo WhatsApp.</p>'
+        +'<a class="btn claro" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/'
+        +esc(String(sn.whatsapp||'5511977962914').replace(/\D/g,''))+'?text='+encodeURIComponent('Olá, reservei meu horário pelo link e prefiro pagar o sinal no cartão.')
+        +'">Pedir o link do cartão</a></div>'
       : '')
     +'<div class="cartao"><p style="font-size:14px;color:var(--ink3);margin:0">'
     +'Depois de pagar, mande o comprovante para o WhatsApp do consultório. A Daniela confirma e o seu horário fica garantido.'
