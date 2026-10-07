@@ -1094,7 +1094,8 @@ function telaConfirma(dia,slot){
     +((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)
         ? '<div class="conf-linha"><span>Para confirmar</span><b>sinal de '+brl(c.sinal.valor)+(sinalCartao(c.sinal)?' no Pix':'')+'</b></div>'
           +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Guardamos o horário para você e mostramos o Pix na tela seguinte.'
-          +(sinalCartao(c.sinal)?' Se preferir o cartão, o sinal é '+sinalCartao(c.sinal)+'.':'')+'</p>' /* HAG_SINAL_CARTAO_v1 */
+          +(sinalCartao(c.sinal)?' Se preferir o cartão, o sinal é '+sinalCartao(c.sinal)+'.':'')
+          +' O sinal já faz parte do valor da consulta: no dia você acerta só o restante.</p>' /* HAG_SINAL_CARTAO_v1 · HAG_SINAL_ABATIDO_v1 */
         : '')
     +'</div>'
     +'<button class="btn" onclick="HAGpg.confirmar()">'
@@ -1132,7 +1133,9 @@ function telaSinal(info){
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(info.inicio)+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+esc(onde)+'</b></div>'
     +'<div class="conf-linha"><span>Sinal agora</span><b>'+brl(valor)+(sinalCartao(sn)?' no Pix':'')+'</b></div>'
-    +(sn.valor_total?'<div class="conf-linha"><span>No dia da consulta</span><b>'+brl(sn.valor_total-valor)+(sinalCartao(sn)?' no Pix':'')+'</b></div>':'')
+    +(sn.valor_total?'<div class="conf-linha"><span>Restante, no dia da consulta</span><b>'+brl(sn.valor_total-valor)+(sinalCartao(sn)?' no Pix':'')+'</b></div>':'')
+    /* HAG_SINAL_ABATIDO_v1 (07/10/2026): dizer por extenso que o sinal e abatido; antes ficava so implicito nas duas linhas */
+    +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">O sinal já faz parte do valor da consulta: ele é abatido, e no dia você acerta só o restante.</p>'
     +'</div>'
     +(codigo
       ? '<div class="cartao"><p style="font-size:13.5px;color:var(--ink3);margin:0 0 10px">'
