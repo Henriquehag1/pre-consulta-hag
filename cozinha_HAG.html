@@ -10,7 +10,10 @@
      Coleção de receitas e guias do Método HAG. Página pública, SEM dado de paciente e SEM login.
      Lê só o que o médico aprovou, por duas funções: hag_cozinha_colecao (índice) e hag_cozinha_item (ficha).
      Item "só paciente" exige o link pessoal (?t=TOKEN); sem ele, aparece trancado e a ficha não é entregue.
-     Números: soma de gramas pela TACO 4ª ed. e pelo USDA SR Legacy, feita fora daqui. Sem IA, sem custo por uso. -->
+     Números: soma de gramas pela TACO 4ª ed. e pelo USDA SR Legacy, feita fora daqui. Sem IA, sem custo por uso.
+     HAG_COZINHA_PARA_VOCE_v1 (08/10/2026): com o link pessoal, a coleção traz "para_voce", a seleção que o Dr. Henrique
+     aprovou na consulta (receitas e guias, cada um com o porquê em uma linha). Aparece no topo de Receitas, só sem busca
+     e com "Todas". Só id e motivo vêm do banco; nada de nome ou dado do paciente. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:ital,wght@0,400;0,700;1,400&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -61,6 +64,9 @@ p{margin:0}
 .sit-head{display:flex;flex-direction:column;gap:2px;margin-top:6px}
 .sit-head p{color:var(--ink-2);font-size:15px}
 .lista{display:flex;flex-direction:column;gap:10px}
+.pv{background:var(--cream);border-left:3px solid var(--gold-ui);padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px}
+.pv .sit-head{margin-top:0}
+.pv .motivo{font-family:var(--display);font-style:italic;font-size:14.5px;color:var(--gold);line-height:1.3}
 .card{display:grid;grid-template-columns:96px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);padding:10px;text-align:left;width:100%;align-items:start}
 .card .txt{min-width:0;display:flex;flex-direction:column;gap:4px}
 .card .nm{font-family:var(--display);font-size:18.5px;line-height:1.2;font-weight:700}
@@ -270,6 +276,17 @@ function telaReceitas(){
   var h='';
   if(st.ori) h+='<a class="orib" href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'"><b>Suas orientações</b><span>'+(st.ori.novas?st.ori.novas+(st.ori.novas===1?' nova':' novas')+' do Dr. Henrique para você':st.ori.n+(st.ori.n===1?' orientação':' orientações')+' do Dr. Henrique para você')+' &rarr;</span></a>';
   if(st.linkInvalido) h+='<div class="aviso">Este link pessoal não está mais ativo. Você continua vendo a parte aberta. Peça um link novo à equipe do consultório.</div>';
+  // HAG_COZINHA_PARA_VOCE_v1: a seleção da consulta, no topo, só na vista inicial (sem busca, com "Todas").
+  var PV=(COL.para_voce||[]).filter(function(x){ return IDX[x.id] && !IDX[x.id].trancado; });
+  if(PV.length && !q && st.sit==='todas'){
+    h+='<section class="bloco pv" aria-label="Separadas para você"><div class="sit-head"><h2>Separadas para você</h2><p>Escolhidas pelo Dr. Henrique a partir do seu plano. Comece por elas.</p></div><div class="lista">';
+    PV.forEach(function(x){ var r=IDX[x.id], mot=x.motivo?'<span class="motivo">'+esc(x.motivo)+'</span>':'';
+      if(r.tipo==='guia') h+='<button class="guia-card" data-abrir="'+r.id+'"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+'<span class="res">'+esc(r.r.resumo)+'</span></button>';
+      else h+='<button class="card" data-abrir="'+r.id+'">'+fotoHTML(r)+'<span class="txt"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+
+         '<span class="meta"><span><b>'+r.r.tempo+'</b> min</span><span><b>'+fmt(r.r.kcal)+'</b> kcal</span><span><b>'+fmt(r.r.ptn)+' g</b> proteína</span></span></span></button>';
+    });
+    h+='</div></section>';
+  }
   h+='<div class="busca"><input type="search" id="busca" placeholder="Buscar: frango, 10 minutos, doce…" value="'+esc(st.q)+'" autocomplete="off"></div>';
   h+='<div class="sits" role="group" aria-label="Situação"><button aria-pressed="'+(st.sit==='todas')+'" data-sit="todas">Todas</button>'+M.situacoes.map(function(s){return '<button aria-pressed="'+(st.sit===s.id)+'" data-sit="'+s.id+'">'+esc(s.nome)+'</button>'}).join('')+'</div>';
   var total=0;
