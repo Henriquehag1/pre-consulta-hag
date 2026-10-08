@@ -14,7 +14,9 @@
      As duas linhas abaixo sao as mesmas do tarefas_HAG.html e precisam vir ANTES
      do supabase-js: o hag_auth.js remenda o window.fetch, e o cliente criado
      depois passa a mandar o token do usuario em toda chamada. -->
-<script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
+<script>
+function _rEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
 <script src="hag_auth.js?v=20260917-1745"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -246,6 +248,7 @@ function render(){
   }).join('');
 }
 function buildCard(r){
+  // HAG_SEM_XSS_ARMAZENADO_v1 (08/10/2026): nome e peso chegam do formulario publico; escapar antes do innerHTML.
   const color=gac(r.patient_nome);
   const inits=gin(r.patient_nome);
   const tipo=r.tipo||'semanal';
@@ -271,14 +274,14 @@ function buildCard(r){
   const chips=scoreFields.filter(s=>s[1]!=null).map(s=>'<span class="sc-chip '+scChipCls(s[1])+'">'+s[0]+' '+s[1]+'/5</span>').join('');
   const id='rc_'+r.id.replace(/[^a-z0-9]/gi,'_');
   // Peso if present
-  const pesoStr=r.peso?'<span style="font-family:var(--fm);font-size:10px;color:var(--ink3)">&#9878; '+r.peso+'</span>':'';
+  const pesoStr=r.peso?'<span style="font-family:var(--fm);font-size:10px;color:var(--ink3)">&#9878; '+_rEsc(r.peso)+'</span>':'';
   /* HAG_RESP_RESPONDIDO_v1: marca visual de respondido */
   const _respCls = r.respondido===true ? ' respondido' : '';
   return '<div class="'+cardCls+_respCls+'" id="'+id+'">' +
     '<div class="resp-head" data-cid="'+id+'">' +
       '<div class="resp-avatar" style="background:'+color+'">'+inits+'</div>' +
       '<div class="resp-info">' +
-        '<div class="resp-name">'+r.patient_nome+'</div>' +
+        '<div class="resp-name">'+_rEsc(r.patient_nome)+'</div>' +
         '<div class="resp-meta">'+dataHora+' '+semana+' '+pesoStr+'</div>' +
         (chips?'<div class="resp-scores">'+chips+'</div>':'') +
         _rpProxHtml(r) +   /* HAG_RESP_PROXIMA_CONSULTA_v1 */
