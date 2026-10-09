@@ -116,7 +116,25 @@ h3{font-family:var(--display);font-size:18px;margin:0}
 .timer button{background:transparent;color:var(--on-navy);border:1px solid rgba(244,238,223,.4);border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:700}
 .timer.pronto{background:var(--good)}
 .timer.pronto .lb{color:var(--on-navy)}
-body.descansando .wrap{padding-bottom:150px}
+body.descansando .wrap{padding-bottom:190px}
+/* HAG_TREINO_TIMER_v1 (09/10/2026): timer de isometria, descanso com barra e botões grandes de seguir */
+.timer .bar{flex-basis:100%;order:4;height:6px;border-radius:3px;background:rgba(244,238,223,.18);overflow:hidden}
+.timer .bar i{display:block;height:100%;background:var(--gold-ui);transition:width .2s linear}
+.timer.pronto .bar i{background:var(--on-navy)}
+.timer .go{background:var(--on-navy);color:var(--navy);border:0;font-size:16px;padding:12px 18px}
+.iso{margin-top:6px;border:1.5px solid var(--btn);border-radius:14px;padding:14px;text-align:center;background:var(--surface)}
+.iso .lb{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.iso .t{font-family:var(--display);font-size:64px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums;margin:4px 0}
+.iso .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0 12px}
+.iso .bar i{display:block;height:100%;background:var(--gold-ui);transition:width .2s linear}
+.iso.segura{background:var(--navy);color:var(--on-navy);border-color:var(--navy)}
+.iso.segura .lb{color:var(--gold-ui)}
+.iso.prep,.iso.troca{background:var(--gold-soft);border-color:var(--gold-ui)}
+.iso.fim{background:var(--good-bg,#E4F1EA);border-color:var(--good)}
+.iso .btn{min-height:52px}
+.iso.segura .btn{background:var(--on-navy);color:var(--navy)}
+.navx{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:4px}
+.navx .btn{min-height:52px}
 .sos{font-size:13px;color:var(--crit);background:none;border:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px 0}
 .alerta-cv{border:2px solid var(--crit);background:var(--crit-bg);border-radius:12px;padding:16px}
 .alerta-cv h3{color:var(--crit)}
@@ -302,7 +320,9 @@ function cabecalhoItem(it, ex, n, total){
      ${S.verVideo&&ex.video?`<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(ex.video)}?rel=0&playsinline=1" title="Execução: ${esc(ex.nome)}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div><p class="note" style="margin:6px 0 0">Vídeo de terceiro no YouTube, escolhido pelo consultório. Se ele disser algo diferente do seu plano, vale o plano.</p>`:""}`;
 }
 function rodapeTreino(){
-  return `<div class="row between"><button type="button" class="link" data-a="volta" ${S.i===0?"disabled":""}>‹ anterior</button><button type="button" class="link" data-a="pulaex">${S.i<itens().length-1?"pular ›":"encerrar ›"}</button></div>
+  const ult=S.i>=itens().length-1, nx=ult?null:itens()[S.i+1];
+  return `<div class="navx"><button type="button" class="btn ghost" data-a="volta" ${S.i===0?"disabled":""}>‹ Anterior</button><button type="button" class="btn ghost" data-a="pulaex">${ult?"Encerrar treino ›":"Próximo exercício ›"}</button></div>
+   ${nx?`<p class="note" style="text-align:right;margin:2px 0 0">Depois: ${esc(EX(nx.id).nome)}</p>`:""}
    <button type="button" class="sos" data-a="cv">Dor no peito, palpitação, tontura ou falta de ar fora do normal</button>
    ${S.cv?`<div class="alerta-cv" role="alert"><h3>Pare o treino agora.</h3><p style="margin:6px 0">Sente-se ou deite-se. Se a dor no peito, a falta de ar ou a tontura não passarem em poucos minutos, ou se você desmaiou, <b>ligue 192</b>.</p><p class="note" style="margin:0 0 10px">O registro vai para o Dr. Henrique hoje. Não retome o treino antes de falar com o consultório.</p><button type="button" class="btn" data-a="cvok" style="background:var(--crit);color:#fff">Registrar e encerrar a sessão</button> <button type="button" class="link" data-a="cvno">toquei sem querer</button></div>`:""}`;
 }
@@ -327,9 +347,12 @@ function renderItem(){
      ${sg.trava?`<div class="lock" style="margin-top:10px">${esc(sg.motivo)}</div>`:""}
      ${it.nota?`<div class="aviso" style="margin-top:10px">${esc(it.nota)}</div>`:""}
      <div class="serie"><div class="k">Série ${k+1} de ${it.ns}</div><div class="alvo">${alvoTxt}</div>${!sg.trava&&k===0?`<div class="motivo">${esc(sg.motivo)}</div>`:""}</div>
+     ${un==="seg"?isoHTML(ex,a):""}
+     <div ${isoRodando()?"hidden":""}>
      <div class="rirq">${un==="seg"?"Quanto tempo a mais aguentaria?":"Quantas ainda conseguiria fazer com boa técnica?"}</div>
      <div class="rirh">Toque no número para registrar a série · alvo ${alvoRir}</div>
      <div class="rirbtns">${[0,1,2,3,4].map(v=>`<button type="button" data-a="feito" data-v="${v}" class="${v===Math.min(alvoRir,4)?"alvo":""}" aria-label="Registrar série: ${v===4?"4 ou mais":v} sobrando">${v===4?"4+":v}<small>${v===0?"nenhuma":v===4?"ou mais":"sobrando"}</small></button>`).join("")}</div>
+     </div>
      <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="ajustar" aria-expanded="${S.abrirAjuste}">Alterar carga · ${un==="seg"?"tempo":"reps"} · dor</button>${a.mexeu?`<span class="lbl" style="color:var(--warn)">ajustado</span>`:""}</div>
      ${S.abrirAjuste?`<div class="ajuste">
        ${un!=="seg"?`<div class="row between"><span class="lbl">${un==="pc"?"Carga extra (kg)":"Carga (kg)"}</span><div class="step"><button type="button" data-a="kg-" aria-label="Menos carga">−</button><output>${fkg(a.kg)}</output><button type="button" data-a="kg+" aria-label="Mais carga">+</button></div></div>`:""}
@@ -424,17 +447,75 @@ function renderSalvo(){
    <button type="button" class="btn ghost wide" data-a="novo">Voltar ao início</button>`;
 }
 
+/* ---------- HAG_TREINO_TIMER_v1 (09/10/2026): timer de isometria ----------
+   Pedido do Dr. Henrique: exercício em isometria (unidade "seg") com timer do tempo a segurar, além do descanso.
+   Conta 3 s para a pessoa se posicionar, segura o tempo da série com bipes nos 3 últimos segundos e apita no fim.
+   Exercício unilateral (lat "u", vindo do banco) conta os dois lados, com 5 s para trocar. "Parei antes" grava o
+   tempo real (no unilateral, o menor dos lados). Relógio por horário (Date.now), como o descanso: não atrasa se a
+   tela travar um instante. */
+let tickIso=null;
+function bipCurto(){ try{ if(!audio) return; const o=audio.createOscillator(), g=audio.createGain(); o.frequency.value=660; g.gain.value=.12; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+.12); }catch(e){} }
+function isoAtual(){ const z=S.iso; return z && z.i===S.i && z.k===(S.feitas[S.i]||[]).length ? z : null; }
+function isoRodando(){ const z=isoAtual(); return !!(z && z.fase!=="fim"); }
+function isoParaTudo(){ clearInterval(tickIso); S.iso=null; }
+function isoHTML(ex,a){
+  const z=isoAtual(), lados=ex.lat==="u"?2:1;
+  if(!z) return `<div class="iso"><div class="lb">Isometria${lados>1?" · cada lado":""}</div><div class="t">${mmss(a.reps)}</div>
+     <button type="button" class="btn wide" data-a="isogo">▶ INICIAR TIMER</button>
+     <p class="note" style="margin:8px 0 0">Conta 3 segundos para você se posicionar, apita nos últimos segundos e no fim.${lados>1?" Depois de um lado, 5 segundos para trocar.":""}</p></div>`;
+  const rest=z.fase==="fim"?0:z.dur-(Date.now()-z.t0)/1000;
+  if(z.fase==="fim") return `<div class="iso fim"><div class="lb">Tempo feito</div><div class="t">${mmss(a.reps)}</div>
+     <p class="note" style="margin:0 0 10px">${z.lados>1?"Contando o lado em que você aguentou menos. ":""}Agora registre a série logo abaixo.</p>
+     <button type="button" class="btn small ghost" data-a="isogo">Refazer o tempo</button></div>`;
+  const lb=z.fase==="prep"?"Prepare-se":z.fase==="troca"?"Troque de lado":"Segure"+(z.lados>1?` · lado ${z.lado} de ${z.lados}`:"");
+  return `<div class="iso ${z.fase}"><div class="lb">${lb}</div><div class="t" id="iso-t">${z.fase==="segura"?mmss(rest):Math.max(1,Math.ceil(rest))}</div>
+     <div class="bar"><i id="iso-b" style="width:${Math.max(0,Math.min(100,100*(1-rest/z.dur)))}%"></i></div>
+     <button type="button" class="btn wide" data-a="isostop">${z.fase==="segura"?"PAREI ANTES":"CANCELAR"}</button></div>`;
+}
+function isoIniciar(){
+  const it=itens()[S.i], ex=EX(it.id); somPronto(); pararDescanso(); clearInterval(tickIso);
+  if(S.ajuste && S.iso && S.iso.alvo!=null && isoAtual()) S.ajuste.reps=S.iso.alvo;
+  S.iso={i:S.i, k:(S.feitas[S.i]||[]).length, alvo:S.ajuste.reps, lados:ex.lat==="u"?2:1, lado:1, fase:"prep", t0:Date.now(), dur:3, feito:[], ult:null};
+  tickIso=setInterval(isoTick,200); render();
+}
+function isoTick(){
+  const z=S.iso; if(!z || z.fase==="fim" || z.i!==S.i || S.fase!=="treino"){ clearInterval(tickIso); return; }
+  const rest=z.dur-(Date.now()-z.t0)/1000, s=Math.ceil(rest);
+  if(rest>0 && s<=3 && z.ult!==s && (z.fase==="segura"||z.fase==="prep")){ z.ult=s; bipCurto(); }
+  if(rest<=0){ z.ult=null;
+    if(z.fase==="prep"){ z.fase="segura"; z.t0=Date.now(); z.dur=Math.max(1,z.alvo); bip(); }
+    else if(z.fase==="segura"){ z.feito.push(z.alvo); if(z.lado<z.lados){ z.fase="troca"; z.t0=Date.now(); z.dur=5; bip(); } else return isoFim(); }
+    else if(z.fase==="troca"){ z.lado++; z.fase="segura"; z.t0=Date.now(); z.dur=Math.max(1,z.alvo); bip(); }
+    return render(); }
+  const el=document.getElementById("iso-t"); if(el) el.textContent=z.fase==="segura"?mmss(rest):String(Math.max(1,s));
+  const br_=document.getElementById("iso-b"); if(br_) br_.style.width=Math.max(0,Math.min(100,100*(1-rest/z.dur)))+"%";
+}
+function isoParar(){
+  const z=isoAtual(); if(!z) return;
+  if(z.fase==="prep"){ isoParaTudo(); return render(); }
+  if(z.fase==="segura") z.feito.push(Math.max(0,Math.floor((Date.now()-z.t0)/1000)));
+  isoFim();
+}
+function isoFim(){
+  const z=S.iso; clearInterval(tickIso); if(!z) return; z.fase="fim"; bip();
+  const feito=z.feito.length?Math.min(...z.feito):0;
+  if(S.ajuste && feito!==z.alvo){ S.ajuste.reps=feito; S.ajuste.mexeu=true; }
+  render();
+}
+
 /* ---------- descanso: relógio por horário, tela acesa, som e cor ao terminar ---------- */
 function bip(){ try{ if(!audio) return; const o=audio.createOscillator(), g=audio.createGain(); o.frequency.value=880; g.gain.value=.15; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+.3); }catch(e){} try{ navigator.vibrate && navigator.vibrate([200,80,200]); }catch(e){} }
-function iniciarDescanso(seg, proxima){ if(!seg||seg<=0) return; descanso={fim:Date.now()+seg*1000, proxima, avisou:false}; elTimer.hidden=false; document.body.classList.add("descansando"); clearInterval(tick); tick=setInterval(desenharTimer,250); desenharTimer(); }
+function iniciarDescanso(seg, proxima){ if(!seg||seg<=0) return; descanso={fim:Date.now()+seg*1000, total:seg, proxima, avisou:false, ult:null}; elTimer.hidden=false; document.body.classList.add("descansando"); clearInterval(tick); tick=setInterval(desenharTimer,250); desenharTimer(); }
 function desenharTimer(){
   if(!descanso) return; const rest=(descanso.fim-Date.now())/1000;
   if(rest<=0 && !descanso.avisou){ descanso.avisou=true; bip(); }
+  const s3=Math.ceil(rest); if(rest>0 && s3<=3 && descanso.ult!==s3){ descanso.ult=s3; bipCurto(); }
   const pronto=rest<=0; elTimer.classList.toggle("pronto",pronto);
-  elTimer.innerHTML=`<div class="in"><div><div class="lb">${pronto?"Próxima série pronta":"Descanso"}</div><div class="t">${pronto?"0:00":mmss(rest)}</div></div><div class="sp"></div>${pronto?`<button type="button" data-t="fechar">OK</button>`:`<button type="button" data-t="mais">+30 s</button><button type="button" data-t="pular">PULAR</button>`}<div class="nx">${esc(descanso.proxima)}</div></div>`;
+  const novoEx=/^Próximo/.test(descanso.proxima||""), pct=Math.max(0,Math.min(100,100*(1-rest/(descanso.total||1))));
+  elTimer.innerHTML=`<div class="in"><div><div class="lb">${pronto?(novoEx?"Próximo exercício pronto":"Próxima série pronta"):"Descanso"}</div><div class="t">${pronto?"0:00":mmss(rest)}</div></div><div class="sp"></div>${pronto?`<button type="button" class="go" data-t="fechar">${novoEx?"IR AO EXERCÍCIO ›":"SEGUIR PARA A SÉRIE ›"}</button>`:`<button type="button" data-t="menos" aria-label="Tirar 15 segundos">−15 s</button><button type="button" data-t="mais" aria-label="Somar 30 segundos">+30 s</button><button type="button" class="go" data-t="pular">COMEÇAR JÁ ›</button>`}<div class="nx">${esc(descanso.proxima)}</div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
 }
 function pararDescanso(){ clearInterval(tick); descanso=null; elTimer.hidden=true; elTimer.classList.remove("pronto"); document.body.classList.remove("descansando"); }
-elTimer.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b||!descanso) return; if(b.dataset.t==="mais") descanso.fim+=30000; if(b.dataset.t==="pular") descanso.fim=Date.now(); if(b.dataset.t==="fechar") return pararDescanso(); desenharTimer(); });
+elTimer.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b||!descanso) return; if(b.dataset.t==="mais"){ descanso.fim+=30000; descanso.total+=30; } if(b.dataset.t==="menos") descanso.fim=Math.max(Date.now(),descanso.fim-15000); if(b.dataset.t==="pular") return pararDescanso(); if(b.dataset.t==="fechar") return pararDescanso(); desenharTimer(); });
 async function manterTelaAcesa(){ try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ if(S.fase==="treino") manterTelaAcesa(); desenharTimer(); enviarFila(); } });
 function somPronto(){ if(!audio){ try{ audio=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
@@ -454,7 +535,7 @@ function registrar(rir){
 }
 
 /* ---------- salvar: fila neste aparelho, envio quando houver rede ---------- */
-function salvarRascunho(){ store.set("hagtreino.rascunho",{dia:HOJE(), S:{...S, crono:null, ajuste:null}}); }
+function salvarRascunho(){ store.set("hagtreino.rascunho",{dia:HOJE(), S:{...S, crono:null, ajuste:null, iso:null}}); }
 function enviarFila(){
   if(!FILA.length || enviarFila.ocupado || !TOKEN) return Promise.resolve(false);
   enviarFila.ocupado=true; const p=FILA[0];
@@ -496,11 +577,13 @@ vHoje.addEventListener("click", e=>{
   if(a==="onbok"){ store.set("hagtreino.rir.visto",true); return render(); }
   if(a==="dia"){ S.diaId=b.dataset.v; S.sub={}; return render(); }
   if(a==="iniciar"){ S.fase="treino"; S.inicio=Date.now(); somPronto(); manterTelaAcesa(); salvarRascunho(); return render(); }
-  if(a==="feito") return registrar(+b.dataset.v);
+  if(a==="feito"){ isoParaTudo(); return registrar(+b.dataset.v); }
+  if(a==="isogo") return isoIniciar();
+  if(a==="isostop") return isoParar();
   if(a==="ajustar"){ S.abrirAjuste=!S.abrirAjuste; return render(); }
   if(a==="pq"){ S.verPq=!S.verPq; return render(); }
   if(a==="video"){ S.verVideo=!S.verVideo; return render(); }
-  if(a==="sub"){ const it=itens()[S.i]; if(b.dataset.v) S.sub[it.orig]=b.dataset.v; else delete S.sub[it.orig]; S.ajuste=null; return render(); }
+  if(a==="sub"){ isoParaTudo(); const it=itens()[S.i]; if(b.dataset.v) S.sub[it.orig]=b.dataset.v; else delete S.sub[it.orig]; S.ajuste=null; return render(); }
   const A=S.ajuste;
   if(A && ["kg-","kg+","r-","r+","dor","local","lado","tipo"].includes(a)){
     const ex=EX(A.id), inc=+ex.inc||2.5, passo=ex.un==="seg"?5:1;
@@ -519,8 +602,8 @@ vHoje.addEventListener("click", e=>{
     else iniciarDescanso(it.desc, `Próxima: volta ${S.voltas[S.i].length+1} de ${it.ns}`);
     return render(); }
   if(a==="hx-"||a==="hx+"){ const inc=+EX(itens()[S.i].id).inc||1; S.cargaHx.kg=Math.max(0,S.cargaHx.kg+(a==="hx+"?inc:-inc)); return render(); }
-  if(a==="volta"){ pararDescanso(); S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i>0){ S.i--; S.ajuste=null; S.crono=null; } return render(); }
-  if(a==="pulaex"){ pararDescanso(); S.crono=null; S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i<itens().length-1){ S.i++; S.ajuste=null; } else S.fase="fim"; return render(); }
+  if(a==="volta"){ isoParaTudo(); pararDescanso(); S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i>0){ S.i--; S.ajuste=null; S.crono=null; } return render(); }
+  if(a==="pulaex"){ isoParaTudo(); pararDescanso(); S.crono=null; S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i<itens().length-1){ S.i++; S.ajuste=null; } else S.fase="fim"; return render(); }
   if(a==="cv"){ S.cv=true; return render(); }
   if(a==="cvno"){ S.cv=false; return render(); }
   if(a==="cvok"){ pararDescanso(); S.crono=null; S.fase="fim"; return render(); }
