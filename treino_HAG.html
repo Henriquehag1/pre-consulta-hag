@@ -92,6 +92,19 @@ h3{font-family:var(--display);font-size:18px;margin:0}
 .motivo{font-size:13px;color:var(--ink-2);margin-top:6px}
 .lock{background:var(--crit-bg);color:var(--crit);font-size:14px;padding:10px 12px;border-radius:8px}
 .aviso{background:var(--warn-bg);color:var(--ink);font-size:14px;padding:10px 12px;border-radius:8px}
+/* HAG_TREINO_ENTRADA_v1 (09/10/2026): entrada em duas etapas, escalas grandes, escolha do esforço em toques */
+.esc{padding:10px 0;border-top:1px solid var(--line)} .esc:first-child{border-top:0;padding-top:2px}
+.esc .t{font-size:15.5px;font-weight:700;margin-bottom:6px}
+.esc .g{display:grid;gap:6px}
+.esc .g .chip{min-height:46px;font-size:17px;border-radius:10px;padding:0}
+.esc .l{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
+.grupo{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);padding:12px 0 2px}
+.grupo:first-child{padding-top:0}
+details.outro{font-size:14px} details.outro summary{cursor:pointer;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;padding:6px 0;text-align:center;list-style:none}
+details.outro .chips{margin-top:8px;justify-content:center}
+.prontr{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--ink-2)}
+.rpe-g{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;margin-top:8px}
+.rpe-g .chip{min-height:44px;padding:0;border-radius:8px;font-size:15px}
 .rirq{font-size:16px;font-weight:700;text-align:center;margin:12px 0 2px}
 .rirh{font-size:12.5px;color:var(--muted);text-align:center;margin-bottom:10px}
 .rirbtns{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
@@ -285,13 +298,25 @@ function sugestao(it){
 
 /* ---------- estado da sessão ---------- */
 const vHoje=document.getElementById("v-hoje"), vEvo=document.getElementById("v-evo"), elTimer=document.getElementById("timer");
-const novoEstado = () => ({fase:"inicio", diaId:null, pront:{sono:null,energia:null,musc:null,art:null}, prontPulou:false, i:0, sub:{}, feitas:{}, cardio:{}, voltas:{}, crono:null, ajuste:null, abrirAjuste:false, verPq:false, verVideo:false, inicio:null, cv:false, salvo:null, nota:""});
+const novoEstado = () => ({fase:"inicio", diaId:null, pront:{sono:null,energia:null,musc:null,art:null}, prontPulou:false, prontOk:false, rpe:null, durAj:null, i:0, sub:{}, feitas:{}, cardio:{}, voltas:{}, crono:null, ajuste:null, abrirAjuste:false, verPq:false, verVideo:false, inicio:null, cv:false, salvo:null, nota:""});
 let S = novoEstado();
 let wakeLock=null, audio=null, tick=null, descanso=null, tickCrono=null;
 
 const prog = () => CTX && CTX.programa;
+/* HAG_TREINO_ENTRADA_v1: programa com dias nomeados pela semana ("Sexta · Força em casa") abre no dia de hoje.
+   Antes abria no dia seguinte ao último feito, e numa sexta o app sugeria "Segunda". */
+const SEMANA=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+const semAc = x => String(x||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+function diaDaSemana(p){
+  if(!p||!p.dias.length) return {usa:false};
+  const usa=p.dias.some(d=>SEMANA.some(w=>semAc(d.nome).startsWith(semAc(w))));
+  if(!usa) return {usa:false};
+  const hoje=semAc(diaSem(HOJE())), d=p.dias.find(d=>semAc(d.nome).startsWith(hoje));
+  return {usa:true, dia:d?d.id:null};
+}
 function diaSugerido(){
   const p=prog(); if(!p||!p.dias.length) return null;
+  const ds=diaDaSemana(p); if(ds.usa && ds.dia) return ds.dia;
   const ult=historico().filter(s=>s.dia_id && p.dias.some(d=>d.id===s.dia_id)).at(-1);
   if(!ult) return p.dias[0].id;
   const k=p.dias.findIndex(d=>d.id===ult.dia_id); return p.dias[(k+1)%p.dias.length].id;
@@ -335,27 +360,51 @@ function resumoItem(it){
   const ex=EX(it.id);
   if(it.mod==="cardio") return {s:esc(it.alvo||"cardio"), r:""};
   if(it.mod==="hyrox") return {s:esc(it.alvo||(it.ns>1?it.ns+" voltas":"cronometrado")), r:it.carga?fkg(it.carga)+" kg":""};
-  const sg=sugestao(it), un=ex.un;
+  const sg=sugestao(it), un=ex.un, tp=tipoReg(it,ex);
+  if(tp==="aquec"||tp==="mob") return {s:`${it.ns>1?it.ns+" × ":""}${it.min||""}${it.max&&it.max!==it.min?" a "+it.max:""}${un==="seg"?" seg":ex.lat==="u"?" de cada lado":""}`, r:""};
+  if(un==="kg" && !sg.kg && it.carga===0) return {s:`${it.ns} × ${it.min||""}${it.max&&it.max!==it.min?" a "+it.max:""} · descanso ${mmss(it.desc||0)}`, r:"peso do corpo"};
   return {s:`${it.ns} × ${it.min||""}${it.max&&it.max!==it.min?" a "+it.max:""} ${un==="seg"?"seg":""} · descanso ${mmss(it.desc||0)}`, r: un==="kg" ? (sg.kg?fkg(sg.kg)+" kg":"definir")+(sg.sobe?` <span class="pos">↑</span>`:"")+(sg.trava?` <span class="neg">trava</span>`:"") : (un==="pc"?"peso do corpo":"")+(sg.trava?` <span class="neg">trava</span>`:"")};
 }
 function renderInicio(){
+  /* HAG_TREINO_ENTRADA_v1 (09/10/2026). Pedido do Dr. Henrique: "Como você chega hoje" é a primeira coisa ao abrir;
+     depois de responder, a pessoa continua para o treino do dia e só então inicia. Antes ficava no fim de uma página
+     longa, depois da lista de exercícios, e passava despercebido. Etapa 1: as quatro perguntas (ou pular). Etapa 2: o
+     treino de hoje, com aquecimento e exercícios separados, e o botão de iniciar. */
   const p=prog(); if(!S.diaId) S.diaId=diaSugerido();
-  const d=diaAtual(), its=itens(), sm=semaforo(), visto=store.get("hagtreino.rir.visto",false);
-  const qz=(k,lab,de,ate,leg)=>`<div class="q"><div class="row between"><span style="font-size:14px">${lab}</span><span class="lbl" style="font-size:10.5px">${leg}</span></div><div class="chips">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div></div>`;
+  const d=diaAtual(), its=itens(), sm=semaforo(), ds=diaDaSemana(p), visto=store.get("hagtreino.rir.visto",false);
+  const hojeTxt=`${diaSem(HOJE())}, ${br(HOJE())}`, nome=(CTX&&CTX.paciente&&CTX.paciente.nome)||"";
+  const completo=Object.values(S.pront).every(v=>v!=null);
+  const extra=`<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje (esporte, aula, treino fora do programa)</button>`;
+  if(!S.prontOk && !S.prontPulou){
+    const esc_=(k,t,de,ate,e,dd)=>`<div class="esc"><div class="t">${t}</div><div class="g" style="grid-template-columns:repeat(${ate-de+1},1fr)">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div><div class="l"><span>${de} = ${e}</span><span>${ate} = ${dd}</span></div></div>`;
+    vHoje.innerHTML=`${filaHTML()}
+    <div><div class="kicker">${hojeTxt} · antes de começar</div><h2>${nome?`Oi, ${esc(nome)}. `:""}Como você chega hoje?</h2>
+    <p class="sub">Quatro toques. Isso não muda o seu treino: ajuda o Dr. Henrique a acompanhar a sua recuperação.</p></div>
+    <div class="card ready">${esc_("sono","Como foi o seu sono?",1,5,"péssimo","ótimo")}${esc_("energia","Sua energia agora",1,5,"sem energia","ótima")}${esc_("musc","Dor muscular",0,5,"nenhuma","forte")}${esc_("art","Dor nas articulações",0,5,"nenhuma","forte")}
+      ${sm?`<div class="semaforo ${sm.c}" style="margin-top:10px"><i></i><div><b>${sm.t}</b><br>${sm.s}</div></div>`:""}</div>
+    <button type="button" class="btn wide" data-a="prontok" ${completo?"":"disabled"}>${completo?"CONTINUAR ›":"Responda as quatro para continuar"}</button>
+    <button type="button" class="link" data-a="pular" style="align-self:center">Pular hoje e ir direto ao treino</button>
+    ${extra}`;
+    return;
+  }
+  const aq=its.filter(it=>it.mod!=="cardio"&&it.mod!=="hyrox"&&["aquec","mob"].includes(tipoReg(it,EX(it.id)))), resto=its.filter(it=>!aq.includes(it));
+  const linha=(it,n)=>{ const r=resumoItem(it); return `<div class="it"><div><b>${n?n+". ":""}${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div></div><div class="r">${r.r}</div></div>`; };
+  const temCarga=its.some(it=>it.mod!=="cardio"&&it.mod!=="hyrox"&&tipoReg(it,EX(it.id))==="carga");
+  const feitoHoje=historico().some(x=>x.data===HOJE()&&x.dia_id===d.id);
   vHoje.innerHTML=`${filaHTML()}${blocoHTML()}
-  <div><div class="kicker">${diaSem(HOJE())}, ${br(HOJE())}${d.tipo?" · "+esc(d.tipo):""}</div><h2>${esc(d.nome)} · ${minutosEstimados()} min estimados</h2>${d.foco?`<p class="sub">${esc(d.foco)}</p>`:""}</div>
-  ${p.dias.length>1?`<div class="chips" role="group" aria-label="Escolher o treino">${p.dias.map(x=>`<button type="button" class="chip" data-a="dia" data-v="${x.id}" aria-pressed="${x.id===d.id}">${esc(x.nome)}</button>`).join("")}</div>`:""}
-  <div class="card"><div class="lista">${its.map(it=>{ const r=resumoItem(it); return `<div class="it"><div><b>${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div></div><div class="r">${r.r}</div></div>`; }).join("")}</div></div>
-  ${S.prontPulou?"":`<div class="card ready"><div class="row between"><h3>Como você chega hoje?</h3><button type="button" class="link" data-a="pular">pular</button></div><p class="note" style="margin:2px 0 6px">Quatro toques. Não muda o treino; ajuda o Dr. Henrique a ler a sua recuperação.</p>
-    ${qz("sono","Sono",1,5,"1 péssimo · 5 ótimo")}${qz("energia","Energia",1,5,"1 sem energia · 5 ótima")}${qz("musc","Dor muscular",0,5,"0 nenhuma · 5 forte")}${qz("art","Dor articular",0,5,"0 nenhuma · 5 forte")}
-    ${sm?`<div class="semaforo ${sm.c}" style="margin-top:8px"><i></i><div><b>${sm.t}</b><br>${sm.s}</div></div>`:""}</div>`}
-  ${visto?"":`<div class="onb"><div class="kicker">Antes do primeiro treino · 20 segundos</div><p style="margin:6px 0 0;font-size:15px">Ao fim de cada série vamos perguntar <b>quantas repetições você ainda conseguiria fazer com boa técnica</b>. Se parou porque não sairia mais nenhuma, é 0. Se sobravam duas, é 2. É isso que diz se a carga deve subir. Na dúvida, escolha o número menor.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`}
+  <div><div class="kicker">${hojeTxt} · treino de hoje</div><h2>${esc(d.nome)}</h2><p class="sub">${d.foco?esc(d.foco)+" · ":""}cerca de ${minutosEstimados()} min</p></div>
+  ${ds.usa&&!ds.dia?`<div class="aviso">Hoje não tem treino marcado no seu programa: é dia de descanso. Se quiser treinar mesmo assim, escolha o treino em "Treinar outro dia".</div>`:""}
+  ${feitoHoje?`<div class="aviso">Você já registrou este treino hoje.</div>`:""}
+  ${S.prontOk?`<div class="prontr">${sm?`<span class="semaforo ${sm.c}" style="padding:6px 10px;flex:1"><i></i><span>${sm.t}</span></span>`:`<span>Respostas de hoje registradas.</span>`}<button type="button" class="link" data-a="prontedit">alterar</button></div>`:""}
+  <div class="card"><div class="lista">${aq.length?`<div class="grupo">Aquecimento</div>${aq.map(it=>linha(it,0)).join("")}<div class="grupo">Exercícios</div>`:""}${resto.map((it,j)=>linha(it,aq.length?j+1:0)).join("")}</div></div>
+  ${temCarga&&!visto?`<div class="onb"><div class="kicker">Antes do primeiro treino · 20 segundos</div><p style="margin:6px 0 0;font-size:15px">Nos exercícios com carga, ao fim de cada série vamos perguntar <b>quantas repetições você ainda conseguiria fazer com boa técnica</b>. Se não sairia mais nenhuma, é 0. Se sobravam duas, é 2. É isso que diz se a carga deve subir. Na dúvida, escolha o número menor. Nos outros exercícios a pergunta é outra, e aparece na tela.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`:""}
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
-  <button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje (esporte, aula, treino fora do programa)</button>`;
+  ${p.dias.length>1?`<details class="outro"${ds.usa&&!ds.dia?" open":""}><summary>Treinar outro dia do programa</summary><div class="chips" role="group" aria-label="Escolher o treino">${p.dias.map(x=>`<button type="button" class="chip" data-a="dia" data-v="${x.id}" aria-pressed="${x.id===d.id}">${esc(x.nome)}</button>`).join("")}</div></details>`:""}
+  ${extra}`;
 }
 function cabecalhoItem(it, ex, n, total){
   const subs=(EX(it.orig).subs||[]).filter(s=>CTX.exercicios[s]);
-  return `<div class="row between"><div class="kicker">${n} de ${total}${ex.f?" · "+esc(ex.f):""}</div>${it.id!==it.orig?`<span class="lbl" style="color:var(--warn)">substituto</span>`:""}</div>
+  return `<div class="row between"><div class="kicker">${n} de ${total}${it.mod==="cardio"?" · Cardio":it.mod==="hyrox"?" · Hyrox":tipoReg(it,ex)==="aquec"?" · Aquecimento":ex.f?" · "+esc(ex.f):""}</div>${it.id!==it.orig?`<span class="lbl" style="color:var(--warn)">substituto</span>`:""}</div>
      <div class="exname">${esc(ex.nome)}</div>
      ${ex.cue?`<p class="cue">${esc(ex.cue)}</p>`:""}
      <div class="row" style="gap:14px;margin-top:4px">
@@ -368,7 +417,9 @@ function cabecalhoItem(it, ex, n, total){
 }
 function rodapeTreino(){
   const ult=S.i>=itens().length-1, nx=ult?null:itens()[S.i+1];
-  return `<div class="navx"><button type="button" class="btn ghost" data-a="volta" ${S.i===0?"disabled":""}>‹ Anterior</button><button type="button" class="btn ghost" data-a="pulaex">${ult?"Encerrar treino ›":"Próximo exercício ›"}</button></div>
+  /* HAG_TREINO_ENTRADA_v1: sem nada registrado no item, o botão diz "Pular", para ninguém achar que ele registra */
+  const nada=!(S.feitas[S.i]||[]).length && !(S.cardio[S.i]&&S.cardio[S.i].ok) && !(S.voltas[S.i]||[]).length;
+  return `<div class="navx"><button type="button" class="btn ghost" data-a="volta" ${S.i===0?"disabled":""}>‹ Anterior</button><button type="button" class="btn ghost" data-a="pulaex">${ult?(nada?"Pular e encerrar ›":"Encerrar treino ›"):(nada?"Pular exercício ›":"Próximo exercício ›")}</button></div>
    ${nx?`<p class="note" style="text-align:right;margin:2px 0 0">Depois: ${esc(EX(nx.id).nome)}</p>`:""}
    <button type="button" class="sos" data-a="cv">Dor no peito, palpitação, tontura ou falta de ar fora do normal</button>
    ${S.cv?`<div class="alerta-cv" role="alert"><h3>Pare o treino agora.</h3><p style="margin:6px 0">Sente-se ou deite-se. Se a dor no peito, a falta de ar ou a tontura não passarem em poucos minutos, ou se você desmaiou, <b>ligue 192</b>.</p><p class="note" style="margin:0 0 10px">O registro vai para o Dr. Henrique hoje. Não retome o treino antes de falar com o consultório.</p><button type="button" class="btn" data-a="cvok" style="background:var(--crit);color:#fff">Registrar e encerrar a sessão</button> <button type="button" class="link" data-a="cvno">toquei sem querer</button></div>`:""}`;
@@ -422,7 +473,7 @@ function renderCardio(it,ex,its,barra){
       <div class="grid2"><label class="campo"><span class="lbl">Distância (km)</span><input inputmode="decimal" data-c="km" value="${esc(c.km)}" placeholder="0,0"></label>
         <label class="campo"><span class="lbl">Tempo (min)</span><input inputmode="decimal" data-c="min" value="${esc(c.min)}" placeholder="0"></label></div>
       <div class="grid2"><label class="campo"><span class="lbl">FC média (opcional)</span><input inputmode="numeric" data-c="fc" value="${esc(c.fc)}" placeholder="bpm"></label>
-        <label class="campo"><span class="lbl">Min em zona 2 (opcional)</span><input inputmode="numeric" data-c="z2" value="${esc(c.z2)}" placeholder="min"></label></div>
+        <label class="campo"><span class="lbl">Min em zona 2 (se o relógio mostrar)</span><input inputmode="numeric" data-c="z2" value="${esc(c.z2)}" placeholder="min"></label></div>
       <button type="button" class="btn wide" data-a="cardiook">${S.i<its.length-1?"REGISTRAR E SEGUIR":"REGISTRAR"}</button>
       <p class="note" id="cardio-msg" style="margin:0"></p>
     </div></div>${rodapeTreino()}`;
@@ -471,19 +522,19 @@ function coletar(){
 const num = v => { const n=parseFloat(String(v==null?"":v).replace(",",".")); return isNaN(n)?null:n; };
 function renderFim(){
   const {series,cardio,hyrox}=coletar(); const el=S.inicio?Math.round((Date.now()-S.inicio)/60000):0; const dur=Math.max(1,el);
-  const partes=[series.length?`${series.length} séries`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} tempos`:""].filter(Boolean).join(" · ")||"nada registrado";
+  const partes=[series.length?`${series.length} ${series.length===1?"série":"séries"}`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} ${hyrox.length===1?"tempo":"tempos"}`:""].filter(Boolean).join(" · ")||"nada registrado";
   vHoje.innerHTML=`<div><div class="kicker">Fechar a sessão</div><h2>${partes}${S.cv?" · encerrada por sintoma":""}</h2></div>
-   <div class="card"><label for="rpe" class="lbl">Quão pesado foi o treino inteiro? (0 a 10)</label>
-     <div class="row" style="margin-top:6px"><input type="range" id="rpe" min="0" max="10" value="${S.cv?5:7}" style="flex:1"><div class="big" id="rpe-v">${S.cv?5:7}</div></div>
-     <div class="note" id="rpe-t">${rpeTexto(S.cv?5:7)}</div></div>
-   <div class="card row between"><div><div class="lbl">Duração (min)</div><div class="note">medida pelo relógio do treino</div></div><div class="step"><button type="button" data-a="d-" aria-label="Menos 5 minutos">−</button><output id="dur">${dur}</output><button type="button" data-a="d+" aria-label="Mais 5 minutos">+</button></div></div>
-   <button type="button" class="btn wide" data-a="salvar" ${(series.length||cardio.length||hyrox.length||S.cv)?"":"disabled"}>SALVAR SESSÃO</button>
+   <div class="card"><div class="lbl">Quão pesado foi o treino inteiro?</div><p class="note" style="margin:2px 0 0">0 é repouso; 10 é o máximo que você aguentaria. Pense no treino todo, não só no último exercício.</p>
+     <div class="rpe-g">${Array.from({length:11},(_,v)=>`<button type="button" class="chip" data-a="rpe" data-v="${v}" aria-pressed="${S.rpe===v}">${v}</button>`).join("")}</div>
+     <div class="note" style="margin-top:6px">${S.rpe!=null?`<b>${S.rpe}</b> · ${rpeTexto(S.rpe)}`:"Toque em um número."}</div></div>
+   <div class="card row between"><div><div class="lbl">Duração (min)</div><div class="note">medida pelo relógio do treino</div></div><div class="step"><button type="button" data-a="d-" aria-label="Menos 5 minutos">−</button><output id="dur">${S.durAj!=null?S.durAj:dur}</output><button type="button" data-a="d+" aria-label="Mais 5 minutos">+</button></div></div>
+   <button type="button" class="btn wide" data-a="salvar" ${(series.length||cardio.length||hyrox.length||S.cv)&&(S.rpe!=null||S.cv)?"":"disabled"}>${(S.rpe!=null||S.cv)?"SALVAR SESSÃO":"Escolha o esforço para salvar"}</button>
    <button type="button" class="link" data-a="voltartreino" style="align-self:center">voltar ao treino</button>
    <button type="button" class="link" data-a="descartar" style="align-self:center;color:var(--crit)">descartar esta sessão</button>`;
 }
 function renderSalvo(){
   const r=S.salvo;
-  vHoje.innerHTML=`${filaHTML()}<div class="result"><b>Sessão ${r.enviada?"salva":"guardada neste aparelho"}.</b> ${r.partes} · carga interna ${r.ci} (esforço ${r.rpe} × ${r.dur} min).
+  vHoje.innerHTML=`${filaHTML()}<div class="result"><b>Sessão ${r.enviada?"salva":"guardada neste aparelho"}.</b> ${r.partes} · ${r.dur} min · esforço ${r.rpe} de 10.
      ${r.n?`<br><span class="note">${r.um} de ${r.n} séries registradas com um toque.</span>`:""}
      ${r.enviada?"":`<br><span class="note">Sem sinal agora. Ela sobe sozinha quando a rede voltar; não precisa refazer.</span>`}
      ${r.rec.length?`<ul>${r.rec.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
@@ -575,8 +626,8 @@ function registrar(rir){
   const its=itens(), it=its[S.i], a=S.ajuste; somPronto();
   (S.feitas[S.i] ||= []).push({ex:it.id, orig:it.orig!==it.id?it.orig:null, kg:a.kg, reps:a.reps, rir, dor:a.dor, local:a.local, lado:a.lado, tipo:a.tipo, sug:a.sug, um:!a.mexeu});
   S.abrirAjuste=false; salvarRascunho();
-  const n=S.feitas[S.i].length;
-  if(n>=it.ns) avancar(it.desc, it); else { const kgTxt=EX(it.id).un==="kg"?`${fkg(a.kg)} kg × ${a.reps}`:`${a.reps}`; S.ajuste=null; iniciarDescanso(it.desc, `Próxima: série ${n+1} · ${kgTxt}`); }
+  const n=S.feitas[S.i].length, tpR=tipoReg(it,EX(it.id)), descR=(tpR==="aquec"||tpR==="mob")?0:it.desc; /* aquecimento e mobilidade: sem relógio de descanso entre um e outro */
+  if(n>=it.ns) avancar(descR, it); else { const kgTxt=EX(it.id).un==="kg"?`${fkg(a.kg)} kg × ${a.reps}`:`${a.reps}`; S.ajuste=null; iniciarDescanso(descR, `Próxima: série ${n+1} · ${kgTxt}`); }
   render();
 }
 
@@ -592,7 +643,7 @@ function enviarFila(){
   }).catch(()=>{ enviarFila.ocupado=false; return false; });
 }
 function salvar(){
-  const rpe=+document.getElementById("rpe").value, dur=+document.getElementById("dur").textContent||0; const d=diaAtual(); const its=itens();
+  const rpe=S.rpe!=null?S.rpe:(S.cv?5:null), dur=+document.getElementById("dur").textContent||0; if(rpe==null) return; const d=diaAtual(); const its=itens();
   const {series,cardio,hyrox}=coletar();
   const antes={}; for(const s of historico()) for(const x of s.series){ const v=e1rm(x.kg,x.reps,x.rir); if(v&&(!antes[x.ex]||v>antes[x.ex])) antes[x.ex]=v; }
   const pr=(!S.prontPulou && Object.values(S.pront).every(v=>v!=null))?{...S.pront}:null;
@@ -602,7 +653,7 @@ function salvar(){
   for(const x of series){ const v=e1rm(x.kg,x.reps,x.rir); if(v&&antes[x.ex]&&v>antes[x.ex]+.05&&!vistos.has(x.ex)){ rec.push(`${esc(EX(x.ex).nome)}: força estimada ${fmt(v)} kg (melhor anterior ${fmt(antes[x.ex])})`); vistos.add(x.ex);} }
   const dor=[...new Set(series.filter(x=>x.dor>=4).map(x=>EX(x.ex).nome))];
   const prox=its.filter(it=>it.mod==="forca"||it.mod==="mobilidade").map(it=>({nome:EX(it.id).nome, un:EX(it.id).un, ...sugestao(it)}));
-  const partes=[series.length?`${series.length} séries`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} tempos`:""].filter(Boolean).join(" · ");
+  const partes=[series.length?`${series.length} ${series.length===1?"série":"séries"}`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} ${hyrox.length===1?"tempo":"tempos"}`:""].filter(Boolean).join(" · ");
   S.salvo={n:series.length, um:series.filter(x=>x.um).length, rpe, dur, ci:rpe*dur, rec, dor, prox, cv:S.cv, partes, enviada:false};
   if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; }
   render();
@@ -619,7 +670,10 @@ vHoje.addEventListener("click", e=>{
   if(a==="asalvar") return salvarAtiv();
   if(a==="enviar") return enviarFila().then(render);
   if(a==="pr"){ S.pront[b.dataset.k]=+b.dataset.v; return render(); }
-  if(a==="pular"){ S.prontPulou=true; return render(); }
+  if(a==="pular"){ S.prontPulou=true; window.scrollTo(0,0); return render(); }
+  if(a==="prontok"){ if(Object.values(S.pront).every(v=>v!=null)){ S.prontOk=true; window.scrollTo(0,0); } return render(); }
+  if(a==="prontedit"){ S.prontOk=false; S.prontPulou=false; window.scrollTo(0,0); return render(); }
+  if(a==="rpe"){ S.rpe=+b.dataset.v; return render(); }
   if(a==="onbok"){ store.set("hagtreino.rir.visto",true); return render(); }
   if(a==="dia"){ S.diaId=b.dataset.v; S.sub={}; return render(); }
   if(a==="iniciar"){ S.fase="treino"; S.inicio=Date.now(); somPronto(); manterTelaAcesa(); salvarRascunho(); return render(); }
@@ -654,7 +708,7 @@ vHoje.addEventListener("click", e=>{
   if(a==="cv"){ S.cv=true; return render(); }
   if(a==="cvno"){ S.cv=false; return render(); }
   if(a==="cvok"){ pararDescanso(); S.crono=null; S.fase="fim"; return render(); }
-  if(a==="d-"||a==="d+"){ const o=document.getElementById("dur"); o.textContent=Math.max(1,(+o.textContent||0)+(a==="d+"?5:-5)); return; }
+  if(a==="d-"||a==="d+"){ const o=document.getElementById("dur"); S.durAj=Math.max(1,(+o.textContent||0)+(a==="d+"?5:-5)); o.textContent=S.durAj; return; }
   if(a==="voltartreino"){ S.fase="treino"; return render(); }
   if(a==="descartar"){ if(b.dataset.c==="1"){ store.del("hagtreino.rascunho"); pararDescanso(); S=novoEstado(); return render(); } b.dataset.c="1"; b.textContent="toque de novo para descartar"; return; }
   if(a==="salvar") return salvar();
