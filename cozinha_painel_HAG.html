@@ -16,7 +16,8 @@
      HAG_COZINHA_SO_LIBERADO_v1 (09/10/2026): o paciente vê SÓ o que foi liberado para ele, e sem link a página não mostra
      nada. "Aberto ao público" deixou de existir na prática, então o botão saiu. O passo 3 virou "O que cada paciente
      recebe": lista o que está liberado, retira, e libera item a item com o porquê. As liberações somam: a consulta
-     seguinte acrescenta, não substitui. -->
+     seguinte acrescenta, não substitui.
+     HAG_INSTALAR_v1 (09/10/2026): as mensagens dizem que a própria página ensina a salvar na tela inicial. -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
 <script src="hag_auth.js?v=20260922-1750"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -177,7 +178,7 @@ function msgAcessos(nome,ck,tk){
   var pn=String(nome||'').split(' ')[0], t='Oi '+pn+', tudo bem? O Dr. Henrique deixou prontos os seus acessos do Método HAG.';
   if(ck) t+='\n\nCozinha, com as receitas e os guias que ele separou para você:\n'+ck;
   if(tk) t+='\n\nTreino, com o seu programa, o vídeo de cada exercício e o registro de cada série:\n'+tk;
-  return t+'\n\nOs links são pessoais. Dá para salvar na tela inicial do celular e abrir sempre que precisar.';
+  return t+'\n\nOs links são pessoais. Abra cada um no navegador do celular: a própria página mostra como salvar na tela inicial, para abrir como app.';
 }
 function cardPacote(){
   var h='<div class="card"><h3>4. Acessos da consulta</h3><p class="note">Cole aqui o pacote que a skill entregou depois dos planos. Ele traz as receitas e os guias separados para o paciente, com o porquê de cada um, e o modelo de treino que você aprovou na ficha. Ao preparar, esses itens são liberados na Cozinha do paciente, somados aos que já estavam, o modelo vira <b>rascunho</b> no Treino do paciente e os dois links ficam prontos. <b>Publicar o treino continua com você</b>, no painel do Treino.</p>'+
@@ -236,7 +237,7 @@ function render(){
   if(S.confNovo) h+='<div class="erro">O link atual deste paciente deixa de funcionar na hora, na Cozinha e nas Orientações. Use quando o link foi para a pessoa errada ou parou de abrir. <span class="row" style="margin-top:6px"><button class="btn peq" data-a="linknovo">Confirmar: gerar link novo</button><button class="btn peq sec" data-a="cancelanovo">Cancelar</button></span></div>';
   if(S.link){ var p=D.pacientes.filter(function(x){return x.id===S.pid})[0]||{}, pn=String(p.nome||'').split(' ')[0];
     h+='<p class="note">Link de '+esc(p.nome||'')+':</p><textarea id="linktxt" readonly>'+esc(S.link)+'</textarea>'+
-       '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique liberou para você o acesso à Cozinha do Método HAG: receitas e guias práticos para o dia a dia, com as porções e os números de cada uma. O link é pessoal:\n\n'+esc(S.link)+'\n\nNele estão as receitas e os guias que ele separou para você. Dá para salvar na tela inicial do celular e abrir sempre que precisar.</textarea>'+
+       '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique liberou para você o acesso à Cozinha do Método HAG: receitas e guias práticos para o dia a dia, com as porções e os números de cada uma. O link é pessoal:\n\n'+esc(S.link)+'\n\nNele estão as receitas e os guias que ele separou para você. Abra no navegador do celular: a própria página mostra como salvar na tela inicial, para abrir como app.</textarea>'+
        '<div class="row"><button class="btn sec" data-a="copiar" data-v="linktxt">Copiar o link</button><button class="btn sec" data-a="copiar" data-v="msgtxt">Copiar a mensagem</button></div>'; }
   h+='</div>';
   h+=cardPacote();

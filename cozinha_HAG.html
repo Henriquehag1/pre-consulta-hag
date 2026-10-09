@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#1B2745">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HAG Cozinha">
+<link rel="apple-touch-icon" href="icone-cozinha-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icone-cozinha-192.png">
 <title>Cozinha · Método HAG</title>
 <!-- HAG_COZINHA_COLECAO_v1 (02/10/2026)
      Coleção de receitas e guias do Método HAG. Página pública, SEM dado de paciente e SEM login.
@@ -201,6 +206,26 @@ ol.prep{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
   .porc{font-size:10.5pt}
   @page{margin:14mm}
 }
+/* HAG_INSTALAR_v1: aviso "salve na tela do celular" */
+.hagi{box-sizing:border-box;margin:16px auto 0;width:100%;max-width:560px;background:var(--surface,#fff);border:1px solid var(--line,#E3DED3);border-left:3px solid var(--gold-ui,#B8924A);padding:12px 14px;display:flex;flex-direction:column;gap:10px;border-radius:2px}
+body>.hagi{width:calc(100% - 32px);max-width:528px}
+.hagi[hidden]{display:none}
+.hagi-top{display:flex;gap:12px;align-items:center}
+.hagi-top img{border-radius:10px;flex:none}
+.hagi-top b{display:block;font-family:var(--display,Georgia,serif);font-size:17.5px;line-height:1.2;color:var(--ink,#1B2745)}
+.hagi-top span{display:block;font-size:14px;color:var(--ink-2,#4A5568);line-height:1.3;margin-top:2px}
+.hagi-corpo[hidden]{display:none}
+.hagi-passos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hagi-passos li{display:grid;grid-template-columns:24px 38px 1fr;gap:8px;align-items:start;background:var(--cream,#FAF7F1);padding:9px 10px}
+.hagi-n{font-family:var(--mono,monospace);font-size:12px;color:var(--gold,#9C7A36);padding-top:9px;text-align:center}
+.hagi-ic{width:38px;height:38px;border-radius:9px;background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);display:flex;align-items:center;justify-content:center}
+.hagi-t b{display:block;font-size:15px;color:var(--ink,#1B2745)}
+.hagi-t span{display:block;font-size:13.5px;color:var(--ink-2,#4A5568);line-height:1.35;margin-top:2px}
+.hagi-acoes{display:flex;flex-wrap:wrap;gap:8px}
+.hagi-b{flex:1 1 auto;min-height:42px;padding:8px 14px;border:1px solid var(--navy,#1B2745);background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);font:inherit;font-size:15px;font-weight:700;cursor:pointer;border-radius:2px}
+.hagi-b.sec{background:transparent;color:var(--ink,#1B2745)}
+.hagi-b[hidden]{display:none}
+@media print{.hagi{display:none!important}}
 </style>
 </head>
 <body>
@@ -213,6 +238,80 @@ ol.prep{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
     <button role="tab" id="tab-sobre" aria-selected="false" data-t="sobre">Os números</button>
   </nav>
 </div></header>
+<script>window.HAG_INSTALAR={app:'cozinha',nome:'HAG Cozinha',icone:'icone-cozinha',antes:'#app'};</script>
+<script>
+/* HAG_INSTALAR_v1 (09/10/2026). Pedido do Dr. Henrique: ensinar o paciente a pôr a página na tela inicial do celular.
+   Em vez de PDF, o passo a passo aparece aqui, na hora em que é útil: só no celular, só fora do modo app, só com o link
+   pessoal, e some quando ele salva ou toca em "Agora não" (volta uma vez, depois de 21 dias). O manifesto é montado aqui
+   com o endereço atual (com ?t=), para o ícone abrir sempre o link pessoal; o iPhone usa o endereço da página e o
+   apple-touch-icon. Nada sai do aparelho. */
+(function(){
+  var CFG=window.HAG_INSTALAR||{}; if(!CFG.app) return;
+  var ua=navigator.userAgent||'', ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1), android=/Android/.test(ua);
+  var dentro=/FBAN|FBAV|Instagram|Line\/|WhatsApp|; wv\)/.test(ua);
+  var app=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  var base=location.href.replace(/[^\/]*$/,'');
+  // manifesto com o link pessoal como endereço de partida
+  try{
+    var man={name:CFG.nome,short_name:CFG.nome,start_url:location.href.split('#')[0],scope:base,display:'standalone',
+      background_color:'#F6F4EF',theme_color:'#1B2745',
+      icons:[{src:base+CFG.icone+'-192.png',sizes:'192x192',type:'image/png'},{src:base+CFG.icone+'-512.png',sizes:'512x512',type:'image/png'}]};
+    var l=document.createElement('link'); l.rel='manifest'; l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man)); document.head.appendChild(l);
+  }catch(e){}
+  var K='hag.instalar.'+CFG.app, ls={get:function(){try{return JSON.parse(localStorage.getItem(K)||'null')}catch(e){return null}},set:function(v){try{localStorage.setItem(K,JSON.stringify(v))}catch(e){}}};
+  var pedido=null; window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); pedido=e; var b=document.getElementById('hagi-instalar'); if(b) b.hidden=false; });
+  window.addEventListener('appinstalled',function(){ ls.set({feito:Date.now()}); fechar(); });
+  function deveMostrar(){
+    if(app||!(ios||android)) return false;
+    if(CFG.ativo&&!CFG.ativo()) return false;
+    var s=ls.get(); if(s&&s.feito) return false;
+    if(s&&s.depois&&(Date.now()-s.depois<21*864e5||s.vezes>=2)) return false;
+    return true;
+  }
+  var SVG={
+    share:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    dots:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="19" cy="12" r="1.9" fill="currentColor"/></svg>',
+    vdots:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="5" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="19" r="1.9" fill="currentColor"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    ok:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5 10 17l9-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+  function passo(n,ic,t,s){ return '<li><span class="hagi-n">'+n+'</span><span class="hagi-ic">'+ic+'</span><span class="hagi-t"><b>'+t+'</b>'+(s?'<span>'+s+'</span>':'')+'</span></li>'; }
+  function passos(){
+    var h='<ol class="hagi-passos">', n=1;
+    if(dentro) h+=passo(n++,SVG.out,'Abra no navegador','Esta página abriu dentro de outro app. Toque no menu dele e em "Abrir no '+(ios?'Safari':'Chrome')+'".');
+    if(ios){
+      h+=passo(n++,SVG.share,'Toque em Compartilhar','O quadrado com a seta para cima, na barra do Safari. No iPhone com sistema novo, ele fica dentro do botão ••• ao lado do endereço.');
+      h+=passo(n++,SVG.plus,'Toque em "Adicionar à Tela de Início"','Role a lista para baixo se não aparecer. Se surgir a opção de abrir como app, deixe ligada.');
+      h+=passo(n++,SVG.ok,'Toque em "Adicionar"','O ícone '+CFG.nome+' aparece na tela do celular e abre direto no seu acesso.');
+    } else {
+      h+=passo(n++,SVG.vdots,'Toque no menu ⋮','Os três pontinhos no canto de cima do Chrome.');
+      h+=passo(n++,SVG.plus,'Toque em "Adicionar à tela inicial"','Em alguns celulares aparece como "Instalar app".');
+      h+=passo(n++,SVG.ok,'Confirme em "Adicionar" ou "Instalar"','O ícone '+CFG.nome+' aparece na tela do celular e abre direto no seu acesso.');
+    }
+    return h+'</ol>';
+  }
+  var box=null;
+  function fechar(){ if(box){ box.remove(); box=null; } }
+  function montar(aberto){
+    if(box||!deveMostrar()) return;
+    var alvo=CFG.antes&&document.querySelector(CFG.antes); if(!alvo) return;
+    box=document.createElement('section'); box.className='hagi'; box.setAttribute('aria-label','Salvar na tela inicial');
+    box.innerHTML='<div class="hagi-top"><img src="'+CFG.icone+'-180.png" alt="" width="44" height="44"><div><b>Salve '+CFG.nome+' na tela do celular</b><span>Abre como app, com um toque, sem procurar o link no WhatsApp.</span></div></div>'+
+      '<div class="hagi-corpo"'+(aberto?'':' hidden')+'>'+passos()+'</div>'+
+      '<div class="hagi-acoes"><button type="button" class="hagi-b" id="hagi-instalar"'+(pedido?'':' hidden')+'>Instalar agora</button>'+
+      '<button type="button" class="hagi-b'+(pedido?' sec':'')+'" id="hagi-ver">'+(aberto?'Já salvei':'Mostrar como')+'</button><button type="button" class="hagi-b sec" id="hagi-depois">Agora não</button></div>';
+    alvo.parentNode.insertBefore(box,alvo);
+    box.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
+      if(b.id==='hagi-instalar'&&pedido){ pedido.prompt(); pedido.userChoice.then(function(r){ if(r&&r.outcome==='accepted'){ ls.set({feito:Date.now()}); fechar(); } }); return; }
+      if(b.id==='hagi-ver'){ var c=box.querySelector('.hagi-corpo'); if(c.hidden){ c.hidden=false; b.textContent='Já salvei'; } else { ls.set({feito:Date.now()}); fechar(); } return; }
+      if(b.id==='hagi-depois'){ var s=ls.get()||{}; ls.set({depois:Date.now(),vezes:(s.vezes||0)+1}); fechar(); }
+    });
+  }
+  function vis(v){ if(box) box.hidden=!v; }
+  window.hagInstalar={mostrar:montar,fechar:fechar,vis:vis,_estado:function(){return {ios:ios,android:android,dentro:dentro,app:app,mostra:deveMostrar()}}};
+})();
+</script>
 <main class="wrap" id="app"><div class="estado">Carregando a coleção…</div></main>
 <div class="toast" id="toast" hidden></div>
 
@@ -255,7 +354,7 @@ async function carregar(){
     if(!c.paciente){ st.linkInvalido=true; COL=null; IDX={}; try{ localStorage.removeItem(CK+'indice'); }catch(e){} }
     // Orientações liberadas pelo médico para este paciente: só o aviso de que existem. O conteúdo fica na página própria.
     if(TOKEN&&c.paciente) rpc('hag_orientacoes_paciente',{p_token:TOKEN}).then(function(o){ if(o&&o.ok&&o.itens&&o.itens.length){ st.ori={n:o.itens.length,novas:o.itens.filter(function(x){return x.novo}).length}; if(!st.rec&&!st.guia) render(); } }).catch(function(){});
-    if(aplicar(c)) ls.set(CK+'indice',c); st.erro=null;
+    if(aplicar(c)){ ls.set(CK+'indice',c); if(window.hagInstalar) window.hagInstalar.mostrar(); } st.erro=null;
   }catch(e){ if(!COL) st.erro='Não foi possível carregar a coleção. Confira a internet e tente de novo.'; }
   st.carregandoIndice=false;
   await pf;
@@ -411,6 +510,7 @@ function telaSobre(){
 }
 
 function render(){
+  if(window.hagInstalar) window.hagInstalar.vis(st.tab==='rec'&&!st.rec&&!st.guia);
   document.querySelectorAll('nav.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===st.tab)});
   var n=$('#nlista'); n.hidden=!st.lista.length; n.textContent=st.lista.length;
   document.querySelector('nav.tabs').style.display=(st.semLink||st.linkInvalido)?'none':'';
