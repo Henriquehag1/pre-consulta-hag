@@ -12,7 +12,11 @@
      HAG_ACESSOS_PACOTE_v1 (08/10/2026): passo 4, "Acessos da consulta". Recebe o pacote que a skill documento-paciente-hag
      entrega quando a conversa não tem o banco (receitas e guias separados para o paciente, com o porquê, e o modelo de
      treino aprovados na ficha) e chama hag_acessos_preparar: grava a seleção "Separadas para você", copia o modelo como
-     RASCUNHO do Treino e devolve os dois links. Publicar o treino continua no painel do Treino, clique do médico. -->
+     RASCUNHO do Treino e devolve os dois links. Publicar o treino continua no painel do Treino, clique do médico.
+     HAG_COZINHA_SO_LIBERADO_v1 (09/10/2026): o paciente vê SÓ o que foi liberado para ele, e sem link a página não mostra
+     nada. "Aberto ao público" deixou de existir na prática, então o botão saiu. O passo 3 virou "O que cada paciente
+     recebe": lista o que está liberado, retira, e libera item a item com o porquê. As liberações somam: a consulta
+     seguinte acrescenta, não substitui. -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
 <script src="hag_auth.js?v=20260922-1750"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,8 +91,8 @@ var rpc=function(n,a){return api('rpc/'+n,{method:'POST',body:a})};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var fmt=function(v,d){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0})};
 
-var D={itens:[],meta:null,pacientes:[],modelos:[]};
-var S={pac:null,pacRes:null,lote:null,filtro:'pendentes',tipo:'receita',aberto:null,dados:{},msg:null,erro:null,ocupado:false,pid:new URLSearchParams(location.search).get('p')||'',link:null,imp:null};
+var D={itens:[],meta:null,pacientes:[],modelos:[],sel:[]};
+var S={libq:'',libmot:'',pac:null,pacRes:null,lote:null,filtro:'pendentes',tipo:'receita',aberto:null,dados:{},msg:null,erro:null,ocupado:false,pid:new URLSearchParams(location.search).get('p')||'',link:null,imp:null};
 
 // Fotos que já estão na pasta cozinha_fotos/ do site (lista.json). A foto subida aqui (foto_url) manda sobre elas.
 var FOTOS={};
@@ -99,6 +103,35 @@ async function carregar(){
   var r=await Promise.all([api('cozinha_itens?select=id,tipo,grupo,ordem,acesso,aprovado,resumo,foto_url,atualizado_em&order=ordem,id'),api('cozinha_colecao_meta?id=eq.1&select=dados'),api('patients?select=id,nome,status,interno&order=nome')]);
   D.itens=r[0]||[]; D.meta=(r[1]&&r[1][0]&&r[1][0].dados)||null; D.pacientes=(r[2]||[]);
   try{ D.modelos=await api('treino_programas?modelo=eq.true&patient_id=is.null&select=id,nome,objetivo,nivel,sessoes_semana&order=nome')||[]; }catch(e){ D.modelos=[]; }
+  await carregarSel();
+}
+// HAG_COZINHA_SO_LIBERADO_v1: o que está liberado para cada paciente (seleção ativa).
+async function carregarSel(){ D.sel=await api('cozinha_selecao?ativo=eq.true&select=patient_id,item_id,motivo,ordem,consulta_data,criado_em&order=patient_id,consulta_data.desc.nullslast,ordem')||[]; }
+function selDe(pid){ return D.sel.filter(function(x){return x.patient_id===pid}); }
+function cardPaciente(){
+  var h='<div class="card"><h3>3. O que cada paciente recebe</h3><p class="note">O paciente vê <b>só</b> o que está liberado aqui, com o porquê de cada item. Sem o link pessoal, a página não mostra receita nem guia. Liberar soma ao que já estava; retirar some na hora da página dele.</p>'+
+    '<div class="row"><select id="pac"><option value="">Escolha o paciente</option>'+
+    D.pacientes.map(function(p){var n=selDe(p.id).length; return '<option value="'+esc(p.id)+'" '+(S.pid===p.id?'selected':'')+'>'+esc(p.nome)+(p.interno?' (interno)':'')+(n?' · '+n+' liberados':'')+'</option>'}).join('')+'</select></div>';
+  if(S.pid){
+    var l=selDe(S.pid);
+    h+='<div class="grp"><h2>Liberados <span class="note">('+l.length+')</span></h2>';
+    if(!l.length) h+='<p class="note">Nada liberado ainda. A página deste paciente mostra só o aviso de que nada foi liberado.</p>';
+    l.forEach(function(x){ var it=D.itens.filter(function(i){return i.id===x.item_id})[0]||{}, r=it.resumo||{};
+      h+='<div class="it'+(it.aprovado?'':' pend')+'"><div class="th">'+(fotoDe(it)?'<img alt="" src="'+esc(fotoDe(it))+'">':(it.tipo==='guia'?'guia':'foto'))+'</div><div class="tx"><span class="nm">'+esc(r.nome||x.item_id)+'</span>'+
+         (x.motivo?'<span class="rs"><i>'+esc(x.motivo)+'</i></span>':'')+'<span class="mt">'+(it.tipo==='guia'?'guia':'receita')+(x.consulta_data?' · consulta de '+esc(x.consulta_data.split('-').reverse().join('/')):'')+(it.aprovado?'':' · tirado do ar, o paciente não vê')+'</span></div>'+
+         '<div class="ac"><button class="btn peq sec" data-a="retirar" data-v="'+esc(x.item_id)+'">Retirar</button></div></div>'; });
+    h+='</div><div class="grp"><h2>Liberar mais</h2><div class="row"><input id="libq" placeholder="Buscar receita ou guia aprovado" value="'+esc(S.libq||'')+'" style="flex:1;min-width:220px"><button class="btn sec" data-a="libbuscar">Buscar</button></div>'+
+       '<div class="row"><input id="libmot" placeholder="Por que (aparece para o paciente, em uma linha; opcional)" value="'+esc(S.libmot||'')+'" style="flex:1;min-width:260px" maxlength="160"></div>';
+    if(S.libq){ var q=semAcento(S.libq), ja=l.map(function(x){return x.item_id});
+      var res=D.itens.filter(function(i){ return i.aprovado && ja.indexOf(i.id)<0 && semAcento((i.resumo||{}).nome+' '+((i.resumo||{}).resumo||'')+' '+i.id).indexOf(q)>=0; }).slice(0,15);
+      if(!res.length) h+='<p class="note">Nada aprovado com essa busca.</p>';
+      res.forEach(function(i){ var r=i.resumo||{};
+        h+='<div class="it"><div class="th">'+(fotoDe(i)?'<img alt="" src="'+esc(fotoDe(i))+'">':(i.tipo==='guia'?'guia':'foto'))+'</div><div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span><span class="mt">'+(i.tipo==='guia'?'guia':'receita')+'</span></div>'+
+           '<div class="ac"><button class="btn peq" data-a="liberar" data-v="'+esc(i.id)+'">Liberar</button></div></div>'; }); }
+    h+='</div>';
+  }
+  h+='<div class="row"><button class="btn" data-a="gerarlink">Gerar link</button><button class="btn sec" data-a="pedirnovo">Trocar o link deste paciente</button>'+(S.pid&&S.link?'<a class="btn sec" style="text-decoration:none" href="'+esc(S.link)+'" target="_blank" rel="noopener">Ver como o paciente vê</a>':'')+'</div>';
+  return h;
 }
 function nomeGrupo(tipo,g){ var l=D.meta?(tipo==='guia'?D.meta.grupos_guia:D.meta.situacoes):[]; var x=(l||[]).filter(function(s){return s.id===g})[0]; return x?x.nome:g; }
 function ordemGrupos(tipo){ var l=D.meta?(tipo==='guia'?D.meta.grupos_guia:D.meta.situacoes):[]; return (l||[]).map(function(s){return s.id}); }
@@ -142,12 +175,12 @@ function lerPacote(txt){
 }
 function msgAcessos(nome,ck,tk){
   var pn=String(nome||'').split(' ')[0], t='Oi '+pn+', tudo bem? O Dr. Henrique deixou prontos os seus acessos do Método HAG.';
-  if(ck) t+='\n\nCozinha, com receitas e guias práticos. As que ele separou para você aparecem logo no começo:\n'+ck;
+  if(ck) t+='\n\nCozinha, com as receitas e os guias que ele separou para você:\n'+ck;
   if(tk) t+='\n\nTreino, com o seu programa, o vídeo de cada exercício e o registro de cada série:\n'+tk;
   return t+'\n\nOs links são pessoais. Dá para salvar na tela inicial do celular e abrir sempre que precisar.';
 }
 function cardPacote(){
-  var h='<div class="card"><h3>4. Acessos da consulta</h3><p class="note">Cole aqui o pacote que a skill entregou depois dos planos. Ele traz as receitas e os guias separados para o paciente, com o porquê de cada um, e o modelo de treino que você aprovou na ficha. Ao preparar, a Cozinha passa a mostrar "Separadas para você" no topo, o modelo vira <b>rascunho</b> no Treino do paciente e os dois links ficam prontos. <b>Publicar o treino continua com você</b>, no painel do Treino.</p>'+
+  var h='<div class="card"><h3>4. Acessos da consulta</h3><p class="note">Cole aqui o pacote que a skill entregou depois dos planos. Ele traz as receitas e os guias separados para o paciente, com o porquê de cada um, e o modelo de treino que você aprovou na ficha. Ao preparar, esses itens são liberados na Cozinha do paciente, somados aos que já estavam, o modelo vira <b>rascunho</b> no Treino do paciente e os dois links ficam prontos. <b>Publicar o treino continua com você</b>, no painel do Treino.</p>'+
     '<textarea id="pacote" placeholder="HAG_PACOTE_CONSULTA_v1 { ... }">'+esc(S.pacTxt||'')+'</textarea>'+
     '<div class="row"><select id="pac4"><option value="">Paciente (se o pacote não trouxer)</option>'+D.pacientes.map(function(p){return '<option value="'+esc(p.id)+'" '+(S.pac&&S.pac.pid===p.id?'selected':'')+'>'+esc(p.nome)+(p.interno?' (interno)':'')+'</option>'}).join('')+'</select>'+
     '<button class="btn sec" data-a="pacler">Conferir o pacote</button></div>';
@@ -171,7 +204,7 @@ function render(){
   var h='';
   if(S.msg) h+='<div class="msg">'+esc(S.msg)+'</div>';
   if(S.erro) h+='<div class="erro">'+esc(S.erro)+'</div>';
-  h+='<div class="kpis"><div class="kpi"><b>'+rec.length+'</b><span>receitas</span></div><div class="kpi"><b>'+gui.length+'</b><span>guias</span></div><div class="kpi"><b>'+ap+'</b><span>aprovados, no ar</span></div><div class="kpi"><b>'+(D.itens.length-ap)+'</b><span>a aprovar</span></div><div class="kpi"><b>'+ab+'</b><span>abertos ao público</span></div><div class="kpi"><b>'+sf+'</b><span>receitas sem foto</span></div></div>';
+  h+='<div class="kpis"><div class="kpi"><b>'+rec.length+'</b><span>receitas</span></div><div class="kpi"><b>'+gui.length+'</b><span>guias</span></div><div class="kpi"><b>'+ap+'</b><span>aprovados, no ar</span></div><div class="kpi"><b>'+(D.itens.length-ap)+'</b><span>a aprovar</span></div><div class="kpi"><b>'+D.sel.map(function(x){return x.patient_id}).filter(function(v,i,l){return l.indexOf(v)===i}).length+'</b><span>pacientes com itens liberados</span></div><div class="kpi"><b>'+sf+'</b><span>receitas sem foto</span></div></div>';
 
   h+='<div class="card"><h3>1. Trazer a coleção</h3><p class="note">Escolha o arquivo <b>colecao.json</b> (pasta Scripts/HAG/hag_cozinha_colecao). O que é novo entra como "a aprovar". O que mudou de conteúdo volta para "a aprovar". O que não mudou fica como está, com a sua aprovação, o acesso e a foto.</p><div class="row"><input type="file" id="arq" accept=".json,application/json"><button class="btn" data-a="importar" '+(S.ocupado?'disabled':'')+'>Importar</button></div>'+(S.imp?'<p class="note">'+esc(S.imp)+'</p>':'')+'</div>';
 
@@ -190,26 +223,24 @@ function render(){
     l.forEach(function(i){ var r=i.resumo||{};
       h+='<div class="it '+(i.aprovado?'':'pend')+'"><div class="th">'+(fotoDe(i)?'<img alt="" src="'+esc(fotoDe(i))+'">':(i.tipo==='receita'?'foto':'guia'))+'</div>'+
          '<div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span>'+(i.tipo==='receita'?'<span class="mt">'+esc(i.id)+' · '+r.tempo+' min · '+fmt(r.kcal)+' kcal · '+fmt(r.ptn)+' g proteína · '+r.nvar+' variações</span>':'')+
-         '<span class="row"><span class="tag '+(i.aprovado?'ok':'pd')+'">'+(i.aprovado?'aprovado':'a aprovar')+'</span><span class="tag '+(i.acesso==='aberta'?'ab':'')+'">'+(i.acesso==='aberta'?'aberto ao público':'só paciente')+'</span></span></div>'+
+         '<span class="row"><span class="tag '+(i.aprovado?'ok':'pd')+'">'+(i.aprovado?'aprovado':'a aprovar')+'</span></span></div>'+
          '<div class="ac"><button class="btn peq sec" data-a="ver" data-v="'+i.id+'">'+(S.aberto===i.id?'Fechar':'Conferir')+'</button>'+
          '<button class="btn peq'+(i.aprovado?' sec':'')+'" data-a="aprovar" data-v="'+i.id+'">'+(i.aprovado?'Tirar do ar':'Aprovar')+'</button>'+
-         '<button class="btn peq sec" data-a="acesso" data-v="'+i.id+'">'+(i.acesso==='aberta'?'Tornar só paciente':'Abrir ao público')+'</button>'+
          (i.tipo==='receita'?'<label class="btn peq sec" style="text-align:center">'+(fotoDe(i)?'Trocar foto':'Pôr foto')+'<input type="file" accept="image/*" data-foto="'+i.id+'" hidden></label>':'')+'</div>'+
          (S.aberto===i.id?previa(i):'')+'</div>'; });
     h+='</div>';
   });
   h+='</div>';
 
-  h+='<div class="card"><h3>3. Link pessoal do paciente</h3><p class="note">Quem abre a página sem link vê só o que está "aberto ao público". O link pessoal libera também o que é "só paciente". O envio é da Daniela.</p><div class="row"><select id="pac"><option value="">Escolha o paciente</option>'+
-     D.pacientes.map(function(p){return '<option value="'+esc(p.id)+'" '+(S.pid===p.id?'selected':'')+'>'+esc(p.nome)+(p.interno?' (interno)':'')+'</option>'}).join('')+'</select><button class="btn" data-a="gerarlink">Gerar link</button><button class="btn sec" data-a="pedirnovo">Trocar o link deste paciente</button></div>';
+  h+=cardPaciente();
   if(S.confNovo) h+='<div class="erro">O link atual deste paciente deixa de funcionar na hora, na Cozinha e nas Orientações. Use quando o link foi para a pessoa errada ou parou de abrir. <span class="row" style="margin-top:6px"><button class="btn peq" data-a="linknovo">Confirmar: gerar link novo</button><button class="btn peq sec" data-a="cancelanovo">Cancelar</button></span></div>';
   if(S.link){ var p=D.pacientes.filter(function(x){return x.id===S.pid})[0]||{}, pn=String(p.nome||'').split(' ')[0];
     h+='<p class="note">Link de '+esc(p.nome||'')+':</p><textarea id="linktxt" readonly>'+esc(S.link)+'</textarea>'+
-       '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique liberou para você o acesso à Cozinha do Método HAG: receitas e guias práticos para o dia a dia, com as porções e os números de cada uma. O link é pessoal:\n\n'+esc(S.link)+'\n\nDá para salvar na tela inicial do celular e abrir sempre que precisar.</textarea>'+
+       '<p class="note">Mensagem pronta para a Daniela:</p><textarea id="msgtxt" readonly>Oi '+esc(pn)+', tudo bem? O Dr. Henrique liberou para você o acesso à Cozinha do Método HAG: receitas e guias práticos para o dia a dia, com as porções e os números de cada uma. O link é pessoal:\n\n'+esc(S.link)+'\n\nNele estão as receitas e os guias que ele separou para você. Dá para salvar na tela inicial do celular e abrir sempre que precisar.</textarea>'+
        '<div class="row"><button class="btn sec" data-a="copiar" data-v="linktxt">Copiar o link</button><button class="btn sec" data-a="copiar" data-v="msgtxt">Copiar a mensagem</button></div>'; }
   h+='</div>';
   h+=cardPacote();
-  h+='<div class="card"><h3>Atalhos</h3><div class="row"><a class="btn sec" style="text-decoration:none" href="cozinha_HAG.html" target="_blank" rel="noopener">Abrir a coleção como o público vê</a><a class="btn sec" style="text-decoration:none" href="orientacoes_painel_HAG.html'+(S.pid?'?p='+encodeURIComponent(S.pid):'')+'">Orientações por condição</a><a class="btn sec" style="text-decoration:none" href="cozinha_plano_painel_HAG.html">Painel do plano (estacionado)</a></div></div>';
+  h+='<div class="card"><h3>Atalhos</h3><div class="row"><a class="btn sec" style="text-decoration:none" href="cozinha_HAG.html" target="_blank" rel="noopener">Ver a página sem link</a><a class="btn sec" style="text-decoration:none" href="orientacoes_painel_HAG.html'+(S.pid?'?p='+encodeURIComponent(S.pid):'')+'">Orientações por condição</a><a class="btn sec" style="text-decoration:none" href="cozinha_plano_painel_HAG.html">Painel do plano (estacionado)</a></div></div>';
   main.innerHTML=h;
 }
 
@@ -236,11 +267,18 @@ main.addEventListener('click',function(e){
       for(var k=0;k<c.itens.length;k+=12){ S.imp='Importando '+Math.min(k+12,c.itens.length)+' de '+c.itens.length+'…'; render();
         var r=await rpc('hag_cozinha_importar',{p_itens:c.itens.slice(k,k+12),p_meta:k===0?c.meta:null}); tot.novos+=r.novos; tot.alterados+=r.alterados; tot.iguais+=r.iguais; }
       await carregar(); S.dados={}; S.imp=null; S.msg='Importado: '+tot.novos+' novos, '+tot.alterados+' alterados (voltaram para "a aprovar"), '+tot.iguais+' sem mudança.'; }); }
-  if(a==='pedirnovo'){ S.pid=document.getElementById('pac').value; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); } S.confNovo=true; return render(); }
+  if(a==='libbuscar'){ S.libq=document.getElementById('libq').value.trim(); S.libmot=document.getElementById('libmot').value; return render(); }
+  if(a==='liberar') return tentar(async function(){ var mot=(document.getElementById('libmot').value||'').trim().slice(0,160), l=selDe(S.pid);
+    var ordem=l.reduce(function(m,x){return Math.max(m,x.ordem||0)},0)+1;
+    await api('cozinha_selecao?on_conflict=patient_id,item_id',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:[{patient_id:S.pid,item_id:v,motivo:mot||null,ordem:ordem,consulta_data:null,criado_por:'painel',ativo:true,criado_em:new Date().toISOString()}]});
+    S.libmot=''; await carregarSel(); S.msg='Liberado. Já aparece na página do paciente.'; });
+  if(a==='retirar') return tentar(async function(){ await api('cozinha_selecao?patient_id=eq.'+encodeURIComponent(S.pid)+'&item_id=eq.'+encodeURIComponent(v),{method:'PATCH',body:{ativo:false}});
+    await carregarSel(); S.msg='Retirado. Some da página do paciente na próxima vez que ele abrir.'; });
+  if(a==='pedirnovo'){ S.pid=document.getElementById('pac').value||S.pid; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); } S.confNovo=true; return render(); }
   if(a==='cancelanovo'){ S.confNovo=false; return render(); }
   if(a==='linknovo') return tentar(async function(){ await api('cozinha_acessos?patient_id=eq.'+encodeURIComponent(S.pid)+'&revogado=eq.false',{method:'PATCH',body:{revogado:true}});
     var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; S.confNovo=false; S.msg='Link novo gerado. O anterior parou de funcionar.'; });
-  if(a==='gerarlink'){ S.pid=document.getElementById('pac').value; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); }
+  if(a==='gerarlink'){ S.pid=document.getElementById('pac').value||S.pid; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); }
     return tentar(async function(){ var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; }); }
   if(a==='pacler'){ S.pacTxt=document.getElementById('pacote').value; S.pacRes=null; S.erro=null;
     try{ S.pac=lerPacote(S.pacTxt); }catch(er){ S.pac=null; S.erro='Pacote: '+er.message+'.'; } return render(); }
@@ -250,8 +288,8 @@ main.addEventListener('click',function(e){
     var r=await rpc('hag_acessos_preparar',{p_patient_id:P.pid,p_cozinha:ok.length?ok:null,p_treino_modelo:P.modelo?P.modelo.id:null,p_consulta:P.consulta,p_origem:'painel'});
     var pac=D.pacientes.filter(function(x){return x.id===P.pid})[0]||{}, c=r&&r.cozinha, t=r&&r.treino;
     S.pacRes={nome:pac.nome, ck:c&&c.token?APP+'?t='+c.token:null, tk:t&&t.token?TREINO+'?t='+t.token:null, aviso:t&&t.aviso||null,
-      resumo:(c?c.gravados+' itens em "Separadas para você"'+(c.ignorados&&c.ignorados.length?' ('+c.ignorados.length+' ficaram de fora)':'')+'. ':'')+(t?(t.novo?'Treino copiado como rascunho.':'Treino: o rascunho que já existia foi mantido.'):'')};
-    S.pac=null; S.msg='Acessos preparados.'; });
+      resumo:(c?c.gravados+' itens liberados na Cozinha'+(c.ignorados&&c.ignorados.length?' ('+c.ignorados.length+' ficaram de fora)':'')+'. ':'')+(t?(t.novo?'Treino copiado como rascunho.':'Treino: o rascunho que já existia foi mantido.'):'')};
+    S.pac=null; S.msg='Acessos preparados.'; await carregarSel(); });
   if(a==='copiar'){ var el=document.getElementById(v); el.select(); try{ navigator.clipboard.writeText(el.value).then(function(){ S.msg='Copiado.'; render(); },function(){}); }catch(er){} return; }
 });
 async function subirFoto(id,file){
@@ -264,6 +302,7 @@ async function subirFoto(id,file){
 }
 main.addEventListener('change',function(e){
   var t=e.target; S.msg=null;
+  if(t.id==='pac'){ S.pid=t.value; S.link=null; S.libq=''; S.confNovo=false; return render(); }
   if(t.id==='lote'&&t.files&&t.files.length){ var arqs=Array.prototype.slice.call(t.files);
     return tentar(async function(){ var ok=0, sem=[], falhou=[];
       for(var k=0;k<arqs.length;k++){ var f=arqs[k], id=f.name.replace(/\.[^.]+$/,'').trim().toLowerCase();

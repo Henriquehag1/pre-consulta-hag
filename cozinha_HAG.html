@@ -13,7 +13,13 @@
      Números: soma de gramas pela TACO 4ª ed. e pelo USDA SR Legacy, feita fora daqui. Sem IA, sem custo por uso.
      HAG_COZINHA_PARA_VOCE_v1 (08/10/2026): com o link pessoal, a coleção traz "para_voce", a seleção que o Dr. Henrique
      aprovou na consulta (receitas e guias, cada um com o porquê em uma linha). Aparece no topo de Receitas, só sem busca
-     e com "Todas". Só id e motivo vêm do banco; nada de nome ou dado do paciente. -->
+     e com "Todas". Só id e motivo vêm do banco; nada de nome ou dado do paciente.
+     HAG_COZINHA_SO_LIBERADO_v1 (09/10/2026). Pedido dele: "liberar conforme eu aceito que libere, não que fique tudo
+     exposto, porque assim os pacientes não valorizam". Agora o paciente vê SÓ o que o Dr. Henrique liberou para ele
+     (cozinha_selecao ativa), e sem o link pessoal a página não mostra conteúdo nenhum, só a apresentação. A trava está no
+     banco (hag_cozinha_colecao e hag_cozinha_item), não aqui: esta página só mostra o que vier. Tudo numa aba, "Para você",
+     na ordem dele, com o porquê de cada item; receitas e guias juntos. Cache novo (col2) para não exibir a coleção
+     inteira guardada no aparelho por versão anterior. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:ital,wght@0,400;0,700;1,400&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -66,6 +72,10 @@ p{margin:0}
 .lista{display:flex;flex-direction:column;gap:10px}
 .pv{background:var(--cream);border-left:3px solid var(--gold-ui);padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px}
 .pv .sit-head{margin-top:0}
+.porta{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--gold-ui);padding:18px 16px;display:flex;flex-direction:column;gap:10px}
+.porta h2{font-family:var(--display);font-size:24px;margin:0}
+.porta p{margin:0;color:var(--ink-2)}
+.pv .consulta{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .pv .motivo{font-family:var(--display);font-style:italic;font-size:14.5px;color:var(--gold);line-height:1.3}
 .card{display:grid;grid-template-columns:96px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);padding:10px;text-align:left;width:100%;align-items:start}
 .card .txt{min-width:0;display:flex;flex-direction:column;gap:4px}
@@ -198,8 +208,7 @@ ol.prep{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
   <div class="brand">Método HAG</div>
   <h1>Cozinha</h1>
   <nav class="tabs" role="tablist">
-    <button role="tab" id="tab-rec" aria-selected="true" data-t="rec">Receitas</button>
-    <button role="tab" id="tab-guias" aria-selected="false" data-t="guias">Guias</button>
+    <button role="tab" id="tab-rec" aria-selected="true" data-t="rec">Para você</button>
     <button role="tab" id="tab-lista" aria-selected="false" data-t="lista">Lista<span class="n" id="nlista" hidden>0</span></button>
     <button role="tab" id="tab-sobre" aria-selected="false" data-t="sobre">Os números</button>
   </nav>
@@ -219,6 +228,9 @@ var ls={get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}c
 /* link pessoal: ?t=TOKEN fica guardado neste aparelho */
 var qs=new URLSearchParams(location.search), TOKEN=qs.get('t')||ls.get('hagcozinha.col.token')||null;
 if(qs.get('t')) ls.set('hagcozinha.col.token',qs.get('t'));
+// HAG_COZINHA_SO_LIBERADO_v1: a versão anterior guardava a coleção inteira no aparelho. Apaga esse cache antigo.
+try{ Object.keys(localStorage).forEach(function(k){ if(k==='hagcozinha.col.indice'||k.indexOf('hagcozinha.col.f.')===0) localStorage.removeItem(k); }); }catch(e){}
+var CK='hagcozinha.col2.'+String(TOKEN||'').slice(0,12)+'.';
 
 var COL=null, IDX={}, FICHAS={};
 var st={tab:'rec',sit:'todas',q:'',rec:null,guia:null,vari:-1,porc:1,lista:[],feitos:{},erro:null,carregando:null};
@@ -231,17 +243,19 @@ async function rpc(nome,args){
   return r.json();
 }
 // Coleção sem nada aprovado chega com meta nula: nesse caso não há o que montar, e a página avisa em vez de quebrar.
-function aplicar(c){ if(!c||!c.meta||!Array.isArray(c.itens)||!c.itens.length){ COL=null; IDX={}; st.vazia=true; return false; } st.vazia=false; COL=c; IDX={}; c.itens.forEach(function(i){IDX[i.id]=i}); return true; }
+// HAG_COZINHA_SO_LIBERADO_v1: só existe coleção para quem tem link válido; sem item liberado, a página diz isso.
+function aplicar(c){ if(!c||!c.paciente||!c.meta||!Array.isArray(c.itens)){ COL=null; IDX={}; st.vazia=true; return false; } st.vazia=!c.itens.length; COL=c; IDX={}; c.itens.forEach(function(i){IDX[i.id]=i}); return true; }
 async function carregar(){
-  var cache=ls.get('hagcozinha.col.indice');
+  if(!TOKEN){ st.semLink=true; render(); return; }
+  var cache=ls.get(CK+'indice');
   if(cache&&cache.itens&&cache.meta){ try{ if(aplicar(cache)) render(); }catch(e){ COL=null; } }
   var pf=carregarFotos(); st.carregandoIndice=true;
   try{
     var c=await rpc('hag_cozinha_colecao',{p_token:TOKEN});
-    if(TOKEN&&!c.paciente){ st.linkInvalido=true; }
+    if(!c.paciente){ st.linkInvalido=true; COL=null; IDX={}; try{ localStorage.removeItem(CK+'indice'); }catch(e){} }
     // Orientações liberadas pelo médico para este paciente: só o aviso de que existem. O conteúdo fica na página própria.
     if(TOKEN&&c.paciente) rpc('hag_orientacoes_paciente',{p_token:TOKEN}).then(function(o){ if(o&&o.ok&&o.itens&&o.itens.length){ st.ori={n:o.itens.length,novas:o.itens.filter(function(x){return x.novo}).length}; if(!st.rec&&!st.guia) render(); } }).catch(function(){});
-    if(aplicar(c)) ls.set('hagcozinha.col.indice',c); st.erro=null;
+    if(aplicar(c)) ls.set(CK+'indice',c); st.erro=null;
   }catch(e){ if(!COL) st.erro='Não foi possível carregar a coleção. Confira a internet e tente de novo.'; }
   st.carregandoIndice=false;
   await pf;
@@ -249,12 +263,13 @@ async function carregar(){
 }
 async function ficha(id){
   if(FICHAS[id]) return FICHAS[id];
-  var c=ls.get('hagcozinha.col.f.'+id);
+  var c=ls.get(CK+'f.'+id);
   try{
     var r=await rpc('hag_cozinha_item',{p_id:id,p_token:TOKEN});
     if(r.erro) throw new Error(r.erro);
-    FICHAS[id]=r; ls.set('hagcozinha.col.f.'+id,r); return r;
-  }catch(e){ if(c&&e.message!=='so_paciente'){ FICHAS[id]=c; return c; } throw e; }
+    FICHAS[id]=r; ls.set(CK+'f.'+id,r); return r;
+  }catch(e){ if(c&&['so_paciente','nao_liberado','nao_encontrado'].indexOf(e.message)<0){ FICHAS[id]=c; return c; }
+    try{ localStorage.removeItem(CK+'f.'+id); }catch(er){} throw e; }
 }
 
 function toast(t){var el=$('#toast'); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(function(){el.hidden=true},2400)}
@@ -272,49 +287,34 @@ function fotoHTML(i,grande){ var u=fotoDe(i,grande); return u?'<div class="foto"
 function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
 
 function telaReceitas(){
-  var M=COL.meta, rs=COL.itens.filter(function(i){return i.tipo==='receita'}), q=norm(st.q.trim());
-  var h='';
+  // HAG_COZINHA_SO_LIBERADO_v1: a tela inicial é a lista do que o Dr. Henrique liberou, na ordem dele, com o porquê.
+  var h='', q=norm(st.q.trim());
   if(st.ori) h+='<a class="orib" href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'"><b>Suas orientações</b><span>'+(st.ori.novas?st.ori.novas+(st.ori.novas===1?' nova':' novas')+' do Dr. Henrique para você':st.ori.n+(st.ori.n===1?' orientação':' orientações')+' do Dr. Henrique para você')+' &rarr;</span></a>';
-  if(st.linkInvalido) h+='<div class="aviso">Este link pessoal não está mais ativo. Você continua vendo a parte aberta. Peça um link novo à equipe do consultório.</div>';
-  // HAG_COZINHA_PARA_VOCE_v1: a seleção da consulta, no topo, só na vista inicial (sem busca, com "Todas").
-  var PV=(COL.para_voce||[]).filter(function(x){ return IDX[x.id] && !IDX[x.id].trancado; });
-  if(PV.length && !q && st.sit==='todas'){
-    h+='<section class="bloco pv" aria-label="Separadas para você"><div class="sit-head"><h2>Separadas para você</h2><p>Escolhidas pelo Dr. Henrique a partir do seu plano. Comece por elas.</p></div><div class="lista">';
-    PV.forEach(function(x){ var r=IDX[x.id], mot=x.motivo?'<span class="motivo">'+esc(x.motivo)+'</span>':'';
-      if(r.tipo==='guia') h+='<button class="guia-card" data-abrir="'+r.id+'"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+'<span class="res">'+esc(r.r.resumo)+'</span></button>';
-      else h+='<button class="card" data-abrir="'+r.id+'">'+fotoHTML(r)+'<span class="txt"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+
-         '<span class="meta"><span><b>'+r.r.tempo+'</b> min</span><span><b>'+fmt(r.r.kcal)+'</b> kcal</span><span><b>'+fmt(r.r.ptn)+' g</b> proteína</span></span></span></button>';
-    });
-    h+='</div></section>';
-  }
-  h+='<div class="busca"><input type="search" id="busca" placeholder="Buscar: frango, 10 minutos, doce…" value="'+esc(st.q)+'" autocomplete="off"></div>';
-  h+='<div class="sits" role="group" aria-label="Situação"><button aria-pressed="'+(st.sit==='todas')+'" data-sit="todas">Todas</button>'+M.situacoes.map(function(s){return '<button aria-pressed="'+(st.sit===s.id)+'" data-sit="'+s.id+'">'+esc(s.nome)+'</button>'}).join('')+'</div>';
-  var total=0;
-  M.situacoes.forEach(function(s){
-    if(st.sit!=='todas'&&st.sit!==s.id) return;
-    var l=rs.filter(function(r){return r.grupo===s.id && (!q || norm(r.r.nome+' '+r.r.resumo).indexOf(q)>=0)});
-    if(!l.length) return; total+=l.length;
-    h+='<section class="bloco"><div class="sit-head"><h2>'+esc(s.nome)+'</h2><p>'+esc(s.frase)+'</p></div><div class="lista">';
-    l.forEach(function(r){
-      h+='<button class="card" data-abrir="'+r.id+'"'+(r.trancado?' aria-disabled="true"':'')+'>'+fotoHTML(r)+'<span class="txt"><span class="nm">'+esc(r.r.nome)+'</span><span class="res">'+esc(r.r.resumo)+'</span>'+
-         '<span class="meta"><span><b>'+r.r.tempo+'</b> min</span><span><b>'+fmt(r.r.kcal)+'</b> kcal</span><span><b>'+fmt(r.r.ptn)+' g</b> proteína</span>'+(r.r.nvar?'<span>'+r.r.nvar+' variações</span>':'')+'</span>'+
-         (r.trancado?'<span class="cadeado">para pacientes</span>':'')+'</span></button>';
-    });
-    h+='</div></section>';
+  var PV=(COL.para_voce||[]).filter(function(x){ return IDX[x.id]; });
+  if(!PV.length){ app.innerHTML=h+'<div class="estado">O Dr. Henrique ainda não liberou receitas e guias para você. Eles aparecem aqui depois da consulta.</div>'; return; }
+  var nr=PV.filter(function(x){return IDX[x.id].tipo==='receita'}).length, ng=PV.length-nr;
+  h+='<section class="bloco pv" aria-label="Separadas para você"><div class="sit-head"><h2>Separadas para você</h2><p>Escolhidas pelo Dr. Henrique a partir do seu plano'+
+     ' ('+(nr?nr+(nr===1?' receita':' receitas'):'')+(nr&&ng?' e ':'')+(ng?ng+(ng===1?' guia':' guias'):'')+'). Novas aparecem aqui conforme o seu acompanhamento.</p></div>';
+  if(PV.length>10) h+='<div class="busca"><input type="search" id="busca" placeholder="Buscar nas suas receitas" value="'+esc(st.q)+'" autocomplete="off"></div>';
+  var ultima=null, total=0, datas=PV.map(function(x){return x.consulta||''}).filter(function(d,i,l){return d&&l.indexOf(d)===i});
+  h+='<div class="lista">';
+  PV.forEach(function(x){ var r=IDX[x.id];
+    if(q && norm(r.r.nome+' '+(r.r.resumo||'')+' '+(x.motivo||'')).indexOf(q)<0) return; total++;
+    if(datas.length>1 && (x.consulta||'')!==ultima){ ultima=x.consulta||''; h+='<span class="consulta">'+(ultima?'Consulta de '+ultima.split('-').reverse().join('/'):'Liberadas depois')+'</span>'; }
+    var mot=x.motivo?'<span class="motivo">'+esc(x.motivo)+'</span>':'';
+    if(r.tipo==='guia') h+='<button class="guia-card" data-abrir="'+r.id+'"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+'<span class="res">'+esc(r.r.resumo)+'</span><span class="cadeado" style="background:none;padding:0">guia</span></button>';
+    else h+='<button class="card" data-abrir="'+r.id+'">'+fotoHTML(r)+'<span class="txt"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+
+       '<span class="meta"><span><b>'+r.r.tempo+'</b> min</span><span><b>'+fmt(r.r.kcal)+'</b> kcal</span><span><b>'+fmt(r.r.ptn)+' g</b> proteína</span>'+(r.r.nvar?'<span>'+r.r.nvar+' variações</span>':'')+'</span></span></button>';
   });
-  if(!rs.length) h+='<div class="estado">A coleção está sendo preparada. Volte em breve.</div>';
-  else if(!total) h+='<div class="estado">Nenhuma receita com essa busca. Tente outra palavra.</div>';
+  h+='</div></section>';
+  if(!total) h+='<div class="estado">Nada com essa busca. Tente outra palavra.</div>';
   app.innerHTML=h;
 }
 
-function telaGuias(){
-  var M=COL.meta, gs=COL.itens.filter(function(i){return i.tipo==='guia'}), h='';
-  (M.grupos_guia||[]).forEach(function(g){
-    var l=gs.filter(function(x){return x.grupo===g.id}); if(!l.length) return;
-    h+='<section class="bloco"><div class="sit-head"><h2>'+esc(g.nome)+'</h2><p>'+esc(g.frase)+'</p></div><div class="lista">'+
-      l.map(function(x){return '<button class="guia-card" data-abrir="'+x.id+'"'+(x.trancado?' aria-disabled="true"':'')+'><span class="nm">'+esc(x.r.nome)+'</span><span class="res">'+esc(x.r.resumo)+'</span>'+(x.trancado?'<span class="cadeado">para pacientes</span>':'')+'</button>'}).join('')+'</div></section>';
-  });
-  app.innerHTML=h||'<div class="estado">Os guias estão sendo preparados. Volte em breve.</div>';
+function telaPorta(){
+  app.innerHTML='<div class="porta"><h2>Cozinha do Método HAG</h2><p>Receitas e guias práticos que o Dr. Henrique separa para cada paciente, a partir do plano e do momento de cada um.</p>'+
+    (st.linkInvalido?'<div class="aviso">Este link pessoal não está mais ativo. Peça um link novo à equipe do consultório pelo WhatsApp.</div>'
+                    :'<p>O acesso é pelo link pessoal enviado pelo consultório. Se você é paciente e não encontra o seu, peça à equipe pelo WhatsApp.</p>')+'</div>';
 }
 
 var GRUPOS=[['Macronutrientes',['kcal','ptn','cho','lip','sat_g','fibra','sodio_mg','colesterol_mg']],
@@ -339,10 +339,10 @@ function versao(r,i){return i<0?r:r.var[i]}
 
 function telaFicha(){
   var it=IDX[st.rec], F=FICHAS[st.rec];
-  if(!F){ app.innerHTML='<button class="voltar" id="voltar">&larr; Receitas</button><div class="estado">'+(st.carregando===st.rec?'Abrindo a receita…':'Não foi possível abrir esta receita agora. Confira a internet e tente de novo.')+'</div>'; return; }
+  if(!F){ app.innerHTML='<button class="voltar" id="voltar">&larr; Para você</button><div class="estado">'+(st.carregando===st.rec?'Abrindo a receita…':'Não foi possível abrir esta receita agora. Confira a internet e tente de novo.')+'</div>'; return; }
   var r=F.dados, v=versao(r,st.vari), n=v.n, ing=st.vari<0?r.ing:v.ing, novos=st.vari<0?[]:v.poe.map(function(x){return x.k}), f=st.porc/r.rende;
   var naLista=st.lista.some(function(x){return x.id===r.id&&x.vari===st.vari});
-  var sit=(COL.meta.situacoes.filter(function(s){return s.id===r.sit})[0]||{}).nome||'Receitas';
+  var sit='Para você';
   var h='<button class="voltar" id="voltar">&larr; '+esc(sit)+'</button><article class="ficha">';
   h+='<div class="so-print" style="font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase">Método HAG · Cozinha</div>';
   h+='<div class="cab"><h2>'+esc(r.nome)+(st.vari>=0?', '+esc(v.nome.replace(/^Destino \d: /,'')):'')+'</h2><p class="res">'+esc(st.vari<0?r.resumo:v.ideia)+'</p></div>';
@@ -370,8 +370,8 @@ function telaFicha(){
 
 function telaGuia(){
   var F=FICHAS[st.guia];
-  if(!F){ app.innerHTML='<button class="voltar" id="voltar">&larr; Guias</button><div class="estado">'+(st.carregando===st.guia?'Abrindo o guia…':'Não foi possível abrir este guia agora. Confira a internet e tente de novo.')+'</div>'; return; }
-  var g=F.dados, h='<button class="voltar" id="voltar">&larr; Guias</button><article class="ficha '+(g.grupo!=='fora'?'pratico':'')+'">';
+  if(!F){ app.innerHTML='<button class="voltar" id="voltar">&larr; Para você</button><div class="estado">'+(st.carregando===st.guia?'Abrindo o guia…':'Não foi possível abrir este guia agora. Confira a internet e tente de novo.')+'</div>'; return; }
+  var g=F.dados, h='<button class="voltar" id="voltar">&larr; Para você</button><article class="ficha '+(g.grupo!=='fora'?'pratico':'')+'">';
   h+='<div class="so-print" style="font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase">Método HAG · Cozinha</div>';
   h+='<div class="cab"><h2>'+esc(g.nome)+'</h2><p class="res">'+esc(g.resumo)+'</p></div>';
   g.blocos.forEach(function(b,i){ h+='<div class="gbloco b'+i+'"><h3>'+esc(b.t)+'</h3><ul>'+b.itens.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>'; });
@@ -413,18 +413,19 @@ function telaSobre(){
 function render(){
   document.querySelectorAll('nav.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===st.tab)});
   var n=$('#nlista'); n.hidden=!st.lista.length; n.textContent=st.lista.length;
+  document.querySelector('nav.tabs').style.display=(st.semLink||st.linkInvalido)?'none':'';
+  if(st.semLink||st.linkInvalido){ telaPorta(); return; }
   if(!COL){ app.innerHTML='<div class="estado">'+esc(st.erro||(st.vazia&&!st.carregandoIndice?'A coleção está sendo preparada. Volte em breve.':'Carregando a coleção…'))+'</div>'+(st.erro?'<button class="acao sec" id="tentar">Tentar de novo</button>':''); return; }
   if(st.tab==='lista') telaLista(); else if(st.tab==='sobre') telaSobre();
-  else if(st.tab==='guias'){ if(st.guia) telaGuia(); else telaGuias(); }
-  else if(st.rec) telaFicha(); else telaReceitas();
+  else if(st.guia) telaGuia(); else if(st.rec) telaFicha(); else telaReceitas();
 }
 async function abrir(id){
   var it=IDX[id]; if(!it) return;
   if(it.trancado){ toast('Conteúdo para pacientes. Peça o seu link à equipe do consultório.'); return; }
-  if(it.tipo==='guia'){ st.tab='guias'; st.guia=id; } else { st.tab='rec'; st.rec=id; st.vari=-1; }
+  st.tab='rec'; if(it.tipo==='guia'){ st.guia=id; st.rec=null; } else { st.rec=id; st.guia=null; st.vari=-1; }
   st.carregando=id; render(); window.scrollTo(0,0);
   try{ history.replaceState(null,'',location.pathname+location.search+'#'+id); }catch(e){}
-  try{ var F=await ficha(id); if(it.tipo==='receita'&&st.rec===id) st.porc=F.dados.rende; }catch(e){}
+  try{ var F=await ficha(id); if(it.tipo==='receita'&&st.rec===id) st.porc=F.dados.rende; }catch(e){ if(e.message==='nao_liberado'||e.message==='so_paciente'){ st.rec=null; st.guia=null; toast('Este conteúdo não está liberado para você.'); } }
   st.carregando=null; render();
 }
 function fechar(){ st.rec=null; st.guia=null; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} render(); }
