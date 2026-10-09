@@ -200,6 +200,51 @@ const HOJE = () => hojeLocal();
 /* histórico = o que o servidor tem + o que ainda está na fila deste aparelho */
 function historico(){ const h=(CTX&&CTX.historico)||[]; const ids=new Set(h.map(s=>s.client_id)); return h.concat(FILA.map(p=>({data:p.data, dia_id:p.dia_id, dia:p.dia, tipo:p.tipo, dur:p.dur, rpe:p.rpe, pront:p.pront, cv:p.cv, series:p.series||[], cardio:p.cardio||[], hyrox:p.hyrox||[], pendente:true}))); }
 
+/* ---------- HAG_TREINO_REGISTRO_POR_TIPO_v1 (09/10/2026) ----------
+   Pedido do Dr. Henrique: a pergunta "quantas ainda conseguiria fazer" não serve para todo exercício ("individualize,
+   analise caso a caso"). Cada item cai num tipo, e o tipo decide a pergunta que registra a série:
+   . carga  (força com repetições): repetições que ainda sairiam com boa técnica, 0 a 4+ (é o que move a carga);
+   . iso    (isometria, unidade seg): como terminou (com folga / no ponto / no limite), depois do timer;
+   . pot    (funcao Potência: saltos): qualidade dos saltos, porque em potência não se vai perto da falha;
+   . equil  (equilíbrio): quantas vezes precisou apoiar;
+   . reab   (funcao Reabilitação): dor durante a série, que é o que decide a progressão na reabilitação;
+   . aquec  (nota começa com "Aquecimento", ou regra "aquecimento") e mob (modalidade mobilidade): só "Feito".
+   Aquecimento e mobilidade gravam rir 5: fora do volume semanal de séries (que conta rir até 4) e da força estimada. */
+function tipoReg(it,ex){
+  const nota=String(it.nota||"").trim().toLowerCase();
+  if(it.regra==="aquecimento" || /^aquecimento\b/.test(nota)) return "aquec";
+  if(/^equilibrio/.test(it.id||"")) return "equil";
+  if(ex.f==="Reabilitação") return "reab";
+  if(ex.mod==="mobilidade") return "mob";
+  if(ex.f==="Potência") return "pot";
+  if(ex.un==="seg") return "iso";
+  return "carga";
+}
+function opcoesReg(tp, alvoRir){
+  const R=(t,sub,rir,dor,alvo)=>({t,sub,rir,dor,alvo});
+  if(tp==="iso") return {q:"Como você terminou?", h:"Toque para registrar a série", o:[R("Com folga","aguentaria bem mais",4,null,false),R("No ponto","firme até o fim",Math.min(alvoRir,4),null,true),R("No limite","tremendo no fim",0,null,false)]};
+  if(tp==="pot") return {q:"Como saíram os saltos?", h:"Se perder a qualidade, pare a série ali", o:[R("Todos bons","explosivos e aterrissagem macia",4,null,true),R("Caiu no fim","os últimos saíram mais fracos",2,null,false),R("Perdi qualidade","pare a série aqui",0,null,false)]};
+  if(tp==="equil") return {q:"Precisou apoiar o outro pé ou as mãos?", h:"Toque para registrar a série", o:[R("Nenhuma vez","",4,null,false),R("1 ou 2 vezes","",2,null,false),R("Várias vezes","",0,null,false)]};
+  if(tp==="reab") return {q:"Teve dor durante a série?", h:"Dor de até 2 é aceitável na reabilitação", o:[R("Sem dor","0",Math.min(alvoRir,4),0,false),R("Leve","1 a 2",Math.min(alvoRir,4),2,false),R("Moderada","3 a 4",Math.min(alvoRir,4),4,false),R("Forte","5 ou mais",Math.min(alvoRir,4),6,false)]};
+  return null;
+}
+function registroHTML(tp, un, alvoRir){
+  if(tp==="aquec"||tp==="mob") return `<div style="margin-top:12px"><button type="button" class="btn wide" data-a="reg" data-rir="5" style="min-height:56px">✓ FEITO</button></div>`;
+  const op=opcoesReg(tp, alvoRir);
+  if(op) return `<div class="rirq">${op.q}</div><div class="rirh">${op.h}</div>
+     <div class="rirbtns" style="grid-template-columns:repeat(${op.o.length},1fr)">${op.o.map(x=>`<button type="button" data-a="reg" data-rir="${x.rir}"${x.dor!=null?` data-dor="${x.dor}"`:""} class="${x.alvo?"alvo":""}" style="font-size:17px;line-height:1.15;padding:6px 4px">${esc(x.t)}${x.sub?`<small>${esc(x.sub)}</small>`:""}</button>`).join("")}</div>`;
+  return `<div class="rirq">Quantas ainda conseguiria fazer com boa técnica?</div>
+     <div class="rirh">Toque no número para registrar a série · alvo ${alvoRir}</div>
+     <div class="rirbtns">${[0,1,2,3,4].map(v=>`<button type="button" data-a="feito" data-v="${v}" class="${v===Math.min(alvoRir,4)?"alvo":""}" aria-label="Registrar série: ${v===4?"4 ou mais":v} sobrando">${v===4?"4+":v}<small>${v===0?"nenhuma":v===4?"ou mais":"sobrando"}</small></button>`).join("")}</div>`;
+}
+function rotuloFeita(x, tp, un, alvoRir){
+  const q = un==="seg" ? x.reps+"s" : (x.kg ? fkg(x.kg)+"×"+x.reps : x.reps+" reps");
+  if(tp==="aquec"||tp==="mob") return q+" · feito";
+  if(tp==="reab") return q+" · dor "+(x.dor||0);
+  const op=opcoesReg(tp,alvoRir==null?2:alvoRir); if(op){ const o=op.o.find(o=>o.rir===x.rir); return q+(o?" · "+o.t.toLowerCase():""); }
+  return q+" · "+(x.rir===4?"4+":x.rir);
+}
+
 /* ---------- regra de progressão, com o motivo escrito ---------- */
 function travado(exId){
   const h=historico().filter(s=>s.series.some(x=>x.ex===exId)); const ult=h.at(-1); if(!ult) return null;
@@ -210,13 +255,15 @@ function travado(exId){
 function sugestao(it){
   const exId=it.id, ex=EX(exId), lo=it.min||1, hi=it.max||lo, regra=it.regra||"dupla", inc=+ex.inc||2.5, un=ex.un||"kg";
   const h=historico().filter(s=>s.series.some(x=>x.ex===exId)); const ult=h.at(-1);
-  const u = un==="seg" ? "seg" : "reps";
-  if(!ult){ const kg=+it.carga||0; return {kg, reps:lo, primeira:true, motivo: (un==="kg"&&!kg) ? "Primeira vez neste exercício: escolha uma carga com que sobrem umas 2 ou 3 repetições." : "Primeira vez neste exercício."}; }
+  const u = un==="seg" ? "seg" : "reps", tp=tipoReg(it,ex);
+  if(tp==="aquec"||tp==="mob") return {kg:+it.carga||0, reps:lo, motivo:""};
+  if(!ult){ const kg=+it.carga||0; return {kg, reps:lo, primeira:true, motivo: (un==="kg"&&!kg&&it.carga!==0) ? "Primeira vez neste exercício: escolha uma carga com que sobrem umas 2 ou 3 repetições." : (un==="kg"&&it.carga===0) ? "Comece com o peso do corpo." : "Primeira vez neste exercício."}; }
   const ser=ult.series.filter(x=>x.ex===exId), kg=+ser[0].kg||0, quando=br(ult.data), feito=ser.map(x=>x.reps).join(", ");
   const tr=travado(exId);
   if(tr) return {kg, reps:ser[0].reps, trava:true, motivo:`Dor ${tr.dor} em ${quando}: a carga fica igual até o Dr. Henrique liberar.`};
   const topo=ser.every(x=>x.reps>=hi && (x.rir==null || x.rir>=(it.rir==null?2:it.rir)));
   if(un!=="kg"){ /* peso do corpo ou tempo: só sobe a repetição ou o tempo */
+    if(tp==="reab"){ const duas=h.slice(-2); if(duas.some(s=>s.series.filter(x=>x.ex===exId).some(x=>(x.dor||0)>2))){ const r=Math.max(lo,Math.min(hi,ser[0].reps)); return {kg, reps:r, motivo:`Dor acima de 2 em uma das duas últimas sessões: mantenha ${r} ${u}.`}; } }
     if(topo) return {kg, reps:hi, motivo:`Em ${quando} você fez ${feito} ${u}: topo da faixa. Mantenha, e avise na consulta para subir a dificuldade.`};
     const passo = un==="seg"?5:1; const r=Math.min(hi, Math.max(...ser.map(x=>x.reps))+passo);
     return {kg, reps:r, motivo:`Em ${quando} você fez ${feito} ${u}. Agora buscar ${r}.`};
@@ -336,24 +383,23 @@ function renderItem(){
     const ant=feitas.at(-1);
     S.ajuste={i:S.i,id:it.id,k,kg:ant?ant.kg:sg.kg,reps:ant?Math.max(sg.reps,0):sg.reps,sug:sg.kg,dor:0,local:null,lado:null,tipo:null,mexeu:false};
     if(ant) S.ajuste.reps=sg.reps;
-    if(un==="kg" && !S.ajuste.kg && !ant) S.abrirAjuste=true;
+    if(un==="kg" && !S.ajuste.kg && !ant && it.carga!==0) S.abrirAjuste=true;
   }
   const a=S.ajuste, alvoRir=it.rir==null?2:it.rir;
   const locais=["ombro","cotovelo","punho","lombar","quadril","joelho","tornozelo","outro"];
-  const alvoTxt = un==="seg" ? `${a.reps} seg` : un==="pc" ? `${a.kg?"+"+fkg(a.kg)+" kg · ":""}${a.reps} reps` : `${fkg(a.kg)} kg · ${a.reps} reps`;
+  const tp=tipoReg(it,ex);
+  const alvoTxt = un==="seg" ? `${a.reps} seg` : un==="pc" ? `${a.kg?"+"+fkg(a.kg)+" kg · ":""}${a.reps} reps` : (!a.kg && it.carga===0) ? `peso do corpo · ${a.reps} reps` : `${fkg(a.kg)} kg · ${a.reps} reps`;
   vHoje.innerHTML=`${barra}
    <div class="card">
      ${cabecalhoItem(it,ex,S.i+1,its.length)}
      ${sg.trava?`<div class="lock" style="margin-top:10px">${esc(sg.motivo)}</div>`:""}
      ${it.nota?`<div class="aviso" style="margin-top:10px">${esc(it.nota)}</div>`:""}
-     <div class="serie"><div class="k">Série ${k+1} de ${it.ns}</div><div class="alvo">${alvoTxt}</div>${!sg.trava&&k===0?`<div class="motivo">${esc(sg.motivo)}</div>`:""}</div>
+     <div class="serie"><div class="k">Série ${k+1} de ${it.ns}</div><div class="alvo">${alvoTxt}</div>${!sg.trava&&k===0&&sg.motivo?`<div class="motivo">${esc(sg.motivo)}</div>`:""}</div>
      ${un==="seg"?isoHTML(ex,a):""}
      <div ${isoRodando()?"hidden":""}>
-     <div class="rirq">${un==="seg"?"Quanto tempo a mais aguentaria?":"Quantas ainda conseguiria fazer com boa técnica?"}</div>
-     <div class="rirh">Toque no número para registrar a série · alvo ${alvoRir}</div>
-     <div class="rirbtns">${[0,1,2,3,4].map(v=>`<button type="button" data-a="feito" data-v="${v}" class="${v===Math.min(alvoRir,4)?"alvo":""}" aria-label="Registrar série: ${v===4?"4 ou mais":v} sobrando">${v===4?"4+":v}<small>${v===0?"nenhuma":v===4?"ou mais":"sobrando"}</small></button>`).join("")}</div>
+     ${registroHTML(tp, un, alvoRir)}
      </div>
-     <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="ajustar" aria-expanded="${S.abrirAjuste}">Alterar carga · ${un==="seg"?"tempo":"reps"} · dor</button>${a.mexeu?`<span class="lbl" style="color:var(--warn)">ajustado</span>`:""}</div>
+     <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="ajustar" aria-expanded="${S.abrirAjuste}">${tp==="aquec"||tp==="mob"?`Mudar ${un==="seg"?"o tempo":"as repetições"} ou registrar dor`:un==="kg"?`Alterar carga · reps · dor`:`Alterar ${un==="seg"?"tempo":"reps"} · dor`}</button>${a.mexeu?`<span class="lbl" style="color:var(--warn)">ajustado</span>`:""}</div>
      ${S.abrirAjuste?`<div class="ajuste">
        ${un!=="seg"?`<div class="row between"><span class="lbl">${un==="pc"?"Carga extra (kg)":"Carga (kg)"}</span><div class="step"><button type="button" data-a="kg-" aria-label="Menos carga">−</button><output>${fkg(a.kg)}</output><button type="button" data-a="kg+" aria-label="Mais carga">+</button></div></div>`:""}
        <div class="row between"><span class="lbl">${un==="seg"?"Tempo (seg)":"Repetições"}</span><div class="step"><button type="button" data-a="r-" aria-label="Menos">−</button><output>${a.reps}</output><button type="button" data-a="r+" aria-label="Mais">+</button></div></div>
@@ -363,7 +409,7 @@ function renderItem(){
        <div><span class="lbl">Parece</span><div class="chips" style="margin-top:6px">${["muscular","articular","tendínea","não sei"].map(l=>`<button type="button" class="chip" data-a="tipo" data-v="${l}" aria-pressed="${a.tipo===l}">${l}</button>`).join("")}</div></div>
        ${a.dor>=4?`<div class="lock">Dor ${a.dor}: a carga deste exercício fica travada a partir da próxima sessão, até o Dr. Henrique liberar.</div>`:""}`:""}
      </div>`:""}
-     <div class="feitas">${feitas.length?feitas.map((s,j)=>`S${j+1} ${un==="seg"?s.reps+"s":fkg(s.kg)+"×"+s.reps} · ${s.rir===4?"4+":s.rir}`).join("   "):"nenhuma série ainda"}</div>
+     <div class="feitas">${feitas.length?feitas.map((s,j)=>`S${j+1} ${rotuloFeita(s,tp,un,alvoRir)}`).join("   "):"nenhuma série ainda"}</div>
    </div>${rodapeTreino()}`;
 }
 function renderCardio(it,ex,its,barra){
@@ -578,6 +624,7 @@ vHoje.addEventListener("click", e=>{
   if(a==="dia"){ S.diaId=b.dataset.v; S.sub={}; return render(); }
   if(a==="iniciar"){ S.fase="treino"; S.inicio=Date.now(); somPronto(); manterTelaAcesa(); salvarRascunho(); return render(); }
   if(a==="feito"){ isoParaTudo(); return registrar(+b.dataset.v); }
+  if(a==="reg"){ isoParaTudo(); if(b.dataset.dor!=null && S.ajuste){ S.ajuste.dor=+b.dataset.dor; } return registrar(+b.dataset.rir); }
   if(a==="isogo") return isoIniciar();
   if(a==="isostop") return isoParar();
   if(a==="ajustar"){ S.abrirAjuste=!S.abrirAjuste; return render(); }
