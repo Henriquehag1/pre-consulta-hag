@@ -202,8 +202,10 @@ const SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 const {createClient}=window.supabase;
 const db=createClient(SURL,SKEY);
 const AC=['#1a5fa8','#2d7a3a','#7c3a8a','#b45309','#1a7a6a','#8a3a1a','#3a5a8a','#5a3a7a','#2a6a4a','#6a2a4a'];
-function gac(n){let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);return AC[Math.abs(h)%AC.length];}
-function gin(n){const p=n.trim().split(' ').filter(Boolean);return p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();}
+/* HAG_RESP_NOME_VAZIO_v1 (10/10/2026): um check-in mensal chegou sem nome e gin() quebrava em p[0][0], derrubando a lista
+   e o "Marcar respondido" (que salvava, mas acusava erro ao redesenhar). Nome vazio agora vira "?" e a lista segue. */
+function gac(n){n=String(n||'');let h=0;for(let i=0;i<n.length;i++)h=n.charCodeAt(i)+((h<<5)-h);return AC[Math.abs(h)%AC.length];}
+function gin(n){const p=String(n||'').trim().split(/\s+/).filter(Boolean);if(!p.length)return '?';return p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();}
 let _all=[], _tipo='all', _cls='', _resp='';  /* HAG_RESP_RESPONDIDO_v1 */
 function setResp(r){_resp=_resp===r?'':r;document.querySelectorAll('.filter-btn[data-resp]').forEach(b=>b.classList.toggle('active',b.dataset.resp===r&&_resp===r));render();}
 function setTipo(t){_tipo=t;_cls='';document.querySelectorAll('.filter-btn[data-tipo]').forEach(b=>b.classList.toggle('active',b.dataset.tipo===t));document.querySelectorAll('.filter-btn[data-cls]').forEach(b=>b.classList.remove('active'));render();}
@@ -212,7 +214,7 @@ function scChipCls(v){return v>=4?'high':v>=2?'mid':v!==null&&v!==undefined&&v>=
 function render(){
   const q=(document.getElementById('searchInput').value||'').toLowerCase();
   let list=_all.filter(r=>{
-    if(q&&!r.patient_nome.toLowerCase().includes(q))return false;
+    if(q&&!String(r.patient_nome||'').toLowerCase().includes(q))return false;
     if(_tipo!=='all'&&r.tipo!==_tipo)return false;
     if(_cls&&r.classificacao!==_cls)return false;
     /* HAG_RESP_RESPONDIDO_v1 */
@@ -282,7 +284,7 @@ function buildCard(r){
     '<div class="resp-head" data-cid="'+id+'">' +
       '<div class="resp-avatar" style="background:'+color+'">'+inits+'</div>' +
       '<div class="resp-info">' +
-        '<div class="resp-name">'+_rEsc(r.patient_nome)+'</div>' +
+        '<div class="resp-name">'+_rEsc(r.patient_nome||'Paciente sem nome no formulário')+'</div>' +
         '<div class="resp-meta">'+dataHora+' '+semana+' '+pesoStr+'</div>' +
         (chips?'<div class="resp-scores">'+chips+'</div>':'') +
         _rpProxHtml(r) +   /* HAG_RESP_PROXIMA_CONSULTA_v1 */
