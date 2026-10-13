@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261008-1330"></script>
+<script src="hag_auth.js?v=20261013-1022"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -3745,19 +3745,50 @@ function _bloqDoDia(iso, local){
 }
 function _bloqAfeta(t){ return t.status==='concluida' && !!t.agendado_data && !!_bloqDoDia(String(t.agendado_data).slice(0,10), t.local); }
 function _bloqDiaBR(iso){ var p=String(iso).split('-'); var d=new Date(iso+'T12:00:00'); return ['dom','seg','ter','qua','qui','sex','sáb'][d.getDay()]+' '+p[2]+'/'+p[1]; }
+/* HAG_BLOQ_RECOLHIDO_v1 (13/10/2026): pedido do Dr. Henrique. Com os sabados de estudo, a fila
+   abria com uma faixa vermelha por dia fechado (11 faixas), quase todas "nada a fazer", e poluia a
+   tela. Agora: dia fechado COM consulta para remarcar continua aberto e em destaque, porque e trabalho
+   da Daniela; os dias sem nada a fazer viram UMA linha recolhida, que abre num toque. A escolha de
+   aberto/fechado fica guardada neste aparelho. Nada mudou em avisar, remarcar ou reabrir. */
+var _bloqAberto=(function(){ try{ return localStorage.getItem('hag_bloq_aberto')==='1'; }catch(e){ return false; } })();
+function _bloqAfetados(b){
+  return (_fila||[]).filter(function(t){
+    return t.status==='concluida' && String(t.agendado_data||'').slice(0,10)===b.data
+        && (!b.local || String(t.local||'').toLowerCase()===b.local);
+  }).sort(function(a,c){ return String(a.agendado_hora||'').localeCompare(String(c.agendado_hora||'')); });
+}
+function _bloqBtnReabrir(b){
+  return '<button onclick="bloqReabrir(\''+b.id+'\')" style="margin-left:auto;border:1px solid #f0c4be;background:#fff;border-radius:8px;padding:5px 10px;font-size:.7rem;font-weight:600;font-family:inherit;cursor:pointer;color:#a33">Reabrir o dia</button>';
+}
+/* datas seguidas viram intervalo: "ter 27/10 a sáb 31/10" */
+function _bloqResumoDatas(lista){
+  var ds=lista.map(function(b){return b.data;}).filter(function(d,i,a){return a.indexOf(d)===i;}).sort();
+  var grupos=[], ini=null, ant=null;
+  ds.forEach(function(d){
+    if(ant){ var x=new Date(ant+'T12:00:00'); x.setDate(x.getDate()+1); if(x.toISOString().slice(0,10)===d){ ant=d; return; } grupos.push([ini,ant]); }
+    ini=d; ant=d;
+  });
+  if(ini) grupos.push([ini,ant]);
+  return grupos.map(function(g){ return g[0]===g[1]?_bloqDiaBR(g[0]):(_bloqDiaBR(g[0])+' a '+_bloqDiaBR(g[1])); }).join(' · ');
+}
+function bloqToggle(){
+  _bloqAberto=!_bloqAberto;
+  try{ localStorage.setItem('hag_bloq_aberto',_bloqAberto?'1':'0'); }catch(e){}
+  var l=document.getElementById('bloq-lista'), bt=document.getElementById('bloq-toggle');
+  if(l) l.style.display=_bloqAberto?'block':'none';
+  if(bt) bt.textContent=_bloqAberto?'Esconder ▴':'Ver dias ▾';
+}
 function blocoBloqueios(){
   if(!_bloqueios.length) return '';
-  var h='';
+  var h='', semAcao=[];
   _bloqueios.forEach(function(b){
-    var afet=(_fila||[]).filter(function(t){
-      return t.status==='concluida' && String(t.agendado_data||'').slice(0,10)===b.data
-          && (!b.local || String(t.local||'').toLowerCase()===b.local);
-    }).sort(function(a,c){ return String(a.agendado_hora||'').localeCompare(String(c.agendado_hora||'')); });
+    var afet=_bloqAfetados(b);
+    if(!afet.length){ semAcao.push(b); return; }
     h+='<div style="margin:0 0 12px;padding:11px 13px;background:#fdf0ee;border:1px solid #f0c4be;border-radius:10px">'
       +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
       +'<span style="font-size:.74rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#a33">&#x1f6ab; Dia fechado · '+_bloqDiaBR(b.data)+(b.local?(' · '+_bpLocal(b.local)):'')+'</span>'
-      +'<span style="font-size:.74rem;color:#7a4a44">'+(afet.length?(afet.length+(afet.length===1?' consulta para remarcar':' consultas para remarcar')):'ninguém marcado, nada a fazer')+'</span>'
-      +'<button onclick="bloqReabrir(\''+b.id+'\')" style="margin-left:auto;border:1px solid #f0c4be;background:#fff;border-radius:8px;padding:5px 10px;font-size:.7rem;font-weight:600;font-family:inherit;cursor:pointer;color:#a33">Reabrir o dia</button></div>';
+      +'<span style="font-size:.74rem;color:#7a4a44">'+afet.length+(afet.length===1?' consulta para remarcar':' consultas para remarcar')+'</span>'
+      +_bloqBtnReabrir(b)+'</div>';
     afet.forEach(function(t){
       var avisado=/Avisado do dia fechado/.test(String(t.obs||''));
       var peloLink=(t.criado_por==='auto_agendamento');
@@ -3771,6 +3802,21 @@ function blocoBloqueios(){
     });
     h+='</div>';
   });
+  if(semAcao.length){
+    h+='<div style="margin:0 0 12px;padding:8px 12px;background:#faf8f4;border:1px solid #e5e2da;border-radius:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<span style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#8a6a64">&#x1f6ab; '+semAcao.length+(semAcao.length===1?' dia fechado':' dias fechados')+'</span>'
+      +'<span style="font-size:.72rem;color:#8a8478">ninguém marcado, nada a fazer</span>'
+      +'<button id="bloq-toggle" onclick="bloqToggle()" style="margin-left:auto;border:1px solid #e5e2da;background:#fff;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:600;font-family:inherit;cursor:pointer;color:#5a5448">'+(_bloqAberto?'Esconder ▴':'Ver dias ▾')+'</button></div>'
+      +'<div id="bloq-lista" style="display:'+(_bloqAberto?'block':'none')+';padding-top:6px">'
+      +'<div style="font-size:.72rem;color:#8a8478;padding:2px 0 6px">'+_bloqResumoDatas(semAcao)+'</div>';
+    semAcao.forEach(function(b){
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #efece5;font-size:.78rem;color:#4a4436">'
+        +'<span>'+_bloqDiaBR(b.data)+(b.local?(' · '+_bpLocal(b.local)):' · todos os locais')+'</span>'
+        +_bloqBtnReabrir(b)+'</div>';
+    });
+    h+='</div></div>';
+  }
   return h;
 }
 function bloqAvisar(id){
@@ -4567,7 +4613,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261008-1330';
+  var VERSAO = '20261013-1022';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
