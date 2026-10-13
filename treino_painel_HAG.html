@@ -229,6 +229,7 @@ function renderPaciente(){
      <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div class="f" style="flex:1;min-width:200px"><label class="lbl" for="modsel">Começar de um modelo da casa</label><select id="modsel">${E.modelos.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join("")}</select></div><button class="btn small" data-a="demodelo">Criar rascunho</button></div></div>
    <div class="card"><h3>Link do paciente</h3>
      ${P.acesso?`<div class="linkbox" id="link">${esc(linkDe(P.acesso.token))}</div><div class="row" style="margin-top:8px"><button class="btn small" data-a="copiar">Copiar link</button><span class="note">${P.acesso.ultimo_uso?"Último uso em "+brA(String(P.acesso.ultimo_uso).slice(0,10)):"Ainda não foi aberto"}</span></div>`:`<p class="note">Este paciente ainda não tem link. Ele é criado na publicação do programa, ou agora.</p><button class="btn small" data-a="gerarlink">Gerar link</button>`}
+     <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div class="row between"><div><b>Treino em qualquer lugar</b><div class="note">${E.livre&&E.livre.erro?"Não consegui ler: "+esc(E.livre.erro):E.livre&&E.livre.on?"Liberado em "+brA(String(E.livre.em).slice(0,10))+". O paciente vê a aba Qualquer lugar.":"Não liberado. Treinos com o peso do corpo para viagem e hotel."}</div></div>${E.livre&&!E.livre.erro?(E.livre.on?`<button class="btn small ghost" data-a="livreoff">Retirar</button>`:`<button class="btn small" data-a="livreon">Liberar</button>`):""}</div></div>
      <p class="note" style="margin:10px 0 0">O link é pessoal e abre só o treino deste paciente. O envio ao paciente sai pela Daniela, não pelo médico.</p></div></div>`;
   main.innerHTML=h;
 }
@@ -359,7 +360,11 @@ async function carregarBase(){
   E.pacientes=pac||[]; E.modelos=(progs||[]).filter(p=>p.modelo); E.comProg=new Set((progs||[]).filter(p=>!p.modelo).map(p=>p.patient_id));
   E.metodos=mets||[]; E.exs=exs||[]; E.exMap=Object.fromEntries(E.exs.map(e=>[e.id,e]));
 }
-async function carregarPaciente(){ E.P=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } render(); }
+async function carregarPaciente(){ E.P=null; E.livre=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } await lerLivre(); render(); }
+/* HAG_TREINO_LIVRE_v1 (13/10/2026): treino em qualquer lugar (peso do corpo), liberado paciente a paciente pelo Dr. Henrique.
+   Liberar grava uma linha em treino_livre_acesso; o app do paciente passa a mostrar a aba "Qualquer lugar" com as sessões
+   aprovadas (treino_livres.aprovado). Retirar apaga a linha. */
+async function lerLivre(){ try{ const r=await api(`treino_livre_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&select=liberado_em`); E.livre={on:!!(r&&r.length), em:r&&r[0]?r[0].liberado_em:null}; }catch(e){ E.livre={erro:e.message}; } }
 function render(){ if(E.aba==="pac") renderPaciente(); else if(E.aba==="mod") renderModelos(); else renderExs(); }
 async function acao(fn,okMsg){ try{ await fn(); if(okMsg) E.msg={tipo:"ok",texto:okMsg}; }catch(e){ E.msg={tipo:"err",texto:e.message||String(e)}; } render(); }
 const mover=(arr,i,d)=>{ const j=i+d; if(j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],arr[i]]; };
@@ -372,6 +377,8 @@ main.addEventListener("click",e=>{
   if(a==="demodelo") return acao(async()=>{ const m=document.getElementById("modsel").value; if(!m) throw new Error("escolha um modelo"); const id=await rpc("hag_treino_clonar",{p_programa:m,p_patient_id:E.pid,p_modo:"paciente"}); E.comProg.add(E.pid); await abrirEditor(id); },"Rascunho criado a partir do modelo. Ajuste e publique.");
   if(a==="duplicar") return acao(async()=>{ await rpc("hag_treino_clonar",{p_programa:v,p_patient_id:null,p_modo:"modelo"}); await carregarBase(); },"Modelo duplicado.");
   if(a==="liberar") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_liberacoes",{method:"POST",body:{patient_id:E.pid,exercicio_id:v,por:(s&&s.user)||"painel"}}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Progressão liberada.");
+  if(a==="livreon") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_livre_acesso",{method:"POST",body:{patient_id:E.pid,por:(s&&s.user)||"painel"},prefer:"resolution=ignore-duplicates"}); await lerLivre(); },"Treino em qualquer lugar liberado. Aparece no app do paciente na próxima vez que ele abrir.");
+  if(a==="livreoff") return acao(async()=>{ await api(`treino_livre_acesso?patient_id=eq.${encodeURIComponent(E.pid)}`,{method:"DELETE"}); await lerLivre(); },"Treino em qualquer lugar retirado deste paciente.");
   if(a==="gerarlink") return acao(async()=>{ await rpc("hag_treino_link",{p_patient_id:E.pid}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Link criado.");
   if(a==="copiar"){ const t=document.getElementById("link").textContent; return acao(async()=>{ await navigator.clipboard.writeText(t); },"Link copiado."); }
   if(p){
