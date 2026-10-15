@@ -77,6 +77,9 @@ svg text{font-family:var(--mono)}
 .item{display:grid;grid-template-columns:minmax(170px,2fr) repeat(5,58px) 86px minmax(110px,1.4fr) auto;gap:6px;align-items:end;padding:8px 0;border-top:1px solid var(--line)}
 .item input,.item select{width:100%;padding:6px 6px}
 @media (max-width:860px){.item{grid-template-columns:repeat(3,1fr)}}
+/* HAG_TREINO_CIRCUITO_v1 */
+.item .circ-ed{grid-column:1/-1;display:grid;grid-template-columns:minmax(150px,1.4fr) minmax(150px,1.2fr) 90px 130px;gap:6px;align-items:end;opacity:.92}
+@media (max-width:860px){.item .circ-ed{grid-template-columns:repeat(2,1fr)}}
 .f{display:flex;flex-direction:column}
 .msg{padding:10px 12px;border-radius:8px;font-size:14px}
 .msg.ok{background:var(--good-bg);color:var(--good)} .msg.err{background:var(--crit-bg);color:var(--crit)}
@@ -237,7 +240,9 @@ function renderPaciente(){
 /* ---------- editor de programa (rascunho ou modelo) ---------- */
 function progParaEdicao(r){
   return {id:r.id, patient_id:r.patient_id, modelo:r.modelo, status:r.status, versao:r.versao, nome:r.nome||"", objetivo:r.objetivo||"", nivel:r.nivel||"", regra:r.regra||"dupla", sessoes_semana:r.sessoes_semana||3, bloco_nome:r.bloco_nome||"", bloco_objetivo:r.bloco_objetivo||"", bloco_papeis:(r.bloco_papeis||[]).join(", "), observacao:r.observacao||"",
-    dias:(r.treino_dias||[]).sort((a,b)=>a.ordem-b.ordem).map(d=>({_id:d.id,nome:d.nome||"",tipo:d.tipo_sessao||"",foco:d.foco||"",itens:(d.treino_prescricao||[]).sort((a,b)=>a.ordem-b.ordem).map(i=>({ex:i.exercicio_id,series:i.series,min:i.reps_min??"",max:i.reps_max??"",rir:i.rir_alvo,desc:i.descanso_seg,carga:i.carga_inicial??"",regra:i.regra||"",alvo:i.alvo||"",nota:i.nota||""}))}))};
+    dias:(r.treino_dias||[]).sort((a,b)=>a.ordem-b.ordem).map(d=>({_id:d.id,nome:d.nome||"",tipo:d.tipo_sessao||"",foco:d.foco||"",itens:(d.treino_prescricao||[]).sort((a,b)=>a.ordem-b.ordem).map(i=>({ex:i.exercicio_id,series:i.series,min:i.reps_min??"",max:i.reps_max??"",rir:i.rir_alvo,desc:i.descanso_seg,carga:i.carga_inicial??"",regra:i.regra||"",alvo:i.alvo||"",nota:i.nota||"",
+      /* HAG_TREINO_CIRCUITO_v1 (15/10/2026): circuito, reps por volta, trabalho por tempo e descanso entre voltas; o método vai junto para não se perder ao salvar */
+      bloco:i.bloco||"",rv:(i.reps_volta||[]).join("/"),trab:i.trabalho_seg??"",dv:i.descanso_volta_seg??"",metodo:i.metodo_id||null}))}))};
 }
 async function abrirEditor(id){
   try{ const r=await api(`treino_programas?id=eq.${id}&select=*,treino_dias(*,treino_prescricao(*))`); if(!r||!r.length) throw new Error("programa não encontrado"); E.edit=progParaEdicao(r[0]); E.msg=null; E.publicar=null; render(); window.scrollTo(0,0); }
@@ -263,8 +268,9 @@ function renderEditor(){
        ${ro?"":`<button class="link" data-a="dsobe" data-d="${di}" ${di===0?"disabled":""}>↑</button><button class="link" data-a="ddesce" data-d="${di}" ${di===p.dias.length-1?"disabled":""}>↓</button><button class="link" data-a="dremove" data-d="${di}" style="color:var(--crit)">remover dia</button>`}</div>
      ${d.itens.map((it,ii)=>{ const ex=EX(it.ex), forca=ex.modalidade==="forca"||ex.modalidade==="mobilidade"; const c=(k,lab,tipo)=>`<div class="f"><label class="lbl">${lab}</label><input type="${tipo||"number"}" data-d="${di}" data-i="${ii}" data-k="${k}" value="${esc(it[k])}" ${dis}></div>`;
        return `<div class="item"><div class="f"><label class="lbl">Exercício</label><select data-d="${di}" data-i="${ii}" data-k="ex" ${dis}>${exOptions(it.ex)}</select></div>
-        ${c("series",forca?"Séries":"Voltas")}${forca?c("min",ex.unidade==="seg"?"Seg mín":"Reps mín")+c("max",ex.unidade==="seg"?"Seg máx":"Reps máx")+c("rir","Sobrando"):`<div></div><div></div><div></div>`}${c("desc","Desc. (s)")}${c("carga","Carga inicial")}<div class="f"><label class="lbl">${forca?"Nota ao paciente":"Alvo da sessão"}</label><input type="text" list="metodos-${forca?"forca":"cardio"}" data-d="${di}" data-i="${ii}" data-k="${forca?"nota":"alvo"}" value="${esc(it[forca?"nota":"alvo"])}" ${dis}></div>
-        ${ro?"<div></div>":`<div class="row" style="gap:2px"><button class="link" data-a="isobe" data-d="${di}" data-i="${ii}" ${ii===0?"disabled":""}>↑</button><button class="link" data-a="idesce" data-d="${di}" data-i="${ii}" ${ii===d.itens.length-1?"disabled":""}>↓</button><button class="link" data-a="iremove" data-d="${di}" data-i="${ii}" style="color:var(--crit)" aria-label="Remover exercício">✕</button></div>`}</div>`; }).join("")}
+        ${c("series",forca?(String(it.bloco||"").trim()?"Voltas":"Séries"):"Voltas")}${forca?c("min",ex.unidade==="seg"?"Seg mín":"Reps mín")+c("max",ex.unidade==="seg"?"Seg máx":"Reps máx")+c("rir","Sobrando"):`<div></div><div></div><div></div>`}${c("desc","Desc. (s)")}${c("carga","Carga inicial")}<div class="f"><label class="lbl">${forca?"Nota ao paciente":"Alvo da sessão"}</label><input type="text" list="metodos-${forca?"forca":"cardio"}" data-d="${di}" data-i="${ii}" data-k="${forca?"nota":"alvo"}" value="${esc(it[forca?"nota":"alvo"])}" ${dis}></div>
+        ${ro?"<div></div>":`<div class="row" style="gap:2px"><button class="link" data-a="isobe" data-d="${di}" data-i="${ii}" ${ii===0?"disabled":""}>↑</button><button class="link" data-a="idesce" data-d="${di}" data-i="${ii}" ${ii===d.itens.length-1?"disabled":""}>↓</button><button class="link" data-a="iremove" data-d="${di}" data-i="${ii}" style="color:var(--crit)" aria-label="Remover exercício">✕</button></div>`}
+        ${forca?`<div class="circ-ed">${c("bloco","Circuito (mesmo nome = mesma volta)","text")}${c("rv","Reps por volta (15/12/10)","text")}${c("trab","Trabalho (s)")}${c("dv","Desc. entre voltas (s)")}</div>`:""}</div>`; }).join("")}
      ${ro?"":`<div><button class="btn small ghost" data-a="iadd" data-d="${di}">+ exercício</button></div>`}</div>`).join("")}
    <datalist id="metodos-forca">${E.metodos.filter(m=>m.modalidade==="forca"&&m.texto_paciente).map(m=>`<option value="${esc(m.texto_paciente)}" label="${esc(m.nome)}">`).join("")}</datalist>
    <datalist id="metodos-cardio">${E.metodos.filter(m=>m.modalidade!=="forca"&&m.texto_paciente).map(m=>`<option value="${esc(m.texto_paciente)}" label="${esc(m.nome)}">`).join("")}</datalist>
@@ -286,7 +292,13 @@ async function gravar(){
   for(let di=0;di<p.dias.length;di++){ const d=p.dias[di];
     const r=await api("treino_dias",{method:"POST",prefer:"return=representation",body:{programa_id:p.id,ordem:base+di+1,nome:d.nome.trim()||("Treino "+(di+1)),tipo_sessao:d.tipo.trim()||null,foco:d.foco.trim()||null}});
     const id=r[0].id; novos.push(id);
-    const itens=d.itens.filter(i=>E.exMap[i.ex]).map((i,ii)=>({dia_id:id,ordem:ii+1,exercicio_id:i.ex,series:Math.min(20,Math.max(1,parseInt(i.series)||1)),reps_min:num(i.min),reps_max:num(i.max),rir_alvo:Math.min(6,Math.max(0,num(i.rir)??2)),descanso_seg:Math.min(900,Math.max(0,num(i.desc)??90)),carga_inicial:num(i.carga),regra:campos.regra,alvo:String(i.alvo||"").trim()||null,nota:String(i.nota||"").trim()||null}));
+    const itens=d.itens.filter(i=>E.exMap[i.ex]).map((i,ii)=>({dia_id:id,ordem:ii+1,exercicio_id:i.ex,series:Math.min(20,Math.max(1,parseInt(i.series)||1)),reps_min:num(i.min),reps_max:num(i.max),rir_alvo:Math.min(6,Math.max(0,num(i.rir)??2)),descanso_seg:Math.min(900,Math.max(0,num(i.desc)??90)),carga_inicial:num(i.carga),regra:campos.regra,alvo:String(i.alvo||"").trim()||null,nota:String(i.nota||"").trim()||null,
+      /* HAG_TREINO_CIRCUITO_v1 */
+      bloco:String(i.bloco||"").trim().slice(0,20)||null,
+      reps_volta:(()=>{ const a=String(i.rv||"").split(/[\/,;\s]+/).map(x=>parseInt(x,10)).filter(n=>n>0&&n<1000).slice(0,12); return a.length?a:null; })(),
+      trabalho_seg:num(i.trab)==null?null:Math.min(600,Math.max(5,Math.round(num(i.trab)))),
+      descanso_volta_seg:num(i.dv)==null?null:Math.min(900,Math.max(0,Math.round(num(i.dv)))),
+      metodo_id:i.metodo||null}));
     if(itens.length) await api("treino_prescricao",{method:"POST",body:itens});
   }
   if(antigos.length) await api(`treino_dias?id=in.(${antigos.join(",")})`,{method:"DELETE"});
@@ -385,7 +397,7 @@ main.addEventListener("click",e=>{
     if(a==="dadd"){ p.dias.push({nome:"Treino "+(p.dias.length+1),tipo:"",foco:"",itens:[]}); return render(); }
     if(a==="dremove"){ if(b.dataset.c==="1"){ p.dias.splice(di,1); return render(); } b.dataset.c="1"; b.textContent="toque de novo para remover"; return; }
     if(a==="dsobe"){ mover(p.dias,di,-1); return render(); } if(a==="ddesce"){ mover(p.dias,di,1); return render(); }
-    if(a==="iadd"){ const ex=E.exs.find(x=>x.ativo&&x.modalidade==="forca"); p.dias[di].itens.push({ex:ex?ex.id:"",series:3,min:8,max:12,rir:2,desc:90,carga:"",regra:"",alvo:"",nota:""}); return render(); }
+    if(a==="iadd"){ const ex=E.exs.find(x=>x.ativo&&x.modalidade==="forca"); p.dias[di].itens.push({ex:ex?ex.id:"",series:3,min:8,max:12,rir:2,desc:90,carga:"",regra:"",alvo:"",nota:"",bloco:"",rv:"",trab:"",dv:"",metodo:null}); return render(); }
     if(a==="iremove"){ p.dias[di].itens.splice(ii,1); return render(); }
     if(a==="isobe"){ mover(p.dias[di].itens,ii,-1); return render(); } if(a==="idesce"){ mover(p.dias[di].itens,ii,1); return render(); }
     if(a==="gravar") return acao(gravar,"Rascunho salvo.");
