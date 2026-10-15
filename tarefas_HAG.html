@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261013-1022"></script>
+<script src="hag_auth.js?v=20261015-1113"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1230,6 +1230,16 @@ var DAN_TPL=[
   {id:'pedido_exames_pos_sinal',cat:'pre_consulta',nome:'Passo 6 · Pedido de exames',sub:'Só com o sinal pago e quando o Dr. Henrique pedir · vai junto com o PDF',texto:'[nome], o Dr. Henrique analisou o seu formulário e pediu os exames em anexo, para você fazer antes da consulta.\n\nAssim que os resultados saírem, me envie em PDF por aqui. Se algum atrasar, a consulta segue normalmente e ele avalia com você o que já estiver pronto.'},
   {id:'saldo_online',cat:'pre_consulta',nome:'Passo 7 · Restante da consulta online',sub:'Só consulta online · no dia, antes do horário · link do cartão: R$ 330, você assume as taxas, até 3x',texto:'[nome], hoje é o dia da sua consulta com o Dr. Henrique. Para deixar tudo certo antes do horário, fica o restante do valor: R$ 300 no Pix, ou R$ 330 no cartão, em até 3x de R$ 110.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nSe preferir cartão, me avisa que eu te envio o link.'},
   {id:'diretrizes',cat:'confirmacao',nome:'Diretrizes do consultório',sub:'Já vai dentro da confirmação do sinal · avulsa, para paciente de plano',texto:'[nome], para manter a organização e a qualidade do atendimento, seguimos as diretrizes do consultório:\n\n• Reagendamento pedido com até 72 horas de antecedência eu organizo sem custo. Fora desse prazo pode incidir a taxa de reserva de agenda, de R$ 350, porque o horário fica bloqueado. Ela não é cumulativa com a cobrança da consulta.\n• Atraso acima de 15 minutos pode reduzir ou inviabilizar a consulta. Nesse caso, eu remarco uma vez sem custo.\n• Consulta não confirmada até 3 horas antes tem a vaga liberada para a lista de espera.\n• Falta sem aviso pode implicar a retenção do sinal, ou a mesma taxa de reserva de agenda, também pelo horário bloqueado.\n\nImprevisto acontece: situação comprovada é analisada sem penalidade.\n\nIsso existe para garantir pontualidade e atenção total ao seu atendimento.'},
+  /* HAG_MSG_POS_DIAG_SILENCIO_v1 (15/10/2026). Caso Bianca: passou na diagnóstica (10/10), recebeu a indicação do Ciclo Reset,
+     ficou de formalizar depois do feriado e de pagar o restante da consulta, e parou de responder. A Daniela mandou quatro
+     mensagens soltas (feedback, "como deseja seguir", "conseguiu analisar?", "Pix ou link?"), cada uma pedindo uma resposta.
+     Regra: depois de 2 dias de silêncio, UMA mensagem com tudo pronto (valor, Pix, plano e prazo), espera 48 h, e um último
+     toque que encerra a reserva do plano e mantém o restante em aberto. Depois disso a Daniela para de escrever e avisa o
+     Dr. Henrique. Restante de consulta é dívida de serviço já prestado; plano é decisão da paciente: nunca condicionar um ao
+     outro, e nunca oferecer desconto para destravar. [valor], [plano] e [prazo] são escritos à mão (Copiar), e o botão do
+     WhatsApp fica travado enquanto estiverem no texto (ver _msgPendencias). */
+  {id:'pos_diag_silencio_t1',cat:'pos_consulta',nome:'Pós-diagnóstica · ficou de fechar e não respondeu · toque 1',sub:'Restante da consulta em aberto e plano indicado sem resposta, 2 dias de silêncio · uma mensagem só, com tudo pronto · Copiar e completar [valor], [plano] e [prazo] · espera 48 h',texto:'[nome], tudo bem? Para facilitar, deixo tudo organizado aqui.\n\n*Restante da sua consulta diagnóstica:* [valor].\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, me avisa que eu te envio o link.\n\n*Seu acompanhamento:* o [plano] indicado pelo Dr. Henrique segue reservado para você até [prazo], com a sua vaga na agenda. Para começar, é só me confirmar por aqui que eu organizo o pagamento e as próximas datas.\n\nSe ficou alguma dúvida sobre o plano ou sobre os valores, me conta que eu te ajudo.'},
+  {id:'pos_diag_silencio_t2',cat:'pos_consulta',nome:'Pós-diagnóstica · ficou de fechar e não respondeu · toque 2 (último)',sub:'48 h depois do toque 1, sem resposta · encerra a reserva do plano e mantém o restante em aberto · depois disso, para de escrever e avisa o Dr. Henrique',texto:'[nome], como não recebi o seu retorno, encerrei a reserva do [plano] e a vaga voltou para a agenda. Isso não fecha nenhuma porta: quando quiser começar, é só me chamar que eu verifico as datas e as condições do momento.\n\nO restante da consulta diagnóstica, [valor], segue em aberto.\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, eu te envio o link. Assim que fizer, me manda o comprovante por aqui.\n\nO Dr. Henrique segue à disposição.'},
   {id:'avaliacao_google',cat:'pos_consulta',nome:'Avaliação no Google',sub:'Só na primeira consulta, 1h depois',texto:'[nome], espero que a sua experiência tenha sido positiva. Se você quiser, a sua avaliação no Google ajuda muito:\nhttps://g.page/r/CVaxd8nwbLMaEAI/review'},
   {id:'boas_vindas_ciclo',cat:'onboarding',nome:'Boas-vindas ao ciclo',sub:'Paciente contratou, quem entrega o plano é o Dr.',texto:'[nome], seja muito bem-vindo(a) ao seu ciclo dentro do Método HAG.\n\nJá informei o Dr. Henrique sobre a confirmação do seu pagamento e solicitei a sua nota fiscal ao financeiro.\n\nO seu planejamento vem diretamente do Dr. Henrique, pelo canal de contato do seu plano.\n\nQualquer dúvida de organização, é comigo por aqui.'},
   {id:'checkin_semanal',cat:'check_ins',nome:'Check-in semanal',sub:'Essencial, Reset e Transforma · mensal e trimestral saem pelo disparo',texto:'[nome], chegou a hora do seu check-in da semana.\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_checkin_semanal_HAG.html\n\nÉ ele que permite ao Dr. Henrique acompanhar a sua semana e ajustar a estratégia sem esperar a próxima consulta. Não esqueça das fotos, seguindo o manual que você recebeu.\n\nSe puder responder ainda hoje, melhor. Quando terminar, me avisa.'},
@@ -1450,6 +1460,10 @@ function _msgPendencias(txt){
   if(txt.indexOf('[link]')>=0) f.push({tag:'[link]', como: _msgPacId
       ? 'não consegui emitir o link deste paciente agora, use o botão Enviar link na fila'
       : 'escolha o paciente no campo do topo, o link é individual e sai do cadastro dele'});
+  /* HAG_MSG_POS_DIAG_SILENCIO_v1: etiquetas que só a Daniela sabe (valor combinado, plano indicado, prazo da reserva). */
+  ['[valor]','[plano]','[prazo]'].forEach(function(tg){
+    if(txt.indexOf(tg)>=0) f.push({tag:tg, como:'escreva à mão: use Copiar e complete no WhatsApp'});
+  });
   return f;
 }
 /* HAG_MSG_DATA_DA_AGENDA_v1: o painel de mensagens precisa da agenda para
@@ -4613,7 +4627,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261013-1022';
+  var VERSAO = '20261015-1113';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
