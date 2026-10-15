@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#1B2745">
+<meta name="theme-color" content="#0A0E17">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="HAG Treino">
 <meta name="mobile-web-app-capable" content="yes">
@@ -17,20 +17,20 @@
      so devolvem o treino do dono do token. Nenhuma tabela treino_* tem leitura anonima.
      Sem IA: a sugestao de carga sai da regra do programa e mostra a conta. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:ital,wght@0,400;0,700;1,400&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
+/* HAG_TREINO_NOTURNO_v1 (15/10/2026). O Dr. Henrique escolheu a versao 2 "Noturno" entre tres direcoes
+   (canvas "HAG Treino · 3 versoes finais"): fundo quase preto, numeros grandes em Barlow Condensed, texto em Manrope,
+   ouro so na acao, verde no progresso, ambar no descanso. Tema escuro sempre (e a identidade escolhida), por isso
+   a antiga troca automatica claro/escuro saiu. So aparencia: nenhuma regra, registro ou envio mudou. */
 :root{
-  --bg:#F6F4EF; --surface:#FFFFFF; --cream:#FAF7F1; --ink:#1B2745; --ink-2:#4A5568; --muted:#6F7585;
-  --line:#E3DED3; --gold:#9C7A36; --gold-ui:#B8924A; --gold-soft:#EFE3C8; --navy:#1B2745; --on-navy:#F4EEDF;
-  --good:#2F7D5B; --warn:#A86A12; --crit:#B4413A; --good-bg:#E4F1EA; --warn-bg:#F7EDDC; --crit-bg:#F6E3E1;
-  --chart-1:#1B2745; --chart-2:#B8924A; --chart-grid:#ECE7DC; --btn:#1B2745; --on-btn:#F4EEDF;
-  --display:"Caladea",Georgia,serif; --body:"Carlito","Lato","Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --bg:#0A0E17; --surface:#131A28; --cream:#1A2233; --ink:#F1F2F5; --ink-2:#A9B1C2; --muted:#8A93A7;
+  --line:#252F44; --gold:#E3B964; --gold-ui:#E3B964; --gold-soft:rgba(227,185,100,.14); --navy:#1E2738; --on-navy:#F1F2F5;
+  --good:#5DD39E; --warn:#F0B35A; --crit:#FF8A80; --good-bg:rgba(93,211,158,.12); --warn-bg:rgba(240,179,90,.13); --crit-bg:rgba(255,138,128,.12);
+  --chart-1:#F1F2F5; --chart-2:#E3B964; --chart-grid:#1E2738; --btn:#E3B964; --on-btn:#1A1405;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Manrope","Helvetica Neue",Arial,sans-serif; --mono:"Manrope","Helvetica Neue",Arial,sans-serif;
+  --tile:#1E2738; --rest:#F0B35A; color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root{
-  --bg:#0F1524; --surface:#161E31; --cream:#1C2539; --ink:#ECE6D6; --ink-2:#B9BCC6; --muted:#9499A8;
-  --line:#2A3450; --gold:#D4B06A; --gold-ui:#D4B06A; --gold-soft:#3A3322; --navy:#0B1020; --on-navy:#F0E7D2;
-  --good:#5DBB8E; --warn:#E0A84A; --crit:#E07B72; --good-bg:#16302A; --warn-bg:#3A2E18; --crit-bg:#3A1F1E;
-  --chart-1:#E9E2CF; --chart-2:#D4B06A; --chart-grid:#252F48; --btn:#ECE6D6; --on-btn:#0F1524; color-scheme:dark}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
@@ -198,11 +198,106 @@ body>.hagi{width:calc(100% - 32px);max-width:528px}
 .hagi-b.sec{background:transparent;color:var(--ink,#1B2745)}
 .hagi-b[hidden]{display:none}
 @media print{.hagi{display:none!important}}
+
+/* HAG_TREINO_NOTURNO_v1: camada visual da versao Noturno */
+header.top{background:var(--bg);color:var(--ink);padding:calc(16px + env(safe-area-inset-top)) 16px 0}
+.brand{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:.28em;color:var(--ink)}
+.brand::first-line{color:var(--ink)}
+h1{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.01em;text-transform:uppercase;line-height:1}
+h2{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.01em}
+h3{font-family:var(--body);font-weight:700;font-size:17px}
+.kicker,.lbl,.grupo,.serie .k,.timer .lb,.iso .lb{font-family:var(--body);font-weight:700;letter-spacing:.14em}
+.kicker{color:var(--gold)}
+/* abas embaixo, ao alcance do polegar */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:4;margin:0;background:#0E1320;border-top:1px solid #1C2436;justify-content:space-around;padding:4px 4px calc(6px + env(safe-area-inset-bottom))}
+nav.tabs button{font-size:12.5px;color:#8A93A7;opacity:1;padding:12px 6px 10px;border-bottom:0;border-top:3px solid transparent;flex:1 1 0;min-height:48px}
+nav.tabs button[aria-selected="true"]{color:var(--gold);border-top-color:var(--gold);font-weight:800}
+.wrap{padding-bottom:110px}
+/* durante o treino, o topo encolhe e o exercicio ganha a tela */
+body.emtreino header.top h1,body.emtreino header.top .brand{display:none}
+body.emtreino header.top{padding-top:calc(4px + env(safe-area-inset-top))}
+.card{background:var(--surface);border:1px solid #1C2436;border-radius:18px}
+.bloco{background:var(--surface);color:var(--ink);border:1px solid #1C2436;border-radius:18px}
+.bloco .kicker{color:var(--gold)}
+.bloco .sem{border-top-color:#252F44;opacity:1;color:var(--muted)}
+.bloco .sem.on{border-top-color:var(--good);color:var(--ink)}
+.btn{border-radius:14px}
+.btn:not(.ghost):not(.small){font-family:var(--display);font-size:21px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;min-height:58px}
+.btn.ghost{border-color:var(--line);color:var(--ink)}
+.chip{font-family:var(--body);border-color:var(--line);background:var(--surface);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--ink);font-weight:700}
+.chip.pain[aria-pressed="true"]{background:var(--crit-bg);border-color:var(--crit);color:var(--crit)}
+.esc .g .chip{font-family:var(--display);font-size:24px;font-weight:600;min-height:52px;border-radius:12px;background:var(--tile);border-color:transparent}
+.esc .g .chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold)}
+.prog i{background:#1E2738}
+.prog i.d{background:var(--good)} .prog i.c{background:var(--ink)}
+.exname{font-family:var(--display);font-size:42px;font-weight:700;line-height:.95;text-transform:uppercase;letter-spacing:.01em;margin-top:6px}
+.cue{color:var(--ink-2)}
+.serie{padding:20px 4px 8px}
+.serie .alvo{font-family:var(--display);font-size:56px;font-weight:600;line-height:.95;letter-spacing:.005em}
+.motivo{color:var(--ink-2);font-size:13.5px}
+.porque{background:var(--cream);border-left:3px solid var(--gold)}
+.rirq{font-size:17px}
+.rirbtns{gap:8px}
+.rirbtns button{height:66px;border:0;border-radius:14px;background:var(--tile);color:var(--ink);font-family:var(--display);font-size:32px;font-weight:600}
+.rirbtns button.alvo{background:var(--gold-soft);color:var(--ink);box-shadow:inset 0 0 0 2px var(--gold)}
+.rirbtns small{font-family:var(--body);font-size:10.5px;color:var(--ink-2);opacity:1}
+.step{border-color:var(--line);background:var(--surface)}
+.step button{background:var(--tile);color:var(--ink)}
+.campo input{background:var(--tile);border-color:var(--line);color:var(--ink)}
+.crono,.big{font-family:var(--display);font-weight:600}
+.crono{font-size:72px}
+/* descanso: ambar, em painel cheio no rodape */
+.timer{background:#0E1320;color:var(--ink);border-top:1px solid #1C2436;box-shadow:0 -12px 32px rgba(0,0,0,.45);z-index:6}
+.timer .lb{color:var(--rest)}
+.timer .t{font-family:var(--display);font-size:72px;font-weight:600;color:var(--rest);min-width:150px}
+.timer button{border-color:var(--line);color:var(--ink);border-radius:12px;font-family:var(--display);font-size:18px;letter-spacing:.06em;min-height:48px}
+.timer .go{background:var(--gold);color:var(--on-btn);border:0;font-size:20px;letter-spacing:.1em;text-transform:uppercase}
+.timer .bar{background:#1E2738;height:8px}
+.timer .bar i{background:var(--rest)}
+.timer.pronto{background:#0F2A20}
+.timer.pronto .t{color:var(--good)}
+.timer.pronto .bar i{background:var(--good)}
+.timer .nx{color:var(--ink-2);opacity:1}
+body.descansando .wrap{padding-bottom:230px}
+.iso{background:var(--surface);border:1px solid var(--line);border-radius:18px}
+.iso .t{font-family:var(--display);font-size:96px;font-weight:600;line-height:.95}
+.iso .bar{background:#1E2738}
+.iso .bar i{background:var(--good)}
+.iso.segura{background:#0F1A16;border-color:var(--good);color:var(--ink)}
+.iso.segura .lb{color:var(--good)}
+.iso.segura .btn{background:var(--ink);color:var(--bg)}
+.iso.prep,.iso.troca{background:var(--gold-soft);border-color:var(--gold)}
+.iso.fim{background:var(--good-bg);border-color:var(--good)}
+/* video e alternativas */
+.vbtn{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--tile);color:var(--ink);font-weight:700;font-size:15px;cursor:pointer;text-align:left}
+.vbtn .pl{width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none}
+.vbtn .pl svg{fill:var(--on-btn)}
+.vbtn small{display:block;font-weight:500;font-size:12.5px;color:var(--ink-2)}
+.video{border-radius:14px}
+/* alerta sempre visivel, agora como faixa */
+.sos{display:flex;gap:10px;align-items:center;width:100%;margin-top:10px;padding:11px 12px;border:1px solid #5A2A2A;border-radius:12px;background:#1E1214;color:#FF9C94;text-decoration:none;text-align:left;font-size:13.5px;line-height:1.3}
+.sos::before{content:"!";flex:none;width:20px;height:20px;border-radius:50%;border:2px solid #FF9C94;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.alerta-cv{background:#1E1214;border-color:var(--crit)}
+.alerta-cv [data-a=cvok]{color:#2A0A08!important}
+[data-a=hxstop]{color:#06281A!important}
+.semaforo{border-radius:14px}
+.onb,.result{background:var(--cream)}
+.fila{background:var(--warn-bg);color:var(--ink)}
+.lock{background:var(--crit-bg);color:var(--crit)}
+.aviso{background:var(--warn-bg);color:var(--ink)}
+.navx .btn{min-height:54px;font-family:var(--body);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none}
+.link{color:var(--ink-2)}
+select{background:var(--tile);border-color:var(--line);color:var(--ink)}
+.hagi{border-radius:14px;border-left-color:var(--gold)}
+.hagi-b{background:var(--gold);border-color:var(--gold);color:var(--on-btn);border-radius:12px}
+.hagi-b.sec{background:transparent;color:var(--ink);border-color:var(--line)}
+.hagi-ic{background:var(--tile)}
 </style>
 </head>
 <body>
 <header class="top"><div class="in">
-  <div class="brand">Método HAG · Treino</div>
+  <div class="brand">HAG <span style="color:var(--gold)">TREINO</span></div>
   <h1 id="titulo">HAG Treino</h1>
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-v="hoje">Treino</button>
@@ -548,6 +643,7 @@ function semaforo(){
 
 /* ---------- telas ---------- */
 function render(){
+  document.body.classList.toggle("emtreino", S.fase==="treino"); /* HAG_TREINO_NOTURNO_v1: topo encolhe durante o treino */
   // HAG_INSTALAR_v1: o aviso de salvar na tela inicial só aparece na tela de entrada, nunca no meio do treino.
   if(window.hagInstalar) window.hagInstalar.vis(S.fase==='inicio');
   if(!TOKEN) return vHoje.innerHTML=`<div class="card"><h3>Abra pelo seu link</h3><p class="sub">Este aplicativo abre pelo link pessoal enviado pelo consultório do Dr. Henrique. Peça o link de novo se não o encontrar.</p></div>`;
@@ -650,11 +746,12 @@ function cabecalhoItem(it, ex, n, total){
      <div class="exname">${esc(ex.nome)}</div>
      ${ex.cue?`<p class="cue">${esc(ex.cue)}</p>`:""}
      <div class="row" style="gap:14px;margin-top:4px">
-       ${ex.video?`<button type="button" class="link" data-a="video" aria-expanded="${S.verVideo}">▶ Ver execução</button>`:""}
-       ${ex.pq?`<button type="button" class="link" data-a="pq" aria-expanded="${S.verPq}">🎯 Por que estou fazendo</button>`:""}
+       ${ex.pq?`<button type="button" class="link" data-a="pq" aria-expanded="${S.verPq}">Por que estou fazendo</button>`:""}
        ${it.id!==it.orig?`<button type="button" class="link" data-a="sub" data-v="">voltar ao ${esc(EX(it.orig).nome)}</button>`:subs.map(s=>`<button type="button" class="link" data-a="sub" data-v="${s}">Aparelho ocupado? ${esc(EX(s).nome)}</button>`).join("")}
      </div>
      ${S.verPq&&ex.pq?`<div class="porque" style="margin-top:8px">${esc(ex.pq)}</div>`:""}
+     ${ex.video&&!S.verVideo?`<button type="button" class="vbtn" data-a="video" aria-expanded="false"><span class="pl"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg></span><span>Ver execução<small>vídeo curto, em português</small></span></button>`:""}
+     ${ex.video&&S.verVideo?`<button type="button" class="link" data-a="video" aria-expanded="true">fechar vídeo</button>`:""}
      ${S.verVideo&&ex.video?`<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(ex.video)}?rel=0&playsinline=1" title="Execução: ${esc(ex.nome)}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div><p class="note" style="margin:6px 0 0">Vídeo de terceiro no YouTube, escolhido pelo consultório. Se ele disser algo diferente do seu plano, vale o plano.</p>`:""}`;
 }
 function rodapeTreino(){
