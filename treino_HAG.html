@@ -17,6 +17,7 @@
      so devolvem o treino do dono do token. Nenhuma tabela treino_* tem leitura anonima.
      Sem IA: a sugestao de carga sai da regra do programa e mostra a conta. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script>/* HAG_TEMA_CLARO_v1: aplica a escolha antes de desenhar, sem piscar */try{if(localStorage.getItem("hagtreino.tema")==="claro")document.documentElement.dataset.tema="claro"}catch(e){}</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
 /* HAG_TREINO_NOTURNO_v1 (15/10/2026). O Dr. Henrique escolheu a versao 2 "Noturno" entre tres direcoes
@@ -252,7 +253,7 @@ body.emtreino header.top{padding-top:calc(4px + env(safe-area-inset-top))}
 .timer .lb{color:var(--rest)}
 .timer .t{font-family:var(--display);font-size:72px;font-weight:600;color:var(--rest);min-width:150px}
 .timer button{border-color:var(--line);color:var(--ink);border-radius:12px;font-family:var(--display);font-size:18px;letter-spacing:.06em;min-height:48px}
-.timer .go{background:var(--gold);color:var(--on-btn);border:0;font-size:20px;letter-spacing:.1em;text-transform:uppercase}
+.timer .go{background:var(--btn);color:var(--on-btn);border:0;font-size:20px;letter-spacing:.1em;text-transform:uppercase}
 .timer .bar{background:#1E2738;height:8px}
 .timer .bar i{background:var(--rest)}
 .timer.pronto{background:#0F2A20}
@@ -271,7 +272,7 @@ body.descansando .wrap{padding-bottom:230px}
 .iso.fim{background:var(--good-bg);border-color:var(--good)}
 /* video e alternativas */
 .vbtn{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--tile);color:var(--ink);font-weight:700;font-size:15px;cursor:pointer;text-align:left}
-.vbtn .pl{width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none}
+.vbtn .pl{width:44px;height:44px;border-radius:50%;background:var(--btn);display:flex;align-items:center;justify-content:center;flex:none}
 .vbtn .pl svg{fill:var(--on-btn)}
 .vbtn small{display:block;font-weight:500;font-size:12.5px;color:var(--ink-2)}
 .video{border-radius:14px}
@@ -290,22 +291,64 @@ body.descansando .wrap{padding-bottom:230px}
 .link{color:var(--ink-2)}
 select{background:var(--tile);border-color:var(--line);color:var(--ink)}
 .hagi{border-radius:14px;border-left-color:var(--gold)}
-.hagi-b{background:var(--gold);border-color:var(--gold);color:var(--on-btn);border-radius:12px}
+.hagi-b{background:var(--btn);border-color:var(--btn);color:var(--on-btn);border-radius:12px}
 .hagi-b.sec{background:transparent;color:var(--ink);border-color:var(--line)}
 .hagi-ic{background:var(--tile)}
+
+/* HAG_TEMA_CLARO_v1 (15/10/2026): versao clara do Noturno, escolhida no botao do topo */
+:root[data-tema="claro"]{
+  --bg:#F3F4F6; --surface:#FFFFFF; --cream:#ECEEF2; --ink:#0E1320; --ink-2:#465063; --muted:#5B6578;
+  --line:#D9DDE5; --gold:#8A6516; --gold-ui:#C9973A; --gold-soft:rgba(201,151,58,.16); --navy:#E7EAF0; --on-navy:#0E1320;
+  --good:#1D8657; --warn:#9A5D08; --crit:#B83A30; --good-bg:rgba(29,134,87,.10); --warn-bg:rgba(154,93,8,.10); --crit-bg:rgba(184,58,48,.08);
+  --chart-1:#0E1320; --chart-2:#C9973A; --chart-grid:#E3E6EC; --btn:#E3B964; --on-btn:#1A1405; --tile:#ECEEF2; --rest:#9A5D08; color-scheme:light;
+}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tema{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+body.emtreino header.top .toprow{display:none}
+:root[data-tema="claro"] nav.tabs{background:#FFFFFF;border-top-color:#D9DDE5}
+:root[data-tema="claro"] nav.tabs button{color:#5B6578}
+:root[data-tema="claro"] nav.tabs button[aria-selected="true"]{color:var(--gold);border-top-color:var(--gold-ui)}
+:root[data-tema="claro"] .card,:root[data-tema="claro"] .bloco{border-color:#E3E6EC;box-shadow:0 1px 2px rgba(14,19,32,.04)}
+:root[data-tema="claro"] .bloco .sem{border-top-color:#D9DDE5}
+:root[data-tema="claro"] .prog i{background:#E3E6EC}
+:root[data-tema="claro"] .prog i.d{background:var(--good)} :root[data-tema="claro"] .prog i.c{background:var(--ink)}
+:root[data-tema="claro"] .timer{background:#FFFFFF;border-top-color:#D9DDE5;box-shadow:0 -10px 28px rgba(14,19,32,.12)}
+:root[data-tema="claro"] .timer.pronto{background:#E6F4EC}
+:root[data-tema="claro"] .timer .bar,:root[data-tema="claro"] .iso .bar{background:#E3E6EC}
+:root[data-tema="claro"] .iso.segura{background:#E9F6EF}
+:root[data-tema="claro"] .sos{border-color:#F0C9C5;background:#FDF1F0;color:#A3241B}
+:root[data-tema="claro"] .sos::before{border-color:#A3241B}
+:root[data-tema="claro"] .alerta-cv{background:#FDF1F0}
+:root[data-tema="claro"] .alerta-cv [data-a=cvok]{color:#FFFFFF!important}
+:root[data-tema="claro"] [data-a=hxstop]{color:#FFFFFF!important}
 </style>
 </head>
 <body>
 <header class="top"><div class="in">
-  <div class="brand">HAG <span style="color:var(--gold)">TREINO</span></div>
+  <div class="toprow"><div class="brand">HAG <span style="color:var(--gold)">TREINO</span></div><button type="button" class="tema" id="btn-tema" aria-label="Usar tela clara"></button></div>
   <h1 id="titulo">HAG Treino</h1>
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-v="hoje">Treino</button>
     <button role="tab" aria-selected="false" data-v="prog">Meu programa</button>
-    <button role="tab" aria-selected="false" data-v="livre" id="tab-livre" hidden>Qualquer lugar</button>
+    <button role="tab" aria-selected="false" data-v="livre" id="tab-livre" hidden>Em viagem</button>
     <button role="tab" aria-selected="false" data-v="evo">Estou evoluindo?</button>
   </nav>
 </div></header>
+<script>
+/* HAG_TEMA_CLARO_v1 (15/10/2026). Pedido do Dr. Henrique: versao clara do Noturno para quem prefere tela clara.
+   O padrao continua escuro (a identidade escolhida); o botao do topo troca e lembra a escolha neste aparelho. */
+(function(){
+  var b=document.getElementById("btn-tema"); if(!b) return;
+  var SOL='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var LUA='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+  function ap(c){ var r=document.documentElement; if(c) r.dataset.tema="claro"; else delete r.dataset.tema;
+    var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=c?"#F3F4F6":"#0A0E17";
+    b.setAttribute("aria-label", c?"Usar tela escura":"Usar tela clara"); b.title=b.getAttribute("aria-label"); b.innerHTML=c?LUA:SOL; }
+  var c=false; try{ c=localStorage.getItem("hagtreino.tema")==="claro"; }catch(e){}
+  ap(c);
+  b.addEventListener("click", function(){ c=!c; try{ localStorage.setItem("hagtreino.tema", c?"claro":"escuro"); }catch(e){} ap(c); });
+})();
+</script>
 <main class="wrap">
   <section class="view" id="v-hoje"><p class="note">Carregando o seu treino…</p></section>
   <section class="view" id="v-prog" hidden></section>
@@ -613,7 +656,7 @@ function diaSugerido(){
 const NIVEL = {iniciante:"iniciante", intermediario:"intermediário"};
 const livres = () => (CTX && Array.isArray(CTX.livres)) ? CTX.livres : [];
 const livreBruto = id => livres().find(l=>l.id===id) || null;
-function livreDia(id){ const L=livreBruto(id); if(!L) return null; return {id:null, nome:`Qualquer lugar · ${L.nome} · ${NIVEL[L.nivel]||L.nivel}`, tipo:"Qualquer lugar", foco:L.foco||"", itens:(L.itens||[]).map(i=>({...i, livre:true}))}; }
+function livreDia(id){ const L=livreBruto(id); if(!L) return null; return {id:null, nome:`Em viagem · ${L.nome} · ${NIVEL[L.nivel]||L.nivel}`, tipo:"Qualquer lugar", foco:L.foco||"", itens:(L.itens||[]).map(i=>({...i, livre:true}))}; }
 const diaAtual = () => { if(S.livre){ const L=livreDia(S.livre); if(L) return L; } const p=prog(); return p.dias.find(d=>d.id===S.diaId) || p.dias[0]; };
 function itens(){ return diaAtual().itens.map(it=>{ const id=S.sub[it.ex]||it.ex; return {...it, orig:it.ex, id, mod:EX(id).mod, ns:it.series||1}; }); }
 function minutosDe(its){
@@ -653,7 +696,7 @@ function render(){
   if(S.fase==="fim" && S.salvo) return renderSalvo();
   if(S.livre && !livreDia(S.livre)) S.livre=null;
   if(S.livre){ if(S.fase==="treino") return renderItem(); if(S.fase==="fim") return renderFim(); return renderLivreInicio(); }
-  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>${livres().length?`<button type="button" class="btn wide" data-a="irlivre">Treino em qualquer lugar (peso do corpo)</button>`:""}<button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
+  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>${livres().length?`<button type="button" class="btn wide" data-a="irlivre">Treinos Em viagem (peso do corpo)</button>`:""}<button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
   if(S.fase==="inicio") return renderInicio();
   if(S.fase==="treino") return renderItem();
   if(S.fase==="fim") return S.salvo ? renderSalvo() : renderFim();
@@ -691,7 +734,7 @@ function renderInicio(){
   const d=diaAtual(), its=itens(), sm=semaforo(), ds=diaDaSemana(p), visto=store.get("hagtreino.rir.visto",false);
   const hojeTxt=`${diaSem(HOJE())}, ${br(HOJE())}`, nome=(CTX&&CTX.paciente&&CTX.paciente.nome)||"";
   const completo=Object.values(S.pront).every(v=>v!=null);
-  const extra=`${livres().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">Sem academia hoje? Treino em qualquer lugar</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje (esporte, aula, treino fora do programa)</button>`;
+  const extra=`${livres().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">Sem academia hoje? Treinos Em viagem</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje (esporte, aula, treino fora do programa)</button>`;
   if(!S.prontOk && !S.prontPulou){
     const esc_=(k,t,de,ate,e,dd)=>`<div class="esc"><div class="t">${t}</div><div class="g" style="grid-template-columns:repeat(${ate-de+1},1fr)">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div><div class="l"><span>${de} = ${e}</span><span>${ate} = ${dd}</span></div></div>`;
     vHoje.innerHTML=`${filaHTML()}
@@ -734,11 +777,11 @@ function renderLivreInicio(){
   const resto=its.filter(it=>!aq.includes(it) && !dq.includes(it));
   const linha=(it,n)=>{ const r=resumoItem(it); return `<div class="it"><div><b>${n?n+". ":""}${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div>${it.nota&&!/^(aquecimento|desaquecimento)$/i.test(it.nota)?`<div class="s">${esc(it.nota)}</div>`:""}</div><div class="r">${r.r}</div></div>`; };
   vHoje.innerHTML=`${filaHTML()}
-  <div><div class="kicker">Qualquer lugar · ${esc(NIVEL[L.nivel]||L.nivel)}</div><h2>${esc(L.nome)}</h2><p class="sub">${L.foco?esc(L.foco)+" · ":""}cerca de ${minutosEstimados()} min · só o peso do corpo</p></div>
+  <div><div class="kicker">Em viagem · ${esc(NIVEL[L.nivel]||L.nivel)}</div><h2>${esc(L.nome)}</h2><p class="sub">${L.foco?esc(L.foco)+" · ":""}cerca de ${minutosEstimados()} min · só o peso do corpo</p></div>
   <div class="card"><div class="lista">${aq.length?`<div class="grupo">Aquecimento</div>${comBlocos(aq,its,it=>linha(it,0))}<div class="grupo">Exercícios</div>`:""}${comBlocos(resto,its,(it,j)=>linha(it,aq.length?j+1:0))}${dq.length?`<div class="grupo">Desaquecimento</div>${dq.map(it=>linha(it,0)).join("")}`:""}</div></div>
   <p class="note" style="margin:0">Precisa de espaço para deitar, uma parede e uma cadeira firme. Cada exercício tem o vídeo da execução.</p>
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
-  <button type="button" class="link" data-a="livresair" style="align-self:center">voltar aos treinos de qualquer lugar</button>`;
+  <button type="button" class="link" data-a="livresair" style="align-self:center">voltar aos treinos Em viagem</button>`;
 }
 function cabecalhoItem(it, ex, n, total){
   const subs=it.livre?[]:(EX(it.orig).subs||[]).filter(s=>CTX.exercicios[s]); /* HAG_TREINO_LIVRE_v1: no hotel não há "aparelho ocupado" */
@@ -1163,7 +1206,7 @@ function renderLivre(){
   const tEvo=document.querySelector('nav.tabs [data-v="evo"]'); if(tEvo) tEvo.textContent=L.length?"Evolução":"Estou evoluindo?"; /* com 4 abas, o nome curto cabe na tela do celular */
   if(!L.length){ vLivre.innerHTML=""; return; }
   const niv=store.get("hagtreino.nivel","iniciante"), lista=L.filter(l=>l.nivel===niv);
-  vLivre.innerHTML=`<div><div class="kicker">Treino em qualquer lugar</div><h2>Sem academia hoje?</h2><p class="sub">Treinos com o peso do corpo para viagem, quarto de hotel ou dia corrido. Precisa de espaço para deitar, uma parede e uma cadeira firme. Use quando não der para fazer o treino do seu programa.</p></div>
+  vLivre.innerHTML=`<div><div class="kicker">Em viagem</div><h2>Sem academia hoje?</h2><p class="sub">Treinos com o peso do corpo para viagem, quarto de hotel ou dia corrido. Precisa de espaço para deitar, uma parede e uma cadeira firme. Use quando não der para fazer o treino do seu programa.</p></div>
   <div class="card"><div class="lbl">Nível</div><div class="chips" role="group" aria-label="Nível" style="margin-top:6px">${["iniciante","intermediario"].map(n=>`<button type="button" class="chip" data-a="nivel" data-v="${n}" aria-pressed="${n===niv}">${NIVEL[n]}</button>`).join("")}</div><p class="note" style="margin:8px 0 0">Comece pelo iniciante. O intermediário é para quando o iniciante ficar fácil, com todas as séries no topo da faixa. Na dúvida, fique no iniciante.</p></div>
   ${lista.map(l=>{ const its=(l.itens||[]); return `<div class="card livre"><div class="row between" style="align-items:flex-start"><div><h3>${esc(l.nome)}</h3><div class="meta">${l.foco?esc(l.foco)+" · ":""}cerca de ${esc(l.min)} min · ${its.length} exercícios</div></div></div>
     <button type="button" class="btn small" data-a="livrever" data-v="${esc(l.id)}" style="margin-top:10px">Ver e começar</button></div>`; }).join("")}`;
