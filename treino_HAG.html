@@ -7,9 +7,6 @@
 <meta name="theme-color" content="#1B2745">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="HAG Treino">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="icone-treino-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icone-treino-192.png">
 <title>HAG Treino</title>
 <!-- HAG_TREINO_v1 (01/10/2026)
      App do paciente. Entra pelo link pessoal (?t=TOKEN), nunca por login: as duas unicas
@@ -42,9 +39,8 @@ header.top{background:var(--navy);color:var(--on-navy);padding:calc(14px + env(s
 header.top .in{max-width:560px;margin:0 auto}
 .brand{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-ui)}
 h1{font-family:var(--display);font-weight:700;font-size:24px;margin:2px 0 0}
-nav.tabs{display:flex;gap:0;margin-top:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-nav.tabs::-webkit-scrollbar{display:none}
-nav.tabs button{font-size:15px;background:none;border:0;color:var(--on-navy);opacity:.72;padding:10px 6px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+nav.tabs{display:flex;gap:2px;margin-top:10px}
+nav.tabs button{font-size:15px;background:none;border:0;color:var(--on-navy);opacity:.72;padding:10px 12px;border-bottom:3px solid transparent;cursor:pointer}
 nav.tabs button[aria-selected="true"]{opacity:1;border-bottom-color:var(--gold-ui);font-weight:700}
 :focus-visible{outline:2px solid var(--gold-ui);outline-offset:2px}
 section.view{display:flex;flex-direction:column;gap:14px;padding-top:16px}
@@ -96,27 +92,6 @@ h3{font-family:var(--display);font-size:18px;margin:0}
 .motivo{font-size:13px;color:var(--ink-2);margin-top:6px}
 .lock{background:var(--crit-bg);color:var(--crit);font-size:14px;padding:10px 12px;border-radius:8px}
 .aviso{background:var(--warn-bg);color:var(--ink);font-size:14px;padding:10px 12px;border-radius:8px}
-/* HAG_TREINO_ENTRADA_v1 (09/10/2026): entrada em duas etapas, escalas grandes, escolha do esforço em toques */
-.esc{padding:10px 0;border-top:1px solid var(--line)} .esc:first-child{border-top:0;padding-top:2px}
-.esc .t{font-size:15.5px;font-weight:700;margin-bottom:6px}
-.esc .g{display:grid;gap:6px}
-.esc .g .chip{min-height:46px;font-size:17px;border-radius:10px;padding:0}
-.esc .l{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
-.grupo{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);padding:12px 0 2px}
-.grupo:first-child{padding-top:0}
-details.outro{font-size:14px} details.outro summary{cursor:pointer;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;padding:6px 0;text-align:center;list-style:none}
-details.outro .chips{margin-top:8px;justify-content:center}
-/* HAG_TREINO_PROGRAMA_v1 e HAG_TREINO_LIVRE_v1 (13/10/2026) */
-.escolha .chips{margin-top:8px}
-.escolha .chip small{font-family:var(--body);font-size:11px;color:var(--gold);margin-left:4px}
-.pdia .cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
-.pdia .tag{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-ui);border-radius:999px;padding:2px 8px;white-space:nowrap}
-.pdia .it .n{font-size:12.5px;color:var(--ink-2);margin-top:2px}
-.pdia .it .lk{grid-column:1/-1}
-.livre .meta{font-size:13px;color:var(--ink-2);margin-top:2px}
-.prontr{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--ink-2)}
-.rpe-g{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;margin-top:8px}
-.rpe-g .chip{min-height:44px;padding:0;border-radius:8px;font-size:15px}
 .rirq{font-size:16px;font-weight:700;text-align:center;margin:12px 0 2px}
 .rirh{font-size:12.5px;color:var(--muted);text-align:center;margin-bottom:10px}
 .rirbtns{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
@@ -141,25 +116,7 @@ details.outro .chips{margin-top:8px;justify-content:center}
 .timer button{background:transparent;color:var(--on-navy);border:1px solid rgba(244,238,223,.4);border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:700}
 .timer.pronto{background:var(--good)}
 .timer.pronto .lb{color:var(--on-navy)}
-body.descansando .wrap{padding-bottom:190px}
-/* HAG_TREINO_TIMER_v1 (09/10/2026): timer de isometria, descanso com barra e botões grandes de seguir */
-.timer .bar{flex-basis:100%;order:4;height:6px;border-radius:3px;background:rgba(244,238,223,.18);overflow:hidden}
-.timer .bar i{display:block;height:100%;background:var(--gold-ui);transition:width .2s linear}
-.timer.pronto .bar i{background:var(--on-navy)}
-.timer .go{background:var(--on-navy);color:var(--navy);border:0;font-size:16px;padding:12px 18px}
-.iso{margin-top:6px;border:1.5px solid var(--btn);border-radius:14px;padding:14px;text-align:center;background:var(--surface)}
-.iso .lb{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.iso .t{font-family:var(--display);font-size:64px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums;margin:4px 0}
-.iso .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0 12px}
-.iso .bar i{display:block;height:100%;background:var(--gold-ui);transition:width .2s linear}
-.iso.segura{background:var(--navy);color:var(--on-navy);border-color:var(--navy)}
-.iso.segura .lb{color:var(--gold-ui)}
-.iso.prep,.iso.troca{background:var(--gold-soft);border-color:var(--gold-ui)}
-.iso.fim{background:var(--good-bg,#E4F1EA);border-color:var(--good)}
-.iso .btn{min-height:52px}
-.iso.segura .btn{background:var(--on-navy);color:var(--navy)}
-.navx{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:4px}
-.navx .btn{min-height:52px}
+body.descansando .wrap{padding-bottom:150px}
 .sos{font-size:13px;color:var(--crit);background:none;border:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px 0}
 .alerta-cv{border:2px solid var(--crit);background:var(--crit-bg);border-radius:12px;padding:16px}
 .alerta-cv h3{color:var(--crit)}
@@ -174,26 +131,6 @@ svg text{font-family:var(--mono)}
 .video{position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden;margin-top:10px;background:#000}
 .video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .fila{font-size:13px;background:var(--warn-bg);border-radius:8px;padding:8px 12px}
-/* HAG_INSTALAR_v1: aviso "salve na tela do celular" */
-.hagi{box-sizing:border-box;margin:16px auto 0;width:100%;max-width:560px;background:var(--surface,#fff);border:1px solid var(--line,#E3DED3);border-left:3px solid var(--gold-ui,#B8924A);padding:12px 14px;display:flex;flex-direction:column;gap:10px;border-radius:2px}
-body>.hagi{width:calc(100% - 32px);max-width:528px}
-.hagi[hidden]{display:none}
-.hagi-top{display:flex;gap:12px;align-items:center}
-.hagi-top img{border-radius:10px;flex:none}
-.hagi-top b{display:block;font-family:var(--display,Georgia,serif);font-size:17.5px;line-height:1.2;color:var(--ink,#1B2745)}
-.hagi-top span{display:block;font-size:14px;color:var(--ink-2,#4A5568);line-height:1.3;margin-top:2px}
-.hagi-corpo[hidden]{display:none}
-.hagi-passos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.hagi-passos li{display:grid;grid-template-columns:24px 38px 1fr;gap:8px;align-items:start;background:var(--cream,#FAF7F1);padding:9px 10px}
-.hagi-n{font-family:var(--mono,monospace);font-size:12px;color:var(--gold,#9C7A36);padding-top:9px;text-align:center}
-.hagi-ic{width:38px;height:38px;border-radius:9px;background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);display:flex;align-items:center;justify-content:center}
-.hagi-t b{display:block;font-size:15px;color:var(--ink,#1B2745)}
-.hagi-t span{display:block;font-size:13.5px;color:var(--ink-2,#4A5568);line-height:1.35;margin-top:2px}
-.hagi-acoes{display:flex;flex-wrap:wrap;gap:8px}
-.hagi-b{flex:1 1 auto;min-height:42px;padding:8px 14px;border:1px solid var(--navy,#1B2745);background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);font:inherit;font-size:15px;font-weight:700;cursor:pointer;border-radius:2px}
-.hagi-b.sec{background:transparent;color:var(--ink,#1B2745)}
-.hagi-b[hidden]{display:none}
-@media print{.hagi{display:none!important}}
 </style>
 </head>
 <body>
@@ -202,92 +139,14 @@ body>.hagi{width:calc(100% - 32px);max-width:528px}
   <h1 id="titulo">HAG Treino</h1>
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-v="hoje">Treino</button>
-    <button role="tab" aria-selected="false" data-v="prog">Meu programa</button>
-    <button role="tab" aria-selected="false" data-v="livre" id="tab-livre" hidden>Qualquer lugar</button>
     <button role="tab" aria-selected="false" data-v="evo">Estou evoluindo?</button>
   </nav>
 </div></header>
 <main class="wrap">
   <section class="view" id="v-hoje"><p class="note">Carregando o seu treino…</p></section>
-  <section class="view" id="v-prog" hidden></section>
-  <section class="view" id="v-livre" hidden></section>
   <section class="view" id="v-evo" hidden></section>
 </main>
 <div class="timer" id="timer" hidden></div>
-<script>window.HAG_INSTALAR={app:'treino',nome:'HAG Treino',icone:'icone-treino',antes:'#v-hoje'};</script>
-<script>
-/* HAG_INSTALAR_v1 (09/10/2026). Pedido do Dr. Henrique: ensinar o paciente a pôr a página na tela inicial do celular.
-   Em vez de PDF, o passo a passo aparece aqui, na hora em que é útil: só no celular, só fora do modo app, só com o link
-   pessoal, e some quando ele salva ou toca em "Agora não" (volta uma vez, depois de 21 dias). O manifesto é montado aqui
-   com o endereço atual (com ?t=), para o ícone abrir sempre o link pessoal; o iPhone usa o endereço da página e o
-   apple-touch-icon. Nada sai do aparelho. */
-(function(){
-  var CFG=window.HAG_INSTALAR||{}; if(!CFG.app) return;
-  var ua=navigator.userAgent||'', ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1), android=/Android/.test(ua);
-  var dentro=/FBAN|FBAV|Instagram|Line\/|WhatsApp|; wv\)/.test(ua);
-  var app=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
-  var base=location.href.replace(/[^\/]*$/,'');
-  // manifesto com o link pessoal como endereço de partida
-  try{
-    var man={name:CFG.nome,short_name:CFG.nome,start_url:location.href.split('#')[0],scope:base,display:'standalone',
-      background_color:'#F6F4EF',theme_color:'#1B2745',
-      icons:[{src:base+CFG.icone+'-192.png',sizes:'192x192',type:'image/png'},{src:base+CFG.icone+'-512.png',sizes:'512x512',type:'image/png'}]};
-    var l=document.createElement('link'); l.rel='manifest'; l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man)); document.head.appendChild(l);
-  }catch(e){}
-  var K='hag.instalar.'+CFG.app, ls={get:function(){try{return JSON.parse(localStorage.getItem(K)||'null')}catch(e){return null}},set:function(v){try{localStorage.setItem(K,JSON.stringify(v))}catch(e){}}};
-  var pedido=null; window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); pedido=e; var b=document.getElementById('hagi-instalar'); if(b) b.hidden=false; });
-  window.addEventListener('appinstalled',function(){ ls.set({feito:Date.now()}); fechar(); });
-  function deveMostrar(){
-    if(app||!(ios||android)) return false;
-    if(CFG.ativo&&!CFG.ativo()) return false;
-    var s=ls.get(); if(s&&s.feito) return false;
-    if(s&&s.depois&&(Date.now()-s.depois<21*864e5||s.vezes>=2)) return false;
-    return true;
-  }
-  var SVG={
-    share:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    dots:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="19" cy="12" r="1.9" fill="currentColor"/></svg>',
-    vdots:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="5" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="19" r="1.9" fill="currentColor"/></svg>',
-    plus:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    out:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    ok:'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5 10 17l9-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-  };
-  function passo(n,ic,t,s){ return '<li><span class="hagi-n">'+n+'</span><span class="hagi-ic">'+ic+'</span><span class="hagi-t"><b>'+t+'</b>'+(s?'<span>'+s+'</span>':'')+'</span></li>'; }
-  function passos(){
-    var h='<ol class="hagi-passos">', n=1;
-    if(dentro) h+=passo(n++,SVG.out,'Abra no navegador','Esta página abriu dentro de outro app. Toque no menu dele e em "Abrir no '+(ios?'Safari':'Chrome')+'".');
-    if(ios){
-      h+=passo(n++,SVG.share,'Toque em Compartilhar','O quadrado com a seta para cima, na barra do Safari. No iPhone com sistema novo, ele fica dentro do botão ••• ao lado do endereço.');
-      h+=passo(n++,SVG.plus,'Toque em "Adicionar à Tela de Início"','Role a lista para baixo se não aparecer. Se surgir a opção de abrir como app, deixe ligada.');
-      h+=passo(n++,SVG.ok,'Toque em "Adicionar"','O ícone '+CFG.nome+' aparece na tela do celular e abre direto no seu acesso.');
-    } else {
-      h+=passo(n++,SVG.vdots,'Toque no menu ⋮','Os três pontinhos no canto de cima do Chrome.');
-      h+=passo(n++,SVG.plus,'Toque em "Adicionar à tela inicial"','Em alguns celulares aparece como "Instalar app".');
-      h+=passo(n++,SVG.ok,'Confirme em "Adicionar" ou "Instalar"','O ícone '+CFG.nome+' aparece na tela do celular e abre direto no seu acesso.');
-    }
-    return h+'</ol>';
-  }
-  var box=null;
-  function fechar(){ if(box){ box.remove(); box=null; } }
-  function montar(aberto){
-    if(box||!deveMostrar()) return;
-    var alvo=CFG.antes&&document.querySelector(CFG.antes); if(!alvo) return;
-    box=document.createElement('section'); box.className='hagi'; box.setAttribute('aria-label','Salvar na tela inicial');
-    box.innerHTML='<div class="hagi-top"><img src="'+CFG.icone+'-180.png" alt="" width="44" height="44"><div><b>Salve '+CFG.nome+' na tela do celular</b><span>Abre como app, com um toque, sem procurar o link no WhatsApp.</span></div></div>'+
-      '<div class="hagi-corpo"'+(aberto?'':' hidden')+'>'+passos()+'</div>'+
-      '<div class="hagi-acoes"><button type="button" class="hagi-b" id="hagi-instalar"'+(pedido?'':' hidden')+'>Instalar agora</button>'+
-      '<button type="button" class="hagi-b'+(pedido?' sec':'')+'" id="hagi-ver">'+(aberto?'Já salvei':'Mostrar como')+'</button><button type="button" class="hagi-b sec" id="hagi-depois">Agora não</button></div>';
-    alvo.parentNode.insertBefore(box,alvo);
-    box.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
-      if(b.id==='hagi-instalar'&&pedido){ pedido.prompt(); pedido.userChoice.then(function(r){ if(r&&r.outcome==='accepted'){ ls.set({feito:Date.now()}); fechar(); } }); return; }
-      if(b.id==='hagi-ver'){ var c=box.querySelector('.hagi-corpo'); if(c.hidden){ c.hidden=false; b.textContent='Já salvei'; } else { ls.set({feito:Date.now()}); fechar(); } return; }
-      if(b.id==='hagi-depois'){ var s=ls.get()||{}; ls.set({depois:Date.now(),vezes:(s.vezes||0)+1}); fechar(); }
-    });
-  }
-  function vis(v){ if(box) box.hidden=!v; }
-  window.hagInstalar={mostrar:montar,fechar:fechar,vis:vis,_estado:function(){return {ios:ios,android:android,dentro:dentro,app:app,mostra:deveMostrar()}}};
-})();
-</script>
 
 <script>
 (function(){
@@ -323,51 +182,6 @@ const HOJE = () => hojeLocal();
 /* histórico = o que o servidor tem + o que ainda está na fila deste aparelho */
 function historico(){ const h=(CTX&&CTX.historico)||[]; const ids=new Set(h.map(s=>s.client_id)); return h.concat(FILA.map(p=>({data:p.data, dia_id:p.dia_id, dia:p.dia, tipo:p.tipo, dur:p.dur, rpe:p.rpe, pront:p.pront, cv:p.cv, series:p.series||[], cardio:p.cardio||[], hyrox:p.hyrox||[], pendente:true}))); }
 
-/* ---------- HAG_TREINO_REGISTRO_POR_TIPO_v1 (09/10/2026) ----------
-   Pedido do Dr. Henrique: a pergunta "quantas ainda conseguiria fazer" não serve para todo exercício ("individualize,
-   analise caso a caso"). Cada item cai num tipo, e o tipo decide a pergunta que registra a série:
-   . carga  (força com repetições): repetições que ainda sairiam com boa técnica, 0 a 4+ (é o que move a carga);
-   . iso    (isometria, unidade seg): como terminou (com folga / no ponto / no limite), depois do timer;
-   . pot    (funcao Potência: saltos): qualidade dos saltos, porque em potência não se vai perto da falha;
-   . equil  (equilíbrio): quantas vezes precisou apoiar;
-   . reab   (funcao Reabilitação): dor durante a série, que é o que decide a progressão na reabilitação;
-   . aquec  (nota começa com "Aquecimento", ou regra "aquecimento") e mob (modalidade mobilidade): só "Feito".
-   Aquecimento e mobilidade gravam rir 5: fora do volume semanal de séries (que conta rir até 4) e da força estimada. */
-function tipoReg(it,ex){
-  const nota=String(it.nota||"").trim().toLowerCase();
-  if(it.regra==="aquecimento" || /^aquecimento\b/.test(nota)) return "aquec";
-  if(/^equilibrio/.test(it.id||"")) return "equil";
-  if(ex.f==="Reabilitação") return "reab";
-  if(ex.mod==="mobilidade") return "mob";
-  if(ex.f==="Potência") return "pot";
-  if(ex.un==="seg") return "iso";
-  return "carga";
-}
-function opcoesReg(tp, alvoRir){
-  const R=(t,sub,rir,dor,alvo)=>({t,sub,rir,dor,alvo});
-  if(tp==="iso") return {q:"Como você terminou?", h:"Toque para registrar a série", o:[R("Com folga","aguentaria bem mais",4,null,false),R("No ponto","firme até o fim",Math.min(alvoRir,4),null,true),R("No limite","tremendo no fim",0,null,false)]};
-  if(tp==="pot") return {q:"Como saíram os saltos?", h:"Se perder a qualidade, pare a série ali", o:[R("Todos bons","explosivos e aterrissagem macia",4,null,true),R("Caiu no fim","os últimos saíram mais fracos",2,null,false),R("Perdi qualidade","pare a série aqui",0,null,false)]};
-  if(tp==="equil") return {q:"Precisou apoiar o outro pé ou as mãos?", h:"Toque para registrar a série", o:[R("Nenhuma vez","",4,null,false),R("1 ou 2 vezes","",2,null,false),R("Várias vezes","",0,null,false)]};
-  if(tp==="reab") return {q:"Teve dor durante a série?", h:"Dor de até 2 é aceitável na reabilitação", o:[R("Sem dor","0",Math.min(alvoRir,4),0,false),R("Leve","1 a 2",Math.min(alvoRir,4),2,false),R("Moderada","3 a 4",Math.min(alvoRir,4),4,false),R("Forte","5 ou mais",Math.min(alvoRir,4),6,false)]};
-  return null;
-}
-function registroHTML(tp, un, alvoRir){
-  if(tp==="aquec"||tp==="mob") return `<div style="margin-top:12px"><button type="button" class="btn wide" data-a="reg" data-rir="5" style="min-height:56px">✓ FEITO</button></div>`;
-  const op=opcoesReg(tp, alvoRir);
-  if(op) return `<div class="rirq">${op.q}</div><div class="rirh">${op.h}</div>
-     <div class="rirbtns" style="grid-template-columns:repeat(${op.o.length},1fr)">${op.o.map(x=>`<button type="button" data-a="reg" data-rir="${x.rir}"${x.dor!=null?` data-dor="${x.dor}"`:""} class="${x.alvo?"alvo":""}" style="font-size:17px;line-height:1.15;padding:6px 4px">${esc(x.t)}${x.sub?`<small>${esc(x.sub)}</small>`:""}</button>`).join("")}</div>`;
-  return `<div class="rirq">Quantas ainda conseguiria fazer com boa técnica?</div>
-     <div class="rirh">Toque no número para registrar a série · alvo ${alvoRir}</div>
-     <div class="rirbtns">${[0,1,2,3,4].map(v=>`<button type="button" data-a="feito" data-v="${v}" class="${v===Math.min(alvoRir,4)?"alvo":""}" aria-label="Registrar série: ${v===4?"4 ou mais":v} sobrando">${v===4?"4+":v}<small>${v===0?"nenhuma":v===4?"ou mais":"sobrando"}</small></button>`).join("")}</div>`;
-}
-function rotuloFeita(x, tp, un, alvoRir){
-  const q = un==="seg" ? x.reps+"s" : (x.kg ? fkg(x.kg)+"×"+x.reps : x.reps+" reps");
-  if(tp==="aquec"||tp==="mob") return q+" · feito";
-  if(tp==="reab") return q+" · dor "+(x.dor||0);
-  const op=opcoesReg(tp,alvoRir==null?2:alvoRir); if(op){ const o=op.o.find(o=>o.rir===x.rir); return q+(o?" · "+o.t.toLowerCase():""); }
-  return q+" · "+(x.rir===4?"4+":x.rir);
-}
-
 /* ---------- regra de progressão, com o motivo escrito ---------- */
 function travado(exId){
   const h=historico().filter(s=>s.series.some(x=>x.ex===exId)); const ult=h.at(-1); if(!ult) return null;
@@ -376,20 +190,15 @@ function travado(exId){
   return lib?null:{data:ult.data, dor:Math.max(...ser.map(x=>x.dor))};
 }
 function sugestao(it){
-  const exId=it.id, ex=EX(exId), lo=it.min||1, hi=it.max||lo, regra=it.regra||"dupla", inc=+ex.inc||2.5;
-  /* HAG_TREINO_LIVRE_v1: no treino de qualquer lugar não há halter. Exercício de carga vira peso do corpo e só conta o
-     histórico feito sem carga; sem isso o app sugeriria no hotel a carga da academia. */
-  const lv=!!it.livre, un=(lv && (ex.un||"kg")==="kg") ? "pc" : (ex.un||"kg"), so=x=>x.ex===exId && (!lv || !(+x.kg));
-  const h=historico().filter(s=>s.series.some(so)); const ult=h.at(-1);
-  const u = un==="seg" ? "seg" : "reps", tp=tipoReg(it,ex);
-  if(tp==="aquec"||tp==="mob") return {kg:+it.carga||0, reps:lo, motivo:""};
-  if(!ult){ const kg=+it.carga||0; return {kg, reps:lo, primeira:true, motivo: (un==="kg"&&!kg&&it.carga!==0) ? "Primeira vez neste exercício: escolha uma carga com que sobrem umas 2 ou 3 repetições." : (un==="kg"&&it.carga===0) ? "Comece com o peso do corpo." : "Primeira vez neste exercício."}; }
-  const ser=ult.series.filter(so), kg=+ser[0].kg||0, quando=br(ult.data), feito=ser.map(x=>x.reps).join(", ");
+  const exId=it.id, ex=EX(exId), lo=it.min||1, hi=it.max||lo, regra=it.regra||"dupla", inc=+ex.inc||2.5, un=ex.un||"kg";
+  const h=historico().filter(s=>s.series.some(x=>x.ex===exId)); const ult=h.at(-1);
+  const u = un==="seg" ? "seg" : "reps";
+  if(!ult){ const kg=+it.carga||0; return {kg, reps:lo, primeira:true, motivo: (un==="kg"&&!kg) ? "Primeira vez neste exercício: escolha uma carga com que sobrem umas 2 ou 3 repetições." : "Primeira vez neste exercício."}; }
+  const ser=ult.series.filter(x=>x.ex===exId), kg=+ser[0].kg||0, quando=br(ult.data), feito=ser.map(x=>x.reps).join(", ");
   const tr=travado(exId);
   if(tr) return {kg, reps:ser[0].reps, trava:true, motivo:`Dor ${tr.dor} em ${quando}: a carga fica igual até o Dr. Henrique liberar.`};
   const topo=ser.every(x=>x.reps>=hi && (x.rir==null || x.rir>=(it.rir==null?2:it.rir)));
   if(un!=="kg"){ /* peso do corpo ou tempo: só sobe a repetição ou o tempo */
-    if(tp==="reab"){ const duas=h.slice(-2); if(duas.some(s=>s.series.filter(so).some(x=>(x.dor||0)>2))){ const r=Math.max(lo,Math.min(hi,ser[0].reps)); return {kg, reps:r, motivo:`Dor acima de 2 em uma das duas últimas sessões: mantenha ${r} ${u}.`}; } }
     if(topo) return {kg, reps:hi, motivo:`Em ${quando} você fez ${feito} ${u}: topo da faixa. Mantenha, e avise na consulta para subir a dificuldade.`};
     const passo = un==="seg"?5:1; const r=Math.min(hi, Math.max(...ser.map(x=>x.reps))+passo);
     return {kg, reps:r, motivo:`Em ${quando} você fez ${feito} ${u}. Agora buscar ${r}.`};
@@ -411,42 +220,20 @@ function sugestao(it){
 
 /* ---------- estado da sessão ---------- */
 const vHoje=document.getElementById("v-hoje"), vEvo=document.getElementById("v-evo"), elTimer=document.getElementById("timer");
-const vProg=document.getElementById("v-prog"), vLivre=document.getElementById("v-livre"), tabLivre=document.getElementById("tab-livre");
-const novoEstado = () => ({fase:"inicio", diaId:null, pront:{sono:null,energia:null,musc:null,art:null}, prontPulou:false, prontOk:false, rpe:null, durAj:null, i:0, sub:{}, feitas:{}, cardio:{}, voltas:{}, crono:null, ajuste:null, abrirAjuste:false, verPq:false, verVideo:false, inicio:null, cv:false, salvo:null, nota:"", livre:null, diaEscolhido:false});
+const novoEstado = () => ({fase:"inicio", diaId:null, pront:{sono:null,energia:null,musc:null,art:null}, prontPulou:false, i:0, sub:{}, feitas:{}, cardio:{}, voltas:{}, crono:null, ajuste:null, abrirAjuste:false, verPq:false, verVideo:false, inicio:null, cv:false, salvo:null, nota:""});
 let S = novoEstado();
 let wakeLock=null, audio=null, tick=null, descanso=null, tickCrono=null;
 
 const prog = () => CTX && CTX.programa;
-/* HAG_TREINO_ENTRADA_v1: programa com dias nomeados pela semana ("Sexta · Força em casa") abre no dia de hoje.
-   Antes abria no dia seguinte ao último feito, e numa sexta o app sugeria "Segunda". */
-const SEMANA=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
-const semAc = x => String(x||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-function diaDaSemana(p){
-  if(!p||!p.dias.length) return {usa:false};
-  const usa=p.dias.some(d=>SEMANA.some(w=>semAc(d.nome).startsWith(semAc(w))));
-  if(!usa) return {usa:false};
-  const hoje=semAc(diaSem(HOJE())), d=p.dias.find(d=>semAc(d.nome).startsWith(hoje));
-  return {usa:true, dia:d?d.id:null};
-}
 function diaSugerido(){
   const p=prog(); if(!p||!p.dias.length) return null;
-  const ds=diaDaSemana(p); if(ds.usa && ds.dia) return ds.dia;
   const ult=historico().filter(s=>s.dia_id && p.dias.some(d=>d.id===s.dia_id)).at(-1);
   if(!ult) return p.dias[0].id;
   const k=p.dias.findIndex(d=>d.id===ult.dia_id); return p.dias[(k+1)%p.dias.length].id;
 }
-/* HAG_TREINO_LIVRE_v1 (13/10/2026). Pedido do Dr. Henrique: treinos com o peso do corpo para fazer em qualquer lugar
-   (viagem, quarto de hotel). Vêm do banco (treino_livres) só para quem ele liberou e só os que ele aprovou. Quando a
-   pessoa escolhe um, S.livre guarda o id e o mesmo tocador do treino roda as séries; a sessão sobe com dia_id nulo e o
-   nome "Qualquer lugar · <treino> · <nível>", como a "outra atividade". */
-const NIVEL = {iniciante:"iniciante", intermediario:"intermediário"};
-const livres = () => (CTX && Array.isArray(CTX.livres)) ? CTX.livres : [];
-const livreBruto = id => livres().find(l=>l.id===id) || null;
-function livreDia(id){ const L=livreBruto(id); if(!L) return null; return {id:null, nome:`Qualquer lugar · ${L.nome} · ${NIVEL[L.nivel]||L.nivel}`, tipo:"Qualquer lugar", foco:L.foco||"", itens:(L.itens||[]).map(i=>({...i, livre:true}))}; }
-const diaAtual = () => { if(S.livre){ const L=livreDia(S.livre); if(L) return L; } const p=prog(); return p.dias.find(d=>d.id===S.diaId) || p.dias[0]; };
+const diaAtual = () => { const p=prog(); return p.dias.find(d=>d.id===S.diaId) || p.dias[0]; };
 function itens(){ return diaAtual().itens.map(it=>{ const id=S.sub[it.ex]||it.ex; return {...it, orig:it.ex, id, mod:EX(id).mod, ns:it.series||1}; }); }
-function minutosDe(its){ return Math.round(its.reduce((a,it)=>a+(it.mod==="forca"||it.mod==="mobilidade" ? it.ns*(40+(it.desc||60)) : 600),0)/60)+5; }
-function minutosEstimados(){ if(S.livre){ const L=livreBruto(S.livre); if(L&&L.min) return L.min; } return Math.round(itens().reduce((a,it)=>a+(it.mod==="forca"||it.mod==="mobilidade" ? it.ns*(40+(it.desc||60)) : 600),0)/60)+5; }
+function minutosEstimados(){ return Math.round(itens().reduce((a,it)=>a+(it.mod==="forca"||it.mod==="mobilidade" ? it.ns*(40+(it.desc||60)) : 600),0)/60)+5; }
 function semanaBloco(){ const p=prog(); if(!p.bloco_inicio) return null; const d=(new Date(HOJE()+"T12:00:00Z")-new Date(p.bloco_inicio+"T12:00:00Z"))/864e5; const n=(p.bloco_papeis||[]).length||4; return ((Math.floor(d/7)%n)+n)%n+1; }
 
 const scorePront = p => p.sono+p.energia+(5-p.musc)+(5-p.art);
@@ -461,16 +248,12 @@ function semaforo(){
 
 /* ---------- telas ---------- */
 function render(){
-  // HAG_INSTALAR_v1: o aviso de salvar na tela inicial só aparece na tela de entrada, nunca no meio do treino.
-  if(window.hagInstalar) window.hagInstalar.vis(S.fase==='inicio');
   if(!TOKEN) return vHoje.innerHTML=`<div class="card"><h3>Abra pelo seu link</h3><p class="sub">Este aplicativo abre pelo link pessoal enviado pelo consultório do Dr. Henrique. Peça o link de novo se não o encontrar.</p></div>`;
   if(!CTX) return vHoje.innerHTML=`<p class="note">Carregando o seu treino…</p>`;
   if(CTX.ok===false) return vHoje.innerHTML=`<div class="card"><h3>Link não reconhecido</h3><p class="sub">Peça um link novo ao consultório do Dr. Henrique.</p></div>`;
   if(S.fase==="ativ") return renderAtiv();
   if(S.fase==="fim" && S.salvo) return renderSalvo();
-  if(S.livre && !livreDia(S.livre)) S.livre=null;
-  if(S.livre){ if(S.fase==="treino") return renderItem(); if(S.fase==="fim") return renderFim(); return renderLivreInicio(); }
-  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>${livres().length?`<button type="button" class="btn wide" data-a="irlivre">Treino em qualquer lugar (peso do corpo)</button>`:""}<button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
+  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div><button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
   if(S.fase==="inicio") return renderInicio();
   if(S.fase==="treino") return renderItem();
   if(S.fase==="fim") return S.salvo ? renderSalvo() : renderFim();
@@ -487,71 +270,27 @@ function resumoItem(it){
   const ex=EX(it.id);
   if(it.mod==="cardio") return {s:esc(it.alvo||"cardio"), r:""};
   if(it.mod==="hyrox") return {s:esc(it.alvo||(it.ns>1?it.ns+" voltas":"cronometrado")), r:it.carga?fkg(it.carga)+" kg":""};
-  const sg=sugestao(it), un=ex.un, tp=tipoReg(it,ex);
-  if(tp==="aquec"||tp==="mob") return {s:`${it.ns>1?it.ns+" × ":""}${it.min||""}${it.max&&it.max!==it.min?" a "+it.max:""}${un==="seg"?" seg":ex.lat==="u"?" de cada lado":""}`, r:""};
-  if(un==="kg" && !sg.kg && it.carga===0) return {s:`${it.ns} × ${it.min||""}${it.max&&it.max!==it.min?" a "+it.max:""} · descanso ${mmss(it.desc||0)}`, r:"peso do corpo"};
+  const sg=sugestao(it), un=ex.un;
   return {s:`${it.ns} × ${it.min||""}${it.max&&it.max!==it.min?" a "+it.max:""} ${un==="seg"?"seg":""} · descanso ${mmss(it.desc||0)}`, r: un==="kg" ? (sg.kg?fkg(sg.kg)+" kg":"definir")+(sg.sobe?` <span class="pos">↑</span>`:"")+(sg.trava?` <span class="neg">trava</span>`:"") : (un==="pc"?"peso do corpo":"")+(sg.trava?` <span class="neg">trava</span>`:"")};
 }
 function renderInicio(){
-  /* HAG_TREINO_ENTRADA_v1 (09/10/2026). Pedido do Dr. Henrique: "Como você chega hoje" é a primeira coisa ao abrir;
-     depois de responder, a pessoa continua para o treino do dia e só então inicia. Antes ficava no fim de uma página
-     longa, depois da lista de exercícios, e passava despercebido. Etapa 1: as quatro perguntas (ou pular). Etapa 2: o
-     treino de hoje, com aquecimento e exercícios separados, e o botão de iniciar. */
   const p=prog(); if(!S.diaId) S.diaId=diaSugerido();
-  const d=diaAtual(), its=itens(), sm=semaforo(), ds=diaDaSemana(p), visto=store.get("hagtreino.rir.visto",false);
-  const hojeTxt=`${diaSem(HOJE())}, ${br(HOJE())}`, nome=(CTX&&CTX.paciente&&CTX.paciente.nome)||"";
-  const completo=Object.values(S.pront).every(v=>v!=null);
-  const extra=`${livres().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">Sem academia hoje? Treino em qualquer lugar</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje (esporte, aula, treino fora do programa)</button>`;
-  if(!S.prontOk && !S.prontPulou){
-    const esc_=(k,t,de,ate,e,dd)=>`<div class="esc"><div class="t">${t}</div><div class="g" style="grid-template-columns:repeat(${ate-de+1},1fr)">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div><div class="l"><span>${de} = ${e}</span><span>${ate} = ${dd}</span></div></div>`;
-    vHoje.innerHTML=`${filaHTML()}
-    <div><div class="kicker">${hojeTxt} · antes de começar</div><h2>${nome?`Oi, ${esc(nome)}. `:""}Como você chega hoje?</h2>
-    <p class="sub">Quatro toques. Isso não muda o seu treino: ajuda o Dr. Henrique a acompanhar a sua recuperação.</p></div>
-    <div class="card ready">${esc_("sono","Como foi o seu sono?",1,5,"péssimo","ótimo")}${esc_("energia","Sua energia agora",1,5,"sem energia","ótima")}${esc_("musc","Dor muscular",0,5,"nenhuma","forte")}${esc_("art","Dor nas articulações",0,5,"nenhuma","forte")}
-      ${sm?`<div class="semaforo ${sm.c}" style="margin-top:10px"><i></i><div><b>${sm.t}</b><br>${sm.s}</div></div>`:""}</div>
-    <button type="button" class="btn wide" data-a="prontok" ${completo?"":"disabled"}>${completo?"CONTINUAR ›":"Responda as quatro para continuar"}</button>
-    <button type="button" class="link" data-a="pular" style="align-self:center">Pular hoje e ir direto ao treino</button>
-    ${extra}`;
-    return;
-  }
-  const aq=its.filter(it=>it.mod!=="cardio"&&it.mod!=="hyrox"&&["aquec","mob"].includes(tipoReg(it,EX(it.id)))), resto=its.filter(it=>!aq.includes(it));
-  const linha=(it,n)=>{ const r=resumoItem(it); return `<div class="it"><div><b>${n?n+". ":""}${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div></div><div class="r">${r.r}</div></div>`; };
-  const temCarga=its.some(it=>it.mod!=="cardio"&&it.mod!=="hyrox"&&tipoReg(it,EX(it.id))==="carga");
-  const feitoHoje=historico().some(x=>x.data===HOJE()&&x.dia_id===d.id);
+  const d=diaAtual(), its=itens(), sm=semaforo(), visto=store.get("hagtreino.rir.visto",false);
+  const qz=(k,lab,de,ate,leg)=>`<div class="q"><div class="row between"><span style="font-size:14px">${lab}</span><span class="lbl" style="font-size:10.5px">${leg}</span></div><div class="chips">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div></div>`;
   vHoje.innerHTML=`${filaHTML()}${blocoHTML()}
-  ${p.dias.length>1?escolhaHTML(p,d):""}
-  <div><div class="kicker">${hojeTxt} · treino de hoje</div><h2>${esc(d.nome)}</h2><p class="sub">${d.foco?esc(d.foco)+" · ":""}cerca de ${minutosEstimados()} min</p></div>
-  ${ds.usa&&!ds.dia?`<div class="aviso">Hoje não tem treino marcado no seu programa: é dia de descanso. Se quiser treinar mesmo assim, escolha o treino acima.</div>`:""}
-  ${feitoHoje?`<div class="aviso">Você já registrou este treino hoje.</div>`:""}
-  ${S.prontOk?`<div class="prontr">${sm?`<span class="semaforo ${sm.c}" style="padding:6px 10px;flex:1"><i></i><span>${sm.t}</span></span>`:`<span>Respostas de hoje registradas.</span>`}<button type="button" class="link" data-a="prontedit">alterar</button></div>`:""}
-  <div class="card"><div class="lista">${aq.length?`<div class="grupo">Aquecimento</div>${aq.map(it=>linha(it,0)).join("")}<div class="grupo">Exercícios</div>`:""}${resto.map((it,j)=>linha(it,aq.length?j+1:0)).join("")}</div></div>
-  ${temCarga&&!visto?`<div class="onb"><div class="kicker">Antes do primeiro treino · 20 segundos</div><p style="margin:6px 0 0;font-size:15px">Nos exercícios com carga, ao fim de cada série vamos perguntar <b>quantas repetições você ainda conseguiria fazer com boa técnica</b>. Se não sairia mais nenhuma, é 0. Se sobravam duas, é 2. É isso que diz se a carga deve subir. Na dúvida, escolha o número menor. Nos outros exercícios a pergunta é outra, e aparece na tela.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`:""}
+  <div><div class="kicker">${diaSem(HOJE())}, ${br(HOJE())}${d.tipo?" · "+esc(d.tipo):""}</div><h2>${esc(d.nome)} · ${minutosEstimados()} min estimados</h2>${d.foco?`<p class="sub">${esc(d.foco)}</p>`:""}</div>
+  ${p.dias.length>1?`<div class="chips" role="group" aria-label="Escolher o treino">${p.dias.map(x=>`<button type="button" class="chip" data-a="dia" data-v="${x.id}" aria-pressed="${x.id===d.id}">${esc(x.nome)}</button>`).join("")}</div>`:""}
+  <div class="card"><div class="lista">${its.map(it=>{ const r=resumoItem(it); return `<div class="it"><div><b>${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div></div><div class="r">${r.r}</div></div>`; }).join("")}</div></div>
+  ${S.prontPulou?"":`<div class="card ready"><div class="row between"><h3>Como você chega hoje?</h3><button type="button" class="link" data-a="pular">pular</button></div><p class="note" style="margin:2px 0 6px">Quatro toques. Não muda o treino; ajuda o Dr. Henrique a ler a sua recuperação.</p>
+    ${qz("sono","Sono",1,5,"1 péssimo · 5 ótimo")}${qz("energia","Energia",1,5,"1 sem energia · 5 ótima")}${qz("musc","Dor muscular",0,5,"0 nenhuma · 5 forte")}${qz("art","Dor articular",0,5,"0 nenhuma · 5 forte")}
+    ${sm?`<div class="semaforo ${sm.c}" style="margin-top:8px"><i></i><div><b>${sm.t}</b><br>${sm.s}</div></div>`:""}</div>`}
+  ${visto?"":`<div class="onb"><div class="kicker">Antes do primeiro treino · 20 segundos</div><p style="margin:6px 0 0;font-size:15px">Ao fim de cada série vamos perguntar <b>quantas repetições você ainda conseguiria fazer com boa técnica</b>. Se parou porque não sairia mais nenhuma, é 0. Se sobravam duas, é 2. É isso que diz se a carga deve subir. Na dúvida, escolha o número menor.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`}
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
-  ${extra}`;
-}
-/* HAG_TREINO_ESCOLHA_v1 (13/10/2026). Pedido do Dr. Henrique: quem tem mais de um treino (ex.: A, B e C) escolhe no dia
-   qual vai fazer, em vez do sugerido. A escolha já existia, mas escondida num "Treinar outro dia" no fim da página;
-   agora fica no alto, com o sugerido marcado. */
-function escolhaHTML(p,d){
-  const sug=diaSugerido();
-  return `<div class="card escolha"><div class="lbl">Qual treino você vai fazer hoje?</div><div class="chips" role="group" aria-label="Escolher o treino">${p.dias.map(x=>`<button type="button" class="chip" data-a="dia" data-v="${x.id}" aria-pressed="${x.id===d.id}">${esc(x.nome)}${x.id===sug?`<small>sugerido</small>`:""}</button>`).join("")}</div></div>`;
-}
-/* HAG_TREINO_LIVRE_v1: tela de entrada do treino de qualquer lugar (sem as perguntas de prontidão: é treino curto, fora do programa) */
-function renderLivreInicio(){
-  const d=diaAtual(), L=livreBruto(S.livre), its=itens();
-  const aq=its.filter(it=>tipoReg(it,EX(it.id))==="aquec");
-  const resto=its.filter(it=>!aq.includes(it));
-  const linha=(it,n)=>{ const r=resumoItem(it); return `<div class="it"><div><b>${n?n+". ":""}${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div>${it.nota&&!/^aquecimento$/i.test(it.nota)?`<div class="s">${esc(it.nota)}</div>`:""}</div><div class="r">${r.r}</div></div>`; };
-  vHoje.innerHTML=`${filaHTML()}
-  <div><div class="kicker">Qualquer lugar · ${esc(NIVEL[L.nivel]||L.nivel)}</div><h2>${esc(L.nome)}</h2><p class="sub">${L.foco?esc(L.foco)+" · ":""}cerca de ${minutosEstimados()} min · só o peso do corpo</p></div>
-  <div class="card"><div class="lista">${aq.length?`<div class="grupo">Aquecimento</div>${aq.map(it=>linha(it,0)).join("")}<div class="grupo">Exercícios</div>`:""}${resto.map((it,j)=>linha(it,aq.length?j+1:0)).join("")}</div></div>
-  <p class="note" style="margin:0">Precisa de espaço para deitar, uma parede e uma cadeira firme. Cada exercício tem o vídeo da execução.</p>
-  <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
-  <button type="button" class="link" data-a="livresair" style="align-self:center">voltar aos treinos de qualquer lugar</button>`;
+  <button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje (esporte, aula, treino fora do programa)</button>`;
 }
 function cabecalhoItem(it, ex, n, total){
-  const subs=it.livre?[]:(EX(it.orig).subs||[]).filter(s=>CTX.exercicios[s]); /* HAG_TREINO_LIVRE_v1: no hotel não há "aparelho ocupado" */
-  return `<div class="row between"><div class="kicker">${n} de ${total}${it.mod==="cardio"?" · Cardio":it.mod==="hyrox"?" · Hyrox":tipoReg(it,ex)==="aquec"?" · Aquecimento":ex.f?" · "+esc(ex.f):""}</div>${it.id!==it.orig?`<span class="lbl" style="color:var(--warn)">substituto</span>`:""}</div>
+  const subs=(EX(it.orig).subs||[]).filter(s=>CTX.exercicios[s]);
+  return `<div class="row between"><div class="kicker">${n} de ${total}${ex.f?" · "+esc(ex.f):""}</div>${it.id!==it.orig?`<span class="lbl" style="color:var(--warn)">substituto</span>`:""}</div>
      <div class="exname">${esc(ex.nome)}</div>
      ${ex.cue?`<p class="cue">${esc(ex.cue)}</p>`:""}
      <div class="row" style="gap:14px;margin-top:4px">
@@ -563,11 +302,7 @@ function cabecalhoItem(it, ex, n, total){
      ${S.verVideo&&ex.video?`<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(ex.video)}?rel=0&playsinline=1" title="Execução: ${esc(ex.nome)}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div><p class="note" style="margin:6px 0 0">Vídeo de terceiro no YouTube, escolhido pelo consultório. Se ele disser algo diferente do seu plano, vale o plano.</p>`:""}`;
 }
 function rodapeTreino(){
-  const ult=S.i>=itens().length-1, nx=ult?null:itens()[S.i+1];
-  /* HAG_TREINO_ENTRADA_v1: sem nada registrado no item, o botão diz "Pular", para ninguém achar que ele registra */
-  const nada=!(S.feitas[S.i]||[]).length && !(S.cardio[S.i]&&S.cardio[S.i].ok) && !(S.voltas[S.i]||[]).length;
-  return `<div class="navx"><button type="button" class="btn ghost" data-a="volta" ${S.i===0?"disabled":""}>‹ Anterior</button><button type="button" class="btn ghost" data-a="pulaex">${ult?(nada?"Pular e encerrar ›":"Encerrar treino ›"):(nada?"Pular exercício ›":"Próximo exercício ›")}</button></div>
-   ${nx?`<p class="note" style="text-align:right;margin:2px 0 0">Depois: ${esc(EX(nx.id).nome)}</p>`:""}
+  return `<div class="row between"><button type="button" class="link" data-a="volta" ${S.i===0?"disabled":""}>‹ anterior</button><button type="button" class="link" data-a="pulaex">${S.i<itens().length-1?"pular ›":"encerrar ›"}</button></div>
    <button type="button" class="sos" data-a="cv">Dor no peito, palpitação, tontura ou falta de ar fora do normal</button>
    ${S.cv?`<div class="alerta-cv" role="alert"><h3>Pare o treino agora.</h3><p style="margin:6px 0">Sente-se ou deite-se. Se a dor no peito, a falta de ar ou a tontura não passarem em poucos minutos, ou se você desmaiou, <b>ligue 192</b>.</p><p class="note" style="margin:0 0 10px">O registro vai para o Dr. Henrique hoje. Não retome o treino antes de falar com o consultório.</p><button type="button" class="btn" data-a="cvok" style="background:var(--crit);color:#fff">Registrar e encerrar a sessão</button> <button type="button" class="link" data-a="cvno">toquei sem querer</button></div>`:""}`;
 }
@@ -581,23 +316,21 @@ function renderItem(){
     const ant=feitas.at(-1);
     S.ajuste={i:S.i,id:it.id,k,kg:ant?ant.kg:sg.kg,reps:ant?Math.max(sg.reps,0):sg.reps,sug:sg.kg,dor:0,local:null,lado:null,tipo:null,mexeu:false};
     if(ant) S.ajuste.reps=sg.reps;
-    if(un==="kg" && !S.ajuste.kg && !ant && it.carga!==0) S.abrirAjuste=true;
+    if(un==="kg" && !S.ajuste.kg && !ant) S.abrirAjuste=true;
   }
   const a=S.ajuste, alvoRir=it.rir==null?2:it.rir;
   const locais=["ombro","cotovelo","punho","lombar","quadril","joelho","tornozelo","outro"];
-  const tp=tipoReg(it,ex);
-  const alvoTxt = un==="seg" ? `${a.reps} seg` : un==="pc" ? `${a.kg?"+"+fkg(a.kg)+" kg · ":""}${a.reps} reps` : (!a.kg && it.carga===0) ? `peso do corpo · ${a.reps} reps` : `${fkg(a.kg)} kg · ${a.reps} reps`;
+  const alvoTxt = un==="seg" ? `${a.reps} seg` : un==="pc" ? `${a.kg?"+"+fkg(a.kg)+" kg · ":""}${a.reps} reps` : `${fkg(a.kg)} kg · ${a.reps} reps`;
   vHoje.innerHTML=`${barra}
    <div class="card">
      ${cabecalhoItem(it,ex,S.i+1,its.length)}
      ${sg.trava?`<div class="lock" style="margin-top:10px">${esc(sg.motivo)}</div>`:""}
      ${it.nota?`<div class="aviso" style="margin-top:10px">${esc(it.nota)}</div>`:""}
-     <div class="serie"><div class="k">Série ${k+1} de ${it.ns}</div><div class="alvo">${alvoTxt}</div>${!sg.trava&&k===0&&sg.motivo?`<div class="motivo">${esc(sg.motivo)}</div>`:""}</div>
-     ${un==="seg"?isoHTML(ex,a):""}
-     <div ${isoRodando()?"hidden":""}>
-     ${registroHTML(tp, un, alvoRir)}
-     </div>
-     <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="ajustar" aria-expanded="${S.abrirAjuste}">${tp==="aquec"||tp==="mob"?`Mudar ${un==="seg"?"o tempo":"as repetições"} ou registrar dor`:un==="kg"?`Alterar carga · reps · dor`:`Alterar ${un==="seg"?"tempo":"reps"} · dor`}</button>${a.mexeu?`<span class="lbl" style="color:var(--warn)">ajustado</span>`:""}</div>
+     <div class="serie"><div class="k">Série ${k+1} de ${it.ns}</div><div class="alvo">${alvoTxt}</div>${!sg.trava&&k===0?`<div class="motivo">${esc(sg.motivo)}</div>`:""}</div>
+     <div class="rirq">${un==="seg"?"Quanto tempo a mais aguentaria?":"Quantas ainda conseguiria fazer com boa técnica?"}</div>
+     <div class="rirh">Toque no número para registrar a série · alvo ${alvoRir}</div>
+     <div class="rirbtns">${[0,1,2,3,4].map(v=>`<button type="button" data-a="feito" data-v="${v}" class="${v===Math.min(alvoRir,4)?"alvo":""}" aria-label="Registrar série: ${v===4?"4 ou mais":v} sobrando">${v===4?"4+":v}<small>${v===0?"nenhuma":v===4?"ou mais":"sobrando"}</small></button>`).join("")}</div>
+     <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="ajustar" aria-expanded="${S.abrirAjuste}">Alterar carga · ${un==="seg"?"tempo":"reps"} · dor</button>${a.mexeu?`<span class="lbl" style="color:var(--warn)">ajustado</span>`:""}</div>
      ${S.abrirAjuste?`<div class="ajuste">
        ${un!=="seg"?`<div class="row between"><span class="lbl">${un==="pc"?"Carga extra (kg)":"Carga (kg)"}</span><div class="step"><button type="button" data-a="kg-" aria-label="Menos carga">−</button><output>${fkg(a.kg)}</output><button type="button" data-a="kg+" aria-label="Mais carga">+</button></div></div>`:""}
        <div class="row between"><span class="lbl">${un==="seg"?"Tempo (seg)":"Repetições"}</span><div class="step"><button type="button" data-a="r-" aria-label="Menos">−</button><output>${a.reps}</output><button type="button" data-a="r+" aria-label="Mais">+</button></div></div>
@@ -607,7 +340,7 @@ function renderItem(){
        <div><span class="lbl">Parece</span><div class="chips" style="margin-top:6px">${["muscular","articular","tendínea","não sei"].map(l=>`<button type="button" class="chip" data-a="tipo" data-v="${l}" aria-pressed="${a.tipo===l}">${l}</button>`).join("")}</div></div>
        ${a.dor>=4?`<div class="lock">Dor ${a.dor}: a carga deste exercício fica travada a partir da próxima sessão, até o Dr. Henrique liberar.</div>`:""}`:""}
      </div>`:""}
-     <div class="feitas">${feitas.length?feitas.map((s,j)=>`S${j+1} ${rotuloFeita(s,tp,un,alvoRir)}`).join("   "):"nenhuma série ainda"}</div>
+     <div class="feitas">${feitas.length?feitas.map((s,j)=>`S${j+1} ${un==="seg"?s.reps+"s":fkg(s.kg)+"×"+s.reps} · ${s.rir===4?"4+":s.rir}`).join("   "):"nenhuma série ainda"}</div>
    </div>${rodapeTreino()}`;
 }
 function renderCardio(it,ex,its,barra){
@@ -620,7 +353,7 @@ function renderCardio(it,ex,its,barra){
       <div class="grid2"><label class="campo"><span class="lbl">Distância (km)</span><input inputmode="decimal" data-c="km" value="${esc(c.km)}" placeholder="0,0"></label>
         <label class="campo"><span class="lbl">Tempo (min)</span><input inputmode="decimal" data-c="min" value="${esc(c.min)}" placeholder="0"></label></div>
       <div class="grid2"><label class="campo"><span class="lbl">FC média (opcional)</span><input inputmode="numeric" data-c="fc" value="${esc(c.fc)}" placeholder="bpm"></label>
-        <label class="campo"><span class="lbl">Min em zona 2 (se o relógio mostrar)</span><input inputmode="numeric" data-c="z2" value="${esc(c.z2)}" placeholder="min"></label></div>
+        <label class="campo"><span class="lbl">Min em zona 2 (opcional)</span><input inputmode="numeric" data-c="z2" value="${esc(c.z2)}" placeholder="min"></label></div>
       <button type="button" class="btn wide" data-a="cardiook">${S.i<its.length-1?"REGISTRAR E SEGUIR":"REGISTRAR"}</button>
       <p class="note" id="cardio-msg" style="margin:0"></p>
     </div></div>${rodapeTreino()}`;
@@ -669,19 +402,19 @@ function coletar(){
 const num = v => { const n=parseFloat(String(v==null?"":v).replace(",",".")); return isNaN(n)?null:n; };
 function renderFim(){
   const {series,cardio,hyrox}=coletar(); const el=S.inicio?Math.round((Date.now()-S.inicio)/60000):0; const dur=Math.max(1,el);
-  const partes=[series.length?`${series.length} ${series.length===1?"série":"séries"}`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} ${hyrox.length===1?"tempo":"tempos"}`:""].filter(Boolean).join(" · ")||"nada registrado";
+  const partes=[series.length?`${series.length} séries`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} tempos`:""].filter(Boolean).join(" · ")||"nada registrado";
   vHoje.innerHTML=`<div><div class="kicker">Fechar a sessão</div><h2>${partes}${S.cv?" · encerrada por sintoma":""}</h2></div>
-   <div class="card"><div class="lbl">Quão pesado foi o treino inteiro?</div><p class="note" style="margin:2px 0 0">0 é repouso; 10 é o máximo que você aguentaria. Pense no treino todo, não só no último exercício.</p>
-     <div class="rpe-g">${Array.from({length:11},(_,v)=>`<button type="button" class="chip" data-a="rpe" data-v="${v}" aria-pressed="${S.rpe===v}">${v}</button>`).join("")}</div>
-     <div class="note" style="margin-top:6px">${S.rpe!=null?`<b>${S.rpe}</b> · ${rpeTexto(S.rpe)}`:"Toque em um número."}</div></div>
-   <div class="card row between"><div><div class="lbl">Duração (min)</div><div class="note">medida pelo relógio do treino</div></div><div class="step"><button type="button" data-a="d-" aria-label="Menos 5 minutos">−</button><output id="dur">${S.durAj!=null?S.durAj:dur}</output><button type="button" data-a="d+" aria-label="Mais 5 minutos">+</button></div></div>
-   <button type="button" class="btn wide" data-a="salvar" ${(series.length||cardio.length||hyrox.length||S.cv)&&(S.rpe!=null||S.cv)?"":"disabled"}>${(S.rpe!=null||S.cv)?"SALVAR SESSÃO":"Escolha o esforço para salvar"}</button>
+   <div class="card"><label for="rpe" class="lbl">Quão pesado foi o treino inteiro? (0 a 10)</label>
+     <div class="row" style="margin-top:6px"><input type="range" id="rpe" min="0" max="10" value="${S.cv?5:7}" style="flex:1"><div class="big" id="rpe-v">${S.cv?5:7}</div></div>
+     <div class="note" id="rpe-t">${rpeTexto(S.cv?5:7)}</div></div>
+   <div class="card row between"><div><div class="lbl">Duração (min)</div><div class="note">medida pelo relógio do treino</div></div><div class="step"><button type="button" data-a="d-" aria-label="Menos 5 minutos">−</button><output id="dur">${dur}</output><button type="button" data-a="d+" aria-label="Mais 5 minutos">+</button></div></div>
+   <button type="button" class="btn wide" data-a="salvar" ${(series.length||cardio.length||hyrox.length||S.cv)?"":"disabled"}>SALVAR SESSÃO</button>
    <button type="button" class="link" data-a="voltartreino" style="align-self:center">voltar ao treino</button>
    <button type="button" class="link" data-a="descartar" style="align-self:center;color:var(--crit)">descartar esta sessão</button>`;
 }
 function renderSalvo(){
   const r=S.salvo;
-  vHoje.innerHTML=`${filaHTML()}<div class="result"><b>Sessão ${r.enviada?"salva":"guardada neste aparelho"}.</b> ${r.partes} · ${r.dur} min · esforço ${r.rpe} de 10.
+  vHoje.innerHTML=`${filaHTML()}<div class="result"><b>Sessão ${r.enviada?"salva":"guardada neste aparelho"}.</b> ${r.partes} · carga interna ${r.ci} (esforço ${r.rpe} × ${r.dur} min).
      ${r.n?`<br><span class="note">${r.um} de ${r.n} séries registradas com um toque.</span>`:""}
      ${r.enviada?"":`<br><span class="note">Sem sinal agora. Ela sobe sozinha quando a rede voltar; não precisa refazer.</span>`}
      ${r.rec.length?`<ul>${r.rec.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
@@ -691,75 +424,17 @@ function renderSalvo(){
    <button type="button" class="btn ghost wide" data-a="novo">Voltar ao início</button>`;
 }
 
-/* ---------- HAG_TREINO_TIMER_v1 (09/10/2026): timer de isometria ----------
-   Pedido do Dr. Henrique: exercício em isometria (unidade "seg") com timer do tempo a segurar, além do descanso.
-   Conta 3 s para a pessoa se posicionar, segura o tempo da série com bipes nos 3 últimos segundos e apita no fim.
-   Exercício unilateral (lat "u", vindo do banco) conta os dois lados, com 5 s para trocar. "Parei antes" grava o
-   tempo real (no unilateral, o menor dos lados). Relógio por horário (Date.now), como o descanso: não atrasa se a
-   tela travar um instante. */
-let tickIso=null;
-function bipCurto(){ try{ if(!audio) return; const o=audio.createOscillator(), g=audio.createGain(); o.frequency.value=660; g.gain.value=.12; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+.12); }catch(e){} }
-function isoAtual(){ const z=S.iso; return z && z.i===S.i && z.k===(S.feitas[S.i]||[]).length ? z : null; }
-function isoRodando(){ const z=isoAtual(); return !!(z && z.fase!=="fim"); }
-function isoParaTudo(){ clearInterval(tickIso); S.iso=null; }
-function isoHTML(ex,a){
-  const z=isoAtual(), lados=ex.lat==="u"?2:1;
-  if(!z) return `<div class="iso"><div class="lb">Isometria${lados>1?" · cada lado":""}</div><div class="t">${mmss(a.reps)}</div>
-     <button type="button" class="btn wide" data-a="isogo">▶ INICIAR TIMER</button>
-     <p class="note" style="margin:8px 0 0">Conta 3 segundos para você se posicionar, apita nos últimos segundos e no fim.${lados>1?" Depois de um lado, 5 segundos para trocar.":""}</p></div>`;
-  const rest=z.fase==="fim"?0:z.dur-(Date.now()-z.t0)/1000;
-  if(z.fase==="fim") return `<div class="iso fim"><div class="lb">Tempo feito</div><div class="t">${mmss(a.reps)}</div>
-     <p class="note" style="margin:0 0 10px">${z.lados>1?"Contando o lado em que você aguentou menos. ":""}Agora registre a série logo abaixo.</p>
-     <button type="button" class="btn small ghost" data-a="isogo">Refazer o tempo</button></div>`;
-  const lb=z.fase==="prep"?"Prepare-se":z.fase==="troca"?"Troque de lado":"Segure"+(z.lados>1?` · lado ${z.lado} de ${z.lados}`:"");
-  return `<div class="iso ${z.fase}"><div class="lb">${lb}</div><div class="t" id="iso-t">${z.fase==="segura"?mmss(rest):Math.max(1,Math.ceil(rest))}</div>
-     <div class="bar"><i id="iso-b" style="width:${Math.max(0,Math.min(100,100*(1-rest/z.dur)))}%"></i></div>
-     <button type="button" class="btn wide" data-a="isostop">${z.fase==="segura"?"PAREI ANTES":"CANCELAR"}</button></div>`;
-}
-function isoIniciar(){
-  const it=itens()[S.i], ex=EX(it.id); somPronto(); pararDescanso(); clearInterval(tickIso);
-  if(S.ajuste && S.iso && S.iso.alvo!=null && isoAtual()) S.ajuste.reps=S.iso.alvo;
-  S.iso={i:S.i, k:(S.feitas[S.i]||[]).length, alvo:S.ajuste.reps, lados:ex.lat==="u"?2:1, lado:1, fase:"prep", t0:Date.now(), dur:3, feito:[], ult:null};
-  tickIso=setInterval(isoTick,200); render();
-}
-function isoTick(){
-  const z=S.iso; if(!z || z.fase==="fim" || z.i!==S.i || S.fase!=="treino"){ clearInterval(tickIso); return; }
-  const rest=z.dur-(Date.now()-z.t0)/1000, s=Math.ceil(rest);
-  if(rest>0 && s<=3 && z.ult!==s && (z.fase==="segura"||z.fase==="prep")){ z.ult=s; bipCurto(); }
-  if(rest<=0){ z.ult=null;
-    if(z.fase==="prep"){ z.fase="segura"; z.t0=Date.now(); z.dur=Math.max(1,z.alvo); bip(); }
-    else if(z.fase==="segura"){ z.feito.push(z.alvo); if(z.lado<z.lados){ z.fase="troca"; z.t0=Date.now(); z.dur=5; bip(); } else return isoFim(); }
-    else if(z.fase==="troca"){ z.lado++; z.fase="segura"; z.t0=Date.now(); z.dur=Math.max(1,z.alvo); bip(); }
-    return render(); }
-  const el=document.getElementById("iso-t"); if(el) el.textContent=z.fase==="segura"?mmss(rest):String(Math.max(1,s));
-  const br_=document.getElementById("iso-b"); if(br_) br_.style.width=Math.max(0,Math.min(100,100*(1-rest/z.dur)))+"%";
-}
-function isoParar(){
-  const z=isoAtual(); if(!z) return;
-  if(z.fase==="prep"){ isoParaTudo(); return render(); }
-  if(z.fase==="segura") z.feito.push(Math.max(0,Math.floor((Date.now()-z.t0)/1000)));
-  isoFim();
-}
-function isoFim(){
-  const z=S.iso; clearInterval(tickIso); if(!z) return; z.fase="fim"; bip();
-  const feito=z.feito.length?Math.min(...z.feito):0;
-  if(S.ajuste && feito!==z.alvo){ S.ajuste.reps=feito; S.ajuste.mexeu=true; }
-  render();
-}
-
 /* ---------- descanso: relógio por horário, tela acesa, som e cor ao terminar ---------- */
 function bip(){ try{ if(!audio) return; const o=audio.createOscillator(), g=audio.createGain(); o.frequency.value=880; g.gain.value=.15; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+.3); }catch(e){} try{ navigator.vibrate && navigator.vibrate([200,80,200]); }catch(e){} }
-function iniciarDescanso(seg, proxima){ if(!seg||seg<=0) return; descanso={fim:Date.now()+seg*1000, total:seg, proxima, avisou:false, ult:null}; elTimer.hidden=false; document.body.classList.add("descansando"); clearInterval(tick); tick=setInterval(desenharTimer,250); desenharTimer(); }
+function iniciarDescanso(seg, proxima){ if(!seg||seg<=0) return; descanso={fim:Date.now()+seg*1000, proxima, avisou:false}; elTimer.hidden=false; document.body.classList.add("descansando"); clearInterval(tick); tick=setInterval(desenharTimer,250); desenharTimer(); }
 function desenharTimer(){
   if(!descanso) return; const rest=(descanso.fim-Date.now())/1000;
   if(rest<=0 && !descanso.avisou){ descanso.avisou=true; bip(); }
-  const s3=Math.ceil(rest); if(rest>0 && s3<=3 && descanso.ult!==s3){ descanso.ult=s3; bipCurto(); }
   const pronto=rest<=0; elTimer.classList.toggle("pronto",pronto);
-  const novoEx=/^Próximo/.test(descanso.proxima||""), pct=Math.max(0,Math.min(100,100*(1-rest/(descanso.total||1))));
-  elTimer.innerHTML=`<div class="in"><div><div class="lb">${pronto?(novoEx?"Próximo exercício pronto":"Próxima série pronta"):"Descanso"}</div><div class="t">${pronto?"0:00":mmss(rest)}</div></div><div class="sp"></div>${pronto?`<button type="button" class="go" data-t="fechar">${novoEx?"IR AO EXERCÍCIO ›":"SEGUIR PARA A SÉRIE ›"}</button>`:`<button type="button" data-t="menos" aria-label="Tirar 15 segundos">−15 s</button><button type="button" data-t="mais" aria-label="Somar 30 segundos">+30 s</button><button type="button" class="go" data-t="pular">COMEÇAR JÁ ›</button>`}<div class="nx">${esc(descanso.proxima)}</div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  elTimer.innerHTML=`<div class="in"><div><div class="lb">${pronto?"Próxima série pronta":"Descanso"}</div><div class="t">${pronto?"0:00":mmss(rest)}</div></div><div class="sp"></div>${pronto?`<button type="button" data-t="fechar">OK</button>`:`<button type="button" data-t="mais">+30 s</button><button type="button" data-t="pular">PULAR</button>`}<div class="nx">${esc(descanso.proxima)}</div></div>`;
 }
 function pararDescanso(){ clearInterval(tick); descanso=null; elTimer.hidden=true; elTimer.classList.remove("pronto"); document.body.classList.remove("descansando"); }
-elTimer.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b||!descanso) return; if(b.dataset.t==="mais"){ descanso.fim+=30000; descanso.total+=30; } if(b.dataset.t==="menos") descanso.fim=Math.max(Date.now(),descanso.fim-15000); if(b.dataset.t==="pular") return pararDescanso(); if(b.dataset.t==="fechar") return pararDescanso(); desenharTimer(); });
+elTimer.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b||!descanso) return; if(b.dataset.t==="mais") descanso.fim+=30000; if(b.dataset.t==="pular") descanso.fim=Date.now(); if(b.dataset.t==="fechar") return pararDescanso(); desenharTimer(); });
 async function manterTelaAcesa(){ try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ if(S.fase==="treino") manterTelaAcesa(); desenharTimer(); enviarFila(); } });
 function somPronto(){ if(!audio){ try{ audio=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
@@ -773,13 +448,13 @@ function registrar(rir){
   const its=itens(), it=its[S.i], a=S.ajuste; somPronto();
   (S.feitas[S.i] ||= []).push({ex:it.id, orig:it.orig!==it.id?it.orig:null, kg:a.kg, reps:a.reps, rir, dor:a.dor, local:a.local, lado:a.lado, tipo:a.tipo, sug:a.sug, um:!a.mexeu});
   S.abrirAjuste=false; salvarRascunho();
-  const n=S.feitas[S.i].length, tpR=tipoReg(it,EX(it.id)), descR=(tpR==="aquec"||tpR==="mob")?0:it.desc; /* aquecimento e mobilidade: sem relógio de descanso entre um e outro */
-  if(n>=it.ns) avancar(descR, it); else { const kgTxt=EX(it.id).un==="kg"?`${fkg(a.kg)} kg × ${a.reps}`:`${a.reps}`; S.ajuste=null; iniciarDescanso(descR, `Próxima: série ${n+1} · ${kgTxt}`); }
+  const n=S.feitas[S.i].length;
+  if(n>=it.ns) avancar(it.desc, it); else { const kgTxt=EX(it.id).un==="kg"?`${fkg(a.kg)} kg × ${a.reps}`:`${a.reps}`; S.ajuste=null; iniciarDescanso(it.desc, `Próxima: série ${n+1} · ${kgTxt}`); }
   render();
 }
 
 /* ---------- salvar: fila neste aparelho, envio quando houver rede ---------- */
-function salvarRascunho(){ store.set("hagtreino.rascunho",{dia:HOJE(), S:{...S, crono:null, ajuste:null, iso:null}}); }
+function salvarRascunho(){ store.set("hagtreino.rascunho",{dia:HOJE(), S:{...S, crono:null, ajuste:null}}); }
 function enviarFila(){
   if(!FILA.length || enviarFila.ocupado || !TOKEN) return Promise.resolve(false);
   enviarFila.ocupado=true; const p=FILA[0];
@@ -790,7 +465,7 @@ function enviarFila(){
   }).catch(()=>{ enviarFila.ocupado=false; return false; });
 }
 function salvar(){
-  const rpe=S.rpe!=null?S.rpe:(S.cv?5:null), dur=+document.getElementById("dur").textContent||0; if(rpe==null) return; const d=diaAtual(); const its=itens();
+  const rpe=+document.getElementById("rpe").value, dur=+document.getElementById("dur").textContent||0; const d=diaAtual(); const its=itens();
   const {series,cardio,hyrox}=coletar();
   const antes={}; for(const s of historico()) for(const x of s.series){ const v=e1rm(x.kg,x.reps,x.rir); if(v&&(!antes[x.ex]||v>antes[x.ex])) antes[x.ex]=v; }
   const pr=(!S.prontPulou && Object.values(S.pront).every(v=>v!=null))?{...S.pront}:null;
@@ -799,8 +474,8 @@ function salvar(){
   const rec=[], vistos=new Set();
   for(const x of series){ const v=e1rm(x.kg,x.reps,x.rir); if(v&&antes[x.ex]&&v>antes[x.ex]+.05&&!vistos.has(x.ex)){ rec.push(`${esc(EX(x.ex).nome)}: força estimada ${fmt(v)} kg (melhor anterior ${fmt(antes[x.ex])})`); vistos.add(x.ex);} }
   const dor=[...new Set(series.filter(x=>x.dor>=4).map(x=>EX(x.ex).nome))];
-  const prox=its.filter(it=>it.mod==="forca"||it.mod==="mobilidade").map(it=>({nome:EX(it.id).nome, un:(it.livre&&EX(it.id).un==="kg")?"pc":EX(it.id).un, ...sugestao(it)})); /* HAG_TREINO_LIVRE_v1: sem "0 kg" no treino de qualquer lugar */
-  const partes=[series.length?`${series.length} ${series.length===1?"série":"séries"}`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} ${hyrox.length===1?"tempo":"tempos"}`:""].filter(Boolean).join(" · ");
+  const prox=its.filter(it=>it.mod==="forca"||it.mod==="mobilidade").map(it=>({nome:EX(it.id).nome, un:EX(it.id).un, ...sugestao(it)}));
+  const partes=[series.length?`${series.length} séries`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} tempos`:""].filter(Boolean).join(" · ");
   S.salvo={n:series.length, um:series.filter(x=>x.um).length, rpe, dur, ci:rpe*dur, rec, dor, prox, cv:S.cv, partes, enviada:false};
   if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; }
   render();
@@ -817,23 +492,15 @@ vHoje.addEventListener("click", e=>{
   if(a==="asalvar") return salvarAtiv();
   if(a==="enviar") return enviarFila().then(render);
   if(a==="pr"){ S.pront[b.dataset.k]=+b.dataset.v; return render(); }
-  if(a==="pular"){ S.prontPulou=true; window.scrollTo(0,0); return render(); }
-  if(a==="prontok"){ if(Object.values(S.pront).every(v=>v!=null)){ S.prontOk=true; window.scrollTo(0,0); } return render(); }
-  if(a==="prontedit"){ S.prontOk=false; S.prontPulou=false; window.scrollTo(0,0); return render(); }
-  if(a==="rpe"){ S.rpe=+b.dataset.v; return render(); }
+  if(a==="pular"){ S.prontPulou=true; return render(); }
   if(a==="onbok"){ store.set("hagtreino.rir.visto",true); return render(); }
-  if(a==="dia"){ S.diaId=b.dataset.v; S.diaEscolhido=true; S.sub={}; return render(); }
-  if(a==="irlivre") return abrir("livre");
-  if(a==="livresair"){ S=novoEstado(); render(); return abrir("livre"); }
+  if(a==="dia"){ S.diaId=b.dataset.v; S.sub={}; return render(); }
   if(a==="iniciar"){ S.fase="treino"; S.inicio=Date.now(); somPronto(); manterTelaAcesa(); salvarRascunho(); return render(); }
-  if(a==="feito"){ isoParaTudo(); return registrar(+b.dataset.v); }
-  if(a==="reg"){ isoParaTudo(); if(b.dataset.dor!=null && S.ajuste){ S.ajuste.dor=+b.dataset.dor; } return registrar(+b.dataset.rir); }
-  if(a==="isogo") return isoIniciar();
-  if(a==="isostop") return isoParar();
+  if(a==="feito") return registrar(+b.dataset.v);
   if(a==="ajustar"){ S.abrirAjuste=!S.abrirAjuste; return render(); }
   if(a==="pq"){ S.verPq=!S.verPq; return render(); }
   if(a==="video"){ S.verVideo=!S.verVideo; return render(); }
-  if(a==="sub"){ isoParaTudo(); const it=itens()[S.i]; if(b.dataset.v) S.sub[it.orig]=b.dataset.v; else delete S.sub[it.orig]; S.ajuste=null; return render(); }
+  if(a==="sub"){ const it=itens()[S.i]; if(b.dataset.v) S.sub[it.orig]=b.dataset.v; else delete S.sub[it.orig]; S.ajuste=null; return render(); }
   const A=S.ajuste;
   if(A && ["kg-","kg+","r-","r+","dor","local","lado","tipo"].includes(a)){
     const ex=EX(A.id), inc=+ex.inc||2.5, passo=ex.un==="seg"?5:1;
@@ -852,12 +519,12 @@ vHoje.addEventListener("click", e=>{
     else iniciarDescanso(it.desc, `Próxima: volta ${S.voltas[S.i].length+1} de ${it.ns}`);
     return render(); }
   if(a==="hx-"||a==="hx+"){ const inc=+EX(itens()[S.i].id).inc||1; S.cargaHx.kg=Math.max(0,S.cargaHx.kg+(a==="hx+"?inc:-inc)); return render(); }
-  if(a==="volta"){ isoParaTudo(); pararDescanso(); S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i>0){ S.i--; S.ajuste=null; S.crono=null; } return render(); }
-  if(a==="pulaex"){ isoParaTudo(); pararDescanso(); S.crono=null; S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i<itens().length-1){ S.i++; S.ajuste=null; } else S.fase="fim"; return render(); }
+  if(a==="volta"){ pararDescanso(); S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i>0){ S.i--; S.ajuste=null; S.crono=null; } return render(); }
+  if(a==="pulaex"){ pararDescanso(); S.crono=null; S.abrirAjuste=S.verPq=S.verVideo=false; if(S.i<itens().length-1){ S.i++; S.ajuste=null; } else S.fase="fim"; return render(); }
   if(a==="cv"){ S.cv=true; return render(); }
   if(a==="cvno"){ S.cv=false; return render(); }
   if(a==="cvok"){ pararDescanso(); S.crono=null; S.fase="fim"; return render(); }
-  if(a==="d-"||a==="d+"){ const o=document.getElementById("dur"); S.durAj=Math.max(1,(+o.textContent||0)+(a==="d+"?5:-5)); o.textContent=S.durAj; return; }
+  if(a==="d-"||a==="d+"){ const o=document.getElementById("dur"); o.textContent=Math.max(1,(+o.textContent||0)+(a==="d+"?5:-5)); return; }
   if(a==="voltartreino"){ S.fase="treino"; return render(); }
   if(a==="descartar"){ if(b.dataset.c==="1"){ store.del("hagtreino.rascunho"); pararDescanso(); S=novoEstado(); return render(); } b.dataset.c="1"; b.textContent="toque de novo para descartar"; return; }
   if(a==="salvar") return salvar();
@@ -915,83 +582,25 @@ function renderEvo(){
 }
 vEvo.addEventListener("change",e=>{ if(e.target.id==="exsel"){ exSel=e.target.value; renderEvo(); } });
 
-/* ---------- HAG_TREINO_PROGRAMA_v1 (13/10/2026): aba "Meu programa" ----------
-   Pedido do Dr. Henrique: o paciente vê o resumo do programa prescrito inteiro, como prévia: cada treino com os
-   exercícios, séries, repetições, descanso, a carga sugerida e o vídeo. Só leitura; "Fazer este treino agora" leva
-   para a aba Treino com aquele treino escolhido. */
-let pvAberto=null;
-const brA = s => s ? String(s).slice(8,10)+"/"+String(s).slice(5,7)+"/"+String(s).slice(0,4) : "";
-const itensDe = d => (d.itens||[]).map(it=>({...it, orig:it.ex, id:it.ex, mod:EX(it.ex).mod, ns:it.series||1}));
-function emAndamento(){ return S.fase==="treino" || (S.fase==="fim" && !S.salvo); }
-function listaItensHTML(its, chave){
-  let aq=its.filter(it=>it.mod!=="cardio"&&it.mod!=="hyrox"&&["aquec","mob"].includes(tipoReg(it,EX(it.id)))); if(aq.length===its.length) aq=[]; const resto=its.filter(it=>!aq.includes(it));
-  const linha=(it,n,k)=>{ const ex=EX(it.id), r=resumoItem(it), kk=chave+"|"+k, ab=pvAberto===kk;
-    return `<div class="it"><div><b>${n?n+". ":""}${esc(ex.nome)}</b><div class="s">${r.s}</div>${it.nota&&!/^aquecimento$/i.test(it.nota)?`<div class="n">${esc(it.nota)}</div>`:""}</div><div class="r">${r.r}</div>
-      ${ex.video?`<div class="lk"><button type="button" class="link" data-a="pvideo" data-v="${esc(kk)}" aria-expanded="${ab}">${ab?"fechar vídeo":"▶ ver execução"}</button>${ab?`<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(ex.video)}?rel=0&playsinline=1" title="Execução: ${esc(ex.nome)}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`:""}</div>`:""}</div>`; };
-  return `<div class="lista">${aq.length?`<div class="grupo">Aquecimento</div>${aq.map((it,k)=>linha(it,0,k)).join("")}<div class="grupo">Exercícios</div>`:""}${resto.map((it,j)=>linha(it,aq.length?j+1:0,aq.length+j)).join("")}</div>`;
-}
-function renderProg(){
-  if(!CTX||CTX.ok===false){ vProg.innerHTML=""; return; }
-  const p=prog();
-  if(!p){ vProg.innerHTML=`<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui por inteiro.</p></div>`; return; }
-  const sug=diaSugerido(), h=historico();
-  const info=[p.objetivo?esc(p.objetivo):"", p.sessoes_semana?`${p.sessoes_semana} treinos por semana`:"", p.inicio?`desde ${brA(p.inicio)}`:""].filter(Boolean).join(" · ");
-  vProg.innerHTML=`<div><div class="kicker">Meu programa · versão ${esc(p.versao)}</div><h2>${esc(p.nome)}</h2>${info?`<p class="sub">${info}</p>`:""}</div>
-  ${blocoHTML()}
-  ${p.dias.map(d=>{ const its=itensDe(d), ult=h.filter(s=>s.dia_id===d.id).at(-1);
-    return `<div class="card pdia"><div class="cab"><div><h3>${esc(d.nome)}</h3><div class="note">${d.foco?esc(d.foco)+" · ":""}${its.length} ${its.length===1?"exercício":"exercícios"} · cerca de ${minutosDe(its)} min${ult?` · feito pela última vez em ${br(ult.data)}`:""}</div></div>${d.id===sug&&p.dias.length>1?`<span class="tag">sugerido hoje</span>`:""}</div>
-      ${listaItensHTML(its,d.id)}
-      <button type="button" class="btn small ghost" data-a="progfazer" data-v="${esc(d.id)}" style="margin-top:10px">Fazer este treino agora</button></div>`; }).join("")}
-  <p class="note" style="margin:0">A carga mostrada é a sugerida para a próxima vez, pela regra do seu programa. Mudanças no programa são feitas pelo Dr. Henrique na consulta.</p>`;
-}
-vProg.addEventListener("click",e=>{
-  const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a;
-  if(a==="pvideo"){ pvAberto=pvAberto===b.dataset.v?null:b.dataset.v; return renderProg(); }
-  if(a==="progfazer"){
-    if(!emAndamento()){ const keep={pront:S.pront, prontOk:S.prontOk, prontPulou:S.prontPulou}; S=Object.assign(novoEstado(),keep); S.diaId=b.dataset.v; S.diaEscolhido=true; }
-    abrir("hoje"); render(); window.scrollTo(0,0);
-  }
-});
-
-/* ---------- HAG_TREINO_LIVRE_v1 (13/10/2026): aba "Qualquer lugar" ---------- */
-function renderLivre(){
-  const L=livres(); if(tabLivre) tabLivre.hidden=!L.length;
-  const tEvo=document.querySelector('nav.tabs [data-v="evo"]'); if(tEvo) tEvo.textContent=L.length?"Evolução":"Estou evoluindo?"; /* com 4 abas, o nome curto cabe na tela do celular */
-  if(!L.length){ vLivre.innerHTML=""; return; }
-  const niv=store.get("hagtreino.nivel","iniciante"), lista=L.filter(l=>l.nivel===niv);
-  vLivre.innerHTML=`<div><div class="kicker">Treino em qualquer lugar</div><h2>Sem academia hoje?</h2><p class="sub">Treinos com o peso do corpo para viagem, quarto de hotel ou dia corrido. Precisa de espaço para deitar, uma parede e uma cadeira firme. Use quando não der para fazer o treino do seu programa.</p></div>
-  <div class="card"><div class="lbl">Nível</div><div class="chips" role="group" aria-label="Nível" style="margin-top:6px">${["iniciante","intermediario"].map(n=>`<button type="button" class="chip" data-a="nivel" data-v="${n}" aria-pressed="${n===niv}">${NIVEL[n]}</button>`).join("")}</div><p class="note" style="margin:8px 0 0">Comece pelo iniciante. O intermediário é para quando o iniciante ficar fácil, com todas as séries no topo da faixa. Na dúvida, fique no iniciante.</p></div>
-  ${lista.map(l=>{ const its=(l.itens||[]); return `<div class="card livre"><div class="row between" style="align-items:flex-start"><div><h3>${esc(l.nome)}</h3><div class="meta">${l.foco?esc(l.foco)+" · ":""}cerca de ${esc(l.min)} min · ${its.length} exercícios</div></div></div>
-    <button type="button" class="btn small" data-a="livrever" data-v="${esc(l.id)}" style="margin-top:10px">Ver e começar</button></div>`; }).join("")}`;
-}
-vLivre.addEventListener("click",e=>{
-  const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a;
-  if(a==="nivel"){ store.set("hagtreino.nivel",b.dataset.v); return renderLivre(); }
-  if(a==="livrever"){
-    if(!emAndamento()){ S=novoEstado(); S.livre=b.dataset.v; }
-    abrir("hoje"); render(); window.scrollTo(0,0);
-  }
-});
-
 /* ---------- carga inicial ---------- */
 function carregar(){
   if(!TOKEN){ render(); return Promise.resolve(); }
   return rpc("hag_treino_contexto",{p_token:TOKEN}).then(r=>{
-    CTX=r; if(r && r.ok){ store.set("hagtreino.ctx",r); if(window.hagInstalar && S.fase==="inicio") window.hagInstalar.mostrar(); }
+    CTX=r; if(r && r.ok) store.set("hagtreino.ctx",r);
     if(r && r.ok && r.paciente) document.getElementById("titulo").textContent="Treino de "+r.paciente.nome;
-    if(S.fase==="inicio" && !S.diaEscolhido) S.diaId=null;
-    render(); renderEvo(); renderProg(); renderLivre();
-  }).catch(()=>{ if(CTX && CTX.ok){ render(); renderEvo(); renderProg(); renderLivre(); } else vHoje.innerHTML=`<div class="card"><h3>Sem conexão</h3><p class="sub">Não consegui carregar o seu treino agora. Verifique o sinal e toque em tentar de novo.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Tentar de novo</button></div>`; });
+    if(S.fase==="inicio") S.diaId=null;
+    render(); renderEvo();
+  }).catch(()=>{ if(CTX && CTX.ok){ render(); renderEvo(); } else vHoje.innerHTML=`<div class="card"><h3>Sem conexão</h3><p class="sub">Não consegui carregar o seu treino agora. Verifique o sinal e toque em tentar de novo.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Tentar de novo</button></div>`; });
 }
 const tabs=[...document.querySelectorAll("nav.tabs button")];
-function abrir(v){ tabs.forEach(t=>t.setAttribute("aria-selected",String(t.dataset.v===v))); vHoje.hidden=v!=="hoje"; vEvo.hidden=v!=="evo"; vProg.hidden=v!=="prog"; vLivre.hidden=v!=="livre"; elTimer.style.display=v==="hoje"?"":"none"; if(v==="evo") renderEvo(); if(v==="prog") renderProg(); if(v==="livre") renderLivre(); }
+function abrir(v){ tabs.forEach(t=>t.setAttribute("aria-selected",String(t.dataset.v===v))); vHoje.hidden=v!=="hoje"; vEvo.hidden=v!=="evo"; elTimer.style.display=v==="hoje"?"":"none"; if(v==="evo") renderEvo(); }
 tabs.forEach(t=>t.addEventListener("click",()=>abrir(t.dataset.v)));
 window.addEventListener("online",enviarFila);
 let rz; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(renderEvo,200); });
 /* sessão interrompida no mesmo dia (tela fechada sem querer) volta de onde parou */
 const rasc=store.get("hagtreino.rascunho",null);
 if(rasc && rasc.dia===HOJE() && rasc.S && rasc.S.fase==="treino"){ S=Object.assign(novoEstado(),rasc.S); }
-if(CTX && CTX.ok){ if(CTX.paciente) document.getElementById("titulo").textContent="Treino de "+CTX.paciente.nome; render(); renderLivre(); }
+if(CTX && CTX.ok){ if(CTX.paciente) document.getElementById("titulo").textContent="Treino de "+CTX.paciente.nome; render(); }
 enviarFila().then(sent=>{ if(!sent) carregar(); });
 })();
 </script>
