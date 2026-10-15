@@ -829,13 +829,13 @@ function diasOfertados(modalidade){
         janela;
      2) a lista e cronologica e o alvo fica no MEIO da janela, entao o teto de
         4 dias cortava o alvo quando havia 4 dias uteis antes dele. */
-  var sug=null;
+  var sug=null, sugPrio=null; /* HAG_RESERVA_NAO_ABRE_COM_INDICADO_v1 */
   /* HAG_DIAG_JANELA_POR_EXAMES_v1: na diagnostica o alvo e so o meio do intervalo,
      nao uma indicacao do medico; marcar 'dia indicado' seria dizer o que ele nao disse. */
   if(ALVOMED && TIPOCON!=='diagnostica'){
     for(var pi=0; pi<prios.length && !sug; pi++){
       var bal=porPrio[prios[pi]];
-      for(var k=0;k<bal.length;k++){ if(bal[k].data===ALVO){ sug=bal[k]; bal.splice(k,1); break; } }
+      for(var k=0;k<bal.length;k++){ if(bal[k].data===ALVO){ sug=bal[k]; sugPrio=prios[pi]; bal.splice(k,1); break; } }
     }
     prios=prios.filter(function(pp){ return porPrio[pp].length; });
   }
@@ -886,7 +886,15 @@ function diasOfertados(modalidade){
      quem ainda cabia na quarta. */
   var lim = sug ? 3 : 4;
   var lista = [];
+  /* HAG_RESERVA_NAO_ABRE_COM_INDICADO_v1 (15/10/2026). Caso Marielza: o dia indicado (quarta 21/10,
+     online, com horário livre) era a ÚNICA quarta da janela, porque 14/10 já tinha passado e 28/10
+     estava fechada. Tirado o indicado da prioridade 1 para ir à frente da lista, a prioridade 1
+     ficava vazia e a escada descia para a quinta, dia de reserva; ela marcou a quinta 22/10.
+     Regra do Dr. Henrique (28/09): segunda e quinta só abrem quando os dias de preferência estão
+     CHEIOS. O dia indicado com vaga conta para o degrau dele: a escada não desce abaixo dele.
+     Quem não pode no indicado pede ajuda à Daniela pelo botão da página. */
   for(var pj=0; pj<prios.length; pj++){
+    if(sugPrio!==null && prios[pj]>sugPrio) break;
     var grupo = porPrio[prios[pj]].slice().sort(porPerto);
     if(!grupo.length) continue;
     lista = grupo.slice(0, lim);
