@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261015-1113"></script>
+<script src="hag_auth.js?v=20261015-1338"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1240,6 +1240,13 @@ var DAN_TPL=[
      WhatsApp fica travado enquanto estiverem no texto (ver _msgPendencias). */
   {id:'pos_diag_silencio_t1',cat:'pos_consulta',nome:'Pós-diagnóstica · ficou de fechar e não respondeu · toque 1',sub:'Restante da consulta em aberto e plano indicado sem resposta, 2 dias de silêncio · uma mensagem só, com tudo pronto · Copiar e completar [valor], [plano] e [prazo] · espera 48 h',texto:'[nome], tudo bem? Para facilitar, deixo tudo organizado aqui.\n\n*Restante da sua consulta diagnóstica:* [valor].\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, me avisa que eu te envio o link.\n\n*Seu acompanhamento:* o [plano] indicado pelo Dr. Henrique segue reservado para você até [prazo], com a sua vaga na agenda. Para começar, é só me confirmar por aqui que eu organizo o pagamento e as próximas datas.\n\nSe ficou alguma dúvida sobre o plano ou sobre os valores, me conta que eu te ajudo.'},
   {id:'pos_diag_silencio_t2',cat:'pos_consulta',nome:'Pós-diagnóstica · ficou de fechar e não respondeu · toque 2 (último)',sub:'48 h depois do toque 1, sem resposta · encerra a reserva do plano e mantém o restante em aberto · depois disso, para de escrever e avisa o Dr. Henrique',texto:'[nome], como não recebi o seu retorno, encerrei a reserva do [plano] e a vaga voltou para a agenda. Isso não fecha nenhuma porta: quando quiser começar, é só me chamar que eu verifico as datas e as condições do momento.\n\nO restante da consulta diagnóstica, [valor], segue em aberto.\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, eu te envio o link. Assim que fizer, me manda o comprovante por aqui.\n\nO Dr. Henrique segue à disposição.'},
+  /* HAG_MSG_RESTANTE_EM_ABERTO_v1 (15/10/2026). Pergunta do Dr. Henrique depois do caso Bianca: e se a paciente seguir sem pagar o
+     restante da consulta? Depois do toque 2 sobra só a dívida do serviço já prestado. Dois contatos, nada mais: um lembrete 7 dias
+     depois do toque 2 (oferece parcelar, nunca desconto) e um aviso final 15 dias depois, que registra o valor em aberto no cadastro
+     e condiciona um NOVO agendamento à regularização. Sem ameaça, sem ligação insistente, sem falar com terceiros (CDC, art. 42).
+     Depois do aviso final a Daniela para, registra no financeiro e o Dr. Henrique decide entre manter em aberto ou dar como perda. */
+  {id:'restante_lembrete',cat:'pos_consulta',nome:'Restante da consulta em aberto · lembrete',sub:'7 dias depois do toque 2 (ou 7 dias de atraso em qualquer caso) · oferece parcelar, nunca desconto · Copiar e completar [valor]',texto:'[nome], tudo bem? Passando só para lembrar do restante da sua consulta diagnóstica, [valor], que segue em aberto.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe ficar melhor no cartão, em até 3x, me avisa que eu te envio o link.\n\nSe aconteceu algum imprevisto, me conta que eu vejo com você a melhor forma de organizar.'},
+  {id:'restante_aviso_final',cat:'pos_consulta',nome:'Restante da consulta em aberto · aviso final',sub:'15 dias depois do lembrete · último contato: registra no cadastro e condiciona o próximo agendamento · depois, para e avisa o Dr. Henrique',texto:'[nome], como ainda não identifiquei o pagamento do restante da sua consulta diagnóstica, [valor], ele segue registrado em aberto no seu cadastro.\n\nPara um novo atendimento com o Dr. Henrique, esse valor precisa estar regularizado antes do agendamento. Os dados para pagamento seguem abaixo:\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nAssim que fizer, me manda o comprovante por aqui que eu dou baixa e te envio a nota fiscal.'},
   {id:'avaliacao_google',cat:'pos_consulta',nome:'Avaliação no Google',sub:'Só na primeira consulta, 1h depois',texto:'[nome], espero que a sua experiência tenha sido positiva. Se você quiser, a sua avaliação no Google ajuda muito:\nhttps://g.page/r/CVaxd8nwbLMaEAI/review'},
   {id:'boas_vindas_ciclo',cat:'onboarding',nome:'Boas-vindas ao ciclo',sub:'Paciente contratou, quem entrega o plano é o Dr.',texto:'[nome], seja muito bem-vindo(a) ao seu ciclo dentro do Método HAG.\n\nJá informei o Dr. Henrique sobre a confirmação do seu pagamento e solicitei a sua nota fiscal ao financeiro.\n\nO seu planejamento vem diretamente do Dr. Henrique, pelo canal de contato do seu plano.\n\nQualquer dúvida de organização, é comigo por aqui.'},
   {id:'checkin_semanal',cat:'check_ins',nome:'Check-in semanal',sub:'Essencial, Reset e Transforma · mensal e trimestral saem pelo disparo',texto:'[nome], chegou a hora do seu check-in da semana.\n\nhttps://henriquehag1.github.io/pre-consulta-hag/form_checkin_semanal_HAG.html\n\nÉ ele que permite ao Dr. Henrique acompanhar a sua semana e ajustar a estratégia sem esperar a próxima consulta. Não esqueça das fotos, seguindo o manual que você recebeu.\n\nSe puder responder ainda hoje, melhor. Quando terminar, me avisa.'},
@@ -4627,7 +4634,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261015-1113';
+  var VERSAO = '20261015-1338';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
