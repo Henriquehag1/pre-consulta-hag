@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261015-1724"></script>
+<script src="hag_auth.js?v=20261015-1733"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -2878,6 +2878,8 @@ function buildFilaCard(t){
         '<div class="tc-desc">'+(FILA_EV_LABEL[t.tipo_evento]||'Agendamento')+' &middot; '+janela+'</div>'+
         (t.local?'<div class="tc-desc" style="color:var(--ink3)">'+_filaLocalLabel(t.local)+'</div>':'')+
         (t.obs?'<div class="tc-desc" style="color:var(--ink3)">'+t.obs+'</div>':'')+
+        /* HAG_LEMBRETE_AGENDAR_v2: quantas vezes foi lembrado e quando foi o último */
+        ((+t.lembretes>0 && t.status!=='concluida')?'<div class="tc-desc" style="color:#8A6D1F;font-weight:600">&#x1f514; Lembrado '+t.lembretes+'x'+(t.ultimo_lembrete_em?(' &middot; último em '+fmtBRf(String(t.ultimo_lembrete_em).slice(0,10))):'')+'</div>':'')+
         agendado+
       '</div>'+
       '<div class="tc-side">'+
@@ -2907,7 +2909,7 @@ function buildFilaCard(t){
                    })()
                  : ((t.status==='aguardando'||t.status==='andamento') && ['retorno','injetavel'].indexOf(t.tipo_evento)>=0 && _filaMsgLembrete(t))
                  /* HAG_LEMBRETE_AGENDAR_v1: depois do primeiro envio, o botão manda o lembrete */
-                 ? '<button class="btn-acao ba-contato" onclick="whatsLembrete(\''+t.id+'\')" title="Já recebeu o link e ainda não marcou: abre o WhatsApp com um lembrete curto e o mesmo link"><span class="g">&#x1f514;</span>Lembrete</button>'
+                 ? '<button class="btn-acao ba-contato" onclick="whatsLembrete(\''+t.id+'\')" title="Já recebeu o link e ainda não marcou: abre o WhatsApp com um lembrete curto e o mesmo link"><span class="g">&#x1f514;</span>Lembrete'+((+t.lembretes>0)?(' '+((+t.lembretes)+1)+'º'):'')+'</button>'
                  : '<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\')" title="'
                 +(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Abre o WhatsApp com o link para o paciente agendar sozinho':'Abre o WhatsApp para combinar o horário')
                 +'"><span class="g">&#x1f4f2;</span>'+(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Enviar link':'WhatsApp')+'</button>') /* HAG_DIAG_SINAL_v1 */
@@ -3160,9 +3162,11 @@ async function whatsLembrete(id){
     window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
   }
   try{
-    await db.from('tarefas').update({atualizado_em:new Date().toISOString()}).eq('id',id);
+    /* HAG_LEMBRETE_AGENDAR_v2 (15/10/2026): pedido do Dr. Henrique, contar os lembretes (1x, 2x, 3x) e a data do último. */
+    var _n=(+t.lembretes||0)+1, _agora=new Date().toISOString();
+    await db.from('tarefas').update({atualizado_em:_agora, lembretes:_n, ultimo_lembrete_em:_agora}).eq('id',id);
     _fila=await loadFila(); render();
-    toast('Lembrete aberto · '+((t.patient_nome||'').split(' ')[0])+' continua em Comunicado','ok');
+    toast('Lembrete '+_n+'º aberto · '+((t.patient_nome||'').split(' ')[0])+' continua em Comunicado','ok');
   }catch(e){ toast('Lembrete aberto, mas não consegui registrar: '+e.message,'err'); }
 }
 /* HAG_MSG_CONFIRMACAO_v1 (11/09/2026): a confirmação que vai pelo WhatsApp depois de
@@ -4681,7 +4685,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261015-1724';
+  var VERSAO = '20261015-1733';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
