@@ -971,6 +971,12 @@ function telaEscolha(nota){
       if(dias.length) alargou=true; else JANELA=jOrig;
     }
   }
+  /* HAG_DIA_INDICADO_SEM_VAGA_v1 (15/10/2026). Caso Jonathan: o Dr. Henrique indicou 28/10 e depois o
+     consultório fechou a semana de 27 a 30/10. A tela dizia "o Dr. Henrique indicou 28/10" e a lista
+     não trazia o 28, e o paciente ficava sem entender se devia esperar ou escolher outro dia. Agora o
+     texto olha a lista: se o dia indicado não está nela (fechado, lotado ou fora da modalidade), diz
+     isso e manda escolher uma das datas próximas. */
+  var alvoNaLista = dias.some(function(d){ return d.sugerido; });
   /* HAG_TOM_PACIENTE_v5 (11/09/2026): o texto dizia "o Dr. Henrique indicou tal dia
      como o melhor dia", sem dizer POR QUE, e não dizia que o horário só fica preso
      depois da escolha. Faltava o essencial das duas pontas: a razão clínica da data,
@@ -1006,9 +1012,12 @@ function telaEscolha(nota){
                ? ', para dar tempo de os seus exames ficarem prontos. ' : '. ')
             +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
           : 'Escolha abaixo o dia e o horário da sua consulta diagnóstica, entre as próximas datas que o Dr. Henrique tem abertas.')
-     : ALVOMED ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
+     : (ALVOMED && alvoNaLista) ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
                 +'para a sua próxima '+PAL()+', para manter a periodicidade do seu acompanhamento. '
                 +'Se esse dia não encaixar na sua agenda, logo abaixo estão as datas mais próximas.'
+     : ALVOMED ? 'A sua próxima '+PAL()+' estava indicada para <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b>, '
+                +'mas esse dia não tem horário disponível. Separamos abaixo as datas mais próximas a ele: '
+                +'é só escolher uma delas, que a periodicidade do seu acompanhamento fica mantida.'
      : c.retorno.data_estimada ? 'A sua próxima '+PAL()+' está prevista para <b>meados de '
                 +dataBR(ALVO).split(', ')[1]+'</b>, para manter a periodicidade do seu acompanhamento. '
                 +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
@@ -1036,7 +1045,7 @@ function telaEscolha(nota){
   if(travada){
     h+='<div class="aviso">'+(c.retorno.modalidade==='online'
         ? 'Esta consulta do seu plano é <b>online</b>.'
-        : (LOCALMED && MODO!=='remarcar' && TIPOCON!=='diagnostica')
+        : (LOCALMED && MODO!=='remarcar' && TIPOCON!=='diagnostica' && alvoNaLista) /* HAG_DIA_INDICADO_SEM_VAGA_v1 */
           ? 'Esta '+PAL()+' é <b>presencial</b>. O dia indicado pelo Dr. Henrique é '
             +(LOCALMED==='tatuape'?'no <b>Tatuapé</b>':'em <b>Pinheiros</b>')
             +'. Os outros dias podem ser na outra unidade, e cada um mostra onde.'

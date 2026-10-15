@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261015-1338"></script>
+<script src="hag_auth.js?v=20261015-1724"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -2905,6 +2905,9 @@ function buildFilaCard(t){
                      var b2='<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\',\'pedido\')" title="'+(ex==='pedido'?'Indicado pelo formulário ou pelo último envio. ':'')+'Sem exames recentes: o link oferece datas a partir de 14 dias. O pedido de exames só sai depois do sinal"><span class="g">&#x1f4f2;</span>'+(ex==='pedido'?'&#10003; ':'')+'Link · sem exames</button>';
                      return ex==='pedido' ? b2+b1 : b1+b2;
                    })()
+                 : ((t.status==='aguardando'||t.status==='andamento') && ['retorno','injetavel'].indexOf(t.tipo_evento)>=0 && _filaMsgLembrete(t))
+                 /* HAG_LEMBRETE_AGENDAR_v1: depois do primeiro envio, o botão manda o lembrete */
+                 ? '<button class="btn-acao ba-contato" onclick="whatsLembrete(\''+t.id+'\')" title="Já recebeu o link e ainda não marcou: abre o WhatsApp com um lembrete curto e o mesmo link"><span class="g">&#x1f514;</span>Lembrete</button>'
                  : '<button class="btn-acao ba-contato" onclick="whatsFila(\''+t.id+'\')" title="'
                 +(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Abre o WhatsApp com o link para o paciente agendar sozinho':'Abre o WhatsApp para combinar o horário')
                 +'"><span class="g">&#x1f4f2;</span>'+(['retorno','diagnostica'].indexOf(t.tipo_evento)>=0?'Enviar link':'WhatsApp')+'</button>') /* HAG_DIAG_SINAL_v1 */
@@ -3105,6 +3108,13 @@ function _filaMsgAgendar(t){
         : 'A sua próxima '+_cons+' já pode ser agendada. Pelo link abaixo você escolhe o dia '
           +'e o horário que ficarem melhores para você, leva menos de um minuto:')
       +'\n\n'+_linkDestaque(HAG_LINK_AGENDAR+_tok)+'\n\n' /* HAG_LINK_DESTAQUE_v1 */
+      /* HAG_DIA_INDICADO_SEM_VAGA_v1 (15/10/2026). Caso Jonathan: dia indicado 28/10, semana fechada
+         depois. O link mostra o dia indicado e as datas próximas; quando o indicado não tem vaga, o
+         paciente precisa saber que pode escolher outra data sem perguntar. Só no retorno: é onde existe
+         dia indicado pelo Dr. Henrique. */
+      +(t.tipo_evento==='retorno'
+        ? 'Se o dia indicado pelo Dr. Henrique não tiver mais horário, é só escolher uma das datas próximas que aparecem no link.\n\n'
+        : '')
       /* HAG_MSG_REMARCA_v1 (11/09/2026): a mensagem termina dizendo que o link continua
          valendo depois de marcado. Sem isso, o paciente que precisa trocar o horário volta
          a escrever para a Daniela, e a remarcação por conta própria fica existindo sem
@@ -3117,6 +3127,43 @@ function _filaMsgAgendar(t){
   return 'Olá, '+primeiro+', tudo bem?\n\n'
     +'Estou entrando em contato para agendarmos '+oque+'. '
     +'Me conta qual período costuma ser melhor para você que eu verifico a agenda do Dr. Henrique.';
+}
+/* HAG_LEMBRETE_AGENDAR_v1 (15/10/2026). Pedido do Dr. Henrique: o paciente que ficou em
+   "Comunicado" e não marcou recebia de novo a mesma mensagem do primeiro envio (às vezes com a
+   frase de novidade), o que soa repetido. Agora, depois do primeiro envio, o botão vira
+   "Lembrete": texto curto, o mesmo link, e a saída para quando o dia indicado não tem horário.
+   Não muda o status (continua Comunicado); só zera o relógio de "sem resposta". */
+function _filaMsgLembrete(t){
+  var primeiro=(t.patient_nome||'').split(' ')[0];
+  var _lk=_linksAgendar[t.patient_id];
+  var _tok=(_lk&&_lk.token)?_lk.token:((typeof _lk==='string')?_lk:'');
+  var _cons=(t.tipo_evento==='injetavel')?'aplicação':'consulta';
+  if(!_tok) return null;
+  return 'Olá, '+primeiro+', tudo bem?\n\n'
+    +'Passando para lembrar que a sua próxima '+_cons+' ainda não foi agendada. '
+    +'As datas separadas para você estão no link abaixo, leva menos de um minuto:'
+    +'\n\n'+_linkDestaque(HAG_LINK_AGENDAR+_tok)+'\n\n'
+    +(t.tipo_evento==='retorno'
+      ? 'Se o dia indicado pelo Dr. Henrique não tiver mais horário, é só escolher uma das datas próximas que aparecem por lá. '
+      : '')
+    +'Qualquer dificuldade, me chama por aqui.';
+}
+async function whatsLembrete(id){
+  var t=(_fila||[]).find(function(x){return x.id===id;}); if(!t) return;
+  var msg=_filaMsgLembrete(t);
+  if(!msg) return whatsFila(id);
+  var fone=_filaFone(t.patient_id);
+  if(!fone){
+    try{ await navigator.clipboard.writeText(msg); toast('Sem WhatsApp no cadastro. Lembrete copiado.','ok'); }
+    catch(e){ prompt('Sem WhatsApp no cadastro. Copie o lembrete:', msg); }
+  } else {
+    window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+  }
+  try{
+    await db.from('tarefas').update({atualizado_em:new Date().toISOString()}).eq('id',id);
+    _fila=await loadFila(); render();
+    toast('Lembrete aberto · '+((t.patient_nome||'').split(' ')[0])+' continua em Comunicado','ok');
+  }catch(e){ toast('Lembrete aberto, mas não consegui registrar: '+e.message,'err'); }
 }
 /* HAG_MSG_CONFIRMACAO_v1 (11/09/2026): a confirmação que vai pelo WhatsApp depois de
    a consulta estar marcada. Os dados saem da própria tarefa, então não há nada para a
@@ -4634,7 +4681,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261015-1338';
+  var VERSAO = '20261015-1724';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
