@@ -61,6 +61,10 @@ min-height:70px;resize:vertical;background:#fff}
 .pl-i.atual{color:#fff;background:var(--navy);border-color:var(--navy);font-weight:600}
 .pl-conta{font-size:14px;color:var(--navy);font-weight:600}
 .pl-cort{font-size:13.5px;color:var(--ink3);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+/* HAG_PRAZO_PROPORCIONAL_v1 */
+.dia-atraso{display:inline-block;font-size:11.5px;font-weight:600;color:#9A5D08;background:#FBF1E0;border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:2px;text-transform:none}
+.aviso.ambar{background:#FBF1E0;border-left-color:#C98A1E;color:#5C4210}
+.btn.mais{margin:4px 0 0}
 .spin{text-align:center;color:var(--ink4);padding:34px 0;font-size:14.5px}
 /* HAG_ESPERA_VISIVEL_v1 (11/09/2026): a reserva levava alguns segundos mostrando
    so uma linha de texto cinza. Numa tela de celular isso passa por "nada
@@ -651,6 +655,39 @@ function _bloqueado(iso, local){
   return b.todos || (!!local && b.locais.indexOf(local)>=0);
 }
 var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null, ALVO=null, ALVOMED=false, LOCALMED=null;
+/* HAG_PRAZO_PROPORCIONAL_v1 (16/10/2026). Pedido do Dr. Henrique: mais datas depois do dia indicado, na
+   medida do plano, e aviso quando o intervalo fica grande. O servidor manda o 'prazo' do retorno:
+   intervalo do plano, folga (1/4 do intervalo, de 7 a 21 dias), consultas que faltam, fim do ciclo e a
+   data limite (as que faltam ainda cabem até o fim do ciclo, 21 dias entre elas; nunca antes do dia
+   indicado). A página só obedece; o servidor recusa data além do limite. */
+var PRAZO=null;
+function _somaDias(iso,n){ var d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function _difDias(a,b){ return Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/864e5); }
+function _dm(iso){ var p=String(iso||'').split('-'); return p.length===3 ? p[2]+'/'+p[1] : ''; }
+function prazoAtivo(){ return !!(PRAZO && MODO==='marcar' && TIPOCON==='retorno'); }
+function capLimite(j){
+  if(!j || j.situacao!=='aberta' || !prazoAtivo() || !PRAZO.limite) return j;
+  if(j.fim>PRAZO.limite) j.fim=PRAZO.limite;
+  if(j.fim<j.inicio) return {inicio:null, fim:null, motivo:'passou do prazo do plano', situacao:'atrasado'};
+  return j;
+}
+/* dias depois da data indicada (ou prevista), só quando passa de 7 */
+function atrasoDe(iso){ if(!prazoAtivo() || !ALVO) return 0; var n=_difDias(iso, ALVO); return n>7 ? n : 0; }
+function avisosPrazo(iso){
+  if(!prazoAtivo() || !ALVO) return '';
+  var n=_difDias(iso, ALVO), t=[];
+  if(n>7){
+    t.push((ALVOMED ? 'O Dr. Henrique indicou <b>'+_dm(ALVO)+'</b>' : 'A data prevista no seu plano era <b>'+_dm(ALVO)+'</b>')
+      +' para manter o ritmo do seu acompanhamento. Esta data fica <b>'+n+' dias depois</b>.');
+  }
+  /* só avisa quando aperta de verdade: mais de 7 dias além do fim do ciclo no ritmo normal */
+  if(n>0 && PRAZO.restantes>0 && PRAZO.fim_ciclo && PRAZO.intervalo
+     && _difDias(_somaDias(iso, PRAZO.restantes*PRAZO.intervalo), PRAZO.fim_ciclo)>7){
+    t.push('Com esta data, as próximas consultas do seu plano ficam mais próximas entre si para caber até <b>'
+      +_dm(PRAZO.fim_ciclo)+'</b>, fim do seu ciclo.');
+  }
+  return t.length ? '<div class="aviso ambar">'+t.join('<br>')+'</div>' : '';
+}
 /* HAG_REMARCA_PACIENTE_v1 (11/09/2026): a mesma página serve para marcar e para
    remarcar. MODO diz qual das duas está acontecendo, e é a única diferença no
    caminho: as regras de dia, horário, contiguidade e unidade são as mesmas. */
@@ -673,6 +710,7 @@ function iniciar(){
     if(c&&c.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
     if(!c||!c.ok){ falha('Não encontrei o seu cadastro por este link. Fale com a equipe pelo WhatsApp que resolvemos rapidinho.'); return; }
     CTX=c;
+    PRAZO=(c.prazo && typeof c.prazo==='object') ? c.prazo : null; /* HAG_PRAZO_PROPORCIONAL_v1 */
     /* HAG_DIAG_SINAL_v1 · HAG_LINK_INJETAVEL_v1 */
     TIPOCON=(c.tipo==='diagnostica')?'diagnostica':(c.tipo==='injetavel'?'injetavel':'retorno');
     tituloDaPagina();
@@ -715,7 +753,9 @@ function iniciar(){
       ouOJaMarcado(telaAjuda, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima '+PAL()+' ainda não tem data definida. Toque no botão abaixo e a Daniela organiza isso com você.');
       return;
     }
-    JANELA=S.diasElegiveis(ALVO, hojeSP(), ALVOMED?{antes:7,depois:7}:null);
+    /* HAG_PRAZO_PROPORCIONAL_v1: a folga depois do dia vem do plano; sem prazo, segue o de antes */
+    JANELA=capLimite(S.diasElegiveis(ALVO, hojeSP(),
+      (PRAZO && TIPOCON==='retorno') ? {antes:7, depois:PRAZO.depois} : (ALVOMED?{antes:7,depois:7}:null)));
     if(!JANELA || JANELA.situacao==='ainda_nao_abriu'){
       ouOJaMarcado(falha, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima '+PAL()+' está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
       return;
@@ -897,7 +937,8 @@ function diasOfertados(modalidade){
     if(sugPrio!==null && prios[pj]>sugPrio) break;
     var grupo = porPrio[prios[pj]].slice().sort(porPerto);
     if(!grupo.length) continue;
-    lista = grupo.slice(0, lim);
+    /* HAG_PRAZO_PROPORCIONAL_v1: os mais perto do indicado aparecem; o resto do mesmo degrau fica em "ver mais datas" */
+    lista = grupo.map(function(x,i){ x.mais = (i>=lim); return x; });
     break;
   }
   lista.sort(porData);
@@ -973,7 +1014,7 @@ function telaEscolha(nota){
      dizer 'nao ha horarios', alarga uma vez para o padrao do plano. */
   var alargou=false;
   if(!dias.length && ALVOMED){
-    var jOrig=JANELA, j2=S.diasElegiveis(ALVO, hojeSP());
+    var jOrig=JANELA, j2=capLimite(S.diasElegiveis(ALVO, hojeSP(), (PRAZO&&TIPOCON==='retorno')?{antes:7,depois:Math.max(14,PRAZO.depois)}:null)); /* HAG_PRAZO_PROPORCIONAL_v1 */
     if(j2 && j2.situacao==='aberta'){
       JANELA=j2; dias=diasOfertados(TAB);
       if(dias.length) alargou=true; else JANELA=jOrig;
@@ -1077,19 +1118,27 @@ function telaEscolha(nota){
   if(!dias.length){
     h+='<p style="font-size:14.5px;color:var(--ink3)">Não há horários '+(TAB==='online'?'online':'presenciais')+' disponíveis dentro do período ideal da sua '+PAL()+'.</p>';
   } else {
-    var abriuOutros=false;
+    var abriuOutros=false, hMais='', nMais=0;
     dias.forEach(function(dia,di){
+      var at=atrasoDe(dia.data); /* HAG_PRAZO_PROPORCIONAL_v1 */
+      var hd='<div class="dia'+(dia.sugerido?' sug':'')+'"><div class="dia-t">'+dataBR(dia.data)
+        +(dia.sugerido?'<span class="dia-tag">dia indicado</span>':'')
+        +(at?'<span class="dia-atraso">+'+at+' dias '+(ALVOMED?'do indicado':'da data prevista')+'</span>':'')
+        +(TAB!=='online'?'<span class="dia-s">'+LOCAIS[dia.local]+'</span>':'')+'</div><div class="slots">';
+      dia.horarios.forEach(function(s,si){
+        hd+='<button class="slot" onclick="HAGpg.escolher('+di+','+si+')">'+s.hora+'</button>';
+      });
+      hd+='</div></div>';
+      if(dia.mais){ hMais+=hd; nMais++; return; }
       if(!dia.sugerido && !abriuOutros && dias[0] && dias[0].sugerido){
         abriuOutros=true; h+='<div class="sub-t">Outros dias por perto</div>';
       }
-      h+='<div class="dia'+(dia.sugerido?' sug':'')+'"><div class="dia-t">'+dataBR(dia.data)
-        +(dia.sugerido?'<span class="dia-tag">dia indicado</span>':'')
-        +(TAB!=='online'?'<span class="dia-s">'+LOCAIS[dia.local]+'</span>':'')+'</div><div class="slots">';
-      dia.horarios.forEach(function(s,si){
-        h+='<button class="slot" onclick="HAGpg.escolher('+di+','+si+')">'+s.hora+'</button>';
-      });
-      h+='</div></div>';
+      h+=hd;
     });
+    if(nMais){
+      h+='<div id="maisdatas" hidden>'+hMais+'</div>'
+        +'<button class="btn claro mais" onclick="var m=document.getElementById(\'maisdatas\');m.hidden=false;this.remove();">Ver mais datas ('+nMais+')</button>';
+    }
   }
   h+='</div><button class="btn claro" onclick="HAGpg.ajuda()">Nenhum destes horários funciona para mim</button>';
   /* HAG_PLANO_NO_LINK_v1: o cartao do plano vai no topo. Remarcando, a consulta
@@ -1115,6 +1164,7 @@ function telaConfirma(dia,slot){
           +' O sinal já faz parte do valor da consulta: no dia você acerta só o restante.</p>' /* HAG_SINAL_CARTAO_v1 · HAG_SINAL_ABATIDO_v1 */
         : '')
     +'</div>'
+    +avisosPrazo(dia.data) /* HAG_PRAZO_PROPORCIONAL_v1 */
     +'<button class="btn" onclick="HAGpg.confirmar()">'
       +(MODO==='remarcar' ? 'Confirmar a remarcação'
         : ((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)?'Reservar este horário':'Confirmar este horário'))+'</button>'
@@ -1455,6 +1505,8 @@ window.HAGpg={
         return;
       }
       if(r&&r.erro==='ja_agendado'){ iniciar(); return; }
+      /* HAG_PRAZO_PROPORCIONAL_v1: data além do limite do plano vai para a Daniela */
+      if(r&&r.erro==='passa_do_plano'){ telaAjuda('Essa data passa do prazo do seu plano. Toque no botão abaixo e a Daniela organiza o melhor horário com você.'); return; }
       falha((r&&r.mensagem)||'Não consegui concluir agora. Tente de novo em instantes.');
     }).catch(function(){ window.HAGpg._enviando=false;
       falha('Não consegui concluir agora. Verifique a internet e tente de novo.'); });
