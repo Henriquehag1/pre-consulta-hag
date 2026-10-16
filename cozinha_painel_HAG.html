@@ -17,7 +17,9 @@
      nada. "Aberto ao público" deixou de existir na prática, então o botão saiu. O passo 3 virou "O que cada paciente
      recebe": lista o que está liberado, retira, e libera item a item com o porquê. As liberações somam: a consulta
      seguinte acrescenta, não substitui.
-     HAG_INSTALAR_v1 (09/10/2026): as mensagens dizem que a própria página ensina a salvar na tela inicial. -->
+     HAG_INSTALAR_v1 (09/10/2026): as mensagens dizem que a própria página ensina a salvar na tela inicial.
+     HAG_COZINHA_FIZ_v1 (16/10/2026): o paciente toca "Fiz esta receita" e diz como ficou. Aqui aparece o que cada um
+     cozinhou nos últimos 30 dias (cartão "O que cozinharam") e, nos liberados de cada paciente, quantas vezes abriu e fez. -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
 <script src="hag_auth.js?v=20260922-1750"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -105,10 +107,30 @@ async function carregar(){
   D.itens=r[0]||[]; D.meta=(r[1]&&r[1][0]&&r[1][0].dados)||null; D.pacientes=(r[2]||[]);
   try{ D.modelos=await api('treino_programas?modelo=eq.true&patient_id=is.null&select=id,nome,objetivo,nivel,sessoes_semana&order=nome')||[]; }catch(e){ D.modelos=[]; }
   await carregarSel();
+  await carregarEv();
 }
 // HAG_COZINHA_SO_LIBERADO_v1: o que está liberado para cada paciente (seleção ativa).
 async function carregarSel(){ D.sel=await api('cozinha_selecao?ativo=eq.true&select=patient_id,item_id,motivo,ordem,consulta_data,criado_em&order=patient_id,consulta_data.desc.nullslast,ordem')||[]; }
 function selDe(pid){ return D.sel.filter(function(x){return x.patient_id===pid}); }
+// HAG_COZINHA_FIZ_v1: eventos da Cozinha nos últimos 30 dias (abriu, cozinhar, fiz).
+async function carregarEv(){ try{ var d=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  D.ev=await api('cozinha_eventos?tipo=in.(fiz,abriu,cozinhar)&data=gte.'+d+'&select=patient_id,data,hora,tipo,chave,detalhe&order=hora.desc&limit=1000')||[]; }catch(e){ D.ev=[]; } }
+var NOTA={gostei:'Gostei',ajustaria:'Ajustaria',nao:'Não deu certo'};
+function evDe(pid,id,tipo){ return (D.ev||[]).filter(function(e){ return e.patient_id===pid&&e.chave===id&&e.tipo===tipo; }); }
+function usoTxt(pid,id){ var a=evDe(pid,id,'abriu').length, f=evDe(pid,id,'fiz'), t='';
+  if(a) t+=' · abriu em '+a+(a===1?' dia':' dias');
+  if(f.length){ var n=f[0].detalhe&&f[0].detalhe.nota; t+=' · fez '+f.length+(f.length===1?' vez':' vezes')+(n?' (última: '+(NOTA[n]||n)+')':''); }
+  return t; }
+function cardFiz(){
+  var l=(D.ev||[]).filter(function(e){return e.tipo==='fiz'}), nomes={}; D.pacientes.forEach(function(p){ nomes[p.id]=p.nome; });
+  var ab=(D.ev||[]).filter(function(e){return e.tipo==='abriu'}).map(function(e){return e.patient_id}).filter(function(v,i,a){return a.indexOf(v)===i}).length;
+  var h='<div class="card"><h3>O que cozinharam (30 dias)</h3><p class="note">Quando o paciente termina uma receita e toca em "Fiz esta receita", aparece aqui, com o que ele achou. '+ab+(ab===1?' paciente abriu':' pacientes abriram')+' alguma receita no período.</p>';
+  if(!l.length) h+='<p class="note">Ninguém marcou "Fiz esta receita" ainda.</p>';
+  l.slice(0,40).forEach(function(e){ var it=D.itens.filter(function(i){return i.id===e.chave})[0]||{}, r=it.resumo||{}, d=e.detalhe||{};
+    h+='<div class="it"><div class="th">'+(fotoDe(it)?'<img alt="" src="'+esc(fotoDe(it))+'">':'foto')+'</div><div class="tx"><span class="nm">'+esc(nomes[e.patient_id]||e.patient_id)+'</span>'+
+      '<span class="rs">'+esc(r.nome||e.chave)+(d.versao&&d.versao!=='Base'?', '+esc(d.versao):'')+(d.porcoes?' · '+d.porcoes+(d.porcoes>1?' porções':' porção'):'')+'</span>'+
+      '<span class="mt">'+esc(String(e.data).split('-').reverse().join('/'))+(d.nota?' · <b>'+esc(NOTA[d.nota]||d.nota)+'</b>':'')+(d.ajustes&&d.ajustes.length?' · '+esc(d.ajustes.join(', ')):'')+'</span></div></div>'; });
+  return h+'</div>'; }
 function cardPaciente(){
   var h='<div class="card"><h3>3. O que cada paciente recebe</h3><p class="note">O paciente vê <b>só</b> o que está liberado aqui, com o porquê de cada item. Sem o link pessoal, a página não mostra receita nem guia. Liberar soma ao que já estava; retirar some na hora da página dele.</p>'+
     '<div class="row"><select id="pac"><option value="">Escolha o paciente</option>'+
@@ -119,7 +141,7 @@ function cardPaciente(){
     if(!l.length) h+='<p class="note">Nada liberado ainda. A página deste paciente mostra só o aviso de que nada foi liberado.</p>';
     l.forEach(function(x){ var it=D.itens.filter(function(i){return i.id===x.item_id})[0]||{}, r=it.resumo||{};
       h+='<div class="it'+(it.aprovado?'':' pend')+'"><div class="th">'+(fotoDe(it)?'<img alt="" src="'+esc(fotoDe(it))+'">':(it.tipo==='guia'?'guia':'foto'))+'</div><div class="tx"><span class="nm">'+esc(r.nome||x.item_id)+'</span>'+
-         (x.motivo?'<span class="rs"><i>'+esc(x.motivo)+'</i></span>':'')+'<span class="mt">'+(it.tipo==='guia'?'guia':'receita')+(x.consulta_data?' · consulta de '+esc(x.consulta_data.split('-').reverse().join('/')):'')+(it.aprovado?'':' · tirado do ar, o paciente não vê')+'</span></div>'+
+         (x.motivo?'<span class="rs"><i>'+esc(x.motivo)+'</i></span>':'')+'<span class="mt">'+(it.tipo==='guia'?'guia':'receita')+(x.consulta_data?' · consulta de '+esc(x.consulta_data.split('-').reverse().join('/')):'')+(it.aprovado?'':' · tirado do ar, o paciente não vê')+esc(usoTxt(S.pid,x.item_id))+'</span></div>'+
          '<div class="ac"><button class="btn peq sec" data-a="retirar" data-v="'+esc(x.item_id)+'">Retirar</button></div></div>'; });
     h+='</div><div class="grp"><h2>Liberar mais</h2><div class="row"><input id="libq" placeholder="Buscar receita ou guia aprovado" value="'+esc(S.libq||'')+'" style="flex:1;min-width:220px"><button class="btn sec" data-a="libbuscar">Buscar</button></div>'+
        '<div class="row"><input id="libmot" placeholder="Por que (aparece para o paciente, em uma linha; opcional)" value="'+esc(S.libmot||'')+'" style="flex:1;min-width:260px" maxlength="160"></div>';
@@ -233,6 +255,7 @@ function render(){
   });
   h+='</div>';
 
+  h+=cardFiz();
   h+=cardPaciente();
   if(S.confNovo) h+='<div class="erro">O link atual deste paciente deixa de funcionar na hora, na Cozinha e nas Orientações. Use quando o link foi para a pessoa errada ou parou de abrir. <span class="row" style="margin-top:6px"><button class="btn peq" data-a="linknovo">Confirmar: gerar link novo</button><button class="btn peq sec" data-a="cancelanovo">Cancelar</button></span></div>';
   if(S.link){ var p=D.pacientes.filter(function(x){return x.id===S.pid})[0]||{}, pn=String(p.nome||'').split(' ')[0];

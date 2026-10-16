@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#1B2745">
+<meta name="theme-color" content="#0A0E17">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="HAG Cozinha">
@@ -24,219 +24,259 @@
      (cozinha_selecao ativa), e sem o link pessoal a página não mostra conteúdo nenhum, só a apresentação. A trava está no
      banco (hag_cozinha_colecao e hag_cozinha_item), não aqui: esta página só mostra o que vier. Tudo numa aba, "Para você",
      na ordem dele, com o porquê de cada item; receitas e guias juntos. Cache novo (col2) para não exibir a coleção
-     inteira guardada no aparelho por versão anterior. -->
+     inteira guardada no aparelho por versão anterior.
+     HAG_COZINHA_NOTURNO_v1 (16/10/2026): telas novas aprovadas pelo Dr. Henrique. Visual do HAG Treino (escuro e claro),
+     início com filtro, ficha curta com versões em abas, modo cozinhar (Separe, passo a passo com timer, tela acesa) e
+     "Fiz esta receita", que grava em cozinha_eventos (hag_cozinha_evento, HAG_COZINHA_FIZ_v1) para o painel. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:ital,wght@0,400;0,700;1,400&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>/* HAG_COZINHA_NOTURNO_v1: aplica o tema escolhido antes de desenhar, sem piscar */try{if(localStorage.getItem("hagcozinha.tema")==="claro")document.documentElement.dataset.tema="claro"}catch(e){}</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: caderno de receitas de consultório. Uma coluna de leitura (560px), cabeçalho azul-marinho fixo,
-   fichas com moldura de foto 4:3 e uma "tabela de bula" para os nutrientes. */
+/* HAG_COZINHA_NOTURNO_v1 (16/10/2026): visual do HAG Treino (Noturno), escuro por padrão e claro no botão sol e lua.
+   Telas aprovadas pelo Dr. Henrique no canvas "HAG Cozinha · telas novas". */
 :root{
-  --bg:#F6F4EF; --surface:#FFFFFF; --cream:#FAF7F1; --ink:#1B2745; --ink-2:#4A5568; --muted:#6F7585;
-  --line:#E3DED3; --gold:#9C7A36; --gold-ui:#B8924A; --gold-soft:#EFE3C8; --navy:#1B2745; --on-navy:#F4EEDF;
-  --good:#2F7D5B; --good-bg:#E4F1EA; --warn:#A86A12; --warn-bg:#F7EDDC;
-  --btn:#1B2745; --on-btn:#F4EEDF; --bar:#B8924A; --bar-bg:#EEE8DA;
-  --display:"Caladea",Georgia,serif; --body:"Carlito","Lato","Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --bg:#0A0E17; --surface:#131A28; --tile:#1E2738; --ink:#F1F2F5; --ink2:#A9B1C2; --muted:#8A93A7; --line:#252F44;
+  --gold:#E3B964; --btn:#E3B964; --onbtn:#1A1405; --good:#5DD39E; --goodbg:rgba(93,211,158,.14);
+  --rest:#F0B35A; --restbg:rgba(240,179,90,.12); --sombra:0 1px 3px rgba(0,0,0,.25); --veu:rgba(10,14,23,.72);
+  --disp:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Manrope","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0F1524; --surface:#161E31; --cream:#1C2539; --ink:#ECE6D6; --ink-2:#B9BCC6; --muted:#9499A8;
-  --line:#2A3450; --gold:#D4B06A; --gold-ui:#D4B06A; --gold-soft:#3A3322; --navy:#0B1020; --on-navy:#F0E7D2;
-  --good:#5DBB8E; --good-bg:#16302A; --warn:#E0A84A; --warn-bg:#3A2E18;
-  --btn:#ECE6D6; --on-btn:#0F1524; --bar:#D4B06A; --bar-bg:#27304A; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0F1524; --surface:#161E31; --cream:#1C2539; --ink:#ECE6D6; --ink-2:#B9BCC6; --muted:#9499A8;
-  --line:#2A3450; --gold:#D4B06A; --gold-ui:#D4B06A; --gold-soft:#3A3322; --navy:#0B1020; --on-navy:#F0E7D2;
-  --good:#5DBB8E; --good-bg:#16302A; --warn:#E0A84A; --warn-bg:#3A2E18;
-  --btn:#ECE6D6; --on-btn:#0F1524; --bar:#D4B06A; --bar-bg:#27304A; color-scheme:dark}
+:root[data-tema="claro"]{
+  --bg:#F3F4F6; --surface:#FFFFFF; --tile:#E3E6EC; --ink:#0E1320; --ink2:#465063; --muted:#5B6578; --line:#D9DDE5;
+  --gold:#8A6516; --good:#1D8657; --goodbg:rgba(29,134,87,.12); --rest:#9A5D08; --restbg:rgba(154,93,8,.10);
+  --sombra:0 1px 2px rgba(14,19,32,.08); color-scheme:light;
+}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.45;margin:0}
-button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--gold-ui);outline-offset:2px}
-header.top{background:var(--navy);color:var(--on-navy);padding:12px 16px 0;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
-header.top .in,.wrap{max-width:560px;margin:0 auto}
-.brand{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-ui)}
-h1{font-family:var(--display);font-size:23px;margin:1px 0 0;font-weight:700}
-nav.tabs{display:flex;gap:2px;margin-top:8px}
-nav.tabs button{background:none;border:0;color:var(--on-navy);opacity:.72;padding:9px 11px;border-bottom:3px solid transparent;white-space:nowrap;font-size:15.5px}
-nav.tabs button[aria-selected="true"]{opacity:1;border-bottom-color:var(--gold-ui);font-weight:700}
-nav.tabs .n{font-family:var(--mono);font-size:11px;background:var(--gold-ui);color:var(--navy);border-radius:9px;padding:1px 6px;margin-left:4px}
-.wrap{padding-inline:16px;padding-block:16px 80px;display:flex;flex-direction:column;gap:16px}
-.aviso{font-size:13.5px;color:var(--ink-2);background:var(--warn-bg);border-left:3px solid var(--warn);padding:8px 12px}
-h2{font-family:var(--display);font-size:25px;line-height:1.15;margin:0;text-wrap:balance}
-h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;margin:0;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 p{margin:0}
-.muted{color:var(--muted)} .small{font-size:14px}
+.wrap,.top .in{max-width:560px;margin:0 auto}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top,0px)) 16px 6px}
+.top .in{display:flex;justify-content:space-between;align-items:center}
+.marca{font-family:var(--disp);font-weight:700;font-size:22px;letter-spacing:.16em}
+.marca span{color:var(--gold)}
+.redondo{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;padding:0;color:var(--ink)}
+.wrap{padding:6px 16px 24px;display:flex;flex-direction:column;gap:14px}
+.kick{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h1.tit{margin:2px 0 0;font-family:var(--disp);font-weight:700;font-size:40px;line-height:1;text-transform:uppercase}
+.sub{margin-top:4px;font-size:13px;color:var(--muted)}
+h2{font-family:var(--disp);font-weight:700;font-size:30px;line-height:1.05;text-transform:uppercase;margin:0}
+.muted{color:var(--muted)} .small{font-size:13.5px}
+.estado{border:1px dashed var(--line);border-radius:14px;padding:18px 16px;background:var(--surface);color:var(--ink2)}
+.aviso{font-size:14px;color:var(--ink2);background:var(--restbg);border-radius:12px;padding:10px 12px}
 
-/* situações */
-.sits{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
-.sits::-webkit-scrollbar{display:none}
-.sits button{flex:none;background:var(--surface);border:1px solid var(--line);padding:8px 12px;font-size:15px;border-radius:2px}
-.sits button[aria-pressed="true"]{background:var(--btn);color:var(--on-btn);border-color:var(--btn)}
-.sit-head{display:flex;flex-direction:column;gap:2px;margin-top:6px}
-.sit-head p{color:var(--ink-2);font-size:15px}
-.lista{display:flex;flex-direction:column;gap:10px}
-.pv{background:var(--cream);border-left:3px solid var(--gold-ui);padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px}
-.pv .sit-head{margin-top:0}
-.porta{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--gold-ui);padding:18px 16px;display:flex;flex-direction:column;gap:10px}
-.porta h2{font-family:var(--display);font-size:24px;margin:0}
-.porta p{margin:0;color:var(--ink-2)}
-.pv .consulta{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.pv .motivo{font-family:var(--display);font-style:italic;font-size:14.5px;color:var(--gold);line-height:1.3}
-.card{display:grid;grid-template-columns:96px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);padding:10px;text-align:left;width:100%;align-items:start}
-.card .txt{min-width:0;display:flex;flex-direction:column;gap:4px}
-.card .nm{font-family:var(--display);font-size:18.5px;line-height:1.2;font-weight:700}
-.card .res{font-size:14px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--mono);font-size:12px;color:var(--muted)}
-.meta b{color:var(--ink);font-weight:500}
-.foto{aspect-ratio:4/3;width:100%;max-width:100%;background:var(--cream);border:1px dashed var(--gold-ui);display:grid;place-items:center;color:var(--gold);font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;overflow:hidden;position:relative}
-.foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--line);color:var(--muted);align-self:flex-start}
-.tag.pac{border-color:var(--gold-ui);color:var(--gold)}
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:700;white-space:nowrap;color:var(--ink)}
+.chip i{font-style:normal;opacity:.7;font-weight:600;margin-left:4px}
+.chip[aria-pressed="true"]{background:var(--btn);border-color:var(--btn);color:var(--onbtn)}
+.busca input{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:0 14px;font-size:16px}
+
+/* lista do início */
+.linhas{display:flex;flex-direction:column}
+.linha{display:grid;grid-template-columns:72px minmax(0,1fr) 18px;gap:14px;align-items:center;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;width:100%}
+.linha.sem-foto{grid-template-columns:minmax(0,1fr) 18px}
+.th{width:72px;height:72px;border-radius:12px;overflow:hidden;background:var(--tile);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;letter-spacing:.14em;color:var(--gold)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.linha .nm{display:block;font-weight:700;font-size:16px;line-height:1.25}
+.linha .mt{display:block;margin-top:3px;font-size:13px;color:var(--muted)}
+.linha .mt b{color:var(--ink2);font-weight:700}
+.linha .pq{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:3px;font-size:13px;color:var(--ink2)}
+.linha .sv{color:var(--gold);margin-left:8px;display:inline-flex;vertical-align:-2px}
+.seta{color:var(--muted)}
+.orib{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.orib b{display:block;font-size:15px}
+.orib span{display:block;font-size:13px;color:var(--ink2)}
+.rodape{font-size:13px;color:var(--muted);text-align:center;padding-top:6px}
+.rodape button{background:none;border:0;padding:6px;color:var(--gold);font-weight:700;font-size:13px}
 
 /* ficha */
-.voltar{background:none;border:0;padding:0;color:var(--gold);font-size:15px;align-self:flex-start}
-.ficha{display:flex;flex-direction:column;gap:18px}
-.ficha .cab{display:flex;flex-direction:column;gap:6px}
-.ficha .res{font-size:17px;color:var(--ink-2)}
-.fotobox{display:flex;flex-direction:column;gap:6px}
-.fotobox label{font-size:13.5px;color:var(--gold);text-decoration:underline;cursor:pointer;align-self:flex-start}
-.seg{display:flex;flex-direction:column;gap:6px}
-.seg button{background:var(--surface);border:1px solid var(--line);padding:9px 12px;text-align:left;display:flex;flex-direction:column;gap:2px}
-.seg button b{font-size:16px}
-.seg button span{font-size:14px;color:var(--ink-2)}
-.seg button[aria-pressed="true"]{border-color:var(--gold-ui);box-shadow:inset 3px 0 0 var(--gold-ui);background:var(--cream)}
-.macros{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--ink);background:var(--surface)}
-.macros div{padding:8px 6px;text-align:center;border-right:1px solid var(--line);min-width:0}
-.macros div:last-child{border-right:0}
-.macros b{display:block;font-family:var(--display);font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
-.macros span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.porc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:15px}
-.porc b{font-weight:700}
-.dest{display:flex;flex-wrap:wrap;gap:6px}
-.dest span{background:var(--good-bg);color:var(--good);font-size:13.5px;padding:3px 8px}
-.bula{border:1px solid var(--ink);background:var(--surface)}
-.bula summary{padding:10px 12px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:8px}
-.bula summary::-webkit-details-marker{display:none}
-.bula summary::after{content:"abrir";font-family:var(--mono);font-size:11px;color:var(--gold);font-weight:400;letter-spacing:.1em;text-transform:uppercase}
-.bula[open] summary::after{content:"fechar"}
-.bula table{width:100%;border-collapse:collapse;font-size:14.5px;font-variant-numeric:tabular-nums}
-.bula td{padding:5px 12px;border-top:1px solid var(--line);vertical-align:middle}
+.heroi{position:relative;margin:0 -16px;height:240px;background:var(--tile);overflow:hidden}
+.heroi img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.heroi .vazio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:28px;letter-spacing:.2em;color:var(--gold)}
+.heroi .bt{position:absolute;top:12px;width:44px;height:44px;border-radius:50%;border:0;background:var(--veu);color:#F1F2F5;display:flex;align-items:center;justify-content:center;padding:0}
+.heroi .bt.v{left:14px} .heroi .bt.s{right:14px;color:#E3B964}
+.heroi .ilus{position:absolute;right:12px;bottom:8px;font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.8);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.voltar{align-self:flex-start;height:40px;padding:0 12px 0 6px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;gap:4px;font-weight:700;font-size:14px}
+.ficha{display:flex;flex-direction:column;gap:14px}
+.ficha h1{margin:0;font-family:var(--disp);font-weight:700;font-size:32px;line-height:1;text-transform:uppercase}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills span{padding:6px 10px;border-radius:999px;background:var(--tile);font-size:12.5px;font-weight:700}
+.pills .g{color:var(--good)}
+.abas{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--tile);overflow-x:auto;scrollbar-width:none}
+.abas::-webkit-scrollbar{display:none}
+.abas button{flex:1 0 auto;min-height:40px;padding:0 12px;border-radius:9px;border:0;background:transparent;color:var(--muted);font-weight:700;font-size:14px;white-space:nowrap}
+.abas button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--sombra)}
+.ideia{font-size:13.5px;color:var(--ink2);margin-top:-6px}
+.cabsec{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.passador{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2)}
+.passador b{color:var(--ink);font-size:15px;min-width:14px;text-align:center}
+.passador button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:18px;padding:0;line-height:1}
+ul.ing{list-style:none;margin:0;padding:0}
+ul.ing li{display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+ul.ing li b{font-weight:800;font-variant-numeric:tabular-nums}
+ul.ing li .m{color:var(--muted)}
+ul.ing li.novo .nome::after{content:" · nesta versão";color:var(--gold);font-size:12.5px;font-weight:700}
+.dest{font-size:12.5px;color:var(--muted)}
+.dest b{color:var(--good);font-weight:700}
+details.caixa{border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+details.caixa summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:14.5px}
+details.caixa summary::-webkit-details-marker{display:none}
+details.caixa summary::after{content:"+";font-size:20px;color:var(--gold);font-weight:700}
+details.caixa[open] summary::after{content:"\2212"}
+ol.prep{margin:0;padding:0 14px 12px 34px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.dica{margin:0 14px 14px;padding:10px 12px;border-radius:12px;background:var(--tile);font-size:14px;color:var(--ink2)}
+.dica b{color:var(--ink)}
+.bula table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.bula td{padding:5px 14px;border-top:1px solid var(--line);vertical-align:middle}
 .bula td.v{text-align:right;white-space:nowrap}
-.bula td.vd{width:34%}
-.bula tr.grp td{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);background:var(--cream)}
-.barra{height:6px;background:var(--bar-bg);position:relative}
-.barra i{position:absolute;inset:0 auto 0 0;background:var(--bar);max-width:100%}
-.vdn{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.src{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:4px}
-.bula .nota{padding:8px 12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
-.passo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.passo .st{display:flex;align-items:center;border:1px solid var(--line);background:var(--surface)}
-.passo .st button{background:none;border:0;width:40px;height:38px;font-size:20px}
-.passo .st output{min-width:34px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
-ul.ing{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-ul.ing li{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
-ul.ing .g{font-family:var(--mono);font-size:14px;text-align:right;font-variant-numeric:tabular-nums;padding-top:2px}
-ul.ing .m{font-size:14px;color:var(--muted)}
-ul.ing li.novo .nome::after{content:" · entra nesta variação";color:var(--gold);font-size:13px}
-ol.prep{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
-.truque{background:var(--gold-soft);padding:10px 12px;font-size:15.5px}
-.truque b{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:2px;font-weight:500}
-.acao{background:var(--btn);color:var(--on-btn);border:0;padding:13px 16px;font-weight:700;font-size:16.5px;width:100%}
-.acao.sec{background:none;color:var(--ink);border:1px solid var(--ink)}
-.bloco{display:flex;flex-direction:column;gap:8px}
+.bula td.vd{width:32%}
+.bula tr.grp td{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);background:var(--tile)}
+.barra{height:6px;border-radius:3px;background:var(--tile);position:relative;overflow:hidden}
+.barra i{position:absolute;inset:0 auto 0 0;background:var(--good);border-radius:3px;max-width:100%}
+.vdn{font-size:11px;color:var(--muted)}
+.src{font-size:10px;color:var(--muted);margin-left:4px}
+.crunote{font-size:10px;color:var(--rest);margin-left:4px}
+.bula .nota{padding:8px 14px 12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.guardar{font-size:14px;color:var(--ink2)}
+.guardar b{color:var(--ink)}
+.bsec{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:14.5px;width:100%}
+.pe{font-size:12px;color:var(--muted)}
+.barrinha{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.barrinha .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px}
+.barrinha .lst{height:56px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;padding:0;color:var(--ink)}
+.barrinha .lst[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+.grande{height:56px;border-radius:14px;border:0;background:var(--btn);color:var(--onbtn);display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:.08em;width:100%}
+
+/* guias */
+.gbloco{border-left:3px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:6px}
+.gbloco h3{margin:0;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.gbloco.b0{border-color:var(--good)} .gbloco.b2{border-color:var(--rest)} .gbloco.b3{border-color:var(--ink2)}
+.gbloco ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+.pratico .gbloco{border-color:var(--gold)}
+.gicon{width:72px;height:72px;border-radius:12px;background:var(--tile);display:flex;align-items:center;justify-content:center;color:var(--gold)}
 
 /* lista de compras */
-.sel{display:flex;flex-direction:column;border-top:1px solid var(--line)}
-.sel .l{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
-.sel .l .t{min-width:0}
-.sel .x{background:none;border:0;color:var(--muted);font-size:14px;text-decoration:underline;padding:0}
+.sel{display:flex;flex-direction:column}
+.sel .l{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.sel .x{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;padding:0}
 .secao{display:flex;flex-direction:column}
-.secao label{display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);align-items:start}
-.secao label input{margin-top:3px;width:18px;height:18px;accent-color:var(--gold-ui)}
+.secao label{display:grid;grid-template-columns:26px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.secao label input{width:20px;height:20px;accent-color:var(--good);margin:0}
 .secao label.ok span{text-decoration:line-through;color:var(--muted)}
-.secao .q{font-family:var(--mono);font-size:13.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.vazio{border:1px dashed var(--line);padding:18px 14px;color:var(--ink-2);background:var(--surface)}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--btn);color:var(--on-btn);padding:9px 14px;font-size:15px;z-index:9;max-width:90vw}
-.sobre{display:flex;flex-direction:column;gap:14px}
-.sobre li{margin-bottom:6px}
+.secao .q{font-size:13.5px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bloco{display:flex;flex-direction:column;gap:8px}
+.acao{height:52px;border-radius:14px;border:0;background:var(--btn);color:var(--onbtn);font-weight:800;font-size:15px;width:100%}
+.sobre{display:flex;flex-direction:column;gap:14px;font-size:15px}
 .sobre ul{margin:0;padding-left:20px}
-@media (max-width:380px){.card{grid-template-columns:78px 1fr}.macros b{font-size:21px}}
-@media (prefers-reduced-motion:no-preference){.barra i{transition:width .25s}}
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-.busca{display:flex;gap:8px}
-.busca input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);padding:10px 12px;font-size:16px;border-radius:2px}
-.orib{display:flex;flex-direction:column;gap:2px;background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);padding:12px 14px;text-decoration:none;border-left:3px solid var(--gold-ui)}
-.orib b{font-family:var(--display);font-size:18px}
-.orib span{font-size:14.5px}
-.ilus{margin:6px 0 0;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#7a7f8c);text-align:right}
-.foto.vazia{border-style:solid;border-color:var(--line);font-family:var(--display);font-size:15px;letter-spacing:.2em;color:var(--gold-ui)}
-.card[aria-disabled="true"] .nm,.card[aria-disabled="true"] .res{opacity:.6}
-.cadeado{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--gold-ui);color:var(--gold);align-self:flex-start}
-.guia-card{background:var(--surface);border:1px solid var(--line);padding:12px 14px;text-align:left;width:100%;display:flex;flex-direction:column;gap:4px}
-.guia-card .nm{font-family:var(--display);font-size:18.5px;font-weight:700;line-height:1.2}
-.guia-card .res{font-size:14.5px;color:var(--ink-2)}
-.gbloco{border-left:3px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:6px}
-.gbloco.b0{border-color:var(--good)} .gbloco.b2{border-color:var(--warn)} .gbloco.b3{border-color:var(--ink-2)}
-.gbloco ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
-.pratico .gbloco{border-color:var(--gold-ui)}
-.avisobox{background:var(--warn-bg);border-left:3px solid var(--warn);padding:10px 12px;font-size:15px}
-.estado{border:1px dashed var(--line);padding:18px 14px;background:var(--surface);color:var(--ink-2)}
-.pe{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.sobre li{margin-bottom:6px}
+
+/* navegação de baixo */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(10px + env(safe-area-inset-bottom,0px))}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+nav.tabs button,nav.tabs a{height:54px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:600;color:var(--muted);position:relative}
+nav.tabs [aria-selected="true"]{color:var(--gold);font-weight:800}
+nav.tabs .n{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--btn);color:var(--onbtn);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px}
+nav.tabs .n[hidden]{display:none}
+
+/* modo cozinhar */
+#coz{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column}
+#coz[hidden]{display:none}
+.cz{flex:1;display:flex;flex-direction:column;max-width:560px;width:100%;margin:0 auto;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.cz-top{display:flex;align-items:center;gap:10px}
+.cz-x{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;color:var(--ink)}
+.prog{flex:1;display:flex;gap:4px}
+.prog i{flex:1;height:6px;border-radius:3px;background:var(--tile)}
+.prog i.on{background:var(--btn)}
+.cz-tag{font-size:12.5px;font-weight:800;letter-spacing:.06em;color:var(--ink2);white-space:nowrap}
+.acesa{height:32px;padding:0 10px;border-radius:999px;background:var(--tile);display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--good);white-space:nowrap}
+.cz h1{margin:4px 0 0;font-family:var(--disp);font-weight:700;font-size:54px;line-height:.9;text-transform:uppercase}
+.cz .cab{padding-top:22px}
+.itens{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.it{min-height:64px;padding:10px 14px;border-radius:14px;display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);text-align:left;width:100%}
+.it .cx{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--muted);color:var(--bg)}
+.it.ok{border-color:var(--good);opacity:.78}
+.it.ok .cx{border-color:var(--good);background:var(--good)}
+.it .t1{display:block;font-size:16px;font-weight:700}
+.it.ok .t1{text-decoration:line-through}
+.it .t2{display:block;font-size:13px;color:var(--muted)}
+.cz .mais{font-size:13px;color:var(--muted);margin-top:4px}
+.cz .fim{margin-top:auto;padding-top:16px}
+.cz .duo{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px}
+.cz .duo .bsec{height:60px;border-radius:14px}
+.cz .grande{height:60px;font-size:24px}
+.passo-txt{margin:8px 0 0;font-size:26px;line-height:1.28;font-weight:700}
+.timer{margin-top:22px;padding:16px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.timer .tt{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.timer .tt span{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--rest)}
+.timer .tt button{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink2);font-weight:700;font-size:12.5px}
+.relogio{font-family:var(--disp);font-weight:700;font-size:104px;line-height:.95;text-align:center;color:var(--rest);font-variant-numeric:tabular-nums}
+.timer .bar{height:8px;border-radius:4px;background:var(--tile);overflow:hidden}
+.timer .bar i{display:block;height:8px;background:var(--rest);width:0}
+.timer .bts{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.timer .bts button{height:52px;border-radius:12px;font-weight:800;font-size:15px;border:1px solid var(--line);background:transparent}
+.timer .bts .go{border:0;background:var(--rest);color:#1A1405}
+.timer.fim{border-color:var(--good)}
+.timer.fim .relogio,.timer.fim .tt span{color:var(--good)}
+.cz .nota{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--tile);font-size:14px;line-height:1.4;color:var(--ink2)}
+.cz .nota b{color:var(--ink)}
+.feito{width:84px;height:84px;border-radius:50%;background:var(--goodbg);color:var(--good);display:flex;align-items:center;justify-content:center;margin:34px auto 0}
+.cz .centro{text-align:center}
+.notas{margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.notas button,.ajs button{border-radius:12px;font-weight:700;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.notas button{height:52px}
+.ajs{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+.ajs button{height:40px;padding:0 14px}
+.notas button[aria-pressed="true"],.ajs button[aria-pressed="true"]{background:var(--btn);border-color:var(--btn);color:var(--onbtn)}
+.salvar{margin-top:20px;height:56px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 16px;font-weight:700;font-size:15px;width:100%;color:var(--ink)}
+.agoranao{height:44px;width:100%;border:0;background:none;color:var(--muted);font-weight:600;font-size:14px;margin-top:6px}
+
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14.5px;font-weight:600;z-index:30;max-width:90vw}
 .so-print{display:none}
-.crunote{font-family:var(--mono);font-size:10px;color:var(--warn);margin-left:4px}
+@media (max-width:360px){h1.tit{font-size:34px}.relogio{font-size:88px}.passo-txt{font-size:23px}.notas button{font-size:13px}}
 @media print{
-  header.top,.voltar,.acao,.fotobox label,.seg,.passo,.toast,.sits,.busca,.nao-print{display:none!important}
+  .top,nav.tabs,.barrinha,.voltar,.heroi .bt,.abas,.passador,.toast,#coz,.chips,.busca,.nao-print,.hagi{display:none!important}
   .so-print{display:block}
-  body{background:#fff;color:#000;font-size:11.5pt}
+  body{background:#fff;color:#000;font-size:11pt;padding:0}
+  :root{--ink:#000;--ink2:#222;--muted:#444;--line:#bbb;--surface:#fff;--tile:#eee;--gold:#6b4f12;--good:#1D8657}
   .wrap{max-width:none;padding:0;gap:10px}
-  .ficha{gap:10px}
-  .bula summary{display:none}
-  .bula{border:1px solid #000}
-  .bula>*{display:block}
-  .bula table{display:table}
-  .foto.vazia{display:none}
-  .fotobox .foto{max-width:60%;margin:0 auto}
-  .truque,.dest span,.avisobox,.barra,.barra i,.bula tr.grp td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  h2{font-size:20pt}
-  .truque,.macros,ul.ing li,ol.prep li,.gbloco li,.bula tr{break-inside:avoid}
-  h3{break-after:avoid}
-  .bula table{font-size:9.5pt}
-  .bula td{padding:2px 8px}
-  .fotobox:has(.vazia){display:none}
-  .porc{font-size:10.5pt}
+  .heroi{margin:0;height:auto;max-height:70mm}
+  .heroi .vazio{display:none}
+  details.caixa>*{display:block}
+  details.caixa summary::after{display:none}
+  .bula table{display:table;font-size:9pt}
+  ul.ing li,ol.prep li,.gbloco li,.bula tr{break-inside:avoid}
   @page{margin:14mm}
 }
-/* HAG_INSTALAR_v1: aviso "salve na tela do celular" */
-.hagi{box-sizing:border-box;margin:16px auto 0;width:100%;max-width:560px;background:var(--surface,#fff);border:1px solid var(--line,#E3DED3);border-left:3px solid var(--gold-ui,#B8924A);padding:12px 14px;display:flex;flex-direction:column;gap:10px;border-radius:2px}
-body>.hagi{width:calc(100% - 32px);max-width:528px}
+/* HAG_INSTALAR_v1: aviso "salve na tela do celular" (cores do Noturno) */
+.hagi{box-sizing:border-box;margin:12px auto 0;width:calc(100% - 32px);max-width:528px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .hagi[hidden]{display:none}
 .hagi-top{display:flex;gap:12px;align-items:center}
 .hagi-top img{border-radius:10px;flex:none}
-.hagi-top b{display:block;font-family:var(--display,Georgia,serif);font-size:17.5px;line-height:1.2;color:var(--ink,#1B2745)}
-.hagi-top span{display:block;font-size:14px;color:var(--ink-2,#4A5568);line-height:1.3;margin-top:2px}
+.hagi-top b{display:block;font-size:15.5px;line-height:1.25;color:var(--ink)}
+.hagi-top span{display:block;font-size:13.5px;color:var(--ink2);line-height:1.3;margin-top:2px}
 .hagi-corpo[hidden]{display:none}
 .hagi-passos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.hagi-passos li{display:grid;grid-template-columns:24px 38px 1fr;gap:8px;align-items:start;background:var(--cream,#FAF7F1);padding:9px 10px}
-.hagi-n{font-family:var(--mono,monospace);font-size:12px;color:var(--gold,#9C7A36);padding-top:9px;text-align:center}
-.hagi-ic{width:38px;height:38px;border-radius:9px;background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);display:flex;align-items:center;justify-content:center}
-.hagi-t b{display:block;font-size:15px;color:var(--ink,#1B2745)}
-.hagi-t span{display:block;font-size:13.5px;color:var(--ink-2,#4A5568);line-height:1.35;margin-top:2px}
+.hagi-passos li{display:grid;grid-template-columns:24px 38px 1fr;gap:8px;align-items:start;background:var(--tile);border-radius:10px;padding:9px 10px}
+.hagi-n{font-size:12px;font-weight:800;color:var(--gold);padding-top:9px;text-align:center}
+.hagi-ic{width:38px;height:38px;border-radius:9px;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center}
+.hagi-t b{display:block;font-size:14.5px;color:var(--ink)}
+.hagi-t span{display:block;font-size:13px;color:var(--ink2);line-height:1.35;margin-top:2px}
 .hagi-acoes{display:flex;flex-wrap:wrap;gap:8px}
-.hagi-b{flex:1 1 auto;min-height:42px;padding:8px 14px;border:1px solid var(--navy,#1B2745);background:var(--navy,#1B2745);color:var(--on-navy,#F4EEDF);font:inherit;font-size:15px;font-weight:700;cursor:pointer;border-radius:2px}
-.hagi-b.sec{background:transparent;color:var(--ink,#1B2745)}
+.hagi-b{flex:1 1 auto;min-height:44px;padding:8px 14px;border:0;background:var(--btn);color:var(--onbtn);font-size:14.5px;font-weight:800;border-radius:12px}
+.hagi-b.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .hagi-b[hidden]{display:none}
-@media print{.hagi{display:none!important}}
 </style>
 </head>
 <body>
 <header class="top"><div class="in">
-  <div class="brand">Método HAG</div>
-  <h1>Cozinha</h1>
-  <nav class="tabs" role="tablist">
-    <button role="tab" id="tab-rec" aria-selected="true" data-t="rec">Para você</button>
-    <button role="tab" id="tab-lista" aria-selected="false" data-t="lista">Lista<span class="n" id="nlista" hidden>0</span></button>
-    <button role="tab" id="tab-sobre" aria-selected="false" data-t="sobre">Os números</button>
-  </nav>
+  <span class="marca">HAG <span>COZINHA</span></span>
+  <button type="button" class="redondo" id="tema" aria-label="Trocar tema"></button>
 </div></header>
 <script>window.HAG_INSTALAR={app:'cozinha',nome:'HAG Cozinha',icone:'icone-cozinha',antes:'#app'};</script>
 <script>
@@ -254,7 +294,7 @@ body>.hagi{width:calc(100% - 32px);max-width:528px}
   // manifesto com o link pessoal como endereço de partida
   try{
     var man={name:CFG.nome,short_name:CFG.nome,start_url:location.href.split('#')[0],scope:base,display:'standalone',
-      background_color:'#F6F4EF',theme_color:'#1B2745',
+      background_color:'#0A0E17',theme_color:'#0A0E17',
       icons:[{src:base+CFG.icone+'-192.png',sizes:'192x192',type:'image/png'},{src:base+CFG.icone+'-512.png',sizes:'512x512',type:'image/png'}]};
     var l=document.createElement('link'); l.rel='manifest'; l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man)); document.head.appendChild(l);
   }catch(e){}
@@ -312,14 +352,23 @@ body>.hagi{width:calc(100% - 32px);max-width:528px}
   window.hagInstalar={mostrar:montar,fechar:fechar,vis:vis,_estado:function(){return {ios:ios,android:android,dentro:dentro,app:app,mostra:deveMostrar()}}};
 })();
 </script>
-<main class="wrap" id="app"><div class="estado">Carregando a coleção…</div></main>
+<main class="wrap" id="app"><div class="estado">Carregando…</div></main>
+<nav class="tabs" id="nav" aria-label="Seções" hidden></nav>
+<div class="barrinha" id="barra" hidden></div>
+<section id="coz" aria-label="Modo cozinhar" hidden></section>
 <div class="toast" id="toast" hidden></div>
 
 <script>
 (function(){
 "use strict";
+/* HAG_COZINHA_NOTURNO_v1 (16/10/2026). Telas aprovadas pelo Dr. Henrique ("tudo aprovado pode fazer"):
+   1 modo cozinhar (Separe, um passo por tela, timer com "Virei", tela acesa), 2 "Fiz esta receita" (Como ficou?,
+   ajustes rápidos, salvar), registrado em cozinha_eventos pela hag_cozinha_evento (HAG_COZINHA_FIZ_v1) para o médico
+   ver no painel, 3 visual do Treino (escuro e claro), 4 início enxuto com filtro por situação e Salvas,
+   5 ficha curta com versões em abas. A trava de conteúdo continua no banco (HAG_COZINHA_SO_LIBERADO_v1).
+   Salvas ficam só no aparelho. Eventos: "abriu" e "cozinhar" no máximo um por receita por dia; "fiz" com nota. */
 var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co', SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
-var $=function(s){return document.querySelector(s)}, app=$('#app');
+var $=function(s){return document.querySelector(s)}, app=$('#app'), coz=$('#coz');
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var fmt=function(v,d){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0})};
 var ls={get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -332,34 +381,85 @@ try{ Object.keys(localStorage).forEach(function(k){ if(k==='hagcozinha.col.indic
 var CK='hagcozinha.col2.'+String(TOKEN||'').slice(0,12)+'.';
 
 var COL=null, IDX={}, FICHAS={};
-var st={tab:'rec',sit:'todas',q:'',rec:null,guia:null,vari:-1,porc:1,lista:[],feitos:{},erro:null,carregando:null};
+var st={tab:'rec',filtro:'todas',q:'',rec:null,guia:null,vari:-1,porc:1,lista:[],feitos:{},erro:null,carregando:null,salvas:ls.get('hagcozinha.salvas')||{},coz:null};
 (function(){var s=ls.get('hagcozinha.col.lista'); if(s&&Array.isArray(s.lista)){st.lista=s.lista; st.feitos=s.feitos||{};}})();
 var salvar=function(){ls.set('hagcozinha.col.lista',{lista:st.lista,feitos:st.feitos})};
+var salvarSalvas=function(){ls.set('hagcozinha.salvas',st.salvas)};
+
+var IC={
+  sol:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  lua:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+  seta:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+  volta:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>',
+  vai:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  ok:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>',
+  x:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  cel:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+  lista:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+  rec:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 11h16M5 11a7 7 0 0 0 14 0M12 4v3M8 5.5l1 2.5M16 5.5l-1 2.5"/></svg>',
+  guia:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>',
+  ori:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>'
+};
+function coracao(on,tam){ return '<svg width="'+(tam||20)+'" height="'+(tam||20)+'" viewBox="0 0 24 24" fill="'+(on?'currentColor':'none')+'" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-4.5-7-11a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 6.5-7 11-7 11z"/></svg>'; }
+
+/* tema: escuro por padrão, claro no botão (mesmo jeito do HAG Treino) */
+function claro(){ return document.documentElement.dataset.tema==='claro'; }
+function aplicaTema(c){
+  if(c) document.documentElement.dataset.tema='claro'; else delete document.documentElement.dataset.tema;
+  var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=c?'#F3F4F6':'#0A0E17';
+  var b=$('#tema'); if(b){ b.innerHTML=c?IC.lua:IC.sol; b.setAttribute('aria-label',c?'Usar tema escuro':'Usar tema claro'); }
+}
+aplicaTema(claro());
+$('#tema').addEventListener('click',function(){ var c=!claro(); try{ localStorage.setItem('hagcozinha.tema',c?'claro':'escuro'); }catch(e){} aplicaTema(c); });
 
 async function rpc(nome,args){
   var r=await fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
   if(!r.ok) throw new Error('erro '+r.status);
   return r.json();
 }
+/* HAG_COZINHA_FIZ_v1: eventos para o painel. Sem internet, ficam guardados e saem na próxima abertura. */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,10); }
+function evento(tipo,chave,det){
+  if(!TOKEN) return;
+  var e={t:tipo,c:chave,d:det||null,id:uid()}, pend=ls.get('hagcozinha.ev.pend')||[];
+  pend.push(e); ls.set('hagcozinha.ev.pend',pend.slice(-30)); enviarPendentes();
+}
+var enviando=false;
+async function enviarPendentes(){
+  if(enviando||!TOKEN) return; enviando=true;
+  try{
+    var pend=ls.get('hagcozinha.ev.pend')||[];
+    while(pend.length){
+      var e=pend[0];
+      try{ await rpc('hag_cozinha_evento',{p_token:TOKEN,p_tipo:e.t,p_chave:e.c,p_detalhe:e.d,p_client_id:e.id}); }
+      catch(er){ break; }
+      pend.shift(); ls.set('hagcozinha.ev.pend',pend);
+    }
+  } finally { enviando=false; }
+}
+
 // Coleção sem nada aprovado chega com meta nula: nesse caso não há o que montar, e a página avisa em vez de quebrar.
-// HAG_COZINHA_SO_LIBERADO_v1: só existe coleção para quem tem link válido; sem item liberado, a página diz isso.
 function aplicar(c){ if(!c||!c.paciente||!c.meta||!Array.isArray(c.itens)){ COL=null; IDX={}; st.vazia=true; return false; } st.vazia=!c.itens.length; COL=c; IDX={}; c.itens.forEach(function(i){IDX[i.id]=i}); return true; }
+function lib(){ return (COL&&COL.para_voce||[]).filter(function(x){ return IDX[x.id]; }); }
 async function carregar(){
   if(!TOKEN){ st.semLink=true; render(); return; }
   var cache=ls.get(CK+'indice');
-  if(cache&&cache.itens&&cache.meta){ try{ if(aplicar(cache)) render(); }catch(e){ COL=null; } }
+  if(cache&&cache.itens&&cache.meta){ try{ if(aplicar(cache)){ inicioPadrao(); render(); } }catch(e){ COL=null; } }
   var pf=carregarFotos(); st.carregandoIndice=true;
   try{
     var c=await rpc('hag_cozinha_colecao',{p_token:TOKEN});
     if(!c.paciente){ st.linkInvalido=true; COL=null; IDX={}; try{ localStorage.removeItem(CK+'indice'); }catch(e){} }
     // Orientações liberadas pelo médico para este paciente: só o aviso de que existem. O conteúdo fica na página própria.
-    if(TOKEN&&c.paciente) rpc('hag_orientacoes_paciente',{p_token:TOKEN}).then(function(o){ if(o&&o.ok&&o.itens&&o.itens.length){ st.ori={n:o.itens.length,novas:o.itens.filter(function(x){return x.novo}).length}; if(!st.rec&&!st.guia) render(); } }).catch(function(){});
-    if(aplicar(c)){ ls.set(CK+'indice',c); if(window.hagInstalar) window.hagInstalar.mostrar(); } st.erro=null;
-  }catch(e){ if(!COL) st.erro='Não foi possível carregar a coleção. Confira a internet e tente de novo.'; }
+    if(TOKEN&&c.paciente) rpc('hag_orientacoes_paciente',{p_token:TOKEN}).then(function(o){ if(o&&o.ok&&o.itens&&o.itens.length){ st.ori={n:o.itens.length,novas:o.itens.filter(function(x){return x.novo}).length}; if(!st.rec&&!st.guia&&!st.coz) render(); } }).catch(function(){});
+    if(aplicar(c)){ ls.set(CK+'indice',c); inicioPadrao(); if(window.hagInstalar) window.hagInstalar.mostrar(); } st.erro=null;
+  }catch(e){ if(!COL) st.erro='Não foi possível carregar. Confira a internet e tente de novo.'; }
   st.carregandoIndice=false;
   await pf;
+  enviarPendentes();
   var h=location.hash.slice(1); if(h&&IDX[h]&&!st.rec&&!st.guia) abrir(h); else render();
 }
+// Só guias liberados: começa na aba Guias.
+function inicioPadrao(){ if(st.tab==='rec'&&!st.rec&&!st.guia){ var L=lib(); if(L.length&&!L.some(function(x){return IDX[x.id].tipo==='receita'})) st.tab='guias'; } }
 async function ficha(id){
   if(FICHAS[id]) return FICHAS[id];
   var c=ls.get(CK+'f.'+id);
@@ -373,6 +473,7 @@ async function ficha(id){
 
 function toast(t){var el=$('#toast'); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(function(){el.hidden=true},2400)}
 function gramas(g){ if(g<1) return fmt(g,1)+' g'; return g>=1000?fmt(g/1000,g%1000?1:0)+' kg':fmt(g)+' g'; }
+function gr(g){ return gramas(g>=5?Math.round(g):Math.round(g*10)/10); }
 // Fotos: a do banco (foto_url) manda; sem ela, vale a que está na pasta cozinha_fotos/ do site, listada em lista.json.
 var FOTOS={};
 function porFotos(l){ FOTOS={}; if(Array.isArray(l)) l.forEach(function(id){ if(/^[a-z0-9-]+$/.test(id)) FOTOS[id]=1; }); }
@@ -382,45 +483,76 @@ function carregarFotos(){
     .then(function(l){ if(Array.isArray(l)){ porFotos(l); ls.set('hagcozinha.col.fotos',l); } }).catch(function(){});
 }
 function fotoDe(i,grande){ return i.foto||(i.id&&FOTOS[i.id]?'cozinha_fotos/'+(grande?'':'p/')+i.id+'.jpg':null); }
-function fotoHTML(i,grande){ var u=fotoDe(i,grande); return u?'<div class="foto"><img alt="" loading="lazy" src="'+esc(u)+'"></div>':'<div class="foto vazia" aria-hidden="true">HAG</div>'; }
-function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function dataBR(d){ return d?d.split('-').reverse().slice(0,2).join('/'):''; }
 
-function telaReceitas(){
-  // HAG_COZINHA_SO_LIBERADO_v1: a tela inicial é a lista do que o Dr. Henrique liberou, na ordem dele, com o porquê.
-  var h='', q=norm(st.q.trim());
-  if(st.ori) h+='<a class="orib" href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'"><b>Suas orientações</b><span>'+(st.ori.novas?st.ori.novas+(st.ori.novas===1?' nova':' novas')+' do Dr. Henrique para você':st.ori.n+(st.ori.n===1?' orientação':' orientações')+' do Dr. Henrique para você')+' &rarr;</span></a>';
-  var PV=(COL.para_voce||[]).filter(function(x){ return IDX[x.id]; });
-  if(!PV.length){ app.innerHTML=h+'<div class="estado">O Dr. Henrique ainda não liberou receitas e guias para você. Eles aparecem aqui depois da consulta.</div>'; return; }
-  var nr=PV.filter(function(x){return IDX[x.id].tipo==='receita'}).length, ng=PV.length-nr;
-  h+='<section class="bloco pv" aria-label="Separadas para você"><div class="sit-head"><h2>Separadas para você</h2><p>Escolhidas pelo Dr. Henrique a partir do seu plano'+
-     ' ('+(nr?nr+(nr===1?' receita':' receitas'):'')+(nr&&ng?' e ':'')+(ng?ng+(ng===1?' guia':' guias'):'')+'). Novas aparecem aqui conforme o seu acompanhamento.</p></div>';
-  if(PV.length>10) h+='<div class="busca"><input type="search" id="busca" placeholder="Buscar nas suas receitas" value="'+esc(st.q)+'" autocomplete="off"></div>';
-  var ultima=null, total=0, datas=PV.map(function(x){return x.consulta||''}).filter(function(d,i,l){return d&&l.indexOf(d)===i});
-  h+='<div class="lista">';
-  PV.forEach(function(x){ var r=IDX[x.id];
-    if(q && norm(r.r.nome+' '+(r.r.resumo||'')+' '+(x.motivo||'')).indexOf(q)<0) return; total++;
-    if(datas.length>1 && (x.consulta||'')!==ultima){ ultima=x.consulta||''; h+='<span class="consulta">'+(ultima?'Consulta de '+ultima.split('-').reverse().join('/'):'Liberadas depois')+'</span>'; }
-    var mot=x.motivo?'<span class="motivo">'+esc(x.motivo)+'</span>':'';
-    if(r.tipo==='guia') h+='<button class="guia-card" data-abrir="'+r.id+'"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+'<span class="res">'+esc(r.r.resumo)+'</span><span class="cadeado" style="background:none;padding:0">guia</span></button>';
-    else h+='<button class="card" data-abrir="'+r.id+'">'+fotoHTML(r)+'<span class="txt"><span class="nm">'+esc(r.r.nome)+'</span>'+mot+
-       '<span class="meta"><span><b>'+r.r.tempo+'</b> min</span><span><b>'+fmt(r.r.kcal)+'</b> kcal</span><span><b>'+fmt(r.r.ptn)+' g</b> proteína</span>'+(r.r.nvar?'<span>'+r.r.nvar+' variações</span>':'')+'</span></span></button>';
+/* nomes curtos das situações, para os filtros */
+var SITC={manha:'Café rápido',tarde:'Jantar rápido',domingo:'Domingo',apetite:'Pouco apetite',doce:'Doce',treino:'Treino',mes:'Fim de mês',
+  visita:'Visitas',bolsa:'Lanche de bolsa',airfryer:'Air fryer',molhos:'Molhos',bebidas:'Bebidas',natal:'Natal',junina:'Festa junina',
+  wrap:'Wrap',bowl:'Bowl e salada',proteina:'Proteína',freezer:'Freezer'};
+function sitNome(g){ if(SITC[g]) return SITC[g]; var s=(COL.meta.situacoes||[]).filter(function(x){return x.id===g})[0]; return s?s.nome:g; }
+
+function linhaHTML(x,r){
+  var u=fotoDe(r), sv=st.salvas[r.id]?'<span class="sv">'+coracao(true,13)+'</span>':'';
+  if(r.tipo==='guia') return '<button class="linha" data-abrir="'+r.id+'"><span class="gicon">'+IC.guia+'</span><span><span class="nm">'+esc(r.r.nome)+'</span>'+
+    '<span class="mt"><b>Guia</b>'+sv+'</span>'+(x.motivo?'<span class="pq">'+esc(x.motivo)+'</span>':'')+'</span><span class="seta">'+IC.seta+'</span></button>';
+  return '<button class="linha" data-abrir="'+r.id+'"><span class="th">'+(u?'<img alt="" loading="lazy" src="'+esc(u)+'" onerror="this.parentNode.textContent=\'HAG\'">':'HAG')+'</span>'+
+    '<span><span class="nm">'+esc(r.r.nome)+'</span><span class="mt"><b>'+r.r.tempo+' min</b> · '+fmt(r.r.ptn)+' g proteína'+sv+'</span>'+
+    (x.motivo?'<span class="pq">'+esc(x.motivo)+'</span>':'')+'</span><span class="seta">'+IC.seta+'</span></button>';
+}
+function oriHTML(){
+  if(!st.ori) return '';
+  return '<a class="orib" href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'"><span><b>Suas orientações</b><span>'+
+    (st.ori.novas?st.ori.novas+(st.ori.novas===1?' nova':' novas'):st.ori.n+(st.ori.n===1?' orientação':' orientações'))+' do Dr. Henrique</span></span><span class="seta">'+IC.seta+'</span></a>';
+}
+function telaInicio(tipo){
+  // HAG_COZINHA_SO_LIBERADO_v1: só o que o Dr. Henrique liberou, na ordem dele, com o porquê.
+  var PV=lib().filter(function(x){ return IDX[x.id].tipo===tipo; }), q=norm(st.q.trim());
+  var datas=lib().map(function(x){return x.consulta||''}).filter(Boolean).sort();
+  var h='<div><div class="kick">Separadas para você</div><h1 class="tit">'+(tipo==='guia'?'Guias':'Para você')+'</h1>'+
+    '<div class="sub">Escolhidas pelo Dr. Henrique'+(datas.length?' · consulta '+dataBR(datas[datas.length-1]):'')+'</div></div>';
+  if(tipo==='receita') h+=oriHTML();
+  if(!PV.length){
+    app.innerHTML=h+'<div class="estado">'+(tipo==='guia'?'Nenhum guia liberado para você por enquanto.':'O Dr. Henrique ainda não liberou receitas para você. Elas aparecem aqui depois da consulta.')+'</div>';
+    return;
+  }
+  var lista=PV;
+  if(tipo==='receita'){
+    var conta={}, ordem=[];
+    PV.forEach(function(x){ var g=IDX[x.id].grupo; if(!conta[g]){ conta[g]=0; ordem.push(g); } conta[g]++; });
+    var nsv=PV.filter(function(x){return st.salvas[x.id]}).length;
+    if(st.filtro==='salvas'&&!nsv) st.filtro='todas';
+    if(st.filtro!=='todas'&&st.filtro!=='salvas'&&!conta[st.filtro]) st.filtro='todas';
+    var chips=[['todas','Todas',PV.length]];
+    if(ordem.length>1) ordem.forEach(function(g){ chips.push([g,sitNome(g),conta[g]]); });
+    if(nsv) chips.push(['salvas','Salvas',nsv]);
+    if(chips.length>1) h+='<div class="chips" role="group" aria-label="Filtrar">'+chips.map(function(c){ return '<button class="chip" data-filtro="'+esc(c[0])+'" aria-pressed="'+(st.filtro===c[0])+'">'+esc(c[1])+'<i>'+c[2]+'</i></button>'; }).join('')+'</div>';
+    lista=PV.filter(function(x){ return st.filtro==='todas'||(st.filtro==='salvas'?st.salvas[x.id]:IDX[x.id].grupo===st.filtro); });
+  }
+  if(PV.length>10) h+='<div class="busca"><input type="search" id="busca" placeholder="Buscar" value="'+esc(st.q)+'" autocomplete="off" aria-label="Buscar"></div>';
+  var n=0;
+  h+='<div class="linhas">';
+  lista.forEach(function(x){ var r=IDX[x.id];
+    if(q && norm(r.r.nome+' '+(r.r.resumo||'')+' '+(x.motivo||'')).indexOf(q)<0) return; n++;
+    h+=linhaHTML(x,r);
   });
-  h+='</div></section>';
-  if(!total) h+='<div class="estado">Nada com essa busca. Tente outra palavra.</div>';
+  h+='</div>';
+  if(!n) h+='<div class="estado">Nada com essa busca.</div>';
+  h+='<div class="rodape"><button id="numeros">De onde vêm os números</button></div>';
   app.innerHTML=h;
 }
 
 function telaPorta(){
-  app.innerHTML='<div class="porta"><h2>Cozinha do Método HAG</h2><p>Receitas e guias práticos que o Dr. Henrique separa para cada paciente, a partir do plano e do momento de cada um.</p>'+
+  app.innerHTML='<div><div class="kick">Método HAG</div><h1 class="tit">Cozinha</h1></div><div class="estado">Receitas e guias que o Dr. Henrique separa para cada paciente, a partir do plano e do momento de cada um.</div>'+
     (st.linkInvalido?'<div class="aviso">Este link pessoal não está mais ativo. Peça um link novo à equipe do consultório pelo WhatsApp.</div>'
-                    :'<p>O acesso é pelo link pessoal enviado pelo consultório. Se você é paciente e não encontra o seu, peça à equipe pelo WhatsApp.</p>')+'</div>';
+                    :'<p class="small muted">O acesso é pelo link pessoal enviado pelo consultório. Se você é paciente e não encontra o seu, peça à equipe pelo WhatsApp.</p>');
 }
 
 var GRUPOS=[['Macronutrientes',['kcal','ptn','cho','lip','sat_g','fibra','sodio_mg','colesterol_mg']],
             ['Minerais',['calcio_mg','ferro_mg','magnesio_mg','zinco_mg','potassio_mg','fosforo_mg','selenio_mcg','cobre_mg','manganes_mg']],
             ['Vitaminas',['rae_mcg','vitd_mcg','vite_mg','vitc_mg','tiamina_mg','riboflavina_mg','niacina_mg','piridoxina_mg','folato_dfe_mcg','b12_mcg']]];
 function bula(n){
-  var h='<details class="bula"><summary>Tabela completa, por porção</summary><table>', temCru=false;
+  var h='<details class="caixa bula"><summary>Tabela completa, por porção</summary><table>', temCru=false;
   GRUPOS.forEach(function(g){
     h+='<tr class="grp"><td colspan="3">'+g[0]+'</td></tr>';
     g[1].forEach(function(k){
@@ -435,47 +567,50 @@ function bula(n){
   return h;
 }
 function versao(r,i){return i<0?r:r.var[i]}
+function vnome(v){ var t=String(v.nome||'').replace(/^Destino \d+: /,''); return t.charAt(0).toUpperCase()+t.slice(1); }
+function ingDe(r,vi){ return vi<0?r.ing:versao(r,vi).ing; }
 
 function telaFicha(){
   var it=IDX[st.rec], F=FICHAS[st.rec];
-  if(!F){ app.innerHTML='<button class="voltar" id="voltar">&larr; Para você</button><div class="estado">'+(st.carregando===st.rec?'Abrindo a receita…':'Não foi possível abrir esta receita agora. Confira a internet e tente de novo.')+'</div>'; return; }
-  var r=F.dados, v=versao(r,st.vari), n=v.n, ing=st.vari<0?r.ing:v.ing, novos=st.vari<0?[]:v.poe.map(function(x){return x.k}), f=st.porc/r.rende;
-  var naLista=st.lista.some(function(x){return x.id===r.id&&x.vari===st.vari});
-  var sit='Para você';
-  var h='<button class="voltar" id="voltar">&larr; '+esc(sit)+'</button><article class="ficha">';
-  h+='<div class="so-print" style="font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase">Método HAG · Cozinha</div>';
-  h+='<div class="cab"><h2>'+esc(r.nome)+(st.vari>=0?', '+esc(v.nome.replace(/^Destino \d: /,'')):'')+'</h2><p class="res">'+esc(st.vari<0?r.resumo:v.ideia)+'</p></div>';
-  h+='<div class="fotobox">'+fotoHTML(it||{},true)+(fotoDe(it||{},true)?'<p class="ilus">Imagem ilustrativa</p>':'')+'</div>';
-  if(r.aviso) h+='<div class="avisobox">'+esc(r.aviso)+'</div>';
-  if(r.var.length) h+='<div class="bloco nao-print"><h3>Uma base, '+(r.var.length+1)+' versões</h3><div class="seg">'+
-     '<button aria-pressed="'+(st.vari<0)+'" data-vari="-1"><b>Receita base</b><span>'+fmt(r.n.kcal.v)+' kcal · '+fmt(r.n.ptn.v)+' g de proteína</span></button>'+
-     r.var.map(function(x,i){return '<button aria-pressed="'+(st.vari===i)+'" data-vari="'+i+'"><b>'+esc(x.nome)+'</b><span>'+esc(x.ideia)+'</span><span>'+fmt(x.n.kcal.v)+' kcal · '+fmt(x.n.ptn.v)+' g de proteína</span></button>'}).join('')+'</div></div>';
-  h+='<div class="bloco"><h3>Por porção</h3><div class="macros"><div><b>'+fmt(n.kcal.v)+'</b><span>kcal</span></div><div><b>'+fmt(n.ptn.v)+'</b><span>proteína g</span></div><div><b>'+fmt(n.cho.v)+'</b><span>carbo g</span></div><div><b>'+fmt(n.lip.v)+'</b><span>gordura g</span></div></div>';
-  h+='<div class="porc"><span><b>Porção:</b> '+esc(r.porcao)+'</span><span><b>Peso:</b> cerca de '+fmt(v.peso)+' g</span><span><b>Rende:</b> '+r.rende+(r.rende>1?' porções':' porção')+'</span><span><b>Tempo:</b> '+r.tempo+' min</span><span><b>Fibra:</b> '+fmt(n.fibra.v,1)+' g</span></div>';
-  if(v.dest&&v.dest.length) h+='<div class="dest">'+v.dest.map(function(k){return '<span>'+COL.meta.rotulo[k].nome+' '+n[k].vd+'% do dia</span>'}).join('')+'</div>';
-  h+=bula(n)+'</div>';
-  h+='<div class="bloco"><h3>Ingredientes</h3><div class="passo"><span>Fazer para</span><div class="st"><button id="menos" aria-label="menos uma porção">&minus;</button><output id="np">'+st.porc+'</output><button id="mais" aria-label="mais uma porção">+</button></div><span>'+(st.porc>1?'porções':'porção')+'</span></div><ul class="ing">'+
-     ing.map(function(x){var g=x.g*f; return '<li class="'+(novos.indexOf(x.k)>=0?'novo':'')+'"><span class="g">'+gramas(g>=5?Math.round(g):Math.round(g*10)/10)+'</span><span><span class="nome">'+esc(x.nome)+'</span>'+(f===1?'<br><span class="m">'+esc(x.med)+'</span>':'')+'</span></li>'}).join('')+
-     '</ul>'+(r.tempero&&r.tempero.length?'<p class="small muted">Também: '+esc(r.tempero.join(', '))+'. Temperos e água não entram na conta.</p>':'')+'</div>';
-  h+='<div class="bloco"><h3>Preparo</h3><ol class="prep">'+r.preparo.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+'</ol>'+(st.vari>=0?'<p class="small muted">Nesta versão: '+esc(v.ideia)+'</p>':'')+'</div>';
-  h+='<div class="truque"><b>O detalhe que faz dar certo</b>'+esc(r.truque)+'</div>';
-  h+='<div class="bloco"><h3>Como guardar</h3><p>'+esc(r.guardar)+'</p></div>';
-  h+='<button class="acao'+(naLista?' sec':'')+'" id="add">'+(naLista?'Tirar da lista de compras':'Pôr na lista de compras')+'</button>';
-  h+='<button class="acao sec" id="pdf">Salvar em PDF ou imprimir</button>';
-  h+='<p class="pe">Números calculados pela TACO 4ª edição e pelo USDA SR Legacy, a partir dos ingredientes crus. Material de apoio do Método HAG; quantidade e adequação ao seu caso são definidas em consulta.</p>';
+  if(!F){ app.innerHTML='<button class="voltar" id="voltar">'+IC.volta+'Voltar</button><div class="estado">'+(st.carregando===st.rec?'Abrindo a receita…':'Não foi possível abrir esta receita agora. Confira a internet e tente de novo.')+'</div>'; return; }
+  var r=F.dados, v=versao(r,st.vari), n=v.n, ing=ingDe(r,st.vari), novos=st.vari<0?[]:(v.poe||[]).map(function(x){return x.k}), f=st.porc/r.rende;
+  var u=fotoDe(it||{},true), sv=!!st.salvas[r.id];
+  var h='<div class="heroi"><div class="vazio">HAG</div>'+(u?'<img alt="'+esc(r.nome)+'" src="'+esc(u)+'" onerror="var i=this.parentNode.querySelector(\'.ilus\');if(i)i.remove();this.remove()">':'')+
+    '<button class="bt v" id="voltar" aria-label="Voltar">'+IC.volta+'</button>'+
+    '<button class="bt s" id="salva" aria-pressed="'+sv+'" aria-label="'+(sv?'Tirar das salvas':'Salvar receita')+'">'+coracao(sv)+'</button>'+
+    (u?'<span class="ilus">IMAGEM ILUSTRATIVA</span>':'')+'</div>';
+  h+='<article class="ficha"><div class="so-print small muted">Método HAG · Cozinha</div>';
+  h+='<div><h1>'+esc(r.nome)+'</h1><div class="pills" style="margin-top:10px"><span>'+r.tempo+' min</span><span>'+fmt(n.kcal.v)+' kcal</span><span class="g">'+fmt(n.ptn.v)+' g proteína</span><span>'+esc(r.porcao)+'</span></div></div>';
+  if(r.aviso) h+='<div class="aviso">'+esc(r.aviso)+'</div>';
+  if(r.var&&r.var.length){
+    h+='<div class="abas" role="tablist" aria-label="Versões"><button role="tab" data-vari="-1" aria-selected="'+(st.vari<0)+'">Base</button>'+
+      r.var.map(function(x,i){ return '<button role="tab" data-vari="'+i+'" aria-selected="'+(st.vari===i)+'">'+esc(vnome(x))+'</button>'; }).join('')+'</div>';
+    h+='<p class="ideia">'+esc(st.vari<0?r.resumo:v.ideia)+'</p>';
+  } else h+='<p class="ideia" style="margin-top:0">'+esc(r.resumo)+'</p>';
+  h+='<div class="bloco"><div class="cabsec"><span class="kick">Ingredientes</span><div class="passador"><button id="menos" aria-label="Menos uma porção">&minus;</button><b>'+st.porc+'</b>'+(st.porc>1?'porções':'porção')+'<button id="mais" aria-label="Mais uma porção">+</button></div></div>'+
+    '<ul class="ing">'+ing.map(function(x){ return '<li class="'+(novos.indexOf(x.k)>=0?'novo':'')+'"><b>'+gr(x.g*f)+'</b><span><span class="nome">'+esc(x.nome)+'</span>'+(f===1&&x.med?' <span class="m">· '+esc(x.med)+'</span>':'')+'</span></li>'; }).join('')+'</ul>'+
+    (r.tempero&&r.tempero.length?'<p class="small muted">Também: '+esc(r.tempero.join(', '))+'. Temperos e água não entram na conta.</p>':'')+'</div>';
+  if(v.dest&&v.dest.length) h+='<p class="dest">Destaque: '+v.dest.filter(function(k){ return COL.meta.rotulo[k]&&n[k]&&n[k].vd!=null; }).slice(0,3).map(function(k){ return esc(COL.meta.rotulo[k].nome.toLowerCase())+' <b>'+n[k].vd+'%</b>'; }).filter(Boolean).join(' · ')+' do dia</p>';
+  h+=bula(n);
+  h+='<details class="caixa"><summary>Preparo · '+r.preparo.length+(r.preparo.length===1?' passo':' passos')+'</summary><ol class="prep">'+r.preparo.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+'</ol>'+
+    (r.truque?'<div class="dica"><b>Dica:</b> '+esc(r.truque)+'</div>':'')+'</details>';
+  if(r.guardar) h+='<p class="guardar"><b>Guardar:</b> '+esc(r.guardar)+'</p>';
+  h+='<button class="bsec nao-print" id="jafiz">Já fiz esta receita</button>';
+  h+='<button class="bsec nao-print" id="pdf">Salvar em PDF ou imprimir</button>';
+  h+='<p class="pe">Números pela TACO 4ª edição e pelo USDA SR Legacy, a partir dos ingredientes crus. Material de apoio do Método HAG; quantidade e adequação ao seu caso são definidas em consulta.</p>';
   h+='</article>';
   app.innerHTML=h;
 }
 
 function telaGuia(){
   var F=FICHAS[st.guia];
-  if(!F){ app.innerHTML='<button class="voltar" id="voltar">&larr; Para você</button><div class="estado">'+(st.carregando===st.guia?'Abrindo o guia…':'Não foi possível abrir este guia agora. Confira a internet e tente de novo.')+'</div>'; return; }
-  var g=F.dados, h='<button class="voltar" id="voltar">&larr; Para você</button><article class="ficha '+(g.grupo!=='fora'?'pratico':'')+'">';
-  h+='<div class="so-print" style="font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase">Método HAG · Cozinha</div>';
-  h+='<div class="cab"><h2>'+esc(g.nome)+'</h2><p class="res">'+esc(g.resumo)+'</p></div>';
+  if(!F){ app.innerHTML='<button class="voltar" id="voltar">'+IC.volta+'Voltar</button><div class="estado">'+(st.carregando===st.guia?'Abrindo o guia…':'Não foi possível abrir este guia agora. Confira a internet e tente de novo.')+'</div>'; return; }
+  var g=F.dados, h='<button class="voltar" id="voltar">'+IC.volta+'Guias</button><article class="ficha '+(g.grupo!=='fora'?'pratico':'')+'">';
+  h+='<div class="so-print small muted">Método HAG · Cozinha</div>';
+  h+='<div><div class="kick">Guia</div><h1>'+esc(g.nome)+'</h1><p class="ideia" style="margin-top:8px">'+esc(g.resumo)+'</p></div>';
   g.blocos.forEach(function(b,i){ h+='<div class="gbloco b'+i+'"><h3>'+esc(b.t)+'</h3><ul>'+b.itens.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>'; });
   if(g.nota) h+='<p class="small muted">'+esc(g.nota)+'</p>';
-  h+='<button class="acao sec" id="pdf">Salvar em PDF ou imprimir</button>';
+  h+='<button class="bsec nao-print" id="pdf">Salvar em PDF ou imprimir</button>';
   h+='<p class="pe">Material de apoio do Método HAG. Orientação individual é definida em consulta.</p></article>';
   app.innerHTML=h;
 }
@@ -485,65 +620,216 @@ function compras(){ var tot={}; st.lista.forEach(function(it){ var f=it.porc/it.
 function arred(g){return g<20?Math.ceil(g):Math.ceil(g/5)*5}
 function textoLista(){ var tot=compras(), t='Lista de compras · Cozinha Método HAG\n'; SECOES.forEach(function(s){ var its=Object.keys(tot).map(function(k){return tot[k]}).filter(function(x){return x.sec===s}); if(!its.length) return; t+='\n'+s.toUpperCase()+'\n'+its.map(function(x){return '- '+x.nome+': '+gramas(arred(x.g))}).join('\n')+'\n'; }); return t; }
 function telaLista(){
-  if(!st.lista.length){ app.innerHTML='<h2>Lista de compras</h2><div class="estado">Abra uma receita e toque em "Pôr na lista de compras". A lista soma os ingredientes de todas as receitas escolhidas, por corredor do mercado, em gramas.</div>'; return; }
+  var h='<div><div class="kick">Mercado</div><h1 class="tit">Lista</h1></div>';
+  if(!st.lista.length){ app.innerHTML=h+'<div class="estado">Abra uma receita e toque no botão de lista, ao lado de Cozinhar. A lista soma os ingredientes, por corredor do mercado, em gramas.</div>'; return; }
   var tot=compras();
-  var h='<h2>Lista de compras</h2><div class="bloco nao-print"><h3>Receitas da semana</h3><div class="sel">'+
-    st.lista.map(function(it,i){return '<div class="l"><div class="t"><b>'+esc(it.nome)+'</b>'+(it.vnome?'<br><span class="small muted">'+esc(it.vnome)+'</span>':'')+'<br><button class="x" data-del="'+i+'">tirar</button></div><div class="passo"><div class="st"><button data-pm="'+i+'" data-d="-1" aria-label="menos">&minus;</button><output>'+it.porc+'</output><button data-pm="'+i+'" data-d="1" aria-label="mais">+</button></div></div></div>'}).join('')+
+  h+='<div class="bloco nao-print"><span class="kick">Receitas da semana</span><div class="sel">'+
+    st.lista.map(function(it,i){return '<div class="l"><div><b>'+esc(it.nome)+'</b>'+(it.vnome?'<br><span class="small muted">'+esc(it.vnome.replace(/^Destino \d+: /,''))+'</span>':'')+'<br><button class="x" data-del="'+i+'">tirar</button></div><div class="passador"><button data-pm="'+i+'" data-d="-1" aria-label="menos">&minus;</button><b>'+it.porc+'</b><button data-pm="'+i+'" data-d="1" aria-label="mais">+</button></div></div>'}).join('')+
     '</div><p class="small muted">O número é a quantidade de porções.</p></div>';
   SECOES.forEach(function(s){
     var its=Object.keys(tot).filter(function(k){return tot[k].sec===s}).sort(function(a,b){return tot[a].nome.localeCompare(tot[b].nome,'pt')});
     if(!its.length) return;
-    h+='<div class="bloco"><h3>'+s+'</h3><div class="secao">'+its.map(function(k){var x=tot[k]; return '<label class="'+(st.feitos[k]?'ok':'')+'"><input type="checkbox" data-ck="'+k+'" '+(st.feitos[k]?'checked':'')+'><span>'+esc(x.nome)+'</span><span class="q">'+gramas(arred(x.g))+'</span></label>'}).join('')+'</div></div>';
+    h+='<div class="bloco"><span class="kick">'+s+'</span><div class="secao">'+its.map(function(k){var x=tot[k]; return '<label class="'+(st.feitos[k]?'ok':'')+'"><input type="checkbox" data-ck="'+k+'" '+(st.feitos[k]?'checked':'')+'><span>'+esc(x.nome)+'</span><span class="q">'+gramas(arred(x.g))+'</span></label>'}).join('')+'</div></div>';
   });
-  h+='<p class="small muted">"Já pronto em casa" são as receitas base de domingo: ponha a base na lista para comprar os ingredientes dela. Temperos, ervas e água ficam fora.</p><button class="acao" id="copiar">Copiar a lista</button><button class="acao sec" id="pdf">Salvar em PDF ou imprimir</button><button class="acao sec" id="limpar">Esvaziar a lista</button>';
+  h+='<p class="small muted">"Já pronto em casa" são as receitas base: ponha a base na lista para comprar os ingredientes dela. Temperos, ervas e água ficam fora.</p><button class="acao" id="copiar">Copiar a lista</button><button class="bsec" id="pdf">Salvar em PDF ou imprimir</button><button class="bsec" id="limpar">Esvaziar a lista</button>';
   app.innerHTML=h;
 }
 
 function telaSobre(){
   var F=COL.meta.fontes;
-  app.innerHTML='<div class="sobre"><h2>De onde vêm os números</h2>'+
-  '<p>Nenhum valor desta coleção foi estimado no olho. Cada receita é uma soma: gramas de cada ingrediente multiplicadas pela composição oficial do alimento, dividida pelo número de porções.</p>'+
-  '<div class="bloco"><h3>Fontes</h3><ul><li><b>T</b>, '+esc(F.TACO)+'. É a primeira fonte: alimento brasileiro, analisado no Brasil.</li><li><b>U</b>, '+esc(F.USDA)+'. Entra onde a TACO não tem dado: vitamina B12, folato, vitamina D, vitamina E, selênio e gordura saturada, e em poucos alimentos que a TACO não lista.</li><li><b>% VD</b>, '+esc(F.VDR)+'.</li></ul></div>'+
-  '<div class="bloco"><h3>O que o número não diz</h3><ul><li>A conta parte do ingrediente cru. Vitamina C, vitamina B1 e folato diminuem com o calor; nas receitas que vão ao fogo eles aparecem marcados como "cru" e não entram nos destaques.</li><li>O peso da porção pronta é aproximado: varia com a panela, o fogo e o tempo.</li><li>Temperos, ervas e água não entram na soma. O sal entra, na quantidade escrita.</li><li>Selênio da castanha-do-brasil varia muito conforme a origem.</li><li>Conserva de peixe: a tabela considera o peixe com o óleo aderido. Escorrer bem reduz a gordura.</li><li>Alimento natural varia. Trate os números como boa aproximação, não como medida de laboratório.</li></ul></div>'+
-  '<div class="bloco"><h3>Destaques em verde</h3><p>Aparecem quando uma porção cobre 15% ou mais do valor diário daquele nutriente. São os cinco maiores de cada receita.</p></div>'+
-  '<div class="bloco"><h3>Uso</h3><p>A coleção é material de apoio do Método HAG. Ela não substitui consulta nem plano alimentar: quantidade, frequência e adequação ao seu caso são definidas pelo médico.</p></div></div>';
+  app.innerHTML='<button class="voltar" id="voltarSobre">'+IC.volta+'Voltar</button><div class="sobre"><h2>De onde vêm os números</h2>'+
+  '<p>Nenhum valor foi estimado no olho. Cada receita é uma soma: gramas de cada ingrediente multiplicadas pela composição oficial do alimento, dividida pelo número de porções.</p>'+
+  '<div class="bloco"><span class="kick">Fontes</span><ul><li><b>T</b>, '+esc(F.TACO)+'. É a primeira fonte: alimento brasileiro, analisado no Brasil.</li><li><b>U</b>, '+esc(F.USDA)+'. Entra onde a TACO não tem dado: vitamina B12, folato, vitamina D, vitamina E, selênio e gordura saturada, e em poucos alimentos que a TACO não lista.</li><li><b>% VD</b>, '+esc(F.VDR)+'.</li></ul></div>'+
+  '<div class="bloco"><span class="kick">O que o número não diz</span><ul><li>A conta parte do ingrediente cru. Vitamina C, vitamina B1 e folato diminuem com o calor; nas receitas que vão ao fogo eles aparecem marcados como "cru" e não entram nos destaques.</li><li>O peso da porção pronta é aproximado: varia com a panela, o fogo e o tempo.</li><li>Temperos, ervas e água não entram na soma. O sal entra, na quantidade escrita.</li><li>Selênio da castanha-do-brasil varia muito conforme a origem.</li><li>Conserva de peixe: a tabela considera o peixe com o óleo aderido. Escorrer bem reduz a gordura.</li><li>Alimento natural varia. Trate os números como boa aproximação, não como medida de laboratório.</li></ul></div>'+
+  '<div class="bloco"><span class="kick">Uso</span><p>Material de apoio do Método HAG. Não substitui consulta nem plano alimentar: quantidade, frequência e adequação ao seu caso são definidas pelo médico.</p></div></div>';
+}
+
+/* navegação de baixo */
+function navHTML(){
+  var L=lib(), nr=L.filter(function(x){return IDX[x.id].tipo==='receita'}).length, ng=L.length-nr;
+  var t=[['rec','Receitas',IC.rec]];
+  if(ng) t.push(['guias','Guias',IC.guia]);
+  t.push(['lista','Lista',IC.lista]);
+  var h=t.map(function(x){ return '<button data-t="'+x[0]+'" aria-selected="'+(st.tab===x[0]||(st.tab==='sobre'&&x[0]==='rec'))+'">'+x[2]+x[1]+(x[0]==='lista'&&st.lista.length?'<span class="n">'+st.lista.length+'</span>':'')+'</button>'; }).join('');
+  if(st.ori) h+='<a href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'">'+IC.ori+'Orientações</a>';
+  return '<div class="in">'+h+'</div>';
+}
+function barraHTML(){
+  var r=FICHAS[st.rec]&&FICHAS[st.rec].dados; if(!r) return '';
+  var na=st.lista.some(function(x){return x.id===r.id&&x.vari===st.vari});
+  return '<div class="in"><button class="lst" id="add" aria-pressed="'+na+'" aria-label="'+(na?'Tirar da lista de compras':'Pôr na lista de compras')+'">'+IC.lista+'</button>'+
+    '<button class="grande" id="cozinhar">COZINHAR '+IC.vai+'</button></div>';
 }
 
 function render(){
-  if(window.hagInstalar) window.hagInstalar.vis(st.tab==='rec'&&!st.rec&&!st.guia);
-  document.querySelectorAll('nav.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===st.tab)});
-  var n=$('#nlista'); n.hidden=!st.lista.length; n.textContent=st.lista.length;
-  document.querySelector('nav.tabs').style.display=(st.semLink||st.linkInvalido)?'none':'';
+  if(window.hagInstalar) window.hagInstalar.vis(st.tab==='rec'&&!st.rec&&!st.guia&&!st.coz);
+  var nav=$('#nav'), barra=$('#barra');
+  var semNav=st.semLink||st.linkInvalido||!COL;
+  nav.hidden=semNav||!!st.rec||!!st.coz;
+  barra.hidden=!st.rec||!!st.coz||!FICHAS[st.rec];
+  if(!nav.hidden) nav.innerHTML=navHTML();
+  if(!barra.hidden) barra.innerHTML=barraHTML();
+  document.body.style.paddingBottom=(nav.hidden&&barra.hidden)?'24px':'';
   if(st.semLink||st.linkInvalido){ telaPorta(); return; }
-  if(!COL){ app.innerHTML='<div class="estado">'+esc(st.erro||(st.vazia&&!st.carregandoIndice?'A coleção está sendo preparada. Volte em breve.':'Carregando a coleção…'))+'</div>'+(st.erro?'<button class="acao sec" id="tentar">Tentar de novo</button>':''); return; }
+  if(!COL){ app.innerHTML='<div class="estado">'+esc(st.erro||(st.vazia&&!st.carregandoIndice?'A coleção está sendo preparada. Volte em breve.':'Carregando…'))+'</div>'+(st.erro?'<button class="acao" id="tentar">Tentar de novo</button>':''); return; }
   if(st.tab==='lista') telaLista(); else if(st.tab==='sobre') telaSobre();
-  else if(st.guia) telaGuia(); else if(st.rec) telaFicha(); else telaReceitas();
+  else if(st.guia) telaGuia(); else if(st.rec) telaFicha(); else telaInicio(st.tab==='guias'?'guia':'receita');
 }
 async function abrir(id){
   var it=IDX[id]; if(!it) return;
   if(it.trancado){ toast('Conteúdo para pacientes. Peça o seu link à equipe do consultório.'); return; }
-  st.tab='rec'; if(it.tipo==='guia'){ st.guia=id; st.rec=null; } else { st.rec=id; st.guia=null; st.vari=-1; }
+  st.voltaTab=st.tab==='guias'?'guias':'rec';
+  if(it.tipo==='guia'){ st.tab='guias'; st.guia=id; st.rec=null; } else { st.tab='rec'; st.rec=id; st.guia=null; st.vari=-1; }
   st.carregando=id; render(); window.scrollTo(0,0);
   try{ history.replaceState(null,'',location.pathname+location.search+'#'+id); }catch(e){}
-  try{ var F=await ficha(id); if(it.tipo==='receita'&&st.rec===id) st.porc=F.dados.rende; }catch(e){ if(e.message==='nao_liberado'||e.message==='so_paciente'){ st.rec=null; st.guia=null; toast('Este conteúdo não está liberado para você.'); } }
+  try{ var F=await ficha(id); if(it.tipo==='receita'&&st.rec===id) st.porc=F.dados.rende; evento('abriu',id); }catch(e){ if(e.message==='nao_liberado'||e.message==='so_paciente'){ st.rec=null; st.guia=null; toast('Este conteúdo não está liberado para você.'); } }
   st.carregando=null; render();
 }
-function fechar(){ st.rec=null; st.guia=null; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} render(); }
+function fechar(){ var vt=st.guia?'guias':(st.voltaTab||'rec'); st.rec=null; st.guia=null; st.tab=vt; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} render(); }
 
-document.querySelector('nav.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; if(b.dataset.t===st.tab){ st.rec=null; st.guia=null; } st.tab=b.dataset.t; render(); window.scrollTo(0,0); });
+/* ===== modo cozinhar ===== */
+var wake=null;
+async function telaAcesa(){ try{ if('wakeLock' in navigator){ wake=await navigator.wakeLock.request('screen'); wake.addEventListener('release',function(){ wake=null; if(st.coz) pintaAcesa(); }); } }catch(e){ wake=null; } if(st.coz) pintaAcesa(); }
+function soltaTela(){ if(wake){ try{ wake.release(); }catch(e){} wake=null; } }
+function pintaAcesa(){ var p=$('#acesa'); if(p) p.hidden=!wake; }
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'&&st.coz&&!wake) telaAcesa(); if(document.visibilityState==='visible'&&st.coz&&st.coz.tm) tique(); });
+
+// Tempo escrito no passo: "2 minutos de cada lado", "20 a 25 min", "40 segundos". Usa o primeiro número (o menor da faixa).
+function tempoDoPasso(t){
+  var m=String(t).toLowerCase().match(/(\d+(?:[.,]\d+)?)(?:\s*(?:a|-|ou)\s*\d+(?:[.,]\d+)?)?\s*(minutos|minuto|min|segundos|segundo|seg|horas|hora|h)\b/);
+  if(!m) return null;
+  var n=parseFloat(m[1].replace(',','.')), u=m[2], s=/^seg/.test(u)?n:/^h/.test(u)?n*3600:n*60;
+  if(!s||s<10||s>3*3600) return null;
+  return {seg:Math.round(s),lados:/cada lado|de cada|vire|virar/.test(String(t).toLowerCase())?2:1};
+}
+function abrirCoz(){
+  var F=FICHAS[st.rec]; if(!F) return;
+  st.coz={id:st.rec,fase:'separe',i:0,marc:{},nota:null,aj:{},tm:null};
+  coz.hidden=false; document.body.style.overflow='hidden';
+  telaAcesa(); evento('cozinhar',st.rec,{versao:st.vari<0?'Base':vnome(versao(F.dados,st.vari)),porcoes:st.porc});
+  renderCoz(); render();
+}
+function abrirFiz(){ if(!FICHAS[st.rec]) return; st.coz={id:st.rec,fase:'fiz',i:0,marc:{},nota:null,aj:{},tm:null,direto:true}; coz.hidden=false; document.body.style.overflow='hidden'; renderCoz(); render(); }
+function fecharCoz(){ pararTimer(); soltaTela(); st.coz=null; coz.hidden=true; coz.innerHTML=''; document.body.style.overflow=''; render(); }
+function progHTML(on,tot){ var h=''; for(var k=0;k<tot;k++) h+='<i class="'+(k<=on?'on':'')+'"></i>'; return '<div class="prog">'+h+'</div>'; }
+function renderCoz(){
+  var c=st.coz; if(!c) return;
+  var r=FICHAS[c.id].dados, v=versao(r,st.vari), f=st.porc/r.rende, P=r.preparo, tot=P.length+1;
+  var nomeV=r.nome+(st.vari>=0?' · '+vnome(v):'');
+  var h='<div class="cz">';
+  if(c.fase==='separe'){
+    var ing=ingDe(r,st.vari), feitos=ing.filter(function(x,k){return c.marc[k]}).length;
+    h+='<div class="cz-top"><button class="cz-x" data-cz="sair" aria-label="Sair do modo cozinhar">'+IC.x+'</button>'+progHTML(0,tot)+
+      '<span class="acesa" id="acesa"'+(wake?'':' hidden')+'>'+IC.cel+'Tela acesa</span></div>';
+    h+='<div class="cab"><div class="kick">'+esc(nomeV)+'</div><h1>Separe</h1><div class="sub" style="font-size:15px;color:var(--ink2)">'+feitos+' de '+ing.length+' · toque para riscar'+(st.porc!==r.rende?' · '+st.porc+(st.porc>1?' porções':' porção'):'')+'</div></div>';
+    h+='<div class="itens">'+ing.map(function(x,k){ var ok=!!c.marc[k];
+      return '<button class="it'+(ok?' ok':'')+'" data-cz="marca" data-k="'+k+'" aria-pressed="'+ok+'"><span class="cx">'+(ok?IC.ok:'')+'</span><span><span class="t1">'+esc(x.nome)+'</span><span class="t2">'+(f===1&&x.med?esc(x.med)+' · ':'')+gr(x.g*f)+'</span></span></button>'; }).join('')+'</div>';
+    if(r.tempero&&r.tempero.length) h+='<p class="mais">Também: '+esc(r.tempero.join(', '))+'.</p>';
+    h+='<div class="fim"><button class="grande" data-cz="ir" data-i="0">COMEÇAR '+IC.vai+'</button></div>';
+  } else if(c.fase==='passo'){
+    var t=P[c.i], tm=tempoDoPasso(t), ult=c.i===P.length-1;
+    h+='<div class="cz-top"><button class="cz-x" data-cz="sair" aria-label="Sair do modo cozinhar">'+IC.x+'</button>'+progHTML(c.i+1,tot)+
+      '<span class="cz-tag">PASSO '+(c.i+1)+' DE '+P.length+'</span></div>';
+    h+='<div class="cab"><div class="kick">'+esc(nomeV)+'</div><p class="passo-txt">'+esc(t)+'</p></div>';
+    if(tm){
+      if(!c.tm||c.tm.passo!==c.i) c.tm={passo:c.i,total:tm.seg,resta:tm.seg,lados:tm.lados,lado:1,fim:null};
+      h+='<div class="timer" id="timer"><div class="tt"><span id="tmrot"></span>'+(tm.lados>1?'<button data-cz="virei">Virei</button>':'')+'</div>'+
+        '<div class="relogio" id="relogio" aria-live="off"></div><div class="bar"><i id="tmbar"></i></div>'+
+        '<div class="bts"><button data-cz="zerar">Zerar</button><button class="go" data-cz="play" id="tmplay"></button></div></div>';
+    } else { pararTimer(); c.tm=null; }
+    if(c.i===0&&st.vari>=0&&v.ideia) h+='<div class="nota"><b>Nesta versão:</b> '+esc(v.ideia)+'</div>';
+    if(ult&&r.truque) h+='<div class="nota"><b>Dica:</b> '+esc(r.truque)+'</div>';
+    h+='<div class="fim duo"><button class="bsec" data-cz="ir" data-i="'+(c.i-1)+'">Voltar</button>'+
+      (ult?'<button class="grande" data-cz="pronto">PRONTO '+IC.ok+'</button>':'<button class="grande" data-cz="ir" data-i="'+(c.i+1)+'">PRÓXIMO '+IC.vai+'</button>')+'</div>';
+  } else {
+    var sv=!!st.salvas[c.id];
+    h+='<div class="centro"><div class="feito">'+IC.ok.replace(/width="20" height="20"/,'width="40" height="40"')+'</div>'+
+      '<h1 style="margin-top:18px;font-size:52px">Pronto</h1><div class="sub" style="font-size:15px;color:var(--ink2)">'+esc(nomeV)+' · '+st.porc+(st.porc>1?' porções':' porção')+'</div></div>';
+    h+='<div style="margin-top:30px"><div class="kick">Como ficou?</div><div class="notas">'+
+      [['gostei','Gostei'],['ajustaria','Ajustaria'],['nao','Não deu certo']].map(function(n){ return '<button data-cz="nota" data-v="'+n[0]+'" aria-pressed="'+(c.nota===n[0])+'">'+n[1]+'</button>'; }).join('')+'</div>';
+    if(c.nota&&c.nota!=='gostei') h+='<div class="ajs">'+['Menos doce','Mais sal','Menos sal','Ficou seco','Porção pequena','Demorou'].map(function(a){ return '<button data-cz="aj" data-v="'+a+'" aria-pressed="'+!!c.aj[a]+'">'+a+'</button>'; }).join('')+'</div>';
+    h+='</div><button class="salvar" data-cz="salvar" aria-pressed="'+sv+'"><span style="color:var(--gold);display:flex">'+coracao(sv,22)+'</span>'+(sv?'Nas suas salvas':'Salvar para repetir')+'</button>';
+    h+='<div class="fim"><p class="small muted" style="text-align:center;margin-bottom:12px">Fica registrado para o Dr. Henrique ver na consulta.</p>'+
+      '<button class="grande" data-cz="fiz">FIZ ESTA RECEITA</button><button class="agoranao" data-cz="sair">Agora não</button></div>';
+  }
+  h+='</div>';
+  coz.innerHTML=h; coz.scrollTop=0;
+  if(c.fase==='passo'&&c.tm) pintaTimer();
+}
+/* timer: conta pelo relógio (sobrevive à tela apagada), avisa com som e vibração */
+var tickId=null, actx=null;
+function agora(){ return Date.now(); }
+function restaTimer(t){ return t.fim?Math.max(0,Math.round((t.fim-agora())/1000)):t.resta; }
+function pintaTimer(){
+  var t=st.coz&&st.coz.tm; if(!t) return;
+  var s=restaTimer(t), mm=Math.floor(s/60), ss=s%60, el=$('#relogio'); if(!el) return;
+  el.textContent=(t.total>=3600?Math.floor(mm/60)+':'+String(mm%60).padStart(2,'0'):mm)+':'+String(ss).padStart(2,'0');
+  $('#tmbar').style.width=Math.round((t.total-s)/t.total*100)+'%';
+  $('#tmrot').textContent='TIMER'+(t.lados>1?' · LADO '+t.lado+' DE '+t.lados:'');
+  $('#tmplay').textContent=t.fim?'Pausar':(s===0?'De novo':(s<t.total?'Continuar':'Iniciar'));
+  $('#timer').classList.toggle('fim',s===0);
+}
+function tique(){
+  var t=st.coz&&st.coz.tm; if(!t||!t.fim){ pararTimer(); return; }
+  if(restaTimer(t)<=0){ t.resta=0; t.fim=null; pararTimer(); alarme(); }
+  pintaTimer();
+}
+function pararTimer(){ if(tickId){ clearInterval(tickId); tickId=null; } }
+function iniciarTimer(){ var t=st.coz.tm; if(t.resta<=0) t.resta=t.total; t.fim=agora()+t.resta*1000; pararTimer(); tickId=setInterval(tique,250); pintaTimer(); somPronto(); }
+function pausarTimer(){ var t=st.coz.tm; t.resta=restaTimer(t); t.fim=null; pararTimer(); pintaTimer(); }
+function somPronto(){ try{ if(!actx){ var A=window.AudioContext||window.webkitAudioContext; if(A) actx=new A(); } if(actx&&actx.state==='suspended') actx.resume(); }catch(e){} }
+function alarme(){
+  try{ if(navigator.vibrate) navigator.vibrate([300,150,300,150,300]); }catch(e){}
+  try{ if(!actx) return; var t0=actx.currentTime; [0,.35,.7].forEach(function(d){ var o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=880; o.connect(g); g.connect(actx.destination); g.gain.setValueAtTime(.0001,t0+d); g.gain.exponentialRampToValueAtTime(.3,t0+d+.02); g.gain.exponentialRampToValueAtTime(.0001,t0+d+.28); o.start(t0+d); o.stop(t0+d+.3); }); }catch(e){}
+}
+coz.addEventListener('click',function(e){
+  var b=e.target.closest('[data-cz]'); if(!b||!st.coz) return; var c=st.coz, a=b.dataset.cz;
+  if(a==='sair'){ fecharCoz(); return; }
+  if(a==='marca'){ c.marc[b.dataset.k]=!c.marc[b.dataset.k]; renderCoz(); return; }
+  if(a==='ir'){ var i=+b.dataset.i; if(i<0){ c.fase='separe'; } else { c.fase='passo'; c.i=i; } renderCoz(); return; }
+  if(a==='pronto'){ pararTimer(); c.fase='fiz'; renderCoz(); return; }
+  if(a==='play'){ if(c.tm.fim) pausarTimer(); else iniciarTimer(); return; }
+  if(a==='zerar'){ pararTimer(); c.tm.fim=null; c.tm.resta=c.tm.total; pintaTimer(); return; }
+  if(a==='virei'){ pararTimer(); c.tm.lado=c.tm.lado>=c.tm.lados?1:c.tm.lado+1; c.tm.resta=c.tm.total; c.tm.fim=null; iniciarTimer(); return; }
+  if(a==='nota'){ c.nota=b.dataset.v; if(c.nota==='gostei') c.aj={}; renderCoz(); return; }
+  if(a==='aj'){ c.aj[b.dataset.v]=!c.aj[b.dataset.v]; renderCoz(); return; }
+  if(a==='salvar'){ if(st.salvas[c.id]) delete st.salvas[c.id]; else st.salvas[c.id]=1; salvarSalvas(); renderCoz(); return; }
+  if(a==='fiz'){
+    var r=FICHAS[c.id].dados, aj=Object.keys(c.aj).filter(function(k){return c.aj[k]});
+    evento('fiz',c.id,{nota:c.nota,ajustes:aj,versao:st.vari<0?'Base':vnome(versao(r,st.vari)),porcoes:st.porc});
+    var feitas=ls.get('hagcozinha.feitas')||{}; feitas[c.id]=(feitas[c.id]||0)+1; ls.set('hagcozinha.feitas',feitas);
+    fecharCoz(); fechar(); toast('Registrado. Bom apetite!'); return;
+  }
+});
+// deslizar entre os passos
+(function(){ var x0=null,y0=null;
+  coz.addEventListener('touchstart',function(e){ if(!st.coz||st.coz.fase!=='passo') return; x0=e.touches[0].clientX; y0=e.touches[0].clientY; },{passive:true});
+  coz.addEventListener('touchend',function(e){ if(x0==null||!st.coz||st.coz.fase!=='passo') return; var dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0; x0=null;
+    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)) return; var c=st.coz, P=FICHAS[c.id].dados.preparo;
+    if(dx<0&&c.i<P.length-1){ c.i++; renderCoz(); } else if(dx>0){ if(c.i>0){ c.i--; } else { c.fase='separe'; } renderCoz(); } },{passive:true});
+})();
+
+$('#nav').addEventListener('click',function(e){ var b=e.target.closest('button[data-t]'); if(!b) return; st.rec=null; st.guia=null; st.tab=b.dataset.t; st.q=''; try{ history.replaceState(null,'',location.pathname+location.search); }catch(er){} render(); window.scrollTo(0,0); });
+$('#barra').addEventListener('click',function(e){ var t=e.target.closest('button'); if(!t) return;
+  if(t.id==='cozinhar'){ abrirCoz(); return; }
+  if(t.id==='add'){ var r=FICHAS[st.rec].dados, v=versao(r,st.vari), i=-1; st.lista.forEach(function(x,k){ if(x.id===r.id&&x.vari===st.vari) i=k; });
+    if(i>=0){ st.lista.splice(i,1); toast('Tirada da lista'); } else { st.lista.push({id:r.id,vari:st.vari,porc:st.porc,rende:r.rende,nome:r.nome,vnome:st.vari>=0?v.nome:'',ing:ingDe(r,st.vari).map(function(x){return {k:x.k,nome:x.nome,g:x.g,sec:x.sec}})}); toast('Na lista de compras'); }
+    salvar(); render(); }
+});
 app.addEventListener('click',function(e){
   var t=e.target.closest('button'); if(!t) return;
   if(t.id==='tentar'){ st.erro=null; render(); carregar(); return; }
-  if(t.dataset.sit){ st.sit=t.dataset.sit; render(); return; }
+  if(t.dataset.filtro){ st.filtro=t.dataset.filtro; render(); return; }
   if(t.dataset.abrir){ abrir(t.dataset.abrir); return; }
   if(t.id==='voltar'){ fechar(); return; }
+  if(t.id==='numeros'){ st.tab='sobre'; render(); window.scrollTo(0,0); return; }
+  if(t.id==='voltarSobre'){ st.tab='rec'; render(); window.scrollTo(0,0); return; }
+  if(t.id==='salva'){ var id=st.rec; if(st.salvas[id]){ delete st.salvas[id]; toast('Tirada das salvas'); } else { st.salvas[id]=1; toast('Nas suas salvas'); } salvarSalvas(); render(); return; }
+  if(t.id==='jafiz'){ abrirFiz(); return; }
   if(t.dataset.vari!=null){ st.vari=+t.dataset.vari; render(); return; }
   if(t.id==='mais'){ st.porc=Math.min(24,st.porc+1); render(); return; }
   if(t.id==='menos'){ st.porc=Math.max(1,st.porc-1); render(); return; }
-  if(t.id==='pdf'){ var d=document.querySelector('details.bula'); if(d) d.open=true; window.print(); return; }
-  if(t.id==='add'){ var r=FICHAS[st.rec].dados, v=versao(r,st.vari), i=-1; st.lista.forEach(function(x,k){ if(x.id===r.id&&x.vari===st.vari) i=k; });
-    if(i>=0){ st.lista.splice(i,1); toast('Tirada da lista'); } else { st.lista.push({id:r.id,vari:st.vari,porc:st.porc,rende:r.rende,nome:r.nome,vnome:st.vari>=0?v.nome:'',ing:(st.vari<0?r.ing:v.ing).map(function(x){return {k:x.k,nome:x.nome,g:x.g,sec:x.sec}})}); toast('Na lista de compras'); }
-    salvar(); render(); return; }
+  if(t.id==='pdf'){ document.querySelectorAll('details.caixa').forEach(function(d){ d.open=true; }); window.print(); return; }
   if(t.dataset.del!=null){ st.lista.splice(+t.dataset.del,1); salvar(); render(); return; }
   if(t.dataset.pm!=null){ var it=st.lista[+t.dataset.pm]; it.porc=Math.max(1,Math.min(24,it.porc+(+t.dataset.d))); salvar(); render(); return; }
   if(t.id==='limpar'){ st.lista=[]; st.feitos={}; salvar(); render(); return; }
@@ -553,7 +839,9 @@ app.addEventListener('click',function(e){
 app.addEventListener('change',function(e){ var t=e.target; if(t.dataset&&t.dataset.ck){ if(t.checked) st.feitos[t.dataset.ck]=true; else delete st.feitos[t.dataset.ck]; salvar(); t.closest('label').classList.toggle('ok',t.checked); } });
 var tb=null;
 app.addEventListener('input',function(e){ if(e.target.id!=='busca') return; st.q=e.target.value; clearTimeout(tb); tb=setTimeout(function(){ var pos=e.target.selectionStart; render(); var b=$('#busca'); if(b){ b.focus(); try{b.setSelectionRange(pos,pos)}catch(er){} } },180); });
-window.addEventListener('beforeprint',function(){ var d=document.querySelector('details.bula'); if(d) d.open=true; });
+window.addEventListener('beforeprint',function(){ document.querySelectorAll('details.caixa').forEach(function(d){ d.open=true; }); });
+window.addEventListener('online',enviarPendentes);
+window.hagCozinha={st:st,tempoDoPasso:tempoDoPasso};
 carregar();
 })();
 </script>
