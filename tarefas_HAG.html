@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261015-1733"></script>
+<script src="hag_auth.js?v=20261016-1033"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -1339,6 +1339,14 @@ var DAN_TPL=[
   {id:'atraso_paciente',cat:'remarcacao',nome:'Paciente atrasado',sub:'Pode inviabilizar a consulta',texto:'[nome], vi que você está atrasado(a) para a consulta. Vou verificar com o Dr. Henrique se ainda há janela para te atender hoje.\n\nSe não der, eu já organizo o reagendamento. Me aguarda um instante que eu te retorno.'},
   {id:'sumiu_2sem',cat:'resgate',nome:'Sumiu por duas semanas',sub:'Regra de ouro do método',texto:'Oi [nome], tudo bem por aí? Senti a sua falta nos últimos check-ins.\n\nO Dr. Henrique pediu para eu te lembrar de uma regra do Método HAG: não buscamos perfeição, buscamos repetição.\n\nSe os últimos dias foram difíceis ou fora do plano, tudo bem. O que não pode é abandonar o processo.\n\nComo eu posso te ajudar a retomar hoje?'},
   {id:'voltou_envergonhado',cat:'resgate',nome:'Voltou constrangido',sub:'Acolhimento, sem lição de moral',texto:'Fica tranquilo(a), [nome]. Isso acontece, e faz parte do processo.\n\nA diferença aqui é que você não precisa resolver sozinho(a): é justamente para isso que existe o acompanhamento.\n\nJá liberei a sua agenda para vocês alinharem a rota. Escolha pelo link o dia e o horário que ficarem melhores para você:\n\n[link]'},
+  /* HAG_MSG_RETOMADA_v1 (16/10/2026). Dois casos do mesmo dia. Barbara (p_007): perda gestacional no dia do D90, avisou o
+     Dr. Henrique no WhatsApp pessoal, e o disparo semanal seguiu mandando "otimo inicio de semana" duas vezes depois. Regra:
+     evento de vida grave (perda, internacao, cirurgia, luto) pausa os check-ins na hora, o primeiro contato e do Dr. Henrique,
+     e a Daniela so retoma datas quando ele liberar. Wilson (p_027): vaga liberada por falta de confirmacao, link prometido que
+     nao saiu, e no dia seguinte o modelo das 3 opcoes com taxa, que e de quem DESMARCA. Silencio de 15 dias. Quando a pendencia
+     ficou do nosso lado, a mensagem assume o atraso, nao cobra nada e ja leva o link. */
+  {id:'retomada_evento_saude',cat:'resgate',nome:'Retomada depois de um evento de saúde',sub:'Só DEPOIS que o Dr. Henrique falou com o paciente e liberou · perda, internação, cirurgia, luto · check-ins pausados até aqui · sem pressa, sem cobrança de atraso',texto:'[nome], tudo bem? O Dr. Henrique me contou que vocês conversaram, e eu fico feliz em saber que você está se cuidando.\n\nO seu acompanhamento ficou guardado do ponto em que parou, então nada se perdeu com esse intervalo. Quando você se sentir pronto(a) para retomar, é só escolher o dia pelo link abaixo, entre os horários disponíveis na agenda do Dr. Henrique:\n\n[link]\n\nSem pressa nenhuma. Se preferir, me fala o melhor dia da semana e o período, que eu reservo para você.'},
+  {id:'remarcar_pendente_nosso',cat:'remarcacao',nome:'Pediu para remarcar e ficou sem retorno nosso',sub:'A pendência ficou do nosso lado (link prometido que não saiu, mensagem errada) · assume o atraso, sem taxa, já com o link',texto:'[nome], tudo bem? Fiquei te devendo o link para a sua nova data, me desculpe pela demora.\n\nEsta remarcação não tem custo nenhum. É só escolher o dia pelo link abaixo, entre os horários disponíveis na agenda do Dr. Henrique:\n\n[link]\n\nSe preferir, me fala o melhor dia que eu reservo para você.'},
   {id:'retomada_apos_alta',cat:'resgate',nome:'Quer voltar depois do encerramento',sub:'Recebe bem, sem cobrar o atraso',texto:'[nome], que bom te ver de volta!\n\nJá falei com o Dr. Henrique e ele pode seguir com você.\n\nComo o ciclo anterior foi encerrado, a gente monta o novo a partir da sua última consulta. Já liberei a sua agenda, e você escolhe o dia pelo link abaixo:\n\n[link]\n\nAs condições atuais eu te passo hoje ainda.\n\nSó uma coisa que ele pediu para eu confirmar: você chegou a ficar sem alguma medicação nesse período?'},
   /* HAG_SINAL_JA_PAGO_v1 (21/09/2026): paciente do fluxo antigo, que pagou o sinal antes de
      existir o link e ainda nao consultou. O link agora reconhece isso e confirma o horario
@@ -4685,7 +4693,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261015-1733';
+  var VERSAO = '20261016-1033';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
