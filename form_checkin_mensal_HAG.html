@@ -700,18 +700,31 @@ function docInvalidMsg(tipo){
 function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 
 /* Lookup patient by document (CPF | RG | Passaporte) */
+/* HAG_IDENTIFICA_COM_NASCIMENTO_v1 (18/10/2026): o paciente se identifica com documento E data
+   de nascimento, e o banco devolve so o primeiro nome. A busca antiga (hag_buscar_paciente_por_doc)
+   devolvia o nome completo a quem tivesse o CPF de alguem, e o proprio "achou" revelava que a
+   pessoa e paciente da clinica (auditoria do GitHub, 18/10/2026). */
+function _hagNascISO(){
+  var e = document.getElementById('f_nasc_id') || document.getElementById('f_data_nasc');
+  var v = e ? String(e.value || '').trim() : '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  var m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? (m[3] + '-' + m[2] + '-' + m[1]) : '';
+}
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
   var n = docNormalize(tipo, numero);
   if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
   /* HAG_RPC_LOOKUP_v1: busca via funcao segura no banco (nao le a tabela patients
      diretamente; funciona com o banco trancado por RLS/LGPD). */
-  var url = supaUrl + '/rest/v1/rpc/hag_buscar_paciente_por_doc';
+  var nasc = _hagNascISO();
+  if(!nasc) return {ok:false, reason:'need_nasc'};
+  var url = supaUrl + '/rest/v1/rpc/hag_identificar_paciente';
   try{
-    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n})});
+    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n, p_nascimento:nasc})});
     if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
     var data = await r.json();
     if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
-    return {ok:true, patient:data[0]};
+    return {ok:true, patient:{id:data[0].id, nome:data[0].primeiro_nome}};
   }catch(e){
     return {ok:false, reason:'error', error:e.message};
   }
@@ -757,17 +770,15 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       return;
     }
     _updateStatus('pending', '⟳ Verificando no HAG OS...');
-    console.log('[HAG] Lookup de paciente via RPC hag_buscar_paciente_por_doc ('+tipo+')');
+    if(!_hagNascISO()){ _updateStatus('pending', 'Agora informe a sua data de nascimento'); _unlockName(); return; }
     var res = await docLookupPatient(tipo, n, SURL, SKEY);
     console.log('[HAG] Lookup response:', res);
     if(res.ok){
-      _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
+      _updateStatus('ok', '✓ Identificado: ' + res.patient.nome);
       _lockName(res.patient.nome, res.patient.id);
-      console.log('[HAG] Name locked to:', res.patient.nome, '| id:', res.patient.id);
-    } else if(res.reason==='not_found'){
-      _updateStatus('err', '✗ ' + tipo.toUpperCase() + ' não cadastrado no HAG OS. Verifique com o Dr. Henrique.');
+    } else if(res.reason==='not_found' || res.reason==='need_nasc'){
+      _updateStatus('err', '✗ Não conseguimos confirmar os seus dados. Confira o documento e a data de nascimento. Se continuar, fale com a nossa secretária pelo WhatsApp do consultório.');
       _unlockName();
-      console.warn('[HAG] CPF/documento não encontrado:', n);
     } else {
       _updateStatus('err', '✗ Erro ao consultar: ' + (res.error||res.reason));
       _unlockName();
@@ -845,6 +856,9 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     inp.addEventListener('paste', function(){ setTimeout(onValueChange, 10); });
     inp.addEventListener('blur', function(){ if(verifyTimer) clearTimeout(verifyTimer); _verify(); });
     sel.addEventListener('change', _onTypeChange);
+    /* HAG_IDENTIFICA_COM_NASCIMENTO_v1: a data de nascimento tambem dispara a identificacao */
+    var dn = _el('f_nasc_id') || _el('f_data_nasc');
+    if(dn){ dn.addEventListener('change', function(){ _verify(); }); dn.addEventListener('blur', function(){ _verify(); }); }
   }
   // Try to init multiple times to handle any timing edge case
   if(document.readyState==='loading'){
@@ -871,7 +885,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     }
     var nm = _el('f_nome');
     if(!nm || !nm.hasAttribute('data-patient-id')){
-      alert('Seu documento não foi localizado no sistema.\n\nEntre em contato com o Dr. Henrique antes de enviar o formulário.');
+      alert('Não conseguimos confirmar os seus dados.\n\nConfira o documento e a data de nascimento. Se continuar, fale com a nossa secretária pelo WhatsApp do consultório.');
       inp.focus();
       return false;
     }
@@ -951,6 +965,10 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         </div>
         <div class="doc-status" id="docStatus"></div>
       </div>
+    </div>
+    <div class="field" style="flex:1;min-width:150px;margin-bottom:0">
+      <label class="fl">Data de nascimento <span style="font-size:10px;font-weight:500;color:var(--red,#c11e1e)">*obrigatório</span></label>
+      <input class="finput" id="f_nasc_id" type="date" autocomplete="bday">
     </div>
     <div class="field" style="flex:2;min-width:180px;margin-bottom:0">
       <label class="fl">Nome</label>

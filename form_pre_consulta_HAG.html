@@ -708,18 +708,31 @@ function docInvalidMsg(tipo){
 function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 
 /* Lookup patient by document (CPF | RG | Passaporte) */
+/* HAG_IDENTIFICA_COM_NASCIMENTO_v1 (18/10/2026): o paciente se identifica com documento E data
+   de nascimento, e o banco devolve so o primeiro nome. A busca antiga (hag_buscar_paciente_por_doc)
+   devolvia o nome completo a quem tivesse o CPF de alguem, e o proprio "achou" revelava que a
+   pessoa e paciente da clinica (auditoria do GitHub, 18/10/2026). */
+function _hagNascISO(){
+  var e = document.getElementById('f_nasc_id') || document.getElementById('f_data_nasc');
+  var v = e ? String(e.value || '').trim() : '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  var m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? (m[3] + '-' + m[2] + '-' + m[1]) : '';
+}
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
   var n = docNormalize(tipo, numero);
   if(!docValid(tipo, n)) return {ok:false, reason:'invalid'};
   /* HAG_RPC_LOOKUP_v1: busca via funcao segura no banco (nao le a tabela patients
      diretamente; funciona com o banco trancado por RLS/LGPD). */
-  var url = supaUrl + '/rest/v1/rpc/hag_buscar_paciente_por_doc';
+  var nasc = _hagNascISO();
+  if(!nasc) return {ok:false, reason:'need_nasc'};
+  var url = supaUrl + '/rest/v1/rpc/hag_identificar_paciente';
   try{
-    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n})});
+    var r = await fetch(url, {method:'POST', headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:tipo, p_valor:n, p_nascimento:nasc})});
     if(!r.ok) return {ok:false, reason:'network', error:'HTTP '+r.status};
     var data = await r.json();
     if(!Array.isArray(data) || data.length===0) return {ok:false, reason:'not_found'};
-    return {ok:true, patient:data[0]};
+    return {ok:true, patient:{id:data[0].id, nome:data[0].primeiro_nome}};
   }catch(e){
     return {ok:false, reason:'error', error:e.message};
   }
@@ -767,8 +780,10 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     var res = await docLookupPatient(tipo, n, SURL, SKEY);
     if(res.ok){
       // Só acontece se houver leitura liberada (link do paciente ou lookup seguro).
-      _updateStatus('ok', '✓ Paciente localizado: ' + res.patient.nome);
-      _lockName(res.patient.nome, res.patient.id);
+      /* HAG_IDENTIFICA_COM_NASCIMENTO_v1: mesma mensagem de quem e novo, para a tela nao revelar
+         que a pessoa ja e paciente; o vinculo ao cadastro fica guardado no campo. */
+      _updateStatus('ok', '✓ Documento válido');
+      var _nn = _el('f_nome'); if(_nn) _nn.setAttribute('data-patient-id', res.patient.id);
     } else {
       // Por privacidade (LGPD/RLS), o formulário público NÃO lê a base de
       // pacientes. Documento válido é tratado como cadastro novo, que é
@@ -848,6 +863,9 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     inp.addEventListener('paste', function(){ setTimeout(onValueChange, 10); });
     inp.addEventListener('blur', function(){ if(verifyTimer) clearTimeout(verifyTimer); _verify(); });
     sel.addEventListener('change', _onTypeChange);
+    /* HAG_IDENTIFICA_COM_NASCIMENTO_v1: a data de nascimento tambem dispara a identificacao */
+    var dn = _el('f_nasc_id') || _el('f_data_nasc');
+    if(dn){ dn.addEventListener('change', function(){ _verify(); }); dn.addEventListener('blur', function(){ _verify(); }); }
   }
   // Try to init multiple times to handle any timing edge case
   if(document.readyState==='loading'){
@@ -873,7 +891,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     }
     var nm = _el('f_nome');
     if(!nm || !nm.hasAttribute('data-patient-id')){
-      alert('Seu documento não foi localizado no sistema.\n\nEntre em contato com o Dr. Henrique antes de enviar o formulário.');
+      alert('Não conseguimos confirmar os seus dados.\n\nConfira o documento e a data de nascimento. Se continuar, fale com a nossa secretária pelo WhatsApp do consultório.');
       inp.focus();
       return false;
     }
@@ -2079,8 +2097,8 @@ async function submitForm(){
     if(!_rpcOK && !patId && docNum){
       // Lookup definitivo pelo documento que o paciente preencheu
       try {
-        var lookupUrl = SURL + '/rest/v1/rpc/hag_buscar_paciente_por_doc'; /* HAG_RPC_LOOKUP_v1 */
-        var lookupResp = await fetch(lookupUrl, {method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:docTipo, p_valor:docNum})});
+        var lookupUrl = SURL + '/rest/v1/rpc/hag_identificar_paciente'; /* HAG_IDENTIFICA_COM_NASCIMENTO_v1 */
+        var lookupResp = await fetch(lookupUrl, {method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:docTipo, p_valor:docNum, p_nascimento:(dataNasc||null)})});
         if(lookupResp.ok){
           var lookupData = await lookupResp.json();
           if(Array.isArray(lookupData) && lookupData.length > 0){
@@ -2147,8 +2165,8 @@ async function submitForm(){
           // Se conflito de UNIQUE (paciente já existia, race condition), refazer lookup
           if(insertResp.status === 409 && docNum){
             console.warn('[HAG] Conflito 409 ao criar paciente, fazendo retry-lookup');
-            var retryUrl = SURL + '/rest/v1/rpc/hag_buscar_paciente_por_doc'; /* HAG_RPC_LOOKUP_v1 */
-            var retryResp = await fetch(retryUrl, {method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:docTipo, p_valor:docNum})});
+            var retryUrl = SURL + '/rest/v1/rpc/hag_identificar_paciente'; /* HAG_IDENTIFICA_COM_NASCIMENTO_v1 */
+            var retryResp = await fetch(retryUrl, {method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}, body: JSON.stringify({p_tipo:docTipo, p_valor:docNum, p_nascimento:(dataNasc||null)})});
             var retryData = await retryResp.json();
             if(Array.isArray(retryData) && retryData.length > 0){
               patId = retryData[0].id;
