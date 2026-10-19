@@ -978,7 +978,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       <input class="finput" id="f_nasc_id" type="date" autocomplete="bday">
     </div>
     <div class="field" style="flex:2;min-width:180px;margin-bottom:0">
-      <label class="fl">Nome</label>
+      <label class="fl">Nome completo <span style="font-size:10px;font-weight:500;color:var(--red,#c11e1e)">*obrigatório</span></label>
       <input class="finput" id="f_nome" type="text" placeholder="Seu nome completo">
     </div>
     <div class="field" style="flex:1;min-width:120px;margin-bottom:0">
@@ -1472,6 +1472,15 @@ function buildMsg(){
 
 async function enviarCheckin(){
     if(window.cpfGuardSubmit && !cpfGuardSubmit()) return;
+    /* HAG_MENSAL_NOME_OBRIGATORIO_v1 (19/10/2026): no link o paciente vem pelo id, mas o
+       e-mail usa o nome digitado. Em branco, o e-mail chegava como "Paciente: —".
+       Mesma regra que o trimestral ja tinha (HAG_TRIMESTRAL_LINK_v2). */
+    if(fv('f_nome')==='—'){
+      alert('Falta preencher o seu nome completo, no inicio do formulario.');
+      var _n=document.getElementById('f_nome');
+      if(_n){ try{ _n.scrollIntoView({behavior:'smooth',block:'center'}); _n.focus(); }catch(e){} }
+      return;
+    }
 
   var msg=buildMsg();
   document.getElementById('formContent').classList.add('hidden');
