@@ -715,9 +715,16 @@ function docAttachMask(inputEl, getType){ /* noop - handled inline */ }
 function _hagNascISO(){
   var e = document.getElementById('f_nasc_id') || document.getElementById('f_data_nasc');
   var v = e ? String(e.value || '').trim() : '';
-  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-  var m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  return m ? (m[3] + '-' + m[2] + '-' + m[1]) : '';
+  var iso = '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) iso = v;
+  else { var m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if(m) iso = m[3] + '-' + m[2] + '-' + m[1]; }
+  if(!iso) return '';
+  /* HAG_IDENTIFICA_COM_NASCIMENTO_v2 (19/10/2026): enquanto o ano e digitado o campo devolve
+     0001, 0019, 0198...; cada um virava uma tentativa errada e o paciente era bloqueado.
+     So vale data completa e possivel. */
+  var ano = +iso.slice(0, 4), dt = new Date(iso + 'T12:00:00');
+  if(ano < 1900 || ano > new Date().getFullYear() || isNaN(dt.getTime()) || dt > new Date()) return '';
+  return iso;
 }
 async function docLookupPatient(tipo, numero, supaUrl, supaKey){
   var n = docNormalize(tipo, numero);
@@ -865,7 +872,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     sel.addEventListener('change', _onTypeChange);
     /* HAG_IDENTIFICA_COM_NASCIMENTO_v1: a data de nascimento tambem dispara a identificacao */
     var dn = _el('f_nasc_id') || _el('f_data_nasc');
-    if(dn){ dn.addEventListener('change', function(){ _verify(); }); dn.addEventListener('blur', function(){ _verify(); }); }
+    if(dn){ var _dnT = null; var _dnGo = function(){ if(_dnT) clearTimeout(_dnT); _dnT = setTimeout(_verify, 700); }; dn.addEventListener('change', _dnGo); dn.addEventListener('input', _dnGo); dn.addEventListener('blur', function(){ if(_dnT) clearTimeout(_dnT); _verify(); }); }
   }
   // Try to init multiple times to handle any timing edge case
   if(document.readyState==='loading'){
