@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261016-1033"></script>
+<script src="hag_auth.js?v=20261020-1051"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -2555,7 +2555,8 @@ function render(){
   const fc=document.getElementById('filaCount');
   /* HAG_AVISO_NOVIDADE_v1 */
   var _nNov=_filaNovidades().length;
-  if(fc)fc.textContent='('+_fila.filter(t=>t.status!=='concluida').length+')'+(_nNov?(' · '+_nNov+(_nNov===1?' nova':' novas')):'');
+  var _nPed=_fila.filter(_filaPedidoPaciente).length; /* HAG_FILA_PEDIDO_PACIENTE_v1 */
+  if(fc)fc.textContent='('+_fila.filter(t=>t.status!=='concluida').length+')'+(_nNov?(' · '+_nNov+(_nNov===1?' nova':' novas')):'')+(_nPed?(' · ⚠ '+_nPed+(_nPed===1?' pediu ajuda':' pediram ajuda')):'');
   /* HAG_MENSAGENS_TAREFAS_v1: a busca do topo não vale aqui; o painel tem a
      dele, para procurar paciente sem mexer no filtro da fila. */
   if(_filter==='mensagens'){
@@ -2604,9 +2605,22 @@ function render(){
     if(_filaSub!=='comunicado'&&_filaSub!=='agendados')_filaSub='agendar';
     var _ordCol=(_filaSub==='agendados')?'agendado_data':'janela_data';
     var lf=(_filaSub==='agendados'?g_agendados:(_filaSub==='comunicado'?g_comunic:g_agendar)).slice();
-    lf.sort(function(a,b){ var da=(a[_ordCol])||''; var db2=(b[_ordCol])||''; if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1; return da<db2?-1:(da>db2?1:0); });
+    lf.sort(function(a,b){
+      /* HAG_FILA_PEDIDO_PACIENTE_v1: pedido do paciente sempre no topo, o mais antigo primeiro */
+      var pa=_filaPedidoPaciente(a)?0:1, pb=_filaPedidoPaciente(b)?0:1;
+      if(pa!==pb) return pa-pb;
+      if(!pa){ var ca=String(a.criado_em||''), cb=String(b.criado_em||''); if(ca!==cb) return ca<cb?-1:1; }
+      var da=(a[_ordCol])||''; var db2=(b[_ordCol])||''; if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1; return da<db2?-1:(da>db2?1:0); });
     var _stab=function(key,label,n){return '<button onclick="setFilaSub(\''+key+'\')" style="flex:1;padding:9px 6px;border:1px solid '+(_filaSub===key?'#1a1a18':'#e5e2da')+';background:'+(_filaSub===key?'#1a1a18':'#fff')+';color:'+(_filaSub===key?'#fff':'#6b6b63')+';border-radius:10px;font-size:.76rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'+label+' '+n+'</button>';};
     var subtabs=blocoBloqueios() /* HAG_AGENDA_BLOQUEIO_v1 */ +blocoSinais() /* HAG_DIAG_SINAL_v1 */
+      /* HAG_FILA_PEDIDO_PACIENTE_v1: aviso no topo, em qualquer aba da fila */
+      +(function(){
+        var ps=baseF.filter(_filaPedidoPaciente); if(!ps.length) return '';
+        var nomes=ps.map(function(t){ return '<b>'+_msgEsc(String(t.patient_nome||'—').split(' ').slice(0,2).join(' '))+'</b>'; }).join(', ');
+        return '<div onclick="setFilaSub(\'agendar\')" style="cursor:pointer;margin:0 0 12px;padding:11px 13px;background:#C62828;color:#fff;border-radius:10px;font-size:.82rem;line-height:1.4">'
+          +'<div style="font-weight:800;letter-spacing:.04em">&#x26a0; '+ps.length+(ps.length===1?' PACIENTE PEDIU AJUDA PARA AGENDAR':' PACIENTES PEDIRAM AJUDA PARA AGENDAR')+'</div>'
+          +'<div style="margin-top:2px">'+nomes+'. Estão no topo de &ldquo;A agendar&rdquo;.</div></div>';
+      })()
       +'<div style="display:flex;gap:8px;margin:0 0 12px">'+_stab('agendar','A agendar',g_agendar.length)+_stab('comunicado','Comunicado',g_comunic.length)+_stab('agendados','Agendados',g_agendados.length)+'</div>';
     /* HAG_AVISO_DETALHE_v1: lista o que aconteceu, tarefa por tarefa. */
     if(_nNov){
@@ -2860,6 +2874,16 @@ function _filaFase(t){
   return null;
 }
 function _filaVencido(t){ var f=_filaFase(t); return !!(f&&f.cod==='vencido'); }
+/* HAG_FILA_PEDIDO_PACIENTE_v1 (20/10/2026): o paciente voltou pelo link pedindo ajuda para agendar
+   ou pedindo para remarcar. Fica em vermelho e sobe para o topo ate a Daniela agendar. */
+function _filaPedidoPaciente(t){
+  return !!t && t.status!=='concluida' && (t.criado_por==='pedido_ajuda' || t.criado_por==='pedido_remarcacao');
+}
+function _filaRecadoPaciente(t){
+  var o=String((t&&t.obs)||''), m=o.match(/Observa\u00e7\u00e3o do paciente:\s*([\s\S]*?)(\s*\[\d{2}\/\d{2}\/\d{4}:|$)/);
+  if(!m){ m=o.match(/Observação do paciente:\s*([\s\S]*?)(\s*\[\d{2}\/\d{2}\/\d{4}:|$)/); }
+  return m ? m[1].trim() : '';
+}
 
 function buildFilaCard(t){
   const color=gac(t.patient_nome||'?');
@@ -2878,14 +2902,26 @@ function buildFilaCard(t){
   const _fase=_filaFase(t);
   const _seloF=_fase?('<span style="display:inline-block;background:'+_fase.cor+';color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.07em;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle">'+_fase.rot+'</span>'):'';
   const _bordaF=(_fase&&_fase.cod==='vencido')?' style="border-color:#B03A2E;box-shadow:0 2px 14px rgba(176,58,46,.22)"':'';
-  return '<div class="task-card st-'+t.status+'" data-rid="'+t.id+'" data-rkind="fila"'+(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':_bordaF)+'>'+
+  /* HAG_FILA_PEDIDO_PACIENTE_v1 */
+  const _ped=_filaPedidoPaciente(t);
+  const _pedDias=_ped?_filaDiasEntre(t.criado_em,_filaHoje()):null;
+  const _pedRot=_ped?((t.criado_por==='pedido_remarcacao'?'&#x26a0; PACIENTE PEDIU PARA REMARCAR':'&#x26a0; PACIENTE PEDIU AJUDA')
+      +(_pedDias===0?' &middot; HOJE':(_pedDias>0?(' &middot; H\u00c1 '+_pedDias+(_pedDias===1?' DIA':' DIAS')):''))):'';
+  const _seloP=_ped?('<span style="display:inline-block;background:#C62828;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.07em;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle">'+_pedRot+'</span>'):'';
+  const _recado=_ped?_filaRecadoPaciente(t):'';
+  const _boxP=_ped?('<div style="margin-top:6px;padding:8px 10px;background:#FDECEA;border-left:3px solid #C62828;border-radius:6px;font-size:12.5px;color:#5b1a14">'
+      +(_recado?('<b>Recado do paciente:</b> &ldquo;'+_msgEsc(_recado)+'&rdquo;'):'<b>Nenhum horário do link serviu.</b> O paciente não deixou recado.')
+      +'<div style="margin-top:3px;color:#8a3b33">Fale com ele hoje e marque pelo &ldquo;Agendei&rdquo;.</div></div>'):'';
+  const _estiloP=_ped?' style="border:2px solid #C62828;background:#FFF7F6;box-shadow:0 2px 16px rgba(198,40,40,.25)"':'';
+  return '<div class="task-card st-'+t.status+'" data-rid="'+t.id+'" data-rkind="fila"'+(_ped?_estiloP:(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':_bordaF))+'>'+
     '<div class="tc-main">'+
       '<div class="tc-avatar" style="background:'+color+'">'+gin(t.patient_nome||'?')+'</div>'+
       '<div class="tc-info">'+
+        (_seloP?'<div style="margin:0 0 4px">'+_seloP+'</div>':'')+ /* HAG_FILA_PEDIDO_PACIENTE_v1: selo em linha propria, o nome nao fica cortado */
         '<div class="tc-name">'+_selo+_seloF+t.patient_nome+'</div>'+
         '<div class="tc-desc">'+(FILA_EV_LABEL[t.tipo_evento]||'Agendamento')+' &middot; '+janela+'</div>'+
         (t.local?'<div class="tc-desc" style="color:var(--ink3)">'+_filaLocalLabel(t.local)+'</div>':'')+
-        (t.obs?'<div class="tc-desc" style="color:var(--ink3)">'+t.obs+'</div>':'')+
+        _boxP+(t.obs&&!_ped?'<div class="tc-desc" style="color:var(--ink3)">'+_msgEsc(t.obs)+'</div>':'')+ /* HAG_FILA_PEDIDO_PACIENTE_v1: obs escapado (vem do link) */
         /* HAG_LEMBRETE_AGENDAR_v2: quantas vezes foi lembrado e quando foi o último */
         ((+t.lembretes>0 && t.status!=='concluida')?'<div class="tc-desc" style="color:#8A6D1F;font-weight:600">&#x1f514; Lembrado '+t.lembretes+'x'+(t.ultimo_lembrete_em?(' &middot; último em '+fmtBRf(String(t.ultimo_lembrete_em).slice(0,10))):'')+'</div>':'')+
         agendado+
@@ -4693,7 +4729,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261016-1033';
+  var VERSAO = '20261020-1051';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
