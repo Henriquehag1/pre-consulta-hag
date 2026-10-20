@@ -665,6 +665,20 @@ function _somaDias(iso,n){ var d=new Date(iso+'T12:00:00'); d.setDate(d.getDate(
 function _difDias(a,b){ return Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/864e5); }
 function _dm(iso){ var p=String(iso||'').split('-'); return p.length===3 ? p[2]+'/'+p[1] : ''; }
 function prazoAtivo(){ return !!(PRAZO && MODO==='marcar' && TIPOCON==='retorno'); }
+/* HAG_TETO_NAO_DESCE_v1 (20/10/2026). O teto de 5 semanas de antecedencia ADIA, nao rebaixa.
+   Caso Maria Eduarda: indicado sab 28/11, hoje 20/10; o teto cortou a janela em 24/11 e a escada
+   ofereceu a segunda 23/11 com as quartas 25/11 e 02/12 vazias. Agora:
+   . dia indicado alem do teto: o link diz que o agendamento abre mais perto da data
+     (abre 35 dias antes do indicado);
+   . janela cortada pelo teto: a escada nao desce abaixo do degrau de cima (sabado/quarta),
+     porque os dias preferidos que faltam ainda vao abrir. */
+var TETO_CORTOU=false;
+function janelaComTeto(op){
+  var j=capLimite(S.diasElegiveis(ALVO, hojeSP(), op));
+  var sem=capLimite(S.diasElegiveis(ALVO, hojeSP(), Object.assign({}, op||{}, {teto:3650})));
+  TETO_CORTOU=!!(j && j.situacao==='aberta' && sem && sem.situacao==='aberta' && sem.fim>j.fim);
+  return j;
+}
 function capLimite(j){
   if(!j || j.situacao!=='aberta' || !prazoAtivo() || !PRAZO.limite) return j;
   if(j.fim>PRAZO.limite) j.fim=PRAZO.limite;
@@ -754,8 +768,12 @@ function iniciar(){
       return;
     }
     /* HAG_PRAZO_PROPORCIONAL_v1: a folga depois do dia vem do plano; sem prazo, segue o de antes */
-    JANELA=capLimite(S.diasElegiveis(ALVO, hojeSP(),
-      (PRAZO && TIPOCON==='retorno') ? {antes:7, depois:PRAZO.depois} : (ALVOMED?{antes:7,depois:7}:null)));
+    JANELA=janelaComTeto(
+      (PRAZO && TIPOCON==='retorno') ? {antes:7, depois:PRAZO.depois} : (ALVOMED?{antes:7,depois:7}:null));
+    /* HAG_TETO_NAO_DESCE_v1: o proprio dia indicado ainda esta alem do teto */
+    if(TETO_CORTOU && JANELA && JANELA.fim && ALVO>JANELA.fim){
+      JANELA={inicio:null, fim:null, motivo:'dia indicado ainda alem das 5 semanas de antecedencia', situacao:'ainda_nao_abriu'};
+    }
     if(!JANELA || JANELA.situacao==='ainda_nao_abriu'){
       ouOJaMarcado(falha, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima '+PAL()+' está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
       return;
@@ -925,6 +943,8 @@ function diasOfertados(modalidade){
      degrau sozinho. Descer por outro motivo é oferecer Pinheiros na quinta a
      quem ainda cabia na quarta. */
   var lim = sug ? 3 : 4;
+  /* HAG_TETO_NAO_DESCE_v1: o degrau de cima desta modalidade (sabado/quarta presencial, quarta online) */
+  var prioTopo = REGRAS.filter(function(r){ return r.modalidade===modalidade; }).reduce(function(m,r){ return Math.min(m, r.prioridade||1); }, 99);
   var lista = [];
   /* HAG_RESERVA_NAO_ABRE_COM_INDICADO_v1 (15/10/2026). Caso Marielza: o dia indicado (quarta 21/10,
      online, com horário livre) era a ÚNICA quarta da janela, porque 14/10 já tinha passado e 28/10
@@ -935,6 +955,7 @@ function diasOfertados(modalidade){
      Quem não pode no indicado pede ajuda à Daniela pelo botão da página. */
   for(var pj=0; pj<prios.length; pj++){
     if(sugPrio!==null && prios[pj]>sugPrio) break;
+    if(TETO_CORTOU && prios[pj]>prioTopo) break; /* HAG_TETO_NAO_DESCE_v1 */
     var grupo = porPrio[prios[pj]].slice().sort(porPerto);
     if(!grupo.length) continue;
     /* HAG_PRAZO_PROPORCIONAL_v1: os mais perto do indicado aparecem; o resto do mesmo degrau fica em "ver mais datas" */
@@ -1014,11 +1035,11 @@ function telaEscolha(nota){
      dizer 'nao ha horarios', alarga uma vez para o padrao do plano. */
   var alargou=false;
   if(!dias.length && ALVOMED){
-    var jOrig=JANELA, j2=capLimite(S.diasElegiveis(ALVO, hojeSP(), (PRAZO&&TIPOCON==='retorno')?{antes:7,depois:Math.max(14,PRAZO.depois)}:null)); /* HAG_PRAZO_PROPORCIONAL_v1 */
+    var jOrig=JANELA, tOrig=TETO_CORTOU, j2=janelaComTeto((PRAZO&&TIPOCON==='retorno')?{antes:7,depois:Math.max(14,PRAZO.depois)}:null); /* HAG_PRAZO_PROPORCIONAL_v1 + HAG_TETO_NAO_DESCE_v1 */
     if(j2 && j2.situacao==='aberta'){
       JANELA=j2; dias=diasOfertados(TAB);
-      if(dias.length) alargou=true; else JANELA=jOrig;
-    }
+      if(dias.length) alargou=true; else { JANELA=jOrig; TETO_CORTOU=tOrig; }
+    } else TETO_CORTOU=tOrig;
   }
   /* HAG_DIA_INDICADO_SEM_VAGA_v1 (15/10/2026). Caso Jonathan: o Dr. Henrique indicou 28/10 e depois o
      consultório fechou a semana de 27 a 30/10. A tela dizia "o Dr. Henrique indicou 28/10" e a lista
