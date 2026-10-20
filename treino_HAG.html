@@ -661,6 +661,9 @@ const vHoje=document.getElementById("v-hoje"), vEvo=document.getElementById("v-e
 const vProg=document.getElementById("v-prog"), vLivre=document.getElementById("v-livre"), tabLivre=document.getElementById("tab-livre");
 const novoEstado = () => ({fase:"inicio", diaId:null, pront:{sono:null,energia:null,musc:null,art:null}, prontPulou:false, prontOk:false, rpe:null, durAj:null, i:0, sub:{}, feitas:{}, cardio:{}, voltas:{}, crono:null, ajuste:null, abrirAjuste:false, verPq:false, verVideo:false, inicio:null, cv:false, salvo:null, nota:"", livre:null, diaEscolhido:false, vc:0});
 let S = novoEstado();
+/* HAG_TREINO_LISTA_TOCAVEL_v1: video e nota abertos nas listas (Meu programa e tela de entrada do treino) */
+let pvAberto=null; const pnAberto=new Set();
+const PLAY='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
 let wakeLock=null, audio=null, tick=null, descanso=null, tickCrono=null;
 
 const prog = () => CTX && CTX.programa;
@@ -790,7 +793,7 @@ function renderInicio(){
   ${ds.usa&&!ds.dia?`<div class="aviso">Hoje: descanso. Quer treinar? Escolha acima.</div>`:""}
   ${feitoHoje?`<div class="aviso">Você já registrou este treino hoje.</div>`:""}
   ${S.prontOk?`<div class="prontr">${sm?`<span class="semaforo ${sm.c}" style="padding:6px 10px;flex:1"><i></i><span>${sm.t}</span></span>`:`<span>Respostas de hoje registradas.</span>`}<button type="button" class="link" data-a="prontedit">alterar</button></div>`:""}
-  <div class="card"><div class="lista">${aq.length?`<div class="grupo">Aquecimento</div>${comBlocos(aq,its,it=>linha(it,0))}<div class="grupo">Exercícios</div>`:""}${comBlocos(resto,its,(it,j)=>linha(it,aq.length?j+1:0))}${dq.length?`<div class="grupo">Desaquecimento</div>${comBlocos(dq,its,it=>linha(it,0))}`:""}</div></div>
+  <div class="card pdia">${listaItensHTML(its,"hoje:"+d.id)}</div>
   ${temCarga&&!visto?`<div class="onb"><div class="kicker">Como registrar · 10 s</div><p style="margin:6px 0 0;font-size:15px">Após cada série com carga: <b>quantas ainda sairiam com boa técnica?</b><br>Nenhuma = 0 · duas = 2 · na dúvida, o menor.<br>É o que sobe a carga.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`:""}
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
   ${extra}`;
@@ -832,8 +835,8 @@ function renderLivreInicio(){
   const linha=(it,n)=>{ const r=resumoItem(it); return `<div class="it"><div><b>${n?n+". ":""}${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div>${it.nota&&!/^(aquecimento|desaquecimento)$/i.test(it.nota)?`<div class="s">${esc(it.nota)}</div>`:""}</div><div class="r">${r.r}</div></div>`; };
   vHoje.innerHTML=`${filaHTML()}
   <div><div class="kicker">Em viagem · ${esc(NIVEL[L.nivel]||L.nivel)}</div><h2>${esc(L.nome)}</h2><p class="sub">${L.foco?esc(L.foco)+" · ":""}~${minutosEstimados()} min · peso do corpo</p></div>
-  <div class="card"><div class="lista">${aq.length?`<div class="grupo">Aquecimento</div>${comBlocos(aq,its,it=>linha(it,0))}<div class="grupo">Exercícios</div>`:""}${comBlocos(resto,its,(it,j)=>linha(it,aq.length?j+1:0))}${dq.length?`<div class="grupo">Desaquecimento</div>${dq.map(it=>linha(it,0)).join("")}`:""}</div></div>
-  <p class="note" style="margin:0">Chão · parede · cadeira firme · vídeo em cada exercício.</p>
+  <div class="card pdia">${listaItensHTML(its,"livre:"+S.livre,{aq,resto,dq})}</div>
+  <p class="note" style="margin:0">Chão · parede · cadeira firme · toque em ▶ para ver o vídeo.</p>
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
   <button type="button" class="link" data-a="livresair" style="align-self:center">voltar aos treinos Em viagem</button>`;
 }
@@ -1109,6 +1112,9 @@ function salvar(){
 vHoje.addEventListener("click", e=>{
   const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a; if(!a) return;
   if(a==="recarregar") return carregar();
+  /* HAG_TREINO_LISTA_TOCAVEL_v1: video e nota do exercicio antes de iniciar */
+  if(a==="pvideo"){ pvAberto=pvAberto===b.dataset.v?null:b.dataset.v; return render(); }
+  if(a==="pnota"){ const k=b.dataset.v; pnAberto.has(k)?pnAberto.delete(k):pnAberto.add(k); return render(); }
   if(a==="ativ"){ S.fase="ativ"; S.ativ=null; return render(); }
   if(a==="acancela"){ S=novoEstado(); return render(); }
   if(a==="atv"){ S.ativ.nome=b.dataset.v; return render(); }
@@ -1124,7 +1130,7 @@ vHoje.addEventListener("click", e=>{
   if(a==="dia"){ S.diaId=b.dataset.v; S.diaEscolhido=true; S.sub={}; return render(); }
   if(a==="irlivre") return abrir("livre");
   if(a==="livresair"){ S=novoEstado(); render(); return abrir("livre"); }
-  if(a==="iniciar"){ S.fase="treino"; S.inicio=Date.now(); { const p0=passos()[0]; if(p0) irPasso(p0); } somPronto(); manterTelaAcesa(); salvarRascunho(); return render(); }
+  if(a==="iniciar"){ pvAberto=null; S.fase="treino"; S.inicio=Date.now(); { const p0=passos()[0]; if(p0) irPasso(p0); } somPronto(); manterTelaAcesa(); salvarRascunho(); return render(); }
   if(a==="feito"){ isoParaTudo(); return registrar(+b.dataset.v); }
   if(a==="reg"){ isoParaTudo(); if(b.dataset.dor!=null && S.ajuste){ S.ajuste.dor=+b.dataset.dor; } return registrar(+b.dataset.rir); }
   if(a==="isogo") return isoIniciar();
@@ -1220,14 +1226,12 @@ vEvo.addEventListener("change",e=>{ if(e.target.id==="exsel"){ exSel=e.target.va
    Pedido do Dr. Henrique: o paciente vê o resumo do programa prescrito inteiro, como prévia: cada treino com os
    exercícios, séries, repetições, descanso, a carga sugerida e o vídeo. Só leitura; "Fazer este treino agora" leva
    para a aba Treino com aquele treino escolhido. */
-let pvAberto=null;
 const brA = s => s ? String(s).slice(8,10)+"/"+String(s).slice(5,7)+"/"+String(s).slice(0,4) : "";
 const itensDe = d => (d.itens||[]).map(it=>({...it, orig:it.ex, id:it.ex, mod:EX(it.ex).mod, ns:it.series||1}));
 function emAndamento(){ return S.fase==="treino" || (S.fase==="fim" && !S.salvo); }
-let pDia=null; const pnAberto=new Set(); /* HAG_TREINO_PROG_DIAS_v1 */
-const PLAY='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
-function listaItensHTML(its, chave){
-  const {aq, resto, dq}=gruposItens(its); /* HAG_TREINO_DESAQUEC_v1 */
+let pDia=null; /* HAG_TREINO_PROG_DIAS_v1 (pvAberto, pnAberto e PLAY ficam junto do estado: HAG_TREINO_LISTA_TOCAVEL_v1) */
+function listaItensHTML(its, chave, grupos){
+  const {aq, resto, dq}=grupos||gruposItens(its); /* HAG_TREINO_DESAQUEC_v1 */
   /* HAG_TREINO_PROG_DIAS_v1: linha enxuta; a nota abre no toque do nome (+), o vídeo no botão redondo */
   const linha=(it,n,k)=>{ const ex=EX(it.id), r=resumoItem(it), kk=chave+"|"+k, ab=pvAberto===kk, nt=notaLimpa(it.nota), na=pnAberto.has(kk);
     const corpo=`<b>${n?n+". ":""}${esc(ex.nome)}</b>${nt?`<i aria-hidden="true">${na?"−":"+"}</i>`:""}<span class="s">${r.s}</span>${nt&&na?`<span class="n">${esc(nt)}</span>`:""}`;
