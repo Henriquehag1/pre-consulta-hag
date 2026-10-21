@@ -36,18 +36,83 @@
   function _sbSession(){
     try{
       var ref=_projectRef(); if(!ref) return null;
-      var raw=localStorage.getItem('sb-'+ref+'-auth-token'); if(!raw) return null;
+      var raw=localStorage.getItem('sb-'+ref+'-auth-token');
+      if(!raw && _restauraSb('leitura')) raw=localStorage.getItem('sb-'+ref+'-auth-token'); /* HAG_SESSAO_RESERVA_v1 */
+      if(!raw) return null;
       var o=JSON.parse(raw); var s=o.currentSession||o;
       if(!s || !s.access_token) return null;
+      _guardaReserva(s); /* HAG_SESSAO_RESERVA_v1 */
       var expMs = s.expires_at ? s.expires_at*1000 : (o.expiresAt ? o.expiresAt*1000 : 0);
       return { access_token:s.access_token, refresh_token:s.refresh_token, expires_at:expMs, user:(s.user&&s.user.email)||'' };
     }catch(e){ return null; }
+  }
+  /* ── HAG_SESSAO_RESERVA_v1 (21/10/2026) ─────────────────────────────────
+     Em 21/10 17:44 a sessao do supabase-js sumiu do armazenamento do Safari sem o servidor recusar nada
+     (o token valia ate 18:37). Esta reserva guarda a ultima sessao boa; se a do supabase-js sumir, ela volta.
+     Quem apagar a sessao fica registrado (com a pilha) em sessao_eventos, para achar a causa de vez. */
+  var RKEY='hag_sessao_reserva', EKEY='hag_sessao_eventos';
+  function _sbKey(){ var ref=_projectRef(); return ref ? ('sb-'+ref+'-auth-token') : null; }
+  function _evento(ev, det){
+    try{
+      var l=JSON.parse(localStorage.getItem(EKEY)||'[]'); if(!Array.isArray(l)) l=[];
+      l.push({ocorrido_em:new Date().toISOString(), pagina:String((location.pathname||'').split('/').pop()||'').slice(0,80), evento:ev, detalhe:det||null});
+      while(l.length>30) l.shift();
+      localStorage.setItem(EKEY, JSON.stringify(l));
+    }catch(e){}
+  }
+  function _lerReserva(){ try{ var r=JSON.parse(localStorage.getItem(RKEY)||'null'); return (r && r.access_token && r.refresh_token) ? r : null; }catch(e){ return null; } }
+  function _guardaReserva(x){
+    try{
+      if(!x || !x.access_token || !x.refresh_token) return;
+      var r=_lerReserva();
+      if(r && r.access_token===x.access_token && r.refresh_token===x.refresh_token) return;
+      if(r && r.expires_at && x.expires_at && r.expires_at > x.expires_at) return; /* nunca troca por mais velha */
+      localStorage.setItem(RKEY, JSON.stringify({ access_token:x.access_token, refresh_token:x.refresh_token,
+        expires_at:x.expires_at||null, expires_in:x.expires_in||3600, token_type:x.token_type||'bearer',
+        user:(x.user && typeof x.user==='object') ? x.user : null, salvo_em:Date.now() }));
+    }catch(e){}
+  }
+  function _apagaReserva(motivo){ try{ if(localStorage.getItem(RKEY)){ localStorage.removeItem(RKEY); _evento('reserva_apagada', {motivo:motivo}); } }catch(e){} }
+  function _restauraSb(motivo){
+    var k=_sbKey(); if(!k) return false;
+    try{ if(localStorage.getItem(k)) return false; }catch(e){ return false; }
+    var r=_lerReserva(); if(!r) return false;
+    var o={ access_token:r.access_token, token_type:r.token_type||'bearer', expires_in:r.expires_in||3600,
+            expires_at:r.expires_at, refresh_token:r.refresh_token };
+    if(r.user) o.user=r.user;
+    try{ localStorage.setItem(k, JSON.stringify(o)); }catch(e){ return false; }
+    _evento('restaurada', {motivo:motivo, vence_em:r.expires_at||null});
+    return true;
+  }
+  /* registra quem apaga a sessao (o supabase-js chama localStorage.removeItem por dentro) */
+  (function(){
+    try{
+      if(window.__hagRemocaoVigiada || typeof Storage==='undefined') return; window.__hagRemocaoVigiada=true;
+      var _rm=Storage.prototype.removeItem;
+      Storage.prototype.removeItem=function(k){
+        try{ if(this===window.localStorage && /^sb-.+-auth-token$/.test(String(k)) && !window.__hagSaindo){
+          _evento('sessao_removida', {pilha:String((new Error()).stack||'').slice(0,1500)}); } }catch(e){}
+        return _rm.apply(this, arguments);
+      };
+    }catch(e){}
+  })();
+  var _ultEnvio=0;
+  function _enviaEventos(tk){
+    try{
+      if(!tk || Date.now()-_ultEnvio<60000) return; var l=JSON.parse(localStorage.getItem(EKEY)||'[]');
+      if(!Array.isArray(l) || !l.length) return; _ultEnvio=Date.now();
+      var c=cfg(), f=origFetch||window.fetch;
+      f(c.url+'/rest/v1/sessao_eventos', { method:'POST', headers:{ apikey:c.key, Authorization:'Bearer '+tk,
+        'Content-Type':'application/json', Prefer:'return=minimal' }, body:JSON.stringify(l) })
+        .then(function(r){ if(r && r.ok){ try{ var l2=JSON.parse(localStorage.getItem(EKEY)||'[]'); localStorage.setItem(EKEY, JSON.stringify(l2.slice(l.length))); }catch(e){} } })
+        .catch(function(){});
+    }catch(e){}
   }
   function _live(s){ return !!(s && s.access_token && s.expires_at && Date.now() < (s.expires_at - 5000)); }
   function _effective(){ var a=getSession(); if(_live(a)) return a; var b=_sbSession(); if(_live(b)) return b; return null; }
   function _anyRefresh(){ var a=getSession(); if(a&&a.refresh_token) return a.refresh_token; var b=_sbSession(); return b&&b.refresh_token; }
   function valid(){ return !!_effective(); }
-  function token(){ var e=_effective(); return e?e.access_token:null; }
+  function token(){ var e=_effective(); var tk=e?e.access_token:null; if(tk) _enviaEventos(tk); return tk; }
 
   /* ── auth REST (usa fetch original, sem o wrapper) ───────────────────── */
   function _postAuth(path, body){
@@ -71,6 +136,8 @@
         expires_at: Date.now() + ((res.j.expires_in||3600)*1000),
         user: (res.j.user && res.j.user.email) || email
       });
+      _gravaNoSb(res.j); /* HAG_SESSAO_RESERVA_v1: o login daqui vale tambem para o HAG OS */
+      _evento('login', null);
       return res.j;
     });
   }
@@ -80,13 +147,14 @@
   function _gravaNoSb(j){
     try{
       var ref=_projectRef(); if(!ref) return;
-      var chave='sb-'+ref+'-auth-token', raw=localStorage.getItem(chave); if(!raw) return;
-      var o=JSON.parse(raw), alvo=o.currentSession||o;
+      var chave='sb-'+ref+'-auth-token', raw=localStorage.getItem(chave);
+      var o=raw ? JSON.parse(raw) : {}, alvo=o.currentSession||o; /* HAG_SESSAO_RESERVA_v1: cria se nao houver */
       alvo.access_token=j.access_token; alvo.refresh_token=j.refresh_token;
       alvo.expires_in=j.expires_in||3600; alvo.expires_at=j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600);
       alvo.token_type=j.token_type||alvo.token_type||'bearer'; if(j.user) alvo.user=j.user;
       if(o.currentSession){ o.currentSession=alvo; o.expiresAt=alvo.expires_at; } else { o=alvo; }
       localStorage.setItem(chave, JSON.stringify(o));
+      _guardaReserva(alvo);
     }catch(e){}
   }
   var _renovando=null;
@@ -101,15 +169,34 @@
       if(res.ok && res.j.access_token){
         setSession({ access_token:res.j.access_token, refresh_token:res.j.refresh_token,
           expires_at: Date.now()+((res.j.expires_in||3600)*1000), user:(res.j.user&&res.j.user.email)||prevUser });
-        if(doSb) _gravaNoSb(res.j);
+        _gravaNoSb(res.j); /* HAG_SESSAO_RESERVA_v1: sempre, para todas as paginas seguirem com o mesmo token */
         return true;
       }
+      /* servidor recusou a renovacao: a reserva com esse token morreu junto */
+      var rr=_lerReserva(); if(rr && rr.refresh_token===rt) _apagaReserva('renovacao_recusada');
+      try{ var kb=_sbKey(), ob=kb && JSON.parse(localStorage.getItem(kb)||'null'), sb2=ob && (ob.currentSession||ob);
+           if(sb2 && sb2.refresh_token===rt){ window.__hagSaindo=true; localStorage.removeItem(kb); window.__hagSaindo=false; } }catch(e){ window.__hagSaindo=false; }
+      try{ var ha=getSession(); if(ha && ha.refresh_token===rt) clearSession(); }catch(e){}
+      _evento('renovacao_recusada', {msg:String((res.j && (res.j.error_code||res.j.msg||res.j.error)) || '').slice(0,120)});
       return false;
     }).catch(function(){ return false; });
     _renovando.then(function(){ setTimeout(function(){ _renovando=null; }, 1000); });
     return _renovando;
   }
-  function logout(){ clearSession(); try{ location.reload(); }catch(e){} }
+  function logout(){
+    window.__hagSaindo=true; clearSession(); _apagaReserva('sair'); /* HAG_SESSAO_RESERVA_v1: sair apaga as tres chaves */
+    try{ var k=_sbKey(); if(k) localStorage.removeItem(k); }catch(e){}
+    try{ location.reload(); }catch(e){}
+  }
+  /* HAG_SESSAO_RESERVA_v1: 401 sem como renovar abre o login por cima da pagina, SEM recarregar (o que foi
+     digitado fica). Antes o motor salvava rascunho com 401 em silencio (21/10, 27 minutos). */
+  function _pedeLogin(){
+    try{
+      if(document.getElementById('hagAuthOv')) return;
+      _evento('pediu_login', null);
+      renderGate(function(){});
+    }catch(e){}
+  }
 
   /* ── wrapper de fetch: injeta o token nas chamadas ao Supabase REST ──── */
   function _setHeader(init, name, val){
@@ -168,7 +255,10 @@
               var tk2 = token();
               var i2 = tk2 ? _comToken(init, c, tk2) : init;
               return origFetch(input, i2);
-            }).catch(function(){ return origFetch(input, init); });
+            }).catch(function(){ return origFetch(input, init); }).then(function(resp){
+              if(resp && resp.status===401 && !token()) _pedeLogin(); /* HAG_SESSAO_RESERVA_v1 */
+              return resp;
+            });
           }
           if(tk) init = _comToken(init, c, tk);
         }
@@ -182,6 +272,9 @@
           if(!tk3) return resp;
           return origFetch(input, _comToken(init, c, tk3));
         }).catch(function(){ return resp; });
+      }).then(function(resp){
+        if(resp && resp.status===401 && !token()) _pedeLogin(); /* HAG_SESSAO_RESERVA_v1 */
+        return resp;
       });
     };
   }
