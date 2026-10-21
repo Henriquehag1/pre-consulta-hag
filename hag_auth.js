@@ -74,18 +74,40 @@
       return res.j;
     });
   }
+  /* HAG_SESSAO_UNICA_v1 (21/10/2026): renovacao com o token do supabase-js grava o resultado nas DUAS chaves.
+     Antes so a daqui era atualizada, o supabase-js ficava com refresh token gasto e a proxima renovacao dele
+     era recusada como reuso, derrubando o login de todas as paginas. Uma renovacao por vez. */
+  function _gravaNoSb(j){
+    try{
+      var ref=_projectRef(); if(!ref) return;
+      var chave='sb-'+ref+'-auth-token', raw=localStorage.getItem(chave); if(!raw) return;
+      var o=JSON.parse(raw), alvo=o.currentSession||o;
+      alvo.access_token=j.access_token; alvo.refresh_token=j.refresh_token;
+      alvo.expires_in=j.expires_in||3600; alvo.expires_at=j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600);
+      alvo.token_type=j.token_type||alvo.token_type||'bearer'; if(j.user) alvo.user=j.user;
+      if(o.currentSession){ o.currentSession=alvo; o.expiresAt=alvo.expires_at; } else { o=alvo; }
+      localStorage.setItem(chave, JSON.stringify(o));
+    }catch(e){}
+  }
+  var _renovando=null;
   function refresh(){
-    var rt=_anyRefresh();
+    if(_renovando) return _renovando;
+    var b=_sbSession(), a=getSession();
+    var doSb=!!(b && b.refresh_token);
+    var rt=doSb ? b.refresh_token : (a && a.refresh_token);
     if(!rt) return Promise.resolve(false);
-    var prevUser=(getSession()&&getSession().user)||(_sbSession()&&_sbSession().user)||'';
-    return _postAuth('token?grant_type=refresh_token', {refresh_token:rt}).then(function(res){
+    var prevUser=(a&&a.user)||(b&&b.user)||'';
+    _renovando=_postAuth('token?grant_type=refresh_token', {refresh_token:rt}).then(function(res){
       if(res.ok && res.j.access_token){
         setSession({ access_token:res.j.access_token, refresh_token:res.j.refresh_token,
           expires_at: Date.now()+((res.j.expires_in||3600)*1000), user:(res.j.user&&res.j.user.email)||prevUser });
+        if(doSb) _gravaNoSb(res.j);
         return true;
       }
       return false;
     }).catch(function(){ return false; });
+    _renovando.then(function(){ setTimeout(function(){ _renovando=null; }, 1000); });
+    return _renovando;
   }
   function logout(){ clearSession(); try{ location.reload(); }catch(e){} }
 
