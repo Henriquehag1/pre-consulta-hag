@@ -636,7 +636,10 @@ function hojeSP(){
 function dataBR(iso){var d=new Date(iso+'T12:00:00');
   return DIAS[d.getDay()]+', '+d.getDate()+' de '+MESES[d.getMonth()];}
 function hhmm(t){return String(t||'').slice(0,5);}
-function el(html){var t=document.getElementById('tela');t.innerHTML=html;return t;}
+function el(html){window.HAG_CONFIRMA_PEND=false; /* HAG_CONFIRMA_OU_AVISA_v1: qualquer tela nova desarma o aviso */
+  var t=document.getElementById('tela');t.innerHTML=html;return t;}
+/* HAG_CONFIRMA_OU_AVISA_v1: sair da pagina parado na tela "Confirmar horario" pede confirmacao */
+window.addEventListener('beforeunload', function(e){ if(window.HAG_CONFIRMA_PEND){ e.preventDefault(); e.returnValue=''; return ''; } });
 function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
 
 function rpc(nome,args){
@@ -1186,11 +1189,19 @@ function telaConfirma(dia,slot){
         : '')
     +'</div>'
     +avisosPrazo(dia.data) /* HAG_PRAZO_PROPORCIONAL_v1 */
+    /* HAG_CONFIRMA_OU_AVISA_v1 */
+    +'<div class="aviso" style="border-left-color:#C62828"><b>Ainda não está marcado.</b> Toque em <b>'
+      +(MODO==='remarcar'?'Confirmar a remarcação':((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)?'Reservar este horário':'Confirmar este horário'))
+      +'</b> e espere aparecer a tela <b>'+((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)?'Horário guardado':'Horário reservado')+'</b>, com o ✓.</div>'
     +'<button class="btn" onclick="HAGpg.confirmar()">'
       +(MODO==='remarcar' ? 'Confirmar a remarcação'
         : ((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)?'Reservar este horário':'Confirmar este horário'))+'</button>'
     +'<button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>');
   window.HAGpg._sel={dia:dia,slot:slot};
+  /* HAG_CONFIRMA_OU_AVISA_v1: arma o aviso de saida e registra a escolha (sem reserva em 15 min, a Daniela ve no Tarefas) */
+  window.HAG_CONFIRMA_PEND=true;
+  try{ if(TOKEN) rpc('hag_registrar_intencao_link',{p_token:TOKEN, p_data:dia.data, p_hora:slot.hora,
+        p_local:(TAB==='online'?'online':dia.local), p_tipo:(MODO==='remarcar'?'remarcar':TIPOCON)}).catch(function(){}); }catch(e){}
 }
 
 /* HAG_DIAG_SINAL_v1 (31/08/2026)

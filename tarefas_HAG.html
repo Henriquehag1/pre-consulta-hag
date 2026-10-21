@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261020-1051"></script>
+<script src="hag_auth.js?v=20261021-1337"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -2597,8 +2597,8 @@ function render(){
     /* HAG_FILA_RELOGIO_v1: quem passou da janela reaparece em A agendar, porque a
        partir dali o link nao oferece mais a janela certa. Muda o filtro, nao o dado:
        nada e gravado no banco e a regra se desfaz trocando estas duas linhas. */
-    var g_agendar=baseF.filter(t=>t.status==='pendente'||_filaVencido(t));
-    var g_comunic=baseF.filter(t=>(t.status==='andamento'||t.status==='aguardando')&&!_filaVencido(t));
+    var g_agendar=baseF.filter(t=>t.status==='pendente'||_filaVencido(t)||!!_filaIntencao(t)); /* HAG_INTENCAO_SEM_CONFIRMAR_v1: escolheu e nao confirmou volta para A agendar */
+    var g_comunic=baseF.filter(t=>(t.status==='andamento'||t.status==='aguardando')&&!_filaVencido(t)&&!_filaIntencao(t));
     /* HAG_REMARCAR_v1: procurando por nome, o corte de 14 dias sai do caminho.
        Era ele que fazia parecer que agendamento antigo nao tinha mais como mexer. */
     var g_agendados=baseF.filter(t=>t.status==='concluida'&&(!!q||(t.concluido_em||t.atualizado_em||t.criado_em||'')>=corte));
@@ -2607,19 +2607,23 @@ function render(){
     var lf=(_filaSub==='agendados'?g_agendados:(_filaSub==='comunicado'?g_comunic:g_agendar)).slice();
     lf.sort(function(a,b){
       /* HAG_FILA_PEDIDO_PACIENTE_v1: pedido do paciente sempre no topo, o mais antigo primeiro */
-      var pa=_filaPedidoPaciente(a)?0:1, pb=_filaPedidoPaciente(b)?0:1;
+      var pa=_filaPedidoPaciente(a)?0:(_filaIntencao(a)?0.5:1), pb=_filaPedidoPaciente(b)?0:(_filaIntencao(b)?0.5:1); /* HAG_INTENCAO_SEM_CONFIRMAR_v1 */
       if(pa!==pb) return pa-pb;
-      if(!pa){ var ca=String(a.criado_em||''), cb=String(b.criado_em||''); if(ca!==cb) return ca<cb?-1:1; }
+      if(pa<1){ var ca=String(a.criado_em||''), cb=String(b.criado_em||''); if(ca!==cb) return ca<cb?-1:1; }
       var da=(a[_ordCol])||''; var db2=(b[_ordCol])||''; if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1; return da<db2?-1:(da>db2?1:0); });
     var _stab=function(key,label,n){return '<button onclick="setFilaSub(\''+key+'\')" style="flex:1;padding:9px 6px;border:1px solid '+(_filaSub===key?'#1a1a18':'#e5e2da')+';background:'+(_filaSub===key?'#1a1a18':'#fff')+';color:'+(_filaSub===key?'#fff':'#6b6b63')+';border-radius:10px;font-size:.76rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'+label+' '+n+'</button>';};
     var subtabs=blocoBloqueios() /* HAG_AGENDA_BLOQUEIO_v1 */ +blocoSinais() /* HAG_DIAG_SINAL_v1 */
       /* HAG_FILA_PEDIDO_PACIENTE_v1: aviso no topo, em qualquer aba da fila */
       +(function(){
-        var ps=baseF.filter(_filaPedidoPaciente); if(!ps.length) return '';
+        var _is=baseF.filter(function(t){ return !_filaPedidoPaciente(t) && _filaIntencao(t); }); /* HAG_INTENCAO_SEM_CONFIRMAR_v1 */
+        var _faixaI=_is.length?('<div onclick="setFilaSub(\'agendar\')" style="cursor:pointer;margin:0 0 12px;padding:10px 13px;background:#D35400;color:#fff;border-radius:10px;font-size:.8rem;line-height:1.4">'
+          +'<div style="font-weight:800;letter-spacing:.04em">&#x26a0; '+_is.length+(_is.length===1?' PACIENTE ESCOLHEU HORÁRIO E NÃO CONFIRMOU':' PACIENTES ESCOLHERAM HORÁRIO E NÃO CONFIRMARAM')+'</div>'
+          +'<div style="margin-top:2px">'+_is.map(function(t){ return '<b>'+_msgEsc(String(t.patient_nome||'—').split(' ').slice(0,2).join(' '))+'</b>'; }).join(', ')+'. A consulta não está marcada. Estão no topo de &ldquo;A agendar&rdquo;.</div></div>'):'';
+        var ps=baseF.filter(_filaPedidoPaciente); if(!ps.length) return _faixaI;
         var nomes=ps.map(function(t){ return '<b>'+_msgEsc(String(t.patient_nome||'—').split(' ').slice(0,2).join(' '))+'</b>'; }).join(', ');
         return '<div onclick="setFilaSub(\'agendar\')" style="cursor:pointer;margin:0 0 12px;padding:11px 13px;background:#C62828;color:#fff;border-radius:10px;font-size:.82rem;line-height:1.4">'
           +'<div style="font-weight:800;letter-spacing:.04em">&#x26a0; '+ps.length+(ps.length===1?' PACIENTE PEDIU AJUDA PARA AGENDAR':' PACIENTES PEDIRAM AJUDA PARA AGENDAR')+'</div>'
-          +'<div style="margin-top:2px">'+nomes+'. Estão no topo de &ldquo;A agendar&rdquo;.</div></div>';
+          +'<div style="margin-top:2px">'+nomes+'. Estão no topo de &ldquo;A agendar&rdquo;.</div></div>'+_faixaI;
       })()
       +'<div style="display:flex;gap:8px;margin:0 0 12px">'+_stab('agendar','A agendar',g_agendar.length)+_stab('comunicado','Comunicado',g_comunic.length)+_stab('agendados','Agendados',g_agendados.length)+'</div>';
     /* HAG_AVISO_DETALHE_v1: lista o que aconteceu, tarefa por tarefa. */
@@ -2913,15 +2917,24 @@ function buildFilaCard(t){
       +(_recado?('<b>Recado do paciente:</b> &ldquo;'+_msgEsc(_recado)+'&rdquo;'):'<b>Nenhum horário do link serviu.</b> O paciente não deixou recado.')
       +'<div style="margin-top:3px;color:#8a3b33">Fale com ele hoje e marque pelo &ldquo;Agendei&rdquo;.</div></div>'):'';
   const _estiloP=_ped?' style="border:2px solid #C62828;background:#FFF7F6;box-shadow:0 2px 16px rgba(198,40,40,.25)"':'';
-  return '<div class="task-card st-'+t.status+'" data-rid="'+t.id+'" data-rkind="fila"'+(_ped?_estiloP:(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':_bordaF))+'>'+
+  /* HAG_INTENCAO_SEM_CONFIRMAR_v1 */
+  const _int=(!_ped)?_filaIntencao(t):null;
+  const _seloI=_int?'<span style="display:inline-block;background:#D35400;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.07em;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle">&#x26a0; ESCOLHEU HOR\u00c1RIO E N\u00c3O CONFIRMOU</span>':'';
+  const _boxI=_int?('<div style="margin-top:6px;padding:8px 10px;background:#FDF0E6;border-left:3px solid #D35400;border-radius:6px;font-size:12.5px;color:#5a2a06">'
+      +'Escolheu <b>'+fmtBRf(String(_int.data).slice(0,10))+' às '+_msgEsc(_int.hora)+'</b>'+(_int.local?(' ('+_filaLocalLabel(_int.local)+')'):'')
+      +' no link e não tocou em confirmar. A consulta <b>não</b> está marcada.'
+      +'<div style="margin-top:3px;color:#8a4a1c">Fale com ele: se ainda quiser esse horário, marque pelo &ldquo;Agendei&rdquo;.</div></div>'):'';
+  const _estiloI=_int?' style="border:2px solid #D35400;background:#FFFAF5;box-shadow:0 2px 14px rgba(211,84,0,.2)"':'';
+  return '<div class="task-card st-'+t.status+'" data-rid="'+t.id+'" data-rkind="fila"'+(_ped?_estiloP:_int?_estiloI:(_nov?' style="border-color:#C9AF6E;box-shadow:0 2px 14px rgba(201,175,110,.28)"':_bordaF))+'>'+
     '<div class="tc-main">'+
       '<div class="tc-avatar" style="background:'+color+'">'+gin(t.patient_nome||'?')+'</div>'+
       '<div class="tc-info">'+
-        (_seloP?'<div style="margin:0 0 4px">'+_seloP+'</div>':'')+ /* HAG_FILA_PEDIDO_PACIENTE_v1: selo em linha propria, o nome nao fica cortado */
+        (_seloP?'<div style="margin:0 0 4px">'+_seloP+'</div>':'')+
+        (_seloI?'<div style="margin:0 0 4px">'+_seloI+'</div>':'')+ /* HAG_INTENCAO_SEM_CONFIRMAR_v1 */ /* HAG_FILA_PEDIDO_PACIENTE_v1: selo em linha propria, o nome nao fica cortado */
         '<div class="tc-name">'+_selo+_seloF+t.patient_nome+'</div>'+
         '<div class="tc-desc">'+(FILA_EV_LABEL[t.tipo_evento]||'Agendamento')+' &middot; '+janela+'</div>'+
         (t.local?'<div class="tc-desc" style="color:var(--ink3)">'+_filaLocalLabel(t.local)+'</div>':'')+
-        _boxP+(t.obs&&!_ped?'<div class="tc-desc" style="color:var(--ink3)">'+_msgEsc(t.obs)+'</div>':'')+ /* HAG_FILA_PEDIDO_PACIENTE_v1: obs escapado (vem do link) */
+        _boxP+_boxI+(t.obs&&!_ped?'<div class="tc-desc" style="color:var(--ink3)">'+_msgEsc(t.obs)+'</div>':'')+ /* HAG_FILA_PEDIDO_PACIENTE_v1: obs escapado (vem do link) */
         /* HAG_LEMBRETE_AGENDAR_v2: quantas vezes foi lembrado e quando foi o último */
         ((+t.lembretes>0 && t.status!=='concluida')?'<div class="tc-desc" style="color:#8A6D1F;font-weight:600">&#x1f514; Lembrado '+t.lembretes+'x'+(t.ultimo_lembrete_em?(' &middot; último em '+fmtBRf(String(t.ultimo_lembrete_em).slice(0,10))):'')+'</div>':'')+
         agendado+
@@ -3165,7 +3178,8 @@ function _filaMsgAgendar(t){
          valendo depois de marcado. Sem isso, o paciente que precisa trocar o horário volta
          a escrever para a Daniela, e a remarcação por conta própria fica existindo sem
          ninguém saber que existe. É o mesmo endereço, então não há link novo para guardar. */
-      +'O horário fica reservado no seu nome assim que você confirmar por lá. '
+      /* HAG_MSG_TELA_RESERVADO_v1 (21/10/2026, caso Nycolli): escolher o horario nao basta, falta confirmar */
+      +'Depois de escolher o horário, toque em "Confirmar este horário". A '+_cons+' só fica marcada quando aparecer a tela "Horário reservado", com o ✓. Se essa tela não aparecer, me avise por aqui.\n\n'
       +'Guarde este link: se precisar mudar o dia ou o horário depois, é só abrir por ele de novo.';
   }
   var oque = (t.tipo_evento==='diagnostica'||t.tipo_evento==='retorno') ? 'a sua consulta'
@@ -3192,6 +3206,7 @@ function _filaMsgLembrete(t){
     +(t.tipo_evento==='retorno'
       ? 'Se o dia indicado pelo Dr. Henrique não tiver mais horário, é só escolher uma das datas próximas que aparecem por lá. '
       : '')
+    +'Só fica marcada quando aparecer a tela "Horário reservado", com o ✓. ' /* HAG_MSG_TELA_RESERVADO_v1 */
     +'Qualquer dificuldade, me chama por aqui.';
 }
 async function whatsLembrete(id){
@@ -4279,7 +4294,24 @@ async function loadFila(){
   await _carregaLinksAgendar(fila); /* HAG_LINK_TOKEN_v1 */
   await _carregaBloqueios(fila);    /* HAG_AGENDA_BLOQUEIO_v1 */
   await _carregaSinais();           /* HAG_DIAG_SINAL_v1 */
+  await _carregaIntencoes();        /* HAG_INTENCAO_SEM_CONFIRMAR_v1 */
   return fila;
+}
+/* HAG_INTENCAO_SEM_CONFIRMAR_v1: paciente que escolheu horario no link e nao confirmou (ha mais de 15 min) */
+var _intencoes={};
+async function _carregaIntencoes(){
+  try{
+    const{data,error}=await db.from('v_intencao_sem_confirmar').select('patient_id,data,hora,local,criado_em');
+    if(error) throw error;
+    var m={}; (data||[]).forEach(function(i){ m[i.patient_id]=i; }); _intencoes=m;
+  }catch(e){ _intencoes={}; }
+}
+function _filaIntencao(t){
+  if(!t || t.status==='concluida' || !t.patient_id) return null;
+  var i=_intencoes[t.patient_id]; if(!i) return null;
+  /* so vale se a escolha e mais nova que a tarefa: escolha antiga de outra consulta nao conta */
+  var _a=Date.parse(i.criado_em), _b=Date.parse(t.criado_em); if(!isNaN(_a) && !isNaN(_b) && _a<_b) return null;
+  return i;
 }
 
 // ── SYNC INDICATOR ──
@@ -4729,7 +4761,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261020-1051';
+  var VERSAO = '20261021-1337';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
