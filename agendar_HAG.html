@@ -814,12 +814,14 @@ function carregarAgenda(){
     /* HAG_AGENDA_BLOQUEIO_v1: se a leitura falhar, segue sem bloqueio; o servidor recusa mesmo assim */
     rest('agenda_bloqueios?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local').catch(function(){ return []; }),
     /* HAG_ABERTURA_EXTRA_v1: horario extra de um dia (ex.: 07/11 as 10h). Se a leitura falhar, segue sem extra. */
-    rest('agenda_aberturas?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local,hora_inicio,hora_fim').catch(function(){ return []; })
+    rest('agenda_aberturas?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local,hora_inicio,hora_fim,substitui,prioridade').catch(function(){ return []; })
   ]).then(function(rs){
     REGRAS=rs[0]||[]; OCUP={}; BLOQ={}; ABERT={};
     (Array.isArray(rs[3])?rs[3]:[]).forEach(function(a){
       var k=a.data+'|'+a.local, x=ABERT[k], i=hhmm(a.hora_inicio), f=hhmm(a.hora_fim);
-      if(!x) ABERT[k]={ini:i,fim:f}; else { if(i<x.ini) x.ini=i; if(f>x.fim) x.fim=f; }
+      if(!x) x=ABERT[k]={ini:i,fim:f,subst:false,prio:null}; else { if(i<x.ini) x.ini=i; if(f>x.fim) x.fim=f; }
+      if(a.substitui===true) x.subst=true; /* HAG_ABERTURA_EXTRA_v2 */
+      if(a.prioridade!=null && (x.prio==null || a.prioridade<x.prio)) x.prio=a.prioridade;
     });
     (Array.isArray(rs[2])?rs[2]:[]).forEach(function(b){
       var x=(BLOQ[b.data]=BLOQ[b.data]||{todos:false,locais:[]});
@@ -869,7 +871,9 @@ function diasOfertados(modalidade){
                      : TIPOCON;
         /* HAG_ABERTURA_EXTRA_v1: horario extra do dia amplia a janela da regra */
         var _jIni=hhmm(rg.hora_inicio), _jFim=hhmm(rg.hora_fim), _ab=ABERT[iso+'|'+rg.local];
-        if(_ab){ if(_ab.ini<_jIni) _jIni=_ab.ini; if(_ab.fim>_jFim) _jFim=_ab.fim; }
+        if(_ab && _ab.subst){ _jIni=_ab.ini; _jFim=_ab.fim; } /* HAG_ABERTURA_EXTRA_v2: janela exata do dia */
+        else if(_ab){ if(_ab.ini<_jIni) _jIni=_ab.ini; if(_ab.fim>_jFim) _jFim=_ab.fim; }
+        var _prio=(_ab && _ab.prio!=null) ? _ab.prio : rg.prioridade;
         var r=S.horariosOfertados(
           {inicio:_jIni,fim:_jFim,limite:rg.limite},
           OCUP[iso]||[], tipo);
@@ -881,7 +885,7 @@ function diasOfertados(modalidade){
           hs=hs.filter(function(x){ return x.hora!==hhmm(REM.atual.inicio); });
         }
         if(hs.length){
-          (porPrio[rg.prioridade]=porPrio[rg.prioridade]||[]).push(
+          (porPrio[_prio]=porPrio[_prio]||[]).push(
             {data:iso, local:rg.local, tipo:tipo, horarios:hs.slice(0,3)});
         }
 
