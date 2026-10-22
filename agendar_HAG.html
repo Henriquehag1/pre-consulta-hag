@@ -657,6 +657,7 @@ function _bloqueado(iso, local){
   var b=BLOQ[iso]; if(!b) return false;
   return b.todos || (!!local && b.locais.indexOf(local)>=0);
 }
+var ABERT={}; /* HAG_ABERTURA_EXTRA_v1 */
 var CTX=null, REGRAS=[], OCUP={}, TAB=null, JANELA=null, ALVO=null, ALVOMED=false, LOCALMED=null;
 /* HAG_PRAZO_PROPORCIONAL_v1 (16/10/2026). Pedido do Dr. Henrique: mais datas depois do dia indicado, na
    medida do plano, e aviso quando o intervalo fica grande. O servidor manda o 'prazo' do retorno:
@@ -811,9 +812,15 @@ function carregarAgenda(){
     rest('agenda_regras?ativo=eq.true&select=dia_semana,local,modalidade,hora_inicio,hora_fim,limite,prioridade&order=prioridade'),
     rest('v_agenda_ocupacao?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,hora_inicio,hora_fim,tipo'),
     /* HAG_AGENDA_BLOQUEIO_v1: se a leitura falhar, segue sem bloqueio; o servidor recusa mesmo assim */
-    rest('agenda_bloqueios?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local').catch(function(){ return []; })
+    rest('agenda_bloqueios?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local').catch(function(){ return []; }),
+    /* HAG_ABERTURA_EXTRA_v1: horario extra de um dia (ex.: 07/11 as 10h). Se a leitura falhar, segue sem extra. */
+    rest('agenda_aberturas?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local,hora_inicio,hora_fim').catch(function(){ return []; })
   ]).then(function(rs){
-    REGRAS=rs[0]||[]; OCUP={}; BLOQ={};
+    REGRAS=rs[0]||[]; OCUP={}; BLOQ={}; ABERT={};
+    (Array.isArray(rs[3])?rs[3]:[]).forEach(function(a){
+      var k=a.data+'|'+a.local, x=ABERT[k], i=hhmm(a.hora_inicio), f=hhmm(a.hora_fim);
+      if(!x) ABERT[k]={ini:i,fim:f}; else { if(i<x.ini) x.ini=i; if(f>x.fim) x.fim=f; }
+    });
     (Array.isArray(rs[2])?rs[2]:[]).forEach(function(b){
       var x=(BLOQ[b.data]=BLOQ[b.data]||{todos:false,locais:[]});
       if(!b.local) x.todos=true; else x.locais.push(b.local);
@@ -860,8 +867,11 @@ function diasOfertados(modalidade){
         var tipo = modalidade==='online'
                      ? (TIPOCON==='diagnostica' ? 'diagnostica_online' : 'online')
                      : TIPOCON;
+        /* HAG_ABERTURA_EXTRA_v1: horario extra do dia amplia a janela da regra */
+        var _jIni=hhmm(rg.hora_inicio), _jFim=hhmm(rg.hora_fim), _ab=ABERT[iso+'|'+rg.local];
+        if(_ab){ if(_ab.ini<_jIni) _jIni=_ab.ini; if(_ab.fim>_jFim) _jFim=_ab.fim; }
         var r=S.horariosOfertados(
-          {inicio:hhmm(rg.hora_inicio),fim:hhmm(rg.hora_fim),limite:rg.limite},
+          {inicio:_jIni,fim:_jFim,limite:rg.limite},
           OCUP[iso]||[], tipo);
         var hs=r.horarios;
         /* HAG_REMARCA_SEM_BURACO_v2: o horário exato que ele já tem não entra na
