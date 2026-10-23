@@ -121,6 +121,12 @@ details.outro .chips{margin-top:8px;justify-content:center}
 .catc.tranc .st{color:var(--muted)}
 .catc .cad{position:absolute;top:14px;right:14px;color:var(--muted)}
 .catc .info{margin-top:8px;font-size:13.5px;color:var(--ink-2)}
+/* HAG_TREINO_CATALOGO_FOTO_v1 (23/10/2026): foto de cada card (feitas pelo Dr.); trancado fica em cinza com o cadeado por cima */
+.catc.comfoto{overflow:hidden}
+.catc .catimg{display:block;width:calc(100% + 32px);max-width:none;margin:-16px -16px 12px;aspect-ratio:16/7;object-fit:cover;background:var(--line)}
+.catc.tranc .catimg{filter:grayscale(1) brightness(.8)}
+.catc.comfoto .cad{top:10px;right:10px;background:rgba(10,14,23,.72);color:#fff;border-radius:999px;padding:4px 9px;font-size:13px}
+.cathero{display:block;width:100%;aspect-ratio:16/8;object-fit:cover;border-radius:14px;background:var(--line)}
 .semstrip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
 .semstrip::-webkit-scrollbar{display:none}
 .semstrip button{flex:0 0 auto;min-width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-family:var(--display);font-size:16px;font-weight:700}
@@ -492,18 +498,32 @@ var H={'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/
 /* HAG_VER_COMO_PACIENTE_v1 (23/10/2026): aberto pelo painel com &ver=1, o médico vê o app do paciente sem gravar nada:
    o contexto vem pela versão que não marca "último uso"; salvar sessão e iniciar programa respondem ok sem ir ao banco;
    nada fica no armazenamento deste aparelho (token, cache, fila). */
-var VER = new URLSearchParams(location.search).get('ver')==='1';
+/* HAG_TREINO_VITRINE_v1 (23/10/2026): ?vitrine=1 = o Dr. vendo o catálogo inteiro pelo painel, sem paciente. Vale tudo do
+   modo &ver=1 (nada gravado) e o contexto vem de hag_treino_vitrine, que só responde com o login da equipe: o token vem do
+   painel que abriu esta aba (window.opener) ou da sessão de login guardada neste navegador. Nunca vai na URL. */
+var VITRINE = new URLSearchParams(location.search).get('vitrine')==='1';
+var VER = VITRINE || new URLSearchParams(location.search).get('ver')==='1';
+function tokenEquipe(){
+  try{ var o=window.opener; if(o && o.HAGAuth && o.HAGAuth.token){ var t=o.HAGAuth.token(); if(t) return t; } }catch(e){}
+  try{ var s=JSON.parse(localStorage.getItem('hag_auth_session')||'null'); if(s && s.access_token){ var x=+s.expires_at||0; if(x && x<1e12) x*=1000; if(!x || Date.now()<x-5000) return s.access_token; } }catch(e){}
+  return null;
+}
 function rpc(nome,args){
+  if(VITRINE && nome==='hag_treino_contexto'){
+    var tk=tokenEquipe(); if(!tk) return Promise.resolve({ok:false, vitrine:true, erro:'sem_login'});
+    return fetch(SURL+'/rest/v1/rpc/hag_treino_vitrine',{method:'POST',headers:Object.assign({},H,{'Authorization':'Bearer '+tk}),body:'{}'}).then(function(r){
+      if(r.status===401||r.status===403) return {ok:false, vitrine:true, erro:'sem_login'}; if(!r.ok) throw new Error('http '+r.status); return r.json(); }); }
   if(VER){ if(nome==='hag_treino_contexto') nome='hag_treino_contexto_ver'; else return Promise.resolve({ok:true, ver:true, inicio:new Date().toISOString().slice(0,10)}); }
   return fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:H,body:JSON.stringify(args)}).then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); }); }
 
 /* ---------- armazenamento local (token, contexto em cache, fila offline) ---------- */
 const store = VER ? (function(){ const m={}; return { get(k,d){ return Object.prototype.hasOwnProperty.call(m,k)?JSON.parse(m[k]):d; }, set(k,v){ m[k]=JSON.stringify(v); }, del(k){ delete m[k]; } }; })()   /* HAG_VER_COMO_PACIENTE_v1 */
   : { get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }, del(k){ try{ localStorage.removeItem(k);}catch(e){} } };
-if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent='Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
+if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent=VITRINE?'Catálogo como o paciente vê · todos os cards abertos · nada é gravado':'Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
 const q = new URLSearchParams(location.search);
 let TOKEN = String(q.get('t')||'').replace(/[^a-f0-9]/gi,'').slice(0,64);
 if(TOKEN) store.set('hagtreino.token',TOKEN); else TOKEN = store.get('hagtreino.token','')||'';
+if(VITRINE) TOKEN='0'.repeat(40);   /* HAG_TREINO_VITRINE_v1: sem paciente; só para passar pelas telas que pedem link */
 let CTX = store.get('hagtreino.ctx',null);
 let FILA = store.get('hagtreino.fila',[]); if(!Array.isArray(FILA)) FILA=[];
 
@@ -786,6 +806,7 @@ function render(){
   if(window.hagInstalar) window.hagInstalar.vis(S.fase==='inicio');
   if(!TOKEN) return vHoje.innerHTML=`<div class="card"><h3>Abra pelo seu link</h3><p class="sub">Este aplicativo abre pelo link pessoal enviado pelo consultório do Dr. Henrique. Peça o link de novo se não o encontrar.</p></div>`;
   if(!CTX) return vHoje.innerHTML=`<p class="note">Carregando o seu treino…</p>`;
+  if(VITRINE && CTX.ok===false) return vHoje.innerHTML=`<div class="card"><h3>Abra pelo painel do médico</h3><p class="sub">O catálogo completo só abre com o login da equipe. Entre no Painel do HAG Treino e toque em "Ver o catálogo como o paciente vê".</p></div>`;
   if(CTX.ok===false) return vHoje.innerHTML=`<div class="card"><h3>Link não reconhecido</h3><p class="sub">Peça um link novo ao consultório do Dr. Henrique.</p></div>`;
   if(S.fase==="ativ") return renderAtiv();
   if(S.fase==="fim" && S.salvo) return renderSalvo();
@@ -1353,7 +1374,7 @@ vProg.addEventListener("click",e=>{
 });
 
 /* ---------- HAG_TREINO_CATALOGO_v1 (23/10/2026): aba "Programas" (antes "Em viagem") ---------- */
-let catAberto=null, catSem=null, catInfo=null, catReini=null;
+let catAberto=null, catSem=null, catInfo=null, catReini=null, vitTranc=false;
 function catStatus(c){
   if(!c.lib) return "🔒 Liberado pelo Dr. Henrique na consulta";
   if(c.tipo!=="programa") return "Liberado · use quando quiser";
@@ -1365,7 +1386,8 @@ function catStatus(c){
 function catMeta(c){ return [c.semanas?`${c.semanas} semanas`:"", c.sps?`${c.sps}x/semana`:"", c.min?`~${c.min} min`:"", c.local||""].filter(Boolean); }
 function cardCatHTML(c){
   const cor=CORES[c.cor]||"var(--gold)", ab=catInfo===c.id;
-  return `<div class="card catc${c.lib?"":" tranc"}" style="--cc:${cor}" role="button" tabindex="0" data-a="cat" data-v="${esc(c.id)}">
+  return `<div class="card catc${c.lib?"":" tranc"}${c.foto?" comfoto":""}" style="--cc:${cor}" role="button" tabindex="0" data-a="cat" data-v="${esc(c.id)}">
+    ${c.foto?`<img class="catimg" src="${esc(c.foto)}" alt="" loading="lazy" decoding="async">`:""}
     ${c.lib?"":`<span class="cad" aria-hidden="true">🔒</span>`}
     <h3>${esc(c.nome)}</h3><div class="meta">${esc(c.sub||catMeta(c).join(" · "))}</div>
     <div class="st">${esc(catStatus(c))}</div>
@@ -1381,6 +1403,7 @@ function sessLinhaHTML(c, s, w){
 }
 function renderCatAberto(c){
   const head=`<button type="button" class="link" data-a="catvolta" style="align-self:flex-start">‹ Programas</button>
+    ${c.foto?`<img class="cathero" src="${esc(c.foto)}" alt="">`:""}
     <div><div class="kicker">${esc(c.sub||"Programa")}</div><h2>${esc(c.nome)}</h2>${catMeta(c).length?`<div class="kw">${catMeta(c).map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
     ${c.desc?`<p class="sub">${esc(c.desc)}</p>`:""}${c.req?`<p class="note" style="margin:6px 0 0"><b>Pré-requisito:</b> ${esc(c.req)}</p>`:""}</div>`;
   if(c.tipo!=="programa"){
@@ -1411,6 +1434,7 @@ function renderLivre(){
   const ab=catAberto&&C.find(c=>c.id===catAberto&&c.lib); if(ab) return renderCatAberto(ab);
   const lib=C.filter(c=>c.lib), tr=C.filter(c=>!c.lib);
   vLivre.innerHTML=`<div><div class="kicker">Programas HAG</div><h2>Programas</h2><p class="sub">Liberados pelo Dr. Henrique na consulta · somam ao seu treino.</p></div>
+  ${VITRINE?`<div class="chips" role="group" aria-label="Visão do catálogo">${[["0","Todos abertos"],["1","Como trancados"]].map(([v,t])=>`<button type="button" class="chip" data-a="vittranc" data-v="${v}" aria-pressed="${(v==="1")===vitTranc}">${t}</button>`).join("")}</div>`:""}
   ${lib.length?`<div class="lbl">Liberados para você</div><div class="catg">${lib.map(cardCatHTML).join("")}</div>`:""}
   ${tr.length?`<div class="lbl">${lib.length?"Outros programas":"Programas do Método HAG"}</div><div class="catg">${tr.map(cardCatHTML).join("")}</div>`:""}`;
 }
@@ -1428,6 +1452,7 @@ function catAcao(b){
   const a=b.dataset.a;
   if(a==="cat"){ const c=cats().find(x=>x.id===b.dataset.v); if(!c) return; if(c.lib){ catAberto=c.id; catSem=null; catReini=null; window.scrollTo(0,0); } else catInfo=catInfo===c.id?null:c.id; return renderLivre(); }
   if(a==="catvolta"){ catAberto=null; catReini=null; window.scrollTo(0,0); return renderLivre(); }
+  if(a==="vittranc"){ vitTranc=b.dataset.v==="1"; cats().forEach(c=>{ c.lib=!vitTranc; }); catAberto=null; catInfo=null; render(); return renderLivre(); }   /* HAG_TREINO_VITRINE_v1 */
   if(a==="catsem"){ catSem=+b.dataset.v; return renderLivre(); }
   if(a==="nivel"){ store.set(b.dataset.k||"hagtreino.nivel",b.dataset.v); return renderLivre(); }
   if(a==="catreini"){
@@ -1452,6 +1477,7 @@ function carregar(){
   return rpc("hag_treino_contexto",{p_token:TOKEN}).then(r=>{
     CTX=r; if(r && r.ok){ store.set("hagtreino.ctx",r); if(window.hagInstalar && S.fase==="inicio") window.hagInstalar.mostrar(); }
     if(r && r.ok && r.paciente) document.getElementById("titulo").textContent="Treino de "+r.paciente.nome;
+    if(VITRINE){ document.getElementById("titulo").textContent="Catálogo HAG Treino"; if(r && r.ok && !carregar._vit){ carregar._vit=1; setTimeout(()=>abrir("livre"),0); } }   /* HAG_TREINO_VITRINE_v1 */
     if(S.fase==="inicio" && !S.diaEscolhido) S.diaId=null;
     render(); renderEvo(); renderProg(); renderLivre();
   }).catch(()=>{ if(CTX && CTX.ok){ render(); renderEvo(); renderProg(); renderLivre(); } else vHoje.innerHTML=`<div class="card"><h3>Sem conexão</h3><p class="sub">Não consegui carregar o seu treino agora. Verifique o sinal e toque em tentar de novo.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Tentar de novo</button></div>`; });

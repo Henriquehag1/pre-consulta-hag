@@ -122,6 +122,7 @@ input[type=text],input[type=number],input[type=search],select,textarea{backgroun
 <header class="top"><div class="in">
   <div class="toprow"><div class="brand">HAG <span style="color:var(--gold)">TREINO</span></div><button type="button" class="tema" id="btn-tema" aria-label="Usar tela clara"></button></div>
   <h1>Painel do médico</h1>
+  <a href="treino_HAG.html?vitrine=1" target="_blank" rel="opener" title="Abre o app como o paciente vê, com todos os cards do catálogo, sem escolher paciente e sem gravar nada" style="display:inline-block;margin:2px 0 10px;color:var(--gold);font-size:14px;font-weight:600;text-decoration:none">Ver o catálogo como o paciente vê ›</a>
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-v="pac">Paciente</button>
     <button role="tab" aria-selected="false" data-v="mod">Modelos da casa</button>
@@ -299,16 +300,16 @@ function catPainelHTML(){
   const C=E.cat||[]; if(!C.length) return "";
   const ac=Object.fromEntries((E.catAc||[]).map(a=>[a.catalogo_id,a])), hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10);
   const sem=(c,a)=>{ if(c.tipo!=="programa") return ""; if(!a.inicio) return " · ainda não começou"; const w=Math.floor((new Date(hoje)-new Date(a.inicio))/6048e5)+1; return w>(c.semanas||1)?" · concluído":` · semana ${w} de ${c.semanas}`; };
-  return `<div class="card" style="margin-top:14px"><h3>Programas do catálogo</h3><p class="note">Somam ao programa principal. O paciente vê todos os aprovados; os não liberados aparecem com cadeado.</p>
+  return `<div class="card" style="margin-top:14px"><h3>Programas do catálogo</h3><p class="note">Somam ao programa principal. O paciente vê todos os aprovados; os não liberados aparecem com cadeado. <a href="treino_HAG.html?vitrine=1" target="_blank" rel="opener" style="color:var(--gold);font-weight:600;text-decoration:none">Ver o catálogo como o paciente vê ›</a></p>
   ${C.map(c=>{ const a=ac[c.id], ab=E.catPrev===c.id;
-    return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row between"><div><b>${esc(c.nome)}</b> ${c.aprovado?"":`<span class="tag y">aguarda sua aprovação</span>`}<div class="note">${esc(c.sub||"")}${a?` · liberado em ${brA(String(a.liberado_em).slice(0,10))}${sem(c,a)}`:""}</div></div>
+    return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row between"><div style="display:flex;gap:10px;align-items:center">${c.foto?`<img src="${esc(c.foto)}" alt="" loading="lazy" style="width:72px;height:40px;object-fit:cover;border-radius:6px;flex:none">`:""}<div><b>${esc(c.nome)}</b> ${c.aprovado?"":`<span class="tag y">aguarda sua aprovação</span>`}<div class="note">${esc(c.sub||"")}${a?` · liberado em ${brA(String(a.liberado_em).slice(0,10))}${sem(c,a)}`:""}</div></div></div>
       <div class="row"><button class="btn small ghost" data-a="catprev" data-v="${esc(c.id)}">${ab?"Fechar":"Prévia"}</button>
       ${c.aprovado?(a?`<button class="btn small ghost" data-a="catoff" data-v="${esc(c.id)}">Retirar</button>`:`<button class="btn small" data-a="caton" data-v="${esc(c.id)}">Liberar</button>`):`<button class="btn small" data-a="cataprova" data-v="${esc(c.id)}">${E.catConf===c.id?"Confirmar aprovação":"Aprovar"}</button>`}</div></div>
       ${ab?`${c.descricao?`<p class="note" style="margin:6px 0">${esc(c.descricao)}${c.requisito?" · Pré-requisito: "+esc(c.requisito):""}</p>`:""}${catPrevHTML(c)}`:""}</div>`; }).join("")}</div>`;
 }
 async function lerCat(){
   try{
-    E.cat=await api("treino_catalogo?select=id,nome,sub,descricao,tipo,semanas,sessoes_semana,requisito,aprovado,ordem,sessoes&ativo=is.true&order=ordem");
+    E.cat=await api("treino_catalogo?select=id,nome,sub,descricao,tipo,semanas,sessoes_semana,requisito,aprovado,ordem,sessoes,foto&ativo=is.true&order=ordem");
     E.catAc=E.pid?await api(`treino_catalogo_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&select=catalogo_id,liberado_em,inicio`):[];
     E.catErro=null;
   }catch(e){ E.catErro=e.message; }
