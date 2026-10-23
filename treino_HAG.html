@@ -140,6 +140,20 @@ details.outro .chips{margin-top:8px;justify-content:center}
 .catc.tranc .catph{filter:grayscale(1) brightness(.85)}
 .catc .passo{display:inline-block;margin-top:8px;font-size:11.5px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#1A1405;background:var(--cc,var(--gold));border-radius:999px;padding:3px 9px}
 .trilha .prog{font-size:12.5px;font-family:var(--mono);color:var(--cc,var(--gold))}
+/* HAG_TREINO_ESCOLHA_DO_DIA_v1 (23/10/2026): escolher o treino do dia dentro da semana */
+.tdias{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.tdias button{position:relative;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 10px 9px;text-align:left;min-height:66px;cursor:pointer;font:inherit}
+.tdias button b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.tdias button span{display:block;font-size:14px;font-weight:650;margin-top:3px;line-height:1.2}
+.tdias button[aria-pressed="true"]{border-color:var(--cc,var(--gold));box-shadow:inset 0 0 0 1px var(--cc,var(--gold))}
+.tdias button.ok b{color:#5DD39E}
+.tdias button.sug::after{content:"";position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--cc,var(--gold))}
+.diadet{border-color:var(--cc,var(--gold))}
+.diadet ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14.5px}
+.diadet ol small{color:var(--ink-2);font-size:12.5px}
+.semstrip button.feita{color:#5DD39E}
+.semstrip button.tranc{opacity:.45}
+
 /* HAG_TREINO_MENTE_v1: tocador de respiração e meditação */
 .mente{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
 .mcirc{width:220px;height:220px;border-radius:50%;margin:10px auto 4px;display:flex;align-items:center;justify-content:center;
@@ -788,15 +802,30 @@ function livreDia(key){
           semana:w&&!w.fim?w.w:null, itens:(s.itens||[]).map(i=>({...i, livre:!!s.pc}))};
 }
 const diaNum = d => Math.floor(new Date(String(d).slice(0,10)+"T12:00:00Z")/864e5);
+/* HAG_TREINO_SEMANA_POR_CONCLUSAO_v1 (23/10/2026): pedido do Dr. Henrique, a semana não avança pelo calendário. A semana
+   atual é a primeira que ainda tem treino por fazer; a seguinte só libera quando todos os treinos da atual forem feitos.
+   Cada sessão feita (desde o início do programa) conta uma vez, na ordem das semanas: o "Treino A" que aparece nas
+   semanas 1 a 4 precisa ser feito quatro vezes. */
+function progCat(c){
+  const N=(c&&c.semanas)||1;
+  if(!c||c.tipo!=="programa") return null;
+  if(!c.inicio) return {w:1, N, fim:false, feitas:new Set(), ini:false};
+  const cnt={}; for(const h of feitasCat(c)) if(h.cs && h.data>=c.inicio) cnt[h.cs]=(cnt[h.cs]||0)+1;
+  for(let w=1; w<=N; w++){
+    const R=sessDaSemana(c,w), feitas=new Set();
+    for(const s of R) if(cnt[s.id]>0){ cnt[s.id]--; feitas.add(s.id); }
+    if(feitas.size<R.length) return {w, N, fim:false, feitas, ini:true};
+  }
+  return {w:N, N, fim:true, feitas:new Set(), ini:true};
+}
 function semanaCat(c){
   if(!c||c.tipo!=="programa"||!c.inicio) return null;
-  const w=Math.floor((diaNum(HOJE())-diaNum(c.inicio))/7)+1, N=c.semanas||1;
-  return {w:Math.max(1,Math.min(N,w)), fim:w>N, N};
+  const p=progCat(c); return {w:p.w, fim:p.fim, N:p.N};
 }
 const semanaDaData = (c,data) => Math.floor((diaNum(data)-diaNum(c.inicio))/7)+1;
 const sessDaSemana = (c,w) => (c.sessoes||[]).filter(s=>!s.semanas || s.semanas.includes(w));
 function feitasCat(c){ return historico().filter(h=>h.cat===c.id); }
-function feitaNaSemana(c, sid, w){ return c.inicio && feitasCat(c).some(h=>h.cs===sid && h.data>=c.inicio && semanaDaData(c,h.data)===w); }
+function feitaNaSemana(c, sid, w){ const p=progCat(c); if(!p||!p.ini) return false; if(p.fim||w<p.w) return true; return w===p.w && p.feitas.has(sid); }
 const ultimaFeita = (c, sid) => feitasCat(c).filter(h=>h.cs===sid).at(-1) || null;
 const diaAtual = () => { if(S.livre){ const L=livreDia(S.livre); if(L) return L; } const p=prog(); return p.dias.find(d=>d.id===S.diaId) || p.dias[0]; };
 function itens(){ return diaAtual().itens.map(it=>{ const id=S.sub[it.ex]||it.ex; return {...it, orig:it.ex, id, mod:EX(id).mod, ns:it.series||1}; }); }
@@ -922,8 +951,9 @@ function catHojeHTML(){
       const w=semanaCat(c);
       if(!w){ bt.push(`<button type="button" class="chip" data-a="catabrir" data-v="${esc(c.id)}">${esc(c.nome)}<small>começar</small></button>`); continue; }
       if(w.fim) continue;
-      for(const s of sessDaSemana(c,w.w)){ if(feitaNaSemana(c,s.id,w.w)) continue;
-        bt.push(`<button type="button" class="chip" data-a="catsess" data-v="${esc(c.id+"|"+s.id)}">${esc(s.nome)}<small>${esc(c.nome)} · sem ${w.w}</small></button>`); }
+      /* HAG_TREINO_ESCOLHA_DO_DIA_v1: um treino por dia, o próximo da semana */
+      const s=sessDaSemana(c,w.w).find(x=>!feitaNaSemana(c,x.id,w.w)), hj=feitasCat(c).some(h=>h.data===HOJE());
+      if(s) bt.push(`<button type="button" class="chip" data-a="catsess" data-v="${esc(c.id+"|"+s.id)}">${esc(s.nome)}<small>${esc(c.nome)} · sem ${w.w}${hj?" · amanhã":""}</small></button>`);
     } else bt.push(`<button type="button" class="chip" data-a="catabrir" data-v="${esc(c.id)}">${esc(c.nome)}<small>${esc(c.sub||"")}</small></button>`);
   }
   if(!bt.length) return "";
@@ -1433,7 +1463,38 @@ function sessLinhaHTML(c, s, w){
     ${feita?`<div class="ok">✓ feita nesta semana</div>`:ult?`<div class="ok">última ${br(ult.data)}</div>`:""}</div></div>
     <button type="button" class="btn small" data-a="livrever" data-v="${esc(c.id+"|"+s.id)}" style="margin-top:10px">${s.mente?"Começar":"Ver e começar"}</button></div>`;
 }
+/* HAG_TREINO_ESCOLHA_DO_DIA_v1 (23/10/2026): ao abrir um programa, a semana aparece como uma fileira de treinos para
+   escolher o do dia (o sugerido tem um ponto), com o detalhe do escolhido logo abaixo e um botão só. Semanas futuras ficam
+   trancadas até a atual ser completada (HAG_TREINO_SEMANA_POR_CONCLUSAO_v1). Bloco sem semanas usa a mesma escolha. */
+let catSel=null, catAvisoSem=null;
+function sessCurta(s){ return String(s.nome||"").split(" · ")[0]; }
+function presc(i){ const e=EX(i.ex); if(i.alvo) return i.alvo; if(i.min==null) return `${i.series||1} ×`;
+  return `${i.series||1} × ${i.min}${i.max&&i.max!==i.min?"-"+i.max:""}${e.un==="seg"?" s":""}`; }
+function diaPickHTML(c, lista, modo){
+  /* modo: "atual" (semana em curso), "passada" (já completada) ou "bloco" (sem semanas) */
+  if(!lista.length) return "";
+  const p=c.tipo==="programa"?progCat(c):null, feita=s=>modo==="passada"||(modo==="atual"&&p&&p.feitas.has(s.id));
+  const sug=modo==="atual"?lista.find(s=>!feita(s)):null;
+  const sel=lista.find(s=>s.id===catSel)||sug||lista[0];
+  const hoje=modo!=="bloco" && feitasCat(c).some(h=>h.data===HOJE());
+  const its=(sel.itens||[]).filter(i=>!/^(aquecimento|desaquecimento)\b/i.test(String(i.nota||"").trim()));
+  const extra=(sel.itens||[]).length-its.length, ult=ultimaFeita(c,sel.id);
+  const btn=sel.mente?"Começar":feita(sel)?"Fazer de novo":(hoje?"Fazer mesmo assim":"Ver e começar");
+  return `<div class="lbl">${modo==="bloco"?"Escolha o treino de hoje":modo==="passada"?"Treinos desta semana · feitos":"Escolha o treino de hoje"}</div>
+  <div class="tdias" role="group" aria-label="Treinos">${lista.map((s,k)=>`<button type="button" data-a="catdia" data-v="${esc(s.id)}" aria-pressed="${s===sel}" class="${feita(s)?"ok":""}${s===sug?" sug":""}"><b>Treino ${k+1}${feita(s)?"":""}</b><span>${esc(sessCurta(s))}</span></button>`).join("")}</div>
+  <div class="card diadet">
+    <div class="kicker">Treino ${lista.indexOf(sel)+1} · ~${esc(sel.min||"")} min${sel===sug?" · sugerido":""}</div>
+    <h3 style="margin-top:2px">${esc(sel.nome)}</h3>
+    ${sel.foco?`<p class="sub" style="margin:4px 0 0">${esc(sel.foco)}</p>`:""}
+    ${sel.mente?`<p class="note" style="margin:8px 0 0">${sel.mente.tipo==="resp"?"Respiração guiada por um círculo que cresce e diminui.":"Meditação com voz guia. Fone de ouvido ajuda."}</p>`
+      :`<ol>${its.map(i=>`<li>${esc(EX(i.ex).nome)} <small>${esc(presc(i))}</small></li>`).join("")}</ol>${extra?`<p class="note" style="margin:6px 0 0">+ aquecimento e desaquecimento</p>`:""}`}
+    ${feita(sel)?`<div class="ok" style="margin-top:8px">✓ feito ${modo==="atual"?"nesta semana":""}${ult?" · "+br(ult.data):""}</div>`:ult&&modo==="bloco"?`<div class="ok" style="margin-top:8px">última vez ${br(ult.data)}</div>`:""}
+    ${hoje&&modo==="atual"&&!feita(sel)?`<p class="note" style="margin:8px 0 0">Você já fez um treino deste programa hoje. O ideal é o próximo amanhã.</p>`:""}
+    <button type="button" class="btn${(hoje&&modo==="atual"&&!feita(sel))||feita(sel)?" ghost":""} wide" data-a="livrever" data-v="${esc(c.id+"|"+sel.id)}" style="margin-top:12px">${btn}</button>
+  </div>`;
+}
 function renderCatAberto(c){
+  vLivre.style.setProperty("--cc", CORES[c.cor]||"var(--gold)");
   const head=`<button type="button" class="link" data-a="catvolta" style="align-self:flex-start">‹ Programas</button>
     ${c.foto?`<img class="cathero" src="${esc(c.foto)}" alt="">`:""}
     <div><div class="kicker">${esc(c.sub||"Programa")}</div><h2>${esc(c.nome)}</h2>${catMeta(c).length?`<div class="kw">${catMeta(c).map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
@@ -1444,18 +1505,20 @@ function renderCatAberto(c){
     const lista=(c.sessoes||[]).filter(s=>!s.nivel || !nvs.length || s.nivel===niv);
     vLivre.innerHTML=`${head}
     ${nvs.length>1?`<div class="card"><div class="lbl">Nível</div><div class="chips" role="group" aria-label="Nível" style="margin-top:6px">${nvs.map(n=>`<button type="button" class="chip" data-a="nivel" data-k="${esc(kN)}" data-v="${esc(n)}" aria-pressed="${n===niv}">${esc(NIVEL[n]||n)}</button>`).join("")}</div><p class="note" style="margin:8px 0 0">Comece no iniciante · suba quando todas as séries ficarem no topo da faixa.</p></div>`:""}
-    ${lista.map(s=>sessLinhaHTML(c,s,null)).join("")}`;
+    ${diaPickHTML(c, lista, "bloco")}`;
     return;
   }
-  const w=semanaCat(c), N=c.semanas||1, ver=catSem||(w?w.w:1);
+  const p=progCat(c), N=p.N, cur=p.fim?N:p.w, w=semanaCat(c);
+  let ver=catSem||cur; if(ver>cur && !p.fim) ver=cur;
   const sem=Array.from({length:N},(_,i)=>i+1);
+  const st=i=>p.fim||i<cur?"feita":i===cur?"atual":"tranc";
   vLivre.innerHTML=`${head}
-  ${!w?`<div class="card"><h3>Pronto para começar</h3><p class="sub">A semana 1 começa no dia em que você fizer o primeiro treino. Siga a ordem das semanas.</p></div>`
-     : w.fim?`<div class="card"><h3>Programa concluído</h3><p class="sub">Você passou pelas ${N} semanas. Repita a última semana até a consulta, ou recomece.</p></div>`
-     : `<div class="bloco"><div class="kicker">Semana atual</div><div style="font-family:var(--display);font-size:20px;font-weight:700;margin-top:2px">Semana ${w.w} de ${N}</div><div style="font-size:13.5px;opacity:.85">${esc(catStatus(c).split(" · ").slice(1).join(" · "))}</div></div>`}
-  <div class="semstrip" role="group" aria-label="Semanas">${sem.map(i=>`<button type="button" data-a="catsem" data-v="${i}" aria-pressed="${i===ver}" class="${w&&!w.fim&&i===w.w?"atual":""}">S${i}</button>`).join("")}</div>
-  <div class="lbl">Semana ${ver}${w&&!w.fim&&ver!==w.w?" · prévia":""}</div>
-  ${sessDaSemana(c,ver).map(s=>sessLinhaHTML(c,s,w&&!w.fim&&ver===w.w?ver:null)).join("")}
+  ${!w?`<div class="card"><h3>Pronto para começar</h3><p class="sub">A semana 1 começa no seu primeiro treino. A semana seguinte libera quando você completar todos os treinos da semana.</p></div>`
+     : p.fim?`<div class="card"><h3>Programa concluído</h3><p class="sub">Você completou as ${N} semanas. Repita a última semana até a consulta, ou recomece.</p></div>`
+     : `<div class="bloco"><div class="kicker">Semana atual</div><div style="font-family:var(--display);font-size:20px;font-weight:700;margin-top:2px">Semana ${cur} de ${N}</div><div style="font-size:13.5px;opacity:.85">${p.feitas.size} de ${sessDaSemana(c,cur).length} treinos feitos · a semana ${cur+1<=N?cur+1:N} libera quando todos estiverem feitos</div></div>`}
+  <div class="semstrip" role="group" aria-label="Semanas">${sem.map(i=>`<button type="button" data-a="catsem" data-v="${i}" aria-pressed="${i===ver}" class="${st(i)==="atual"?"atual":st(i)}" ${st(i)==="tranc"?`aria-label="Semana ${i}, trancada"`:""}>${st(i)==="tranc"?"🔒":st(i)==="feita"?"✓":""}S${i}</button>`).join("")}</div>
+  ${catAvisoSem?`<p class="note" style="margin:0">A semana ${catAvisoSem} libera quando você completar a semana ${cur}.</p>`:""}
+  ${diaPickHTML(c, sessDaSemana(c,ver), ver<cur||p.fim?"passada":"atual")}
   ${w?`<button type="button" class="link" data-a="catreini" data-v="${esc(c.id)}" style="align-self:center">${catReini===c.id?"Toque de novo para recomeçar da semana 1":"Recomeçar da semana 1"}</button>`:""}`;
 }
 function renderLivre(){
@@ -1506,11 +1569,13 @@ function renderLivreAntigo(){
 }
 function catAcao(b){
   const a=b.dataset.a;
-  if(a==="cat"){ const c=cats().find(x=>x.id===b.dataset.v); if(!c) return; if(c.lib){ catAberto=c.id; catSem=null; catReini=null; window.scrollTo(0,0); } else catInfo=catInfo===c.id?null:c.id; return renderLivre(); }
-  if(a==="catvolta"){ catAberto=null; catReini=null; window.scrollTo(0,0); return renderLivre(); }
+  if(a==="cat"){ const c=cats().find(x=>x.id===b.dataset.v); if(!c) return; if(c.lib){ catAberto=c.id; catSem=null; catReini=null; catSel=null; catAvisoSem=null; window.scrollTo(0,0); } else catInfo=catInfo===c.id?null:c.id; return renderLivre(); }
+  if(a==="catvolta"){ catAberto=null; catReini=null; catSel=null; catAvisoSem=null; vLivre.style.removeProperty("--cc"); window.scrollTo(0,0); return renderLivre(); }
   if(a==="vittranc"){ vitTranc=b.dataset.v==="1"; cats().forEach(c=>{ c.lib=!vitTranc; }); catAberto=null; catInfo=null; render(); return renderLivre(); }   /* HAG_TREINO_VITRINE_v1 */
-  if(a==="catsem"){ catSem=+b.dataset.v; return renderLivre(); }
-  if(a==="nivel"){ store.set(b.dataset.k||"hagtreino.nivel",b.dataset.v); return renderLivre(); }
+  if(a==="catsem"){ const c=cats().find(x=>x.id===catAberto), p=c&&progCat(c), v=+b.dataset.v;   /* HAG_TREINO_SEMANA_POR_CONCLUSAO_v1 */
+    if(p && !p.fim && v>p.w){ catAvisoSem=v; return renderLivre(); } catAvisoSem=null; catSem=v; catSel=null; return renderLivre(); }
+  if(a==="catdia"){ catSel=b.dataset.v; return renderLivre(); }
+  if(a==="nivel"){ store.set(b.dataset.k||"hagtreino.nivel",b.dataset.v); catSel=null; return renderLivre(); }
   if(a==="catreini"){
     const id=b.dataset.v; if(catReini!==id){ catReini=id; return renderLivre(); }
     catReini=null; const c=cats().find(x=>x.id===id); if(c) c.inicio=null; catSem=null; renderLivre();

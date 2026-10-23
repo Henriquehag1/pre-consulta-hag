@@ -310,7 +310,13 @@ function catPainelHTML(){
 }
 function linhaCat(c){
   const ac=Object.fromEntries((E.catAc||[]).map(a=>[a.catalogo_id,a])), hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10);
-  const sem=(c,a)=>{ if(c.tipo!=="programa") return ""; if(!a.inicio) return " · ainda não começou"; const w=Math.floor((new Date(hoje)-new Date(a.inicio))/6048e5)+1; return w>(c.semanas||1)?" · concluído":` · semana ${w} de ${c.semanas}`; };
+  /* HAG_TREINO_SEMANA_POR_CONCLUSAO_v1 (23/10/2026): a semana do paciente é a primeira com treino por fazer, como no app */
+  const sem=(c,a)=>{ if(c.tipo!=="programa") return ""; if(!a.inicio) return " · ainda não começou";
+    const N=c.semanas||1, ss=c.sessoes||[], cnt={};
+    for(const h of ((E.P&&E.P.historico)||[])) if(h.cat===c.id && h.cs && h.data>=a.inicio) cnt[h.cs]=(cnt[h.cs]||0)+1;
+    for(let w=1; w<=N; w++){ const R=ss.filter(s=>!s.semanas||s.semanas.includes(w)); let f=0; for(const s of R) if(cnt[s.id]>0){ cnt[s.id]--; f++; }
+      if(f<R.length) return ` · semana ${w} de ${N} (${f} de ${R.length} feitos)`; }
+    return " · concluído"; };
   { const a=ac[c.id], ab=E.catPrev===c.id;
     return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row between"><div style="display:flex;gap:10px;align-items:center">${c.foto?`<img src="${esc(c.foto)}" alt="" loading="lazy" style="width:72px;height:40px;object-fit:cover;border-radius:6px;flex:none">`:`<span title="Sem foto: falta treino_fotos/${esc(c.id)}.jpg" style="width:72px;height:40px;border-radius:6px;flex:none;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--muted)">sem foto</span>`}<div><b>${esc(c.nome)}</b> ${c.aprovado?"":`<span class="tag y">aguarda sua aprovação</span>`}<div class="note">${esc(c.sub||"")}${a?` · liberado em ${brA(String(a.liberado_em).slice(0,10))}${sem(c,a)}`:""}</div></div></div>
       <div class="row"><button class="btn small ghost" data-a="catprev" data-v="${esc(c.id)}">${ab?"Fechar":"Prévia"}</button>
