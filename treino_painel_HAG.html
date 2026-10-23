@@ -278,11 +278,41 @@ function renderPaciente(){
      <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div class="f" style="flex:1;min-width:200px"><label class="lbl" for="modsel">Começar de um modelo da casa</label><select id="modsel">${E.modelos.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join("")}</select></div><button class="btn small" data-a="demodelo">Criar rascunho</button></div></div>
    <div class="card"><h3>Link do paciente</h3>
      ${P.acesso?`<div class="linkbox" id="link">${esc(linkDe(P.acesso.token))}</div><div class="row" style="margin-top:8px"><button class="btn small" data-a="copiar">Copiar link</button><span class="note">${P.acesso.ultimo_uso?"Último uso em "+brA(String(P.acesso.ultimo_uso).slice(0,10)):"Ainda não foi aberto"}</span></div>`:`<p class="note">Este paciente ainda não tem link. Ele é criado na publicação do programa, ou agora.</p><button class="btn small" data-a="gerarlink">Gerar link</button>`}
-     <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div class="row between"><div><b>Treinos Em viagem</b><div class="note">${E.livre&&E.livre.erro?"Não consegui ler: "+esc(E.livre.erro):E.livre&&E.livre.on?"Liberado em "+brA(String(E.livre.em).slice(0,10))+". O paciente vê a aba Em viagem.":"Não liberado. Treinos com o peso do corpo para viagem e hotel."}</div></div>${E.livre&&!E.livre.erro?(E.livre.on?`<button class="btn small ghost" data-a="livreoff">Retirar</button>`:`<button class="btn small" data-a="livreon">Liberar</button>`):""}</div></div>
-     <p class="note" style="margin:10px 0 0">O link é pessoal e abre só o treino deste paciente. O envio ao paciente sai pela Daniela, não pelo médico.</p></div></div>`;
+     <p class="note" style="margin:10px 0 0">O link é pessoal e abre só o treino deste paciente. O envio ao paciente sai pela Daniela, não pelo médico.</p></div></div>
+   ${catPainelHTML()}`;
   main.innerHTML=h;
 }
 
+/* ---------- HAG_TREINO_CATALOGO_v1 (23/10/2026) ----------
+   Pedido do Dr. Henrique: o HAG Treino vira um catálogo de programas (cards) que ele libera paciente a paciente. Aqui:
+   Liberar / Retirar por card (treino_catalogo_acesso) e, para card que ainda não foi aprovado, Prévia e Aprovar
+   (treino_catalogo.aprovado, vale para todos os pacientes). Card não aprovado não aparece no app, nem trancado.
+   O antigo "Treinos Em viagem" é o card "Em casa". */
+const NIVP={iniciante:"iniciante",intermediario:"intermediário"};
+function catPrevHTML(c){
+  const ss=c.sessoes||[]; if(!ss.length) return `<p class="note">Sessões do Em casa: as mesmas do antigo Em viagem.</p>`;
+  const it=i=>{ const e=E.exMap[i.ex]||{}, nm=esc(e.nome||i.ex); if(i.alvo) return `${nm}: ${esc(i.alvo)}`; const q=i.min!=null?`${i.series} × ${i.min}${i.max&&i.max!==i.min?"-"+i.max:""}${e.unidade==="seg"?" s":""}`:`${i.series} ×`; return `${nm} ${q}${i.bloco?" ("+esc(i.bloco)+")":""}${i.nota?" · "+esc(i.nota):""}`; };
+  return `<div class="scroll" style="max-height:420px;overflow:auto">${ss.map(x=>`<div style="padding:6px 0;border-top:1px dashed var(--line)"><b>${esc(x.nome)}</b> <span class="note">${x.semanas?"semana "+x.semanas.join(", "):"todas as semanas"}${x.nivel?" · "+(NIVP[x.nivel]||x.nivel):""}${x.min?" · ~"+x.min+" min":""}</span><div class="note">${(x.itens||[]).map(it).join(" · ")}</div></div>`).join("")}</div>`;
+}
+function catPainelHTML(){
+  if(E.catErro) return `<div class="card"><h3>Programas do catálogo</h3><p class="note">Não consegui ler: ${esc(E.catErro)}</p></div>`;
+  const C=E.cat||[]; if(!C.length) return "";
+  const ac=Object.fromEntries((E.catAc||[]).map(a=>[a.catalogo_id,a])), hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10);
+  const sem=(c,a)=>{ if(c.tipo!=="programa") return ""; if(!a.inicio) return " · ainda não começou"; const w=Math.floor((new Date(hoje)-new Date(a.inicio))/6048e5)+1; return w>(c.semanas||1)?" · concluído":` · semana ${w} de ${c.semanas}`; };
+  return `<div class="card" style="margin-top:14px"><h3>Programas do catálogo</h3><p class="note">Somam ao programa principal. O paciente vê todos os aprovados; os não liberados aparecem com cadeado.</p>
+  ${C.map(c=>{ const a=ac[c.id], ab=E.catPrev===c.id;
+    return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row between"><div><b>${esc(c.nome)}</b> ${c.aprovado?"":`<span class="tag y">aguarda sua aprovação</span>`}<div class="note">${esc(c.sub||"")}${a?` · liberado em ${brA(String(a.liberado_em).slice(0,10))}${sem(c,a)}`:""}</div></div>
+      <div class="row"><button class="btn small ghost" data-a="catprev" data-v="${esc(c.id)}">${ab?"Fechar":"Prévia"}</button>
+      ${c.aprovado?(a?`<button class="btn small ghost" data-a="catoff" data-v="${esc(c.id)}">Retirar</button>`:`<button class="btn small" data-a="caton" data-v="${esc(c.id)}">Liberar</button>`):`<button class="btn small" data-a="cataprova" data-v="${esc(c.id)}">${E.catConf===c.id?"Confirmar aprovação":"Aprovar"}</button>`}</div></div>
+      ${ab?`${c.descricao?`<p class="note" style="margin:6px 0">${esc(c.descricao)}${c.requisito?" · Pré-requisito: "+esc(c.requisito):""}</p>`:""}${catPrevHTML(c)}`:""}</div>`; }).join("")}</div>`;
+}
+async function lerCat(){
+  try{
+    E.cat=await api("treino_catalogo?select=id,nome,sub,descricao,tipo,semanas,sessoes_semana,requisito,aprovado,ordem,sessoes&ativo=is.true&order=ordem");
+    E.catAc=E.pid?await api(`treino_catalogo_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&select=catalogo_id,liberado_em,inicio`):[];
+    E.catErro=null;
+  }catch(e){ E.catErro=e.message; }
+}
 /* ---------- editor de programa (rascunho ou modelo) ---------- */
 function progParaEdicao(r){
   return {id:r.id, patient_id:r.patient_id, modelo:r.modelo, status:r.status, versao:r.versao, nome:r.nome||"", objetivo:r.objetivo||"", nivel:r.nivel||"", regra:r.regra||"dupla", sessoes_semana:r.sessoes_semana||3, bloco_nome:r.bloco_nome||"", bloco_objetivo:r.bloco_objetivo||"", bloco_papeis:(r.bloco_papeis||[]).join(", "), observacao:r.observacao||"",
@@ -418,7 +448,7 @@ async function carregarBase(){
   E.pacientes=pac||[]; E.modelos=(progs||[]).filter(p=>p.modelo); E.comProg=new Set((progs||[]).filter(p=>!p.modelo).map(p=>p.patient_id));
   E.metodos=mets||[]; E.exs=exs||[]; E.exMap=Object.fromEntries(E.exs.map(e=>[e.id,e]));
 }
-async function carregarPaciente(){ E.P=null; E.livre=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } await lerLivre(); render(); }
+async function carregarPaciente(){ E.P=null; E.livre=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } await lerLivre(); await lerCat(); render(); }
 /* HAG_TREINO_LIVRE_v1 (13/10/2026): treino em qualquer lugar (peso do corpo), liberado paciente a paciente pelo Dr. Henrique.
    Liberar grava uma linha em treino_livre_acesso; o app do paciente passa a mostrar a aba "Qualquer lugar" com as sessões
    aprovadas (treino_livres.aprovado). Retirar apaga a linha. */
@@ -437,6 +467,10 @@ main.addEventListener("click",e=>{
   if(a==="liberar") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_liberacoes",{method:"POST",body:{patient_id:E.pid,exercicio_id:v,por:(s&&s.user)||"painel"}}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Progressão liberada.");
   if(a==="livreon") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_livre_acesso",{method:"POST",body:{patient_id:E.pid,por:(s&&s.user)||"painel"},prefer:"resolution=ignore-duplicates"}); await lerLivre(); },"Treinos Em viagem liberados. Aparecem no app do paciente na próxima vez que ele abrir.");
   if(a==="livreoff") return acao(async()=>{ await api(`treino_livre_acesso?patient_id=eq.${encodeURIComponent(E.pid)}`,{method:"DELETE"}); await lerLivre(); },"Treinos Em viagem retirados deste paciente.");
+  if(a==="catprev"){ E.catPrev=E.catPrev===v?null:v; return render(); }
+  if(a==="caton") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_catalogo_acesso",{method:"POST",body:{patient_id:E.pid,catalogo_id:v,por:(s&&s.user)||"painel"},prefer:"resolution=ignore-duplicates"}); await lerCat(); },"Programa liberado. Aparece no app do paciente na próxima vez que ele abrir.");
+  if(a==="catoff") return acao(async()=>{ await api(`treino_catalogo_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&catalogo_id=eq.${encodeURIComponent(v)}`,{method:"DELETE"}); await lerCat(); },"Programa retirado deste paciente. As sessões já feitas continuam no histórico.");
+  if(a==="cataprova"){ if(E.catConf!==v){ E.catConf=v; return render(); } E.catConf=null; return acao(async()=>{ await api(`treino_catalogo?id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:{aprovado:true,atualizado_em:new Date().toISOString()}}); await lerCat(); },"Programa aprovado. Passa a aparecer no app de todos os pacientes, com cadeado para quem não tem liberação."); }
   if(a==="gerarlink") return acao(async()=>{ await rpc("hag_treino_link",{p_patient_id:E.pid}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Link criado.");
   if(a==="copiar"){ const t=document.getElementById("link").textContent; return acao(async()=>{ await navigator.clipboard.writeText(t); },"Link copiado."); }
   if(p){

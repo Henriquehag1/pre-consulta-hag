@@ -111,6 +111,25 @@ h3{font-family:var(--display);font-size:18px;margin:0}
 .prog.muitos{gap:1px}
 details.outro{font-size:14px} details.outro summary{cursor:pointer;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;padding:6px 0;text-align:center;list-style:none}
 details.outro .chips{margin-top:8px;justify-content:center}
+/* HAG_TREINO_CATALOGO_v1 (23/10/2026): cards do catálogo de programas */
+.catg{display:flex;flex-direction:column;gap:10px}
+.catc{display:block;width:100%;text-align:left;cursor:pointer;border-left:4px solid var(--cc,var(--gold));position:relative}
+.catc h3{font-size:19px}
+.catc .meta{font-size:13px;color:var(--ink-2);margin-top:2px}
+.catc .st{margin-top:8px;font-size:12.5px;font-family:var(--mono);letter-spacing:.04em;color:var(--cc,var(--gold))}
+.catc.tranc{opacity:.62;border-left-color:var(--line)}
+.catc.tranc .st{color:var(--muted)}
+.catc .cad{position:absolute;top:14px;right:14px;color:var(--muted)}
+.catc .info{margin-top:8px;font-size:13.5px;color:var(--ink-2)}
+.semstrip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.semstrip::-webkit-scrollbar{display:none}
+.semstrip button{flex:0 0 auto;min-width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-family:var(--display);font-size:16px;font-weight:700}
+.semstrip button[aria-pressed="true"]{background:var(--btn);color:var(--on-btn);border-color:var(--btn)}
+.semstrip button.atual{border-color:var(--gold-ui)}
+.catsess .ok{color:var(--good);font-size:12.5px;margin-top:2px}
+.cathoje{display:flex;flex-direction:column;gap:6px}
+.cathoje .chips{display:flex;gap:6px;flex-wrap:wrap}
+.cathoje .chip small{display:block;font-size:11px;color:var(--ink-2)}
 /* HAG_TREINO_PROGRAMA_v1 e HAG_TREINO_LIVRE_v1 (13/10/2026) */
 .escolha .chips{margin-top:8px}
 .escolha .chip small{font-family:var(--body);font-size:11px;color:var(--gold);margin-left:4px}
@@ -363,7 +382,7 @@ details.mais p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.45}
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-v="hoje">Treino</button>
     <button role="tab" aria-selected="false" data-v="prog">Meu programa</button>
-    <button role="tab" aria-selected="false" data-v="livre" id="tab-livre" hidden>Em viagem</button>
+    <button role="tab" aria-selected="false" data-v="livre" id="tab-livre" hidden>Programas</button>
     <button role="tab" aria-selected="false" data-v="evo">Estou evoluindo?</button>
   </nav>
 </div></header>
@@ -496,7 +515,7 @@ const uid = () => (crypto.randomUUID ? crypto.randomUUID() : (Date.now()+"-"+Mat
 const EX = id => (CTX && CTX.exercicios && CTX.exercicios[id]) || {nome:id, mod:"forca", m:{}, inc:2.5, un:"kg", subs:[]};
 const HOJE = () => hojeLocal();
 /* histórico = o que o servidor tem + o que ainda está na fila deste aparelho */
-function historico(){ const h=(CTX&&CTX.historico)||[]; const ids=new Set(h.map(s=>s.client_id)); return h.concat(FILA.map(p=>({data:p.data, dia_id:p.dia_id, dia:p.dia, tipo:p.tipo, dur:p.dur, rpe:p.rpe, pront:p.pront, cv:p.cv, series:p.series||[], cardio:p.cardio||[], hyrox:p.hyrox||[], pendente:true}))); }
+function historico(){ const h=(CTX&&CTX.historico)||[]; const ids=new Set(h.map(s=>s.client_id)); return h.concat(FILA.map(p=>({data:p.data, dia_id:p.dia_id, dia:p.dia, tipo:p.tipo, cat:p.cat||null, cs:p.cs||null, dur:p.dur, rpe:p.rpe, pront:p.pront, cv:p.cv, series:p.series||[], cardio:p.cardio||[], hyrox:p.hyrox||[], pendente:true}))); }
 
 /* ---------- HAG_TREINO_REGISTRO_POR_TIPO_v1 (09/10/2026) ----------
    Pedido do Dr. Henrique: a pergunta "quantas ainda conseguiria fazer" não serve para todo exercício ("individualize,
@@ -691,8 +710,40 @@ function diaSugerido(){
    nome "Qualquer lugar · <treino> · <nível>", como a "outra atividade". */
 const NIVEL = {iniciante:"iniciante", intermediario:"intermediário"};
 const livres = () => (CTX && Array.isArray(CTX.livres)) ? CTX.livres : [];
-const livreBruto = id => livres().find(l=>l.id===id) || null;
-function livreDia(id){ const L=livreBruto(id); if(!L) return null; return {id:null, nome:`Em viagem · ${L.nome} · ${NIVEL[L.nivel]||L.nivel}`, tipo:"Qualquer lugar", foco:L.foco||"", itens:(L.itens||[]).map(i=>({...i, livre:true}))}; }
+/* HAG_TREINO_CATALOGO_v1 (23/10/2026). Pedido do Dr. Henrique: o HAG Treino vira um catálogo de programas (Core em foco,
+   Rumo aos 5/10/15 km, Glúteo em foco, Em casa...). Os cards aprovados aparecem todos; os não liberados ficam com cadeado
+   ("liberado pelo Dr. Henrique na consulta"), sem pedido. As sessões dos liberados somam ao programa principal: entram na
+   escolha do dia e rodam no mesmo tocador do livre. S.livre passa a ser "card|sessão"; um id sem "|" é do antigo Em viagem
+   (card em_casa). Programa com semanas conta a semana a partir de inicio (gravado no primeiro "Começar"). */
+const CORES = {verde:"#5DD39E", dourado:"#E3B964", azul:"#6CB4F0", rosa:"#F08CB4", vermelho:"#FF8A80", grafite:"#A9B1C2", laranja:"#F0A35A", lilas:"#B79CF0", amarelo:"#F2D35B"};
+function cats(){
+  const c=(CTX && Array.isArray(CTX.catalogo)) ? CTX.catalogo : null; if(c) return c;
+  const L=livres(); return L.length ? [{id:"em_casa", nome:"Em casa", sub:"Peso do corpo · casa, hotel, viagem", tipo:"bloco", niveis:["iniciante","intermediario"], lib:true, sessoes:L.map(l=>({...l, pc:true}))}] : [];
+}
+const catLib = () => cats().filter(c=>c.lib);
+function sessCat(key){
+  const k=String(key||""), j=k.indexOf("|"), cid=j<0?"em_casa":k.slice(0,j), sid=j<0?k:k.slice(j+1);
+  const c=cats().find(x=>x.id===cid); if(!c||!c.lib) return null;
+  const s=(c.sessoes||[]).find(x=>x.id===sid); return s?{c,s}:null;
+}
+const livreBruto = key => { const r=sessCat(key); return r ? {...r.s, cat:r.c} : null; };
+function livreDia(key){
+  const r=sessCat(key); if(!r) return null; const {c,s}=r, w=semanaCat(c);
+  const niv=s.nivel&&(c.niveis||[]).length>1 ? " · "+(NIVEL[s.nivel]||s.nivel) : "";
+  return {id:null, nome:`${c.nome} · ${s.nome}${niv}`.slice(0,80), tipo:c.id==="em_casa"?"Qualquer lugar":"Programa", foco:s.foco||"", cat:c.id, cs:s.id,
+          semana:w&&!w.fim?w.w:null, itens:(s.itens||[]).map(i=>({...i, livre:!!s.pc}))};
+}
+const diaNum = d => Math.floor(new Date(String(d).slice(0,10)+"T12:00:00Z")/864e5);
+function semanaCat(c){
+  if(!c||c.tipo!=="programa"||!c.inicio) return null;
+  const w=Math.floor((diaNum(HOJE())-diaNum(c.inicio))/7)+1, N=c.semanas||1;
+  return {w:Math.max(1,Math.min(N,w)), fim:w>N, N};
+}
+const semanaDaData = (c,data) => Math.floor((diaNum(data)-diaNum(c.inicio))/7)+1;
+const sessDaSemana = (c,w) => (c.sessoes||[]).filter(s=>!s.semanas || s.semanas.includes(w));
+function feitasCat(c){ return historico().filter(h=>h.cat===c.id); }
+function feitaNaSemana(c, sid, w){ return c.inicio && feitasCat(c).some(h=>h.cs===sid && h.data>=c.inicio && semanaDaData(c,h.data)===w); }
+const ultimaFeita = (c, sid) => feitasCat(c).filter(h=>h.cs===sid).at(-1) || null;
 const diaAtual = () => { if(S.livre){ const L=livreDia(S.livre); if(L) return L; } const p=prog(); return p.dias.find(d=>d.id===S.diaId) || p.dias[0]; };
 function itens(){ return diaAtual().itens.map(it=>{ const id=S.sub[it.ex]||it.ex; return {...it, orig:it.ex, id, mod:EX(id).mod, ns:it.series||1}; }); }
 function minutosDe(its){
@@ -732,7 +783,7 @@ function render(){
   if(S.fase==="fim" && S.salvo) return renderSalvo();
   if(S.livre && !livreDia(S.livre)) S.livre=null;
   if(S.livre){ if(S.fase==="treino") return renderItem(); if(S.fase==="fim") return renderFim(); return renderLivreInicio(); }
-  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>${livres().length?`<button type="button" class="btn wide" data-a="irlivre">Treinos Em viagem (peso do corpo)</button>`:""}<button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
+  if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>${catLib().length?`${catHojeHTML()}<button type="button" class="btn wide" data-a="irlivre">Meus programas</button>`:""}<button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
   if(S.fase==="inicio") return renderInicio();
   if(S.fase==="treino") return renderItem();
   if(S.fase==="fim") return S.salvo ? renderSalvo() : renderFim();
@@ -770,7 +821,7 @@ function renderInicio(){
   const d=diaAtual(), its=itens(), sm=semaforo(), ds=diaDaSemana(p), visto=store.get("hagtreino.rir.visto",false);
   const hojeTxt=`${diaSem(HOJE())}, ${br(HOJE())}`, nome=(CTX&&CTX.paciente&&CTX.paciente.nome)||"";
   const completo=Object.values(S.pront).every(v=>v!=null);
-  const extra=`${livres().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">Sem academia? Em viagem</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje</button>`;
+  const extra=`${catLib().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">${catLib().some(c=>c.id==="em_casa")?"Sem academia? Em casa · ":""}Programas</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje</button>`;
   if(!S.prontOk && !S.prontPulou){
     const esc_=(k,t,de,ate,e,dd)=>`<div class="esc"><div class="t">${t}</div><div class="g" style="grid-template-columns:repeat(${ate-de+1},1fr)">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div><div class="l"><span>${de} = ${e}</span><span>${ate} = ${dd}</span></div></div>`;
     vHoje.innerHTML=`${filaHTML()}
@@ -789,6 +840,7 @@ function renderInicio(){
   const feitoHoje=historico().some(x=>x.data===HOJE()&&x.dia_id===d.id);
   vHoje.innerHTML=`${filaHTML()}${blocoHTML()}
   ${p.dias.length>1?escolhaHTML(p,d):""}
+  ${catHojeHTML()}
   <div><div class="kicker">${hojeTxt} · treino de hoje</div><h2>${esc(d.nome)}</h2><div class="kw"><span>~${minutosEstimados()} min</span><span>${its.length} ex</span></div>${focoHTML(d.foco)}</div>
   ${ds.usa&&!ds.dia?`<div class="aviso">Hoje: descanso. Quer treinar? Escolha acima.</div>`:""}
   ${feitoHoje?`<div class="aviso">Você já registrou este treino hoje.</div>`:""}
@@ -803,6 +855,23 @@ function renderInicio(){
    agora fica no alto, com o sugerido marcado. */
 function escolhaHTML(p,d){
   return `<div class="escolha"><div class="lbl" style="margin-bottom:6px">Escolha o treino</div>${diasHTML(p,d.id,"dia")}</div>`;
+}
+/* HAG_TREINO_CATALOGO_v1: na tela de hoje, as sessões da semana dos programas liberados (as já feitas saem) e um atalho
+   para cada bloco liberado. Soma ao programa principal, não substitui. */
+function catHojeHTML(){
+  const L=catLib(); if(!L.length) return "";
+  const bt=[];
+  for(const c of L){
+    if(c.tipo==="programa"){
+      const w=semanaCat(c);
+      if(!w){ bt.push(`<button type="button" class="chip" data-a="catabrir" data-v="${esc(c.id)}">${esc(c.nome)}<small>começar</small></button>`); continue; }
+      if(w.fim) continue;
+      for(const s of sessDaSemana(c,w.w)){ if(feitaNaSemana(c,s.id,w.w)) continue;
+        bt.push(`<button type="button" class="chip" data-a="catsess" data-v="${esc(c.id+"|"+s.id)}">${esc(s.nome)}<small>${esc(c.nome)} · sem ${w.w}</small></button>`); }
+    } else bt.push(`<button type="button" class="chip" data-a="catabrir" data-v="${esc(c.id)}">${esc(c.nome)}<small>${esc(c.sub||"")}</small></button>`);
+  }
+  if(!bt.length) return "";
+  return `<div class="cathoje"><div class="lbl">Também liberado para você</div><div class="chips">${bt.join("")}</div></div>`;
 }
 /* HAG_TREINO_PROG_DIAS_v1: rótulo curto do dia (SEG, TER... ou a letra do treino) com uma palavra-chave embaixo */
 function diaRot(nome){
@@ -832,13 +901,13 @@ function renderLivreInicio(){
   const dq=its.filter(ehDesaq); /* HAG_TREINO_CIRCUITO_v1: desaquecimento em grupo próprio também no qualquer lugar */
   const aq=its.filter(it=>!dq.includes(it) && tipoReg(it,EX(it.id))==="aquec");
   const resto=its.filter(it=>!aq.includes(it) && !dq.includes(it));
-  const linha=(it,n)=>{ const r=resumoItem(it); return `<div class="it"><div><b>${n?n+". ":""}${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div>${it.nota&&!/^(aquecimento|desaquecimento)$/i.test(it.nota)?`<div class="s">${esc(it.nota)}</div>`:""}</div><div class="r">${r.r}</div></div>`; };
+  const C_=L.cat||{nome:"Em casa"}, sw=d.semana?` · semana ${d.semana} de ${C_.semanas}`:"", nv=L.nivel&&(C_.niveis||[]).length>1?" · "+esc(NIVEL[L.nivel]||L.nivel):"";
   vHoje.innerHTML=`${filaHTML()}
-  <div><div class="kicker">Em viagem · ${esc(NIVEL[L.nivel]||L.nivel)}</div><h2>${esc(L.nome)}</h2><p class="sub">${L.foco?esc(L.foco)+" · ":""}~${minutosEstimados()} min · peso do corpo</p></div>
+  <div><div class="kicker">${esc(C_.nome)}${sw}${nv}</div><h2>${esc(L.nome)}</h2><p class="sub">${L.foco?esc(L.foco)+" · ":""}~${minutosEstimados()} min${L.pc?" · peso do corpo":""}</p></div>
   <div class="card pdia">${listaItensHTML(its,"livre:"+S.livre,{aq,resto,dq})}</div>
-  <p class="note" style="margin:0">Chão · parede · cadeira firme · toque em ▶ para ver o vídeo.</p>
+  <p class="note" style="margin:0">${L.pc?"Chão · parede · cadeira firme · ":""}toque em ▶ para ver o vídeo.</p>
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
-  <button type="button" class="link" data-a="livresair" style="align-self:center">voltar aos treinos Em viagem</button>`;
+  <button type="button" class="link" data-a="livresair" style="align-self:center">voltar a ${esc(C_.nome)}</button>`;
 }
 function cabecalhoItem(it, ex, n, total){
   const subs=it.livre?[]:(EX(it.orig).subs||[]).filter(s=>CTX.exercicios[s]); /* HAG_TREINO_LIVRE_v1: no hotel não há "aparelho ocupado" */
@@ -1096,7 +1165,7 @@ function salvar(){
   const {series,cardio,hyrox}=coletar();
   const antes={}; for(const s of historico()) for(const x of s.series){ if(x.trab) continue; const v=e1rm(x.kg,x.reps,x.rir); if(v&&(!antes[x.ex]||v>antes[x.ex])) antes[x.ex]=v; }
   const pr=(!S.prontPulou && Object.values(S.pront).every(v=>v!=null))?{...S.pront}:null;
-  const payload={client_id:uid(), data:HOJE(), dia_id:d.id, dia:d.nome, tipo:d.tipo, inicio:S.inicio?new Date(S.inicio).toISOString():null, dur, rpe, pront:pr, cv:S.cv, series, cardio, hyrox};
+  const payload={client_id:uid(), data:HOJE(), dia_id:d.id, dia:d.nome, tipo:d.tipo, cat:d.cat||null, cs:d.cs||null, /* HAG_TREINO_CATALOGO_v1 */ inicio:S.inicio?new Date(S.inicio).toISOString():null, dur, rpe, pront:pr, cv:S.cv, series, cardio, hyrox};
   FILA.push(payload); store.set("hagtreino.fila",FILA); store.del("hagtreino.rascunho");
   const rec=[], vistos=new Set();
   for(const x of series){ if(x.trab) continue; const v=e1rm(x.kg,x.reps,x.rir); if(v&&antes[x.ex]&&v>antes[x.ex]+.05&&!vistos.has(x.ex)){ rec.push(`${esc(EX(x.ex).nome)}: força estimada ${fmt(v)} kg (melhor anterior ${fmt(antes[x.ex])})`); vistos.add(x.ex);} }
@@ -1128,8 +1197,10 @@ vHoje.addEventListener("click", e=>{
   if(a==="rpe"){ S.rpe=+b.dataset.v; return render(); }
   if(a==="onbok"){ store.set("hagtreino.rir.visto",true); return render(); }
   if(a==="dia"){ S.diaId=b.dataset.v; S.diaEscolhido=true; S.sub={}; return render(); }
-  if(a==="irlivre") return abrir("livre");
-  if(a==="livresair"){ S=novoEstado(); render(); return abrir("livre"); }
+  if(a==="irlivre"){ catAberto=null; return abrir("livre"); }
+  if(a==="livresair"){ const L=livreBruto(S.livre); catAberto=L&&L.cat?L.cat.id:null; S=novoEstado(); render(); return abrir("livre"); }
+  if(a==="catabrir"){ catAberto=b.dataset.v; catSem=null; return abrir("livre"); }
+  if(a==="catsess"){ const keep={pront:S.pront, prontOk:S.prontOk, prontPulou:S.prontPulou}; S=Object.assign(novoEstado(),keep); S.livre=b.dataset.v; window.scrollTo(0,0); return render(); }
   if(a==="iniciar"){ pvAberto=null; S.fase="treino"; S.inicio=Date.now(); { const p0=passos()[0]; if(p0) irPasso(p0); } somPronto(); manterTelaAcesa(); salvarRascunho(); return render(); }
   if(a==="feito"){ isoParaTudo(); return registrar(+b.dataset.v); }
   if(a==="reg"){ isoParaTudo(); if(b.dataset.dor!=null && S.ajuste){ S.ajuste.dor=+b.dataset.dor; } return registrar(+b.dataset.rir); }
@@ -1273,8 +1344,69 @@ vProg.addEventListener("click",e=>{
   }
 });
 
-/* ---------- HAG_TREINO_LIVRE_v1 (13/10/2026): aba "Qualquer lugar" ---------- */
+/* ---------- HAG_TREINO_CATALOGO_v1 (23/10/2026): aba "Programas" (antes "Em viagem") ---------- */
+let catAberto=null, catSem=null, catInfo=null, catReini=null;
+function catStatus(c){
+  if(!c.lib) return "🔒 Liberado pelo Dr. Henrique na consulta";
+  if(c.tipo!=="programa") return "Liberado · use quando quiser";
+  const w=semanaCat(c); if(!w) return "Liberado · toque para começar";
+  if(w.fim) return "Concluído";
+  const tot=sessDaSemana(c,w.w).length, f=sessDaSemana(c,w.w).filter(s=>feitaNaSemana(c,s.id,w.w)).length;
+  return `Semana ${w.w} de ${w.N} · ${f} de ${tot} feitas`;
+}
+function catMeta(c){ return [c.semanas?`${c.semanas} semanas`:"", c.sps?`${c.sps}x/semana`:"", c.min?`~${c.min} min`:"", c.local||""].filter(Boolean); }
+function cardCatHTML(c){
+  const cor=CORES[c.cor]||"var(--gold)", ab=catInfo===c.id;
+  return `<div class="card catc${c.lib?"":" tranc"}" style="--cc:${cor}" role="button" tabindex="0" data-a="cat" data-v="${esc(c.id)}">
+    ${c.lib?"":`<span class="cad" aria-hidden="true">🔒</span>`}
+    <h3>${esc(c.nome)}</h3><div class="meta">${esc(c.sub||catMeta(c).join(" · "))}</div>
+    <div class="st">${esc(catStatus(c))}</div>
+    ${!c.lib&&ab?`<div class="info">${esc(c.desc||"")}${c.req?`<br><b>Pré-requisito:</b> ${esc(c.req)}`:""}</div>`:""}</div>`;
+}
+function sessLinhaHTML(c, s, w){
+  const its=s.itens||[], ult=ultimaFeita(c,s.id), feita=w!=null&&feitaNaSemana(c,s.id,w);
+  return `<div class="card catsess"><div class="row between" style="align-items:flex-start"><div><h3>${esc(s.nome)}</h3>
+    <div class="meta" style="font-size:13px;color:var(--ink-2)">${s.foco?esc(String(s.foco).split(". ")[0])+" · ":""}~${esc(s.min||minutosDe(itensDe({itens:its})))} min · ${its.length} ex</div>
+    ${(()=>{ const m=its.find(i=>i.alvo && !/^(aquecimento|desaquecimento)\b/i.test(String(i.nota||"").trim())); return m?`<div style="font-size:14.5px;font-weight:600;margin-top:4px">${esc(m.alvo)}</div>`:""; })()}
+    ${feita?`<div class="ok">✓ feita nesta semana</div>`:ult?`<div class="ok">última ${br(ult.data)}</div>`:""}</div></div>
+    <button type="button" class="btn small" data-a="livrever" data-v="${esc(c.id+"|"+s.id)}" style="margin-top:10px">Ver e começar</button></div>`;
+}
+function renderCatAberto(c){
+  const head=`<button type="button" class="link" data-a="catvolta" style="align-self:flex-start">‹ Programas</button>
+    <div><div class="kicker">${esc(c.sub||"Programa")}</div><h2>${esc(c.nome)}</h2>${catMeta(c).length?`<div class="kw">${catMeta(c).map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
+    ${c.desc?`<p class="sub">${esc(c.desc)}</p>`:""}${c.req?`<p class="note" style="margin:6px 0 0"><b>Pré-requisito:</b> ${esc(c.req)}</p>`:""}</div>`;
+  if(c.tipo!=="programa"){
+    const nvs=c.niveis||[], kN=c.id==="em_casa"?"hagtreino.nivel":"hagtreino.nivel."+c.id;
+    let niv=store.get(kN, nvs[0]||null); if(nvs.length && !nvs.includes(niv)) niv=nvs[0];
+    const lista=(c.sessoes||[]).filter(s=>!s.nivel || !nvs.length || s.nivel===niv);
+    vLivre.innerHTML=`${head}
+    ${nvs.length>1?`<div class="card"><div class="lbl">Nível</div><div class="chips" role="group" aria-label="Nível" style="margin-top:6px">${nvs.map(n=>`<button type="button" class="chip" data-a="nivel" data-k="${esc(kN)}" data-v="${esc(n)}" aria-pressed="${n===niv}">${esc(NIVEL[n]||n)}</button>`).join("")}</div><p class="note" style="margin:8px 0 0">Comece no iniciante · suba quando todas as séries ficarem no topo da faixa.</p></div>`:""}
+    ${lista.map(s=>sessLinhaHTML(c,s,null)).join("")}`;
+    return;
+  }
+  const w=semanaCat(c), N=c.semanas||1, ver=catSem||(w?w.w:1);
+  const sem=Array.from({length:N},(_,i)=>i+1);
+  vLivre.innerHTML=`${head}
+  ${!w?`<div class="card"><h3>Pronto para começar</h3><p class="sub">A semana 1 começa no dia em que você fizer o primeiro treino. Siga a ordem das semanas.</p></div>`
+     : w.fim?`<div class="card"><h3>Programa concluído</h3><p class="sub">Você passou pelas ${N} semanas. Repita a última semana até a consulta, ou recomece.</p></div>`
+     : `<div class="bloco"><div class="kicker">Semana atual</div><div style="font-family:var(--display);font-size:20px;font-weight:700;margin-top:2px">Semana ${w.w} de ${N}</div><div style="font-size:13.5px;opacity:.85">${esc(catStatus(c).split(" · ").slice(1).join(" · "))}</div></div>`}
+  <div class="semstrip" role="group" aria-label="Semanas">${sem.map(i=>`<button type="button" data-a="catsem" data-v="${i}" aria-pressed="${i===ver}" class="${w&&!w.fim&&i===w.w?"atual":""}">S${i}</button>`).join("")}</div>
+  <div class="lbl">Semana ${ver}${w&&!w.fim&&ver!==w.w?" · prévia":""}</div>
+  ${sessDaSemana(c,ver).map(s=>sessLinhaHTML(c,s,w&&!w.fim&&ver===w.w?ver:null)).join("")}
+  ${w?`<button type="button" class="link" data-a="catreini" data-v="${esc(c.id)}" style="align-self:center">${catReini===c.id?"Toque de novo para recomeçar da semana 1":"Recomeçar da semana 1"}</button>`:""}`;
+}
 function renderLivre(){
+  /* HAG_TREINO_CATALOGO_v1: a aba aparece com qualquer card aprovado, mesmo todos trancados (vitrine do Método) */
+  const C=cats(); if(tabLivre) tabLivre.hidden=!C.length;
+  const tEvo=document.querySelector('nav.tabs [data-v="evo"]'); if(tEvo) tEvo.textContent=C.length?"Evolução":"Estou evoluindo?";
+  if(!C.length){ vLivre.innerHTML=""; return; }
+  const ab=catAberto&&C.find(c=>c.id===catAberto&&c.lib); if(ab) return renderCatAberto(ab);
+  const lib=C.filter(c=>c.lib), tr=C.filter(c=>!c.lib);
+  vLivre.innerHTML=`<div><div class="kicker">Programas HAG</div><h2>Programas</h2><p class="sub">Liberados pelo Dr. Henrique na consulta · somam ao seu treino.</p></div>
+  ${lib.length?`<div class="lbl">Liberados para você</div><div class="catg">${lib.map(cardCatHTML).join("")}</div>`:""}
+  ${tr.length?`<div class="lbl">${lib.length?"Outros programas":"Programas do Método HAG"}</div><div class="catg">${tr.map(cardCatHTML).join("")}</div>`:""}`;
+}
+function renderLivreAntigo(){
   const L=livres(); if(tabLivre) tabLivre.hidden=!L.length;
   const tEvo=document.querySelector('nav.tabs [data-v="evo"]'); if(tEvo) tEvo.textContent=L.length?"Evolução":"Estou evoluindo?"; /* com 4 abas, o nome curto cabe na tela do celular */
   if(!L.length){ vLivre.innerHTML=""; return; }
@@ -1284,14 +1416,27 @@ function renderLivre(){
   ${lista.map(l=>{ const its=(l.itens||[]); return `<div class="card livre"><div class="row between" style="align-items:flex-start"><div><h3>${esc(l.nome)}</h3><div class="meta">${l.foco?esc(l.foco)+" · ":""}~${esc(l.min)} min · ${its.length} ex</div></div></div>
     <button type="button" class="btn small" data-a="livrever" data-v="${esc(l.id)}" style="margin-top:10px">Ver e começar</button></div>`; }).join("")}`;
 }
-vLivre.addEventListener("click",e=>{
-  const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a;
-  if(a==="nivel"){ store.set("hagtreino.nivel",b.dataset.v); return renderLivre(); }
+function catAcao(b){
+  const a=b.dataset.a;
+  if(a==="cat"){ const c=cats().find(x=>x.id===b.dataset.v); if(!c) return; if(c.lib){ catAberto=c.id; catSem=null; catReini=null; window.scrollTo(0,0); } else catInfo=catInfo===c.id?null:c.id; return renderLivre(); }
+  if(a==="catvolta"){ catAberto=null; catReini=null; window.scrollTo(0,0); return renderLivre(); }
+  if(a==="catsem"){ catSem=+b.dataset.v; return renderLivre(); }
+  if(a==="nivel"){ store.set(b.dataset.k||"hagtreino.nivel",b.dataset.v); return renderLivre(); }
+  if(a==="catreini"){
+    const id=b.dataset.v; if(catReini!==id){ catReini=id; return renderLivre(); }
+    catReini=null; const c=cats().find(x=>x.id===id); if(c) c.inicio=null; catSem=null; renderLivre();
+    return rpc("hag_treino_catalogo_iniciar",{p_token:TOKEN,p_id:id,p_reiniciar:true}).then(()=>carregar()).catch(()=>{});
+  }
   if(a==="livrever"){
+    const r=sessCat(b.dataset.v);
+    /* primeiro treino de um programa com semanas: a semana 1 começa hoje */
+    if(r && r.c.tipo==="programa" && !r.c.inicio){ r.c.inicio=HOJE(); rpc("hag_treino_catalogo_iniciar",{p_token:TOKEN,p_id:r.c.id,p_reiniciar:false}).catch(()=>{}); }
     if(!emAndamento()){ S=novoEstado(); S.livre=b.dataset.v; }
     abrir("hoje"); render(); window.scrollTo(0,0);
   }
-});
+}
+vLivre.addEventListener("click",e=>{ const b=e.target.closest("[data-a]"); if(b) catAcao(b); });
+vLivre.addEventListener("keydown",e=>{ if(e.key!=="Enter"&&e.key!==" ") return; const b=e.target.closest('[data-a="cat"]'); if(b){ e.preventDefault(); catAcao(b); } });
 
 /* ---------- carga inicial ---------- */
 function carregar(){
