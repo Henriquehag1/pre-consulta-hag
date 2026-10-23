@@ -127,6 +127,32 @@ details.outro .chips{margin-top:8px;justify-content:center}
 .catc.tranc .catimg{filter:grayscale(1) brightness(.8)}
 .catc.comfoto .cad{top:10px;right:10px;background:rgba(10,14,23,.72);color:#fff;border-radius:999px;padding:4px 9px;font-size:13px}
 .cathero{display:block;width:100%;aspect-ratio:16/8;object-fit:cover;border-radius:14px;background:var(--line)}
+/* HAG_TREINO_TRILHAS_v1 (23/10/2026): trilhas com cards que deslizam para o lado */
+.trilha{display:flex;flex-direction:column;gap:8px}
+.trilha .th h3{font-family:var(--display);font-size:20px;margin:2px 0 0;line-height:1.15}
+.trilha .th .tn{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.trow{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.trow::-webkit-scrollbar{display:none}
+.trow>.catc{flex:0 0 80%;max-width:340px;scroll-snap-align:start;margin:0}
+.catc .catph{display:flex;align-items:flex-end;width:calc(100% + 32px);margin:-16px -16px 12px;aspect-ratio:16/7;padding:12px 14px;box-sizing:border-box;
+  background:radial-gradient(120% 140% at 85% 0%,var(--cc,var(--gold)) 0%,transparent 55%),linear-gradient(160deg,#1A2233 0%,#0A0E17 100%);
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:rgba(255,255,255,.78);text-transform:uppercase}
+.catc.tranc .catph{filter:grayscale(1) brightness(.85)}
+.catc .passo{display:inline-block;margin-top:8px;font-size:11.5px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#1A1405;background:var(--cc,var(--gold));border-radius:999px;padding:3px 9px}
+.trilha .prog{font-size:12.5px;font-family:var(--mono);color:var(--cc,var(--gold))}
+/* HAG_TREINO_MENTE_v1: tocador de respiração e meditação */
+.mente{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.mcirc{width:220px;height:220px;border-radius:50%;margin:10px auto 4px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 45%,rgba(183,156,240,.55),rgba(108,180,240,.18) 62%,transparent 70%);border:2px solid rgba(183,156,240,.55);
+  transform:scale(.55);transition-property:transform;transition-timing-function:ease-in-out}
+.mcirc span{font-family:var(--mono);font-size:30px;color:var(--ink)}
+.mfase{font-family:var(--display);font-size:24px;font-weight:700;min-height:30px}
+.mtexto{font-size:19px;line-height:1.45;max-width:30ch;min-height:110px;display:flex;align-items:center;justify-content:center}
+.mbar{width:100%;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.mbar i{display:block;height:100%;width:0;background:#B79CF0;transition:width .25s linear}
+.mrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;width:100%}
+.mrow .btn{flex:1;min-width:130px}
+
 .semstrip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
 .semstrip::-webkit-scrollbar{display:none}
 .semstrip button{flex:0 0 auto;min-width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-family:var(--display);font-size:16px;font-weight:700}
@@ -811,6 +837,7 @@ function render(){
   if(S.fase==="ativ") return renderAtiv();
   if(S.fase==="fim" && S.salvo) return renderSalvo();
   if(S.livre && !livreDia(S.livre)) S.livre=null;
+  if(S.livre){ const r0=sessCat(S.livre); if(r0 && r0.s.mente) return renderMente(r0); }   /* HAG_TREINO_MENTE_v1 */
   if(S.livre){ if(S.fase==="treino") return renderItem(); if(S.fase==="fim") return renderFim(); return renderLivreInicio(); }
   if(!prog()) return vHoje.innerHTML=`${filaHTML()}<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>${catLib().length?`${catHojeHTML()}<button type="button" class="btn wide" data-a="irlivre">Meus programas</button>`:""}<button type="button" class="btn ghost wide" data-a="ativ">Registrar outra atividade</button>`;
   if(S.fase==="inicio") return renderInicio();
@@ -1210,6 +1237,11 @@ function salvar(){
 vHoje.addEventListener("click", e=>{
   const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a; if(!a) return;
   if(a==="recarregar") return carregar();
+  if(a==="mplay") return mPlay();   /* HAG_TREINO_MENTE_v1 */
+  if(a==="mfim") return mConcluir(false);
+  if(a==="msalvar") return mSalvar();
+  if(a==="msair") return mSair();
+  if(a==="mvoz"){ if(M){ M.voz=!M.voz; store.set("hagtreino.voz",M.voz); if(!M.voz){ try{ speechSynthesis.cancel(); }catch(e){} } } return render(); }
   /* HAG_TREINO_LISTA_TOCAVEL_v1: video e nota do exercicio antes de iniciar */
   if(a==="pvideo"){ pvAberto=pvAberto===b.dataset.v?null:b.dataset.v; return render(); }
   if(a==="pnota"){ const k=b.dataset.v; pnAberto.has(k)?pnAberto.delete(k):pnAberto.add(k); return render(); }
@@ -1387,19 +1419,19 @@ function catMeta(c){ return [c.semanas?`${c.semanas} semanas`:"", c.sps?`${c.sps
 function cardCatHTML(c){
   const cor=CORES[c.cor]||"var(--gold)", ab=catInfo===c.id;
   return `<div class="card catc${c.lib?"":" tranc"}${c.foto?" comfoto":""}" style="--cc:${cor}" role="button" tabindex="0" data-a="cat" data-v="${esc(c.id)}">
-    ${c.foto?`<img class="catimg" src="${esc(c.foto)}" alt="" loading="lazy" decoding="async">`:""}
+    ${c.foto?`<img class="catimg" src="${esc(c.foto)}" alt="" loading="lazy" decoding="async">`:`<div class="catph" aria-hidden="true">${esc((((CTX&&CTX.trilhas)||[]).find(t=>t.id===c.trilha)||{nome:"Programa HAG"}).nome)}</div>`}
     ${c.lib?"":`<span class="cad" aria-hidden="true">🔒</span>`}
     <h3>${esc(c.nome)}</h3><div class="meta">${esc(c.sub||catMeta(c).join(" · "))}</div>
-    <div class="st">${esc(catStatus(c))}</div>
+    <div class="st">${esc(catStatus(c))}</div>${c._passo?`<span class="passo">${esc(c._passo)}</span>`:""}
     ${!c.lib&&ab?`<div class="info">${esc(c.desc||"")}${c.req?`<br><b>Pré-requisito:</b> ${esc(c.req)}`:""}</div>`:""}</div>`;
 }
 function sessLinhaHTML(c, s, w){
   const its=s.itens||[], ult=ultimaFeita(c,s.id), feita=w!=null&&feitaNaSemana(c,s.id,w);
   return `<div class="card catsess"><div class="row between" style="align-items:flex-start"><div><h3>${esc(s.nome)}</h3>
-    <div class="meta" style="font-size:13px;color:var(--ink-2)">${s.foco?esc(String(s.foco).split(". ")[0])+" · ":""}~${esc(s.min||minutosDe(itensDe({itens:its})))} min · ${its.length} ex</div>
+    <div class="meta" style="font-size:13px;color:var(--ink-2)">${s.foco?esc(String(s.foco).split(". ")[0])+" · ":""}~${esc(s.min||minutosDe(itensDe({itens:its})))} min · ${s.mente?(s.mente.tipo==="resp"?"respiração guiada":"com voz guia"):its.length+" ex"}</div>
     ${(()=>{ const m=its.find(i=>i.alvo && !/^(aquecimento|desaquecimento)\b/i.test(String(i.nota||"").trim())); return m?`<div style="font-size:14.5px;font-weight:600;margin-top:4px">${esc(m.alvo)}</div>`:""; })()}
     ${feita?`<div class="ok">✓ feita nesta semana</div>`:ult?`<div class="ok">última ${br(ult.data)}</div>`:""}</div></div>
-    <button type="button" class="btn small" data-a="livrever" data-v="${esc(c.id+"|"+s.id)}" style="margin-top:10px">Ver e começar</button></div>`;
+    <button type="button" class="btn small" data-a="livrever" data-v="${esc(c.id+"|"+s.id)}" style="margin-top:10px">${s.mente?"Começar":"Ver e começar"}</button></div>`;
 }
 function renderCatAberto(c){
   const head=`<button type="button" class="link" data-a="catvolta" style="align-self:flex-start">‹ Programas</button>
@@ -1433,6 +1465,30 @@ function renderLivre(){
   if(!C.length){ vLivre.innerHTML=""; return; }
   const ab=catAberto&&C.find(c=>c.id===catAberto&&c.lib); if(ab) return renderCatAberto(ab);
   const lib=C.filter(c=>c.lib), tr=C.filter(c=>!c.lib);
+  /* HAG_TREINO_TRILHAS_v1 (23/10/2026): com trilhas, uma seção por trilha com os cards deslizando para o lado; os liberados
+     também aparecem juntos no alto. Trilha sequencial (Corrida, Full Body, Híbrido, Recomeço) mostra onde a pessoa está e
+     o próximo passo. Sem trilhas (cache antigo), a lista simples de antes. */
+  const T=(CTX && Array.isArray(CTX.trilhas)) ? CTX.trilhas : [];
+  if(T.length){
+    C.forEach(c=>{ delete c._passo; });
+    const secs=[];
+    for(const t of T){
+      const cs=C.filter(c=>c.trilha===t.id).sort((a,b)=>(a.ord||0)-(b.ord||0)); if(!cs.length) continue;
+      let prog="";
+      if(t.seq){ const ult=cs.map(c=>c.lib).lastIndexOf(true);
+        if(!VITRINE || vitTranc){ if(ult>=0) prog=`Você está no ${ult+1} de ${cs.length}`; const nx=cs[ult+1]; if(nx && !nx.lib) nx._passo=ult<0?"Primeiro passo":"Próximo passo"; } }
+      secs.push(`<div class="trilha" style="--cc:${CORES[t.cor]||"var(--gold)"}"><div class="th"><div class="kicker" style="color:var(--cc)">${esc(t.nome)}</div><h3>${esc(t.frase||"")}</h3>
+        <div class="tn">${cs.length} ${cs.length===1?"programa":"programas"}${prog?` · <span class="prog">${esc(prog)}</span>`:""}${t.fora?` · aparece de ${esc(String(t.janela||"").replace(/(\d\d)-(\d\d)/g,"$2/$1"))}`:""}</div></div>
+        <div class="trow">${cs.map(cardCatHTML).join("")}</div></div>`);
+    }
+    const sem=C.filter(c=>!c.trilha || !T.some(t=>t.id===c.trilha));
+    vLivre.innerHTML=`<div><div class="kicker">Programas HAG</div><h2>Programas</h2><p class="sub">Liberados pelo Dr. Henrique na consulta · somam ao seu treino.</p></div>
+  ${VITRINE?`<div class="chips" role="group" aria-label="Visão do catálogo">${[["0","Todos abertos"],["1","Como trancados"]].map(([v,t])=>`<button type="button" class="chip" data-a="vittranc" data-v="${v}" aria-pressed="${(v==="1")===vitTranc}">${t}</button>`).join("")}</div>`:""}
+  ${lib.length&&!VITRINE?`<div class="trilha"><div class="th"><div class="kicker">Liberados para você</div></div><div class="trow">${lib.map(cardCatHTML).join("")}</div></div>`:""}
+  ${secs.join("")}
+  ${sem.length?`<div class="trilha"><div class="th"><div class="kicker">Outros programas</div></div><div class="trow">${sem.map(cardCatHTML).join("")}</div></div>`:""}`;
+    return;
+  }
   vLivre.innerHTML=`<div><div class="kicker">Programas HAG</div><h2>Programas</h2><p class="sub">Liberados pelo Dr. Henrique na consulta · somam ao seu treino.</p></div>
   ${VITRINE?`<div class="chips" role="group" aria-label="Visão do catálogo">${[["0","Todos abertos"],["1","Como trancados"]].map(([v,t])=>`<button type="button" class="chip" data-a="vittranc" data-v="${v}" aria-pressed="${(v==="1")===vitTranc}">${t}</button>`).join("")}</div>`:""}
   ${lib.length?`<div class="lbl">Liberados para você</div><div class="catg">${lib.map(cardCatHTML).join("")}</div>`:""}
@@ -1464,12 +1520,89 @@ function catAcao(b){
     const r=sessCat(b.dataset.v);
     /* primeiro treino de um programa com semanas: a semana 1 começa hoje */
     if(r && r.c.tipo==="programa" && !r.c.inicio){ r.c.inicio=HOJE(); rpc("hag_treino_catalogo_iniciar",{p_token:TOKEN,p_id:r.c.id,p_reiniciar:false}).catch(()=>{}); }
-    if(!emAndamento()){ S=novoEstado(); S.livre=b.dataset.v; }
+    if(!emAndamento()){ S=novoEstado(); S.livre=b.dataset.v; if(M && !M.rodando) M=null; }   /* HAG_TREINO_MENTE_v1: tocador começa do zero */
     abrir("hoje"); render(); window.scrollTo(0,0);
   }
 }
 vLivre.addEventListener("click",e=>{ const b=e.target.closest("[data-a]"); if(b) catAcao(b); });
 vLivre.addEventListener("keydown",e=>{ if(e.key!=="Enter"&&e.key!==" ") return; const b=e.target.closest('[data-a="cat"]'); if(b){ e.preventDefault(); catAcao(b); } });
+
+
+/* ---------- HAG_TREINO_MENTE_v1 (23/10/2026): Mente e respiração ----------
+   Pedido do Dr. Henrique: trilha de mobilidade, meditação guiada e respiração. Sessão com "mente" não tem exercícios:
+   tipo "resp" = fases (inspire/segure/solte) num círculo que cresce e diminui, repetidas em ciclos; tipo "guia" = passos de
+   texto falados pela voz do próprio aparelho (pt-BR), cada um com o seu tempo. No fim sobe como sessão "Mente", com
+   esforço 0, para não pesar na carga de treino. A voz pode ser desligada (fica guardado no aparelho). */
+let M=null;
+function vozPt(){ try{ const vs=speechSynthesis.getVoices().filter(v=>/^pt(-|_)BR/i.test(v.lang)); return vs.find(v=>/luciana|francisca|google|felipe/i.test(v.name))||vs[0]||null; }catch(e){ return null; } }
+function falar(t){ if(!M||!M.voz||!t||!("speechSynthesis" in window)) return; try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang="pt-BR"; u.rate=.92; const v=vozPt(); if(v) u.voice=v; speechSynthesis.speak(u); }catch(e){} }
+function tomSuave(){ try{ if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)(); const o=audio.createOscillator(), g=audio.createGain(); o.frequency.value=432; g.gain.setValueAtTime(.0001,audio.currentTime); g.gain.exponentialRampToValueAtTime(.08,audio.currentTime+.05); g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+1.2); o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+1.3); }catch(e){} }
+function mPlano(m){
+  /* devolve a linha do tempo [{ini, s, f, t}] e o total em segundos */
+  const L=[]; let t=0;
+  if(m.tipo==="resp"){
+    L.push({ini:0, s:8, f:"prep", t:"Prepare-se", fala:m.intro||""}); t=8;
+    for(let c=0;c<(m.ciclos||1);c++) for(const f of (m.fases||[])){ L.push({ini:t, s:f.s, f:f.f, t:f.t, c:c+1, fala:f.t}); t+=f.s; }
+  } else for(const p of (m.passos||[])){ L.push({ini:t, s:p.s, f:"guia", t:p.t, fala:p.t}); t+=p.s; }
+  return {L, total:t};
+}
+function mElapsed(){ return M.acum + (M.rodando ? (Date.now()-M.t0)/1000 : 0); }
+function renderMente(r){
+  const {c,s}=r, m=s.mente, key=c.id+"|"+s.id;
+  if(!M || M.key!==key){ let voz=true; try{ voz=store.get("hagtreino.voz",true)!==false; }catch(e){} M={key, c, s, m, ...mPlano(m), acum:0, t0:0, rodando:false, idx:-1, fim:false, salvo:false, voz}; }
+  const resp=m.tipo==="resp";
+  vHoje.innerHTML=`${filaHTML()}<div><div class="kicker">${esc(c.nome)}</div><h2>${esc(s.nome)}</h2><p class="sub">${esc(s.foco||"")} · ~${esc(s.min||Math.round(M.total/60))} min</p></div>
+  <div class="card mente">
+    ${resp?`<div class="mcirc" id="mCirc"><span id="mConta">${M.fim?"✓":""}</span></div><div class="mfase" id="mFase">${M.fim?"Concluído":"Pronto"}</div>`:""}
+    <div class="mtexto" id="mTexto">${esc(M.fim?(resp?(m.fim||""):"Sessão concluída."):(resp?(m.intro||""):"Encontre um lugar tranquilo. Se puder, use fone de ouvido."))}</div>
+    <div class="mbar"><i id="mProg" style="width:${M.fim?100:0}%"></i></div>
+    <div class="note" id="mTempo">${M.fim?"Concluído · "+mmss(mElapsed()):mmss(M.total)+" no total"}</div>
+    ${M.fim?`<div class="mrow">${M.salvo?`<p class="note" style="margin:0">Registrado no seu histórico.</p>`:`<button type="button" class="btn" data-a="msalvar">Registrar</button>`}<button type="button" class="btn ghost" data-a="msair">Voltar a ${esc(c.nome)}</button></div>`
+      :`<div class="mrow"><button type="button" class="btn" data-a="mplay" id="mPlay">${M.rodando?"Pausar":(M.acum>0?"Continuar":"Começar")}</button>${M.acum>0||M.rodando?`<button type="button" class="btn ghost" data-a="mfim">Encerrar</button>`:""}</div>
+       <button type="button" class="link" data-a="mvoz" aria-pressed="${M.voz}">Voz guia: ${M.voz?"ligada":"desligada"}</button>
+       ${M.acum>0||M.rodando?"":`<button type="button" class="link" data-a="msair">voltar a ${esc(c.nome)}</button>`}`}
+  </div>
+  ${resp&&!M.fim?`<p class="note" style="margin:0;text-align:center">Se sentir tontura, volte a respirar normalmente.</p>`:""}`;
+  if(M.rodando) mTick(true);
+}
+function mTick(forcar){
+  if(!M) return; const e=mElapsed(), {L,total}=M;
+  if(e>=total){ return mConcluir(true); }
+  let i=L.findIndex(x=>e>=x.ini && e<x.ini+x.s); if(i<0) i=L.length-1;
+  const x=L[i], resto=x.ini+x.s-e, el=id=>document.getElementById(id);
+  if(i!==M.idx || forcar){
+    const novo=i!==M.idx; M.idx=i;
+    if(M.m.tipo==="resp"){
+      const cc=el("mCirc"); if(cc){ const alvo=x.f==="in"?1:(x.f==="out"||x.f==="prep")?.55:null;
+        if(alvo!=null){ cc.style.transitionDuration=(forcar&&!novo?Math.max(.1,resto):x.s)+"s"; cc.style.transform=`scale(${alvo})`; } }
+      const fz=el("mFase"); if(fz) fz.textContent=x.t; const tx=el("mTexto"); if(tx) tx.textContent=x.f==="prep"?(M.m.intro||""):(x.c?`Ciclo ${x.c} de ${M.m.ciclos}`:"");
+    } else { const tx=el("mTexto"); if(tx) tx.textContent=x.t; }
+    if(novo){ if(M.voz) falar(x.fala); else if(M.m.tipo==="resp" && x.f!=="prep") tomSuave(); }
+  }
+  const ct=el("mConta"); if(ct) ct.textContent=M.m.tipo==="resp"&&x.f!=="prep"?Math.ceil(resto):"";
+  const pb=el("mProg"); if(pb) pb.style.width=Math.min(100,e/total*100)+"%";
+  const tp=el("mTempo"); if(tp) tp.textContent=mmss(total-e)+" restantes";
+}
+function mPlay(){
+  if(!M) return;
+  if(M.rodando){ M.acum=mElapsed(); M.rodando=false; clearInterval(M.int); try{ speechSynthesis.cancel(); }catch(e){} return render(); }
+  M.rodando=true; M.t0=Date.now(); if(!M.inicio) M.inicio=Date.now(); M.idx=-1; somPronto(); manterTelaAcesa();
+  render(); clearInterval(M.int); M.int=setInterval(()=>mTick(false),250); mTick(false);
+}
+function mConcluir(completo){
+  if(!M || M.fim) return; M.acum=Math.min(mElapsed(), M.total); M.rodando=false; M.fim=true; clearInterval(M.int);
+  if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; }
+  if(M.m.tipo==="resp"){ if(M.voz) falar(M.m.fim||""); else tomSuave(); } else if(!M.voz) tomSuave();
+  render(); if(completo) mSalvar();
+}
+function mSalvar(){
+  if(!M || M.salvo || M.acum<30) { if(M && M.acum<30){ M.salvo=false; } return render(); }
+  const d=livreDia(M.key)||{}; M.salvo=true;
+  FILA.push({client_id:uid(), data:HOJE(), dia_id:null, dia:d.nome||M.s.nome, tipo:"Mente", cat:M.c.id, cs:M.s.id, inicio:M.inicio?new Date(M.inicio).toISOString():null,
+             dur:Math.max(1,Math.round(M.acum/60)), rpe:0, pront:null, cv:false, series:[], cardio:[], hyrox:[]});
+  store.set("hagtreino.fila",FILA); render(); enviarFila().then(()=>{ renderEvo(); });
+}
+function mSair(){ const cid=M&&M.c?M.c.id:null; if(M){ clearInterval(M.int); try{ speechSynthesis.cancel(); }catch(e){} } M=null; S=novoEstado(); catAberto=cid; render(); abrir("livre"); window.scrollTo(0,0); }
 
 /* ---------- carga inicial ---------- */
 function carregar(){

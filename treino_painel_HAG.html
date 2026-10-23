@@ -292,8 +292,10 @@ function renderPaciente(){
 const NIVP={iniciante:"iniciante",intermediario:"intermediário"};
 function catPrevHTML(c){
   const ss=c.sessoes||[]; if(!ss.length) return `<p class="note">Sessões do Em casa: as mesmas do antigo Em viagem.</p>`;
+  /* HAG_TREINO_MENTE_v1: sessão de respiração ou meditação não tem exercícios */
+  const ment=x=>x.mente.tipo==="resp"?`Respiração guiada: ${(x.mente.fases||[]).map(f=>esc(f.t)+" "+f.s+" s").join(" · ")} · ${x.mente.ciclos} ciclos`:`Meditação com voz: ${(x.mente.passos||[]).length} passos · ${esc((x.mente.passos||[])[0]?.t||"")}`;
   const it=i=>{ const e=E.exMap[i.ex]||{}, nm=esc(e.nome||i.ex); if(i.alvo) return `${nm}: ${esc(i.alvo)}`; const q=i.min!=null?`${i.series} × ${i.min}${i.max&&i.max!==i.min?"-"+i.max:""}${e.unidade==="seg"?" s":""}`:`${i.series} ×`; return `${nm} ${q}${i.bloco?" ("+esc(i.bloco)+")":""}${i.nota?" · "+esc(i.nota):""}`; };
-  return `<div class="scroll" style="max-height:420px;overflow:auto">${ss.map(x=>`<div style="padding:6px 0;border-top:1px dashed var(--line)"><b>${esc(x.nome)}</b> <span class="note">${x.semanas?"semana "+x.semanas.join(", "):"todas as semanas"}${x.nivel?" · "+(NIVP[x.nivel]||x.nivel):""}${x.min?" · ~"+x.min+" min":""}</span><div class="note">${(x.itens||[]).map(it).join(" · ")}</div></div>`).join("")}</div>`;
+  return `<div class="scroll" style="max-height:420px;overflow:auto">${ss.map(x=>`<div style="padding:6px 0;border-top:1px dashed var(--line)"><b>${esc(x.nome)}</b> <span class="note">${x.semanas?"semana "+x.semanas.join(", "):"todas as semanas"}${x.nivel?" · "+(NIVP[x.nivel]||x.nivel):""}${x.min?" · ~"+x.min+" min":""}</span><div class="note">${x.mente?ment(x):(x.itens||[]).map(it).join(" · ")}</div></div>`).join("")}</div>`;
 }
 function catPainelHTML(){
   if(E.catErro) return `<div class="card"><h3>Programas do catálogo</h3><p class="note">Não consegui ler: ${esc(E.catErro)}</p></div>`;
@@ -301,15 +303,24 @@ function catPainelHTML(){
   const ac=Object.fromEntries((E.catAc||[]).map(a=>[a.catalogo_id,a])), hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10);
   const sem=(c,a)=>{ if(c.tipo!=="programa") return ""; if(!a.inicio) return " · ainda não começou"; const w=Math.floor((new Date(hoje)-new Date(a.inicio))/6048e5)+1; return w>(c.semanas||1)?" · concluído":` · semana ${w} de ${c.semanas}`; };
   return `<div class="card" style="margin-top:14px"><h3>Programas do catálogo</h3><p class="note">Somam ao programa principal. O paciente vê todos os aprovados; os não liberados aparecem com cadeado. <a href="treino_HAG.html?vitrine=1" target="_blank" rel="opener" style="color:var(--gold);font-weight:600;text-decoration:none">Ver o catálogo como o paciente vê ›</a></p>
-  ${C.map(c=>{ const a=ac[c.id], ab=E.catPrev===c.id;
-    return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row between"><div style="display:flex;gap:10px;align-items:center">${c.foto?`<img src="${esc(c.foto)}" alt="" loading="lazy" style="width:72px;height:40px;object-fit:cover;border-radius:6px;flex:none">`:""}<div><b>${esc(c.nome)}</b> ${c.aprovado?"":`<span class="tag y">aguarda sua aprovação</span>`}<div class="note">${esc(c.sub||"")}${a?` · liberado em ${brA(String(a.liberado_em).slice(0,10))}${sem(c,a)}`:""}</div></div></div>
+  ${(()=>{ /* HAG_TREINO_TRILHAS_v1: agrupado por trilha, na ordem do app */
+    const T=E.trilhas||[], ord=c=>{ const i=T.findIndex(t=>t.id===c.trilha); return (i<0?999:i)*1000+(c.ordem||0); };
+    let ult=null; return C.slice().sort((a,b)=>ord(a)-ord(b)).map(c=>{ const t=T.find(x=>x.id===c.trilha), h=(t?t.id:"_")!==ult; ult=t?t.id:"_";
+      return (h?`<div class="lbl" style="margin:16px 0 2px;color:var(--gold)">${esc(t?t.nome:"Sem trilha")}${t&&t.janela_de?` · aparece de ${esc(t.janela_de.split("-").reverse().join("/"))} a ${esc(t.janela_ate.split("-").reverse().join("/"))}`:""}</div>`:"")+linhaCat(c); }).join(""); })()}</div>`;
+}
+function linhaCat(c){
+  const ac=Object.fromEntries((E.catAc||[]).map(a=>[a.catalogo_id,a])), hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10);
+  const sem=(c,a)=>{ if(c.tipo!=="programa") return ""; if(!a.inicio) return " · ainda não começou"; const w=Math.floor((new Date(hoje)-new Date(a.inicio))/6048e5)+1; return w>(c.semanas||1)?" · concluído":` · semana ${w} de ${c.semanas}`; };
+  { const a=ac[c.id], ab=E.catPrev===c.id;
+    return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row between"><div style="display:flex;gap:10px;align-items:center">${c.foto?`<img src="${esc(c.foto)}" alt="" loading="lazy" style="width:72px;height:40px;object-fit:cover;border-radius:6px;flex:none">`:`<span title="Sem foto: falta treino_fotos/${esc(c.id)}.jpg" style="width:72px;height:40px;border-radius:6px;flex:none;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--muted)">sem foto</span>`}<div><b>${esc(c.nome)}</b> ${c.aprovado?"":`<span class="tag y">aguarda sua aprovação</span>`}<div class="note">${esc(c.sub||"")}${a?` · liberado em ${brA(String(a.liberado_em).slice(0,10))}${sem(c,a)}`:""}</div></div></div>
       <div class="row"><button class="btn small ghost" data-a="catprev" data-v="${esc(c.id)}">${ab?"Fechar":"Prévia"}</button>
       ${c.aprovado?(a?`<button class="btn small ghost" data-a="catoff" data-v="${esc(c.id)}">Retirar</button>`:`<button class="btn small" data-a="caton" data-v="${esc(c.id)}">Liberar</button>`):`<button class="btn small" data-a="cataprova" data-v="${esc(c.id)}">${E.catConf===c.id?"Confirmar aprovação":"Aprovar"}</button>`}</div></div>
-      ${ab?`${c.descricao?`<p class="note" style="margin:6px 0">${esc(c.descricao)}${c.requisito?" · Pré-requisito: "+esc(c.requisito):""}</p>`:""}${catPrevHTML(c)}`:""}</div>`; }).join("")}</div>`;
+      ${ab?`${c.descricao?`<p class="note" style="margin:6px 0">${esc(c.descricao)}${c.requisito?" · Pré-requisito: "+esc(c.requisito):""}</p>`:""}${catPrevHTML(c)}`:""}</div>`; }
 }
 async function lerCat(){
   try{
-    E.cat=await api("treino_catalogo?select=id,nome,sub,descricao,tipo,semanas,sessoes_semana,requisito,aprovado,ordem,sessoes,foto&ativo=is.true&order=ordem");
+    E.cat=await api("treino_catalogo?select=id,nome,sub,descricao,tipo,semanas,sessoes_semana,requisito,aprovado,ordem,sessoes,foto,trilha&ativo=is.true&order=ordem");
+    try{ E.trilhas=await api("treino_trilhas?select=id,nome,frase,ordem,janela_de,janela_ate&ativo=is.true&order=ordem"); }catch(e){ E.trilhas=[]; }   /* HAG_TREINO_TRILHAS_v1 */
     E.catAc=E.pid?await api(`treino_catalogo_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&select=catalogo_id,liberado_em,inicio`):[];
     E.catErro=null;
   }catch(e){ E.catErro=e.message; }
