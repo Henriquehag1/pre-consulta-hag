@@ -371,7 +371,12 @@ var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co', SKEY='sb_publishable_V-tdeq
 var $=function(s){return document.querySelector(s)}, app=$('#app'), coz=$('#coz');
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var fmt=function(v,d){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0})};
-var ls={get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+/* HAG_VER_COMO_PACIENTE_v1 (23/10/2026): &ver=1 = o médico vendo pelo painel. Nada fica no aparelho, eventos não
+   sobem e as orientações abrem pela versão que não marca "último uso". */
+var VER=new URLSearchParams(location.search).get('ver')==='1';
+var ls=VER?(function(){var m={};return {get:function(k){return Object.prototype.hasOwnProperty.call(m,k)?JSON.parse(m[k]):null},set:function(k,v){m[k]=JSON.stringify(v)}}})()
+  :{get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent='Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
 
 /* link pessoal: ?t=TOKEN fica guardado neste aparelho */
 var qs=new URLSearchParams(location.search), TOKEN=qs.get('t')||ls.get('hagcozinha.col.token')||null;
@@ -413,6 +418,7 @@ aplicaTema(claro());
 $('#tema').addEventListener('click',function(){ var c=!claro(); try{ localStorage.setItem('hagcozinha.tema',c?'claro':'escuro'); }catch(e){} aplicaTema(c); });
 
 async function rpc(nome,args){
+  if(VER){ if(nome==='hag_cozinha_evento') return {ok:true,ver:true}; if(nome==='hag_orientacoes_paciente') nome='hag_orientacoes_paciente_ver'; }   /* HAG_VER_COMO_PACIENTE_v1 */
   var r=await fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
   if(!r.ok) throw new Error('erro '+r.status);
   return r.json();
@@ -502,7 +508,7 @@ function linhaHTML(x,r){
 }
 function oriHTML(){
   if(!st.ori) return '';
-  return '<a class="orib" href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'"><span><b>Suas orientações</b><span>'+
+  return '<a class="orib" href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+(VER?'&ver=1':'')+'"><span><b>Suas orientações</b><span>'+
     (st.ori.novas?st.ori.novas+(st.ori.novas===1?' nova':' novas'):st.ori.n+(st.ori.n===1?' orientação':' orientações'))+' do Dr. Henrique</span></span><span class="seta">'+IC.seta+'</span></a>';
 }
 function telaInicio(tipo){
@@ -651,7 +657,7 @@ function navHTML(){
   if(ng) t.push(['guias','Guias',IC.guia]);
   t.push(['lista','Lista',IC.lista]);
   var h=t.map(function(x){ return '<button data-t="'+x[0]+'" aria-selected="'+(st.tab===x[0]||(st.tab==='sobre'&&x[0]==='rec'))+'">'+x[2]+x[1]+(x[0]==='lista'&&st.lista.length?'<span class="n">'+st.lista.length+'</span>':'')+'</button>'; }).join('');
-  if(st.ori) h+='<a href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+'">'+IC.ori+'Orientações</a>';
+  if(st.ori) h+='<a href="orientacoes_HAG.html?t='+encodeURIComponent(TOKEN)+(VER?'&ver=1':'')+'">'+IC.ori+'Orientações</a>';
   return '<div class="in">'+h+'</div>';
 }
 function barraHTML(){

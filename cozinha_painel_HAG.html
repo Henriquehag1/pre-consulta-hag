@@ -153,7 +153,7 @@ function cardPaciente(){
            '<div class="ac"><button class="btn peq" data-a="liberar" data-v="'+esc(i.id)+'">Liberar</button></div></div>'; }); }
     h+='</div>';
   }
-  h+='<div class="row"><button class="btn" data-a="gerarlink">Gerar link</button><button class="btn sec" data-a="pedirnovo">Trocar o link deste paciente</button>'+(S.pid&&S.link?'<a class="btn sec" style="text-decoration:none" href="'+esc(S.link)+'" target="_blank" rel="noopener">Ver como o paciente vê</a>':'')+'</div>';
+  h+='<div class="row"><button class="btn" data-a="gerarlink">Gerar link</button><button class="btn sec" data-a="pedirnovo">Trocar o link deste paciente</button>'+'<button class="btn sec" data-a="vercomo" title="Abre a Cozinha deste paciente sem gravar nada">Ver como o paciente vê</button>'+'</div>';
   return h;
 }
 function nomeGrupo(tipo,g){ var l=D.meta?(tipo==='guia'?D.meta.grupos_guia:D.meta.situacoes):[]; var x=(l||[]).filter(function(s){return s.id===g})[0]; return x?x.nome:g; }
@@ -302,6 +302,13 @@ main.addEventListener('click',function(e){
   if(a==='cancelanovo'){ S.confNovo=false; return render(); }
   if(a==='linknovo') return tentar(async function(){ await api('cozinha_acessos?patient_id=eq.'+encodeURIComponent(S.pid)+'&revogado=eq.false',{method:'PATCH',body:{revogado:true}});
     var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; S.confNovo=false; S.msg='Link novo gerado. O anterior parou de funcionar.'; });
+  /* HAG_VER_COMO_PACIENTE_v1 (23/10/2026): abre a Cozinha do paciente em modo visualização (&ver=1), sem gerar link novo.
+     A janela abre na hora do clique (senão o Safari bloqueia) e recebe o endereço depois de ler o token. */
+  if(a==='vercomo'){ S.pid=document.getElementById('pac').value||S.pid; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); }
+    var _w=window.open('about:blank','_blank');
+    return tentar(async function(){ var r=await api('cozinha_acessos?patient_id=eq.'+encodeURIComponent(S.pid)+'&revogado=eq.false&select=token&limit=1');
+      if(!r||!r.length){ if(_w) _w.close(); throw new Error('este paciente ainda não tem link da Cozinha. Use Gerar link'); }
+      var u=APP+'?t='+encodeURIComponent(r[0].token)+'&ver=1'; if(_w) _w.location.href=u; else window.open(u,'_blank'); }); }
   if(a==='gerarlink'){ S.pid=document.getElementById('pac').value||S.pid; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); }
     return tentar(async function(){ var tk=await rpc('hag_cozinha_link',{p_patient_id:S.pid}); S.link=APP+'?t='+tk; }); }
   if(a==='pacler'){ S.pacTxt=document.getElementById('pacote').value; S.pacRes=null; S.erro=null;

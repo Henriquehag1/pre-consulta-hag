@@ -68,14 +68,19 @@ p{margin:0}
 var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co', SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 var app=document.getElementById('app');
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
-var ls={get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+/* HAG_VER_COMO_PACIENTE_v1 (23/10/2026): &ver=1 = o médico vendo pelo painel; nada é marcado como visto nem guardado */
+var VER=new URLSearchParams(location.search).get('ver')==='1';
+var ls=VER?(function(){var m={};return {get:function(k){return Object.prototype.hasOwnProperty.call(m,k)?JSON.parse(m[k]):null},set:function(k,v){m[k]=JSON.stringify(v)}}})()
+  :{get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent='Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
 // O link pessoal é o mesmo da Cozinha: quem já abriu a Cozinha por ele não precisa do link de novo.
 var qs=new URLSearchParams(location.search), TOKEN=qs.get('t')||ls.get('hagcozinha.col.token')||null;
 if(qs.get('t')) ls.set('hagcozinha.col.token',qs.get('t'));
-var COZ='cozinha_HAG.html'+(TOKEN?'?t='+encodeURIComponent(TOKEN):'');
+var COZ='cozinha_HAG.html'+(TOKEN?'?t='+encodeURIComponent(TOKEN)+(VER?'&ver=1':''):'');
 var st={itens:[],meta:null,aberta:null,estado:'carregando'};
 
 async function rpc(nome,args){
+  if(VER){ if(nome==='hag_orientacao_vista') return {ok:true,ver:true}; if(nome==='hag_orientacoes_paciente') nome='hag_orientacoes_paciente_ver'; }   /* HAG_VER_COMO_PACIENTE_v1 */
   var r=await fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
   if(!r.ok) throw new Error('erro '+r.status); return r.json(); }
 function nomeGrupo(g){ var x=((st.meta&&st.meta.grupos)||[]).filter(function(s){return s.id===g})[0]; return x?x.nome:''; }

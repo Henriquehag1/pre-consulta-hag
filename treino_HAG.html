@@ -489,10 +489,18 @@ details.mais p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.45}
 var SURL='https://yutcnphwovqeiwcwzzhs.supabase.co';
 var SKEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 var H={'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'};
-function rpc(nome,args){ return fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:H,body:JSON.stringify(args)}).then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); }); }
+/* HAG_VER_COMO_PACIENTE_v1 (23/10/2026): aberto pelo painel com &ver=1, o médico vê o app do paciente sem gravar nada:
+   o contexto vem pela versão que não marca "último uso"; salvar sessão e iniciar programa respondem ok sem ir ao banco;
+   nada fica no armazenamento deste aparelho (token, cache, fila). */
+var VER = new URLSearchParams(location.search).get('ver')==='1';
+function rpc(nome,args){
+  if(VER){ if(nome==='hag_treino_contexto') nome='hag_treino_contexto_ver'; else return Promise.resolve({ok:true, ver:true, inicio:new Date().toISOString().slice(0,10)}); }
+  return fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:H,body:JSON.stringify(args)}).then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); }); }
 
 /* ---------- armazenamento local (token, contexto em cache, fila offline) ---------- */
-const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }, del(k){ try{ localStorage.removeItem(k);}catch(e){} } };
+const store = VER ? (function(){ const m={}; return { get(k,d){ return Object.prototype.hasOwnProperty.call(m,k)?JSON.parse(m[k]):d; }, set(k,v){ m[k]=JSON.stringify(v); }, del(k){ delete m[k]; } }; })()   /* HAG_VER_COMO_PACIENTE_v1 */
+  : { get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }, del(k){ try{ localStorage.removeItem(k);}catch(e){} } };
+if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent='Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
 const q = new URLSearchParams(location.search);
 let TOKEN = String(q.get('t')||'').replace(/[^a-f0-9]/gi,'').slice(0,64);
 if(TOKEN) store.set('hagtreino.token',TOKEN); else TOKEN = store.get('hagtreino.token','')||'';
