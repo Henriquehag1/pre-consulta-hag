@@ -26,14 +26,16 @@ O workflow tem `contents: read`, não acessa secrets, não envia comentários, n
 ## Agentes e limites
 
 - **Codex:** disponível nesta instalação, autenticado no ChatGPT e com o repositório aberto por integração GitHub e clone local. Usa Issues/PRs como contexto persistente. Uma sessão Codex local ou do Desktop depende do app ou CLI estar em execução.
-- **Claude Code:** CLI local instalado e autenticado por assinatura Claude. Não há credencial Anthropic de API nem integração de Claude Code habilitada no GitHub Actions. A revisão Claude continua manual no ambiente local. A autenticação local não é copiada para GitHub Actions; isso exigiria configurar outra integração e avaliar custos e exposição do código.
+- **Claude Code:** CLI local instalado e autenticado pela assinatura Claude Max. Não há integração de Claude Code habilitada no GitHub Actions. A revisão automática exigiria instalar o Claude GitHub App, conceder permissões de escrita em conteúdo/issues/PRs e guardar `CLAUDE_CODE_OAUTH_TOKEN` como secret do repositório. O OAuth pode usar a assinatura, sem cobrança API por token, mas consome a franquia Max. Essa autorização adicional não foi concedida; por isso a revisão Claude permanece manual no ambiente local.
 - **GitHub Actions:** roda testes sem conversa aberta, em runners externos do GitHub. Não executa agente de IA.
 
 Não configure segredos ou runners auto-hospedados para estes agentes sem aprovação. Não use a ação `pull_request_target` para executar código vindo de PR. Não habilite auto-merge. O CI e a revisão nunca autorizam publicação.
 
 ## Revisão do repositório e branch principal
 
-O CI verifica o PR, mas a proteção de branch não foi alterada automaticamente. Em `Settings → Branches` ou `Settings → Rules → Rulesets`, o administrador pode exigir PR e o status `Testes e integridade` antes de merge. Mantenha merge e publicação sob aprovação humana.
+A branch `main` está protegida: exige Pull Request e o status `Testes e integridade`, bloqueia force push e exclusão e aplica a regra também aos administradores. O auto-merge do repositório está desativado. Há somente um colaborador com escrita, então a proteção não exige aprovação de uma segunda pessoa que não existe; a publicação requer que o proprietário promova o PR de draft, revise e clique manualmente em Merge. O merge de `main` pode disparar a publicação existente do GitHub Pages.
+
+O Codex automático por `@codex review` não foi habilitado no repositório. O Codex Desktop/CLI pode trabalhar no clone e no PR conectado. Ativar revisão automática de Codex exige a integração do produto e usa a franquia de Code Review da conta.
 
 ## Custos e continuidade
 
