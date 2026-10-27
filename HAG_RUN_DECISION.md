@@ -34,11 +34,11 @@ A revogação continua usando `treino_acessos.revogado`. A expiração HAG RUN �
 
 ## Migração e ambiente
 
-`supabase/migrations/202610270001_hag_run.sql` foi ajustada antes da primeira aplicação. Ela é aditiva, preserva tabelas e histórico existentes, não apaga registros e não modifica as RPCs `hag_treino_*`. A migração não foi executada. A única conexão visível do Supabase é produção; não há CLI, Docker, `psql` ou banco local configurado. Por esse motivo, não existe validação executada contra PostgreSQL neste checkout.
+`supabase/migrations/202610270001_hag_run.sql` é aditiva, preserva tabelas e histórico existentes, não apaga registros e não modifica as RPCs `hag_treino_*`. A migração nunca foi aplicada a projeto remoto. A seção de homologação abaixo registra os testes posteriores em stack Supabase local, PostgreSQL temporário e dados sintéticos.
 
 ## Testes e limites de verificação
 
-Os testes Node verificam o cliente RPC, ausência de `patient_id` enviado pelo navegador, isolamento simulado de tokens A e B, rejeição de token inválido, contrato de expiração e revogação na migração, RLS/grants, escopo por paciente e idempotência. Testes de contrato sobre o texto SQL e mocks não executam as funções nem comprovam isolamento real no PostgreSQL. Permanecem necessários testes de integração com PostgreSQL/Supabase isolado, incluindo pacientes e tokens fictícios, tentativa de leitura cruzada, token revogado/vencido, grants efetivos e repetição concorrente.
+O relatório inicial desta decisão descrevia somente testes Node simulados. Essa limitação foi resolvida localmente em 27/10/2026; o resultado final aparece abaixo e em [HAG_RUN_HOMOLOGACAO.md](docs/HAG_RUN_HOMOLOGACAO.md).
 
 Para demonstração local sem banco:
 
@@ -48,3 +48,13 @@ python3 -m http.server 8766 --bind 127.0.0.1
 ```
 
 Abra `http://127.0.0.1:8766/hag_run_HAG.html`. Sem configuração Supabase e sem token, o formulário funciona em modo de demonstração e não sincroniza dados. Para validar persistência, configure a URL e a chave anon de um projeto Supabase isolado, aplique a migração somente nesse projeto e acesse com token fictício. Não use dados reais de pacientes.
+
+## Homologação posterior, 27/10/2026
+
+- `npm run verify`: 48 testes Node aprovados e verificação de integridade aprovada.
+- `npm run test:postgres`: PostgreSQL 17 efêmero, fixtures sintéticas, autorização e gravações concorrentes aprovadas.
+- `npm run test:supabase`: stack local Supabase/PostgREST com migração temporária, Database Advisors sem issues e chamadas RPC reais aprovadas.
+- `npm run test:ui`: interface verificada em 320 px, emulação iPhone 13 e 768 px, com duração do cronômetro conferida.
+- A revisão encontrou e corrigiu divergência de progressão entre cliente e servidor, validação de valores fracionários, cálculo de pace R5 fora do intervalo e perda da chave idempotente em recarga.
+- A aprovação clínica e a conexão de desenvolvimento ao host HAG Treino permanecem pendentes. Veja [HAG_RUN_HOMOLOGACAO.md](docs/HAG_RUN_HOMOLOGACAO.md).
+- Nenhuma migration, query de dados, escrita, secret, deploy ou publicação foi feita em projetos remotos; `main` não foi modificada.

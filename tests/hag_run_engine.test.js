@@ -123,6 +123,35 @@ test('two tolerated sessions allow progression; one does not', () => {
   assert.equal(engine.recommendNext({ ...good, recentHistory: [] }).action, 'repeat');
 });
 
+test('only the immediately previous tolerated session can authorize progression', () => {
+  const good = { completed: true, pain: 0, rpe: 5, fatigue: 3, recovery: 'good' };
+  const interrupted = { ...good, completed: false };
+  const poorRecovery = { ...good, recovery: 'poor' };
+  assert.equal(engine.recommendNext({ ...good, recentHistory: [good, interrupted] }).action, 'repeat');
+  assert.equal(engine.recommendNext({ ...good, recentHistory: [good, poorRecovery] }).action, 'repeat');
+  assert.equal(engine.recommendNext({ ...good, recentHistory: [interrupted, good] }).action, 'progress');
+});
+
+test('invalid fractional weekly frequency and malformed recovery records are rejected', () => {
+  assert.throws(() => engine.classifyRunner({ ...base, runningDaysPerWeek: 1.5 }), /integer/);
+  const valid = { completed: true, pain: 0, rpe: 5, fatigue: 3, recovery: 'good' };
+  assert.throws(() => engine.recommendNext({ ...valid, completed: 'false' }), /boolean/);
+  assert.throws(() => engine.recommendNext({ ...valid, recovery: 'unknown' }), /recovery/);
+  assert.throws(() => engine.recommendNext({ ...valid, rpe: 5.5 }), /integer/);
+});
+
+test('R5 ignores a predicted pace outside the supported range instead of emitting an invalid treadmill speed', () => {
+  const profile = { ...base, goal: 'improve_5k', maxContinuousMinutes: 35, weeklyKm: 20,
+    runningDaysPerWeek: 3, longestRunKm: 6, modality: 'treadmill', habitualPaceSecondsPerKm: 600,
+    recentResults: [{ distanceKm: 3, timeSeconds: 5400, date: '2026-10-20' }] };
+  const result = engine.generate5kWeek(profile, 1, { asOf: '2026-10-27' });
+  const work = result.sessions[1].segments.find(s => s.type === 'run' && s.rpeTarget === 7);
+  assert.equal(work.paceSecondsPerKm, 600);
+  assert.equal(work.speedKmh, 6);
+  assert.throws(() => engine.classifyRunner({ ...profile,
+    recentResults: [{ distanceKm: 3, timeSeconds: 180, date: '2026-10-20' }] }, { asOf: '2026-10-27' }), /2 and 30 minutes/);
+});
+
 test('capacity differences generate distinct sessions for the same 5 km goal', () => {
   const novice = engine.generate5kWeek(base, 1);
   const established = engine.generate5kWeek({ ...base, maxContinuousMinutes: 30, weeklyKm: 15,

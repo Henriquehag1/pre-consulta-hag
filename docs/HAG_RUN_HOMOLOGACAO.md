@@ -1,0 +1,73 @@
+# HAG RUN, relatório de homologação técnica e clínica
+
+Data: 27/10/2026
+Branch: `codex/hag-run-discovery`
+Escopo: motor R0–R5, interface, adaptador Supabase, migração SQL e testes locais.
+
+## Resultado
+
+A homologação técnica local avançou. O motor, os RPCs e o fluxo de tela passaram nas verificações descritas abaixo. A prontidão clínica permanece **pendente**, portanto esta versão não deve ser liberada para pacientes. Os limiares e as progressões ainda precisam de validação explícita do responsável clínico.
+
+Nenhuma migração foi executada em projeto remoto. A validação de banco usou uma stack Supabase local e temporária, com registros sintéticos. O script destrói essa stack ao terminar.
+
+## Revisão do motor R0–R5
+
+O motor classifica por capacidade contínua, volume e frequência semanal, distância da corrida mais longa e, para R5, objetivo e teste recente. A validade do teste R5 é limitada a resultados de 3 a 10 km nos 90 dias anteriores. A referência de 5 km usa extrapolação de Riegel, não uma promessa de desempenho.
+
+Foram adicionadas validações para frequência semanal fracionária, escala de RPE/dor/fadiga fora de valores inteiros e resultado de prova com pace fora do intervalo aceito pelo motor. Um pace-alvo estimado fora do intervalo aceito passa a usar o pace confortável informado, ou a não exibir pace.
+
+**Ponto clínico a decidir:** R0 e R1 ainda usam exatamente os mesmos intervalos. R0 representa menos de cinco minutos contínuos e R1 representa de cinco a menos de quinze minutos. A equivalência pode ser intencional para a fase inicial, mas precisa ser confirmada; a implementação atual não demonstra individualização entre esses dois grupos.
+
+## Progressão e recuperação
+
+A progressão do navegador agora exige que a sessão atual e a execução persistida imediatamente anterior tenham sido concluídas com dor zero, RPE até 6, fadiga abaixo de 8 e recuperação boa. Uma execução interrompida ou com recuperação inadequada entre duas execuções boas impede avanço. Isso alinha a recomendação local à regra já implementada no RPC.
+
+Sintomas preocupantes, lesão nova ou dor igual ou superior a 4/10 direcionam para revisão profissional. Dor entre 1 e 3/10 impede avanço; fadiga igual ou superior a 8/10, RPE igual ou superior a 9/10 ou recuperação insuficiente recomendam reduzir a carga. A RPC aplica as mesmas categorias e não aceita recomendação de progressão enviada pelo navegador.
+
+## Revisão SQL, autorização e persistência
+
+A migração foi aplicada somente a uma instância local. As chamadas reais passaram por PostgreSQL 17 e PostgREST do Supabase local. O cenário continha dois pacientes fictícios, links ativos, revogado e expirado.
+
+Verificações feitas:
+
+- leitura e gravação passam pelas RPCs, usando somente token portador; nenhum identificador de paciente é aceito como autoridade;
+- token inválido, revogado ou expirado é rejeitado;
+- paciente B não acessa a prescrição ou sessão de paciente A;
+- tabelas HAG RUN têm RLS habilitada e forçada, sem grants diretos para os papéis da API;
+- funções públicas são `SECURITY INVOKER`; funções internas validam o token, derivam `patient_id` no banco e usam `search_path` restrito;
+- uma prescrição da semana vigente é imutável; avanço de semana exige recomendação persistida de progressão;
+- execução não concluída, dor relevante e recuperação insuficiente não autorizam progressão;
+- chamadas concorrentes com o mesmo `client_event_id` resultam em uma única execução;
+- contexto RPC restaura perfil, prescrição, semana e histórico sintético.
+
+O Supabase Database Advisors não encontrou problemas de segurança ou performance no schema local testado.
+
+## Interface e dispositivos
+
+A interface foi exercitada por Playwright em largura compacta de 320 px, emulação iPhone 13 e largura de tablet de 768 px. Não houve overflow horizontal; os botões visíveis respeitaram a área mínima verificada. O fluxo de avaliação, sessão, cronômetro por etapas, pausa, retomada, salvamento e histórico foi exercitado em modo de demonstração.
+
+A soma do cronômetro foi comparada com os segmentos prescritos e coincidiu dentro de um segundo, incluindo pausa e transição. A chave de idempotência da execução pendente sobrevive a recarga da página na mesma aba e é removida depois de uma confirmação de salvamento.
+
+Esses resultados usam emulação de navegador, não aparelhos físicos. A tela ainda não foi homologada no HAG Treino com um link/token real de paciente sintético e `HAG_RUN_CONFIG` fornecido pelo host.
+
+## Testes executados
+
+- `npm run verify`: 48 testes Node aprovados, mais verificação de integridade dos arquivos.
+- `npm run test:postgres`: PostgreSQL 17 temporário; testes SQL com fixture sintética, incluindo concorrência em duas conexões.
+- `npm run test:supabase`: stack Supabase local nativa, PostgreSQL, PostgREST, migração, SQL, advisors e duas chamadas RPC concorrentes.
+- `npm run test:ui`: emulação mobile em três larguras, com exercício do fluxo e soma temporal.
+
+Os testes PostgreSQL e Supabase são integração real em ambiente local. Eles não comprovam o schema, grants, funções ou configuração de URL do projeto de produção, que não foi acessado nesta homologação.
+
+## Pendências clínicas antes de implantação
+
+1. Aprovar os critérios R0–R5 e decidir se R0 precisa de intervalos distintos de R1.
+2. Aprovar o avanço após duas sessões consecutivas e os limiares de RPE, dor, fadiga e recuperação.
+3. Avaliar triagem de condições cardiovasculares/metabólicas conhecidas, comorbidades, medicamentos, idade e outros fatores que o formulário ainda não pergunta. O ACSM inclui doença conhecida e sintomas no rastreio pré-participação; a tela atual coleta apenas alguns sintomas e lesão relatada. [ACSM, recomendações de triagem pré-participação](https://journals.lww.com/acsm-msse/fulltext/2015/11000/updating_acsm_s_recommendations_for_exercise.28.aspx)
+4. Aprovar o protocolo run-walk, aquecimento, recuperação e progressão de carga. O NHS recomenda repetir uma corrida semelhante três ou quatro vezes antes de aumentar distância ou ritmo; o HAG RUN usa outro critério, que requer avaliação clínica própria. [NHS, lesões relacionadas à corrida](https://www.nhs.uk/live-well/exercise/knee-pain-and-other-running-injuries/)
+5. Definir a conduta de desbloqueio depois de recuperação insuficiente e revisão profissional. No momento, o sistema impede a progressão automática, mas a liberação clínica não está ligada a um fluxo de equipe autenticado.
+6. Integrar URL e chave publicável de ambiente isolado ao host HAG Treino e testar o caminho real com token sintético antes de qualquer uso assistencial.
+
+## Segurança e implantação
+
+O `main`, o projeto Supabase remoto, os dados de pacientes e a publicação do aplicativo não foram modificados. A branch de desenvolvimento contém os scripts e fixtures para reproduzir os testes. Não houve instalação de GitHub Apps, criação de tokens ou alteração de secrets/permissões.

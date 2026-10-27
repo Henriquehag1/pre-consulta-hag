@@ -14,6 +14,12 @@ function finiteNumber(value, name, min, max, required = false) {
   return n;
 }
 
+function integerNumber(value, name, min, max, required = false) {
+  const n = finiteNumber(value, name, min, max, required);
+  if (n != null && !Number.isInteger(n)) throw new RangeError(`${name} must be an integer`);
+  return n;
+}
+
 function paceToKmh(secondsPerKm) {
   const pace = finiteNumber(secondsPerKm, 'paceSecondsPerKm', 120, 1800, true);
   return Math.round((3600 / pace) * 100) / 100;
@@ -34,10 +40,10 @@ function normalizeProfile(input) {
   if (!input || typeof input !== 'object') throw new TypeError('profile is required');
   const continuous = finiteNumber(input.maxContinuousMinutes, 'maxContinuousMinutes', 0, 300, true);
   const weeklyKm = finiteNumber(input.weeklyKm, 'weeklyKm', 0, 300, true);
-  const runningDays = finiteNumber(input.runningDaysPerWeek, 'runningDaysPerWeek', 0, 7, true);
+  const runningDays = integerNumber(input.runningDaysPerWeek, 'runningDaysPerWeek', 0, 7, true);
   const longestRunKm = finiteNumber(input.longestRunKm, 'longestRunKm', 0, 60, true);
   const habitualPaceSecondsPerKm = finiteNumber(input.habitualPaceSecondsPerKm, 'habitualPaceSecondsPerKm', 120, 1800);
-  const paceRpe = finiteNumber(input.paceRpe, 'paceRpe', 0, 10);
+  const paceRpe = integerNumber(input.paceRpe, 'paceRpe', 0, 10);
   const availableDays = Array.isArray(input.availableDays) ? [...new Set(input.availableDays)] : [];
   const allowedDays = new Set(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
   if (availableDays.some(day => !allowedDays.has(day))) throw new RangeError('availableDays contains an invalid weekday');
@@ -45,11 +51,14 @@ function normalizeProfile(input) {
   if (!['5k', 'improve_5k', '10k', '15k', '21k', '42k', 'hyrox'].includes(goal)) throw new RangeError('goal is invalid');
   const modality = input.modality || 'road';
   if (!['road', 'track', 'treadmill'].includes(modality)) throw new RangeError('modality is invalid');
-  const results = Array.isArray(input.recentResults) ? input.recentResults.map(result => ({
-    distanceKm: finiteNumber(result.distanceKm, 'result.distanceKm', 1, 100, true),
-    timeSeconds: finiteNumber(result.timeSeconds, 'result.timeSeconds', 60, 86400, true),
-    date: result.date || null,
-  })) : [];
+  const results = Array.isArray(input.recentResults) ? input.recentResults.map(result => {
+    const distanceKm = finiteNumber(result.distanceKm, 'result.distanceKm', 1, 100, true);
+    const timeSeconds = finiteNumber(result.timeSeconds, 'result.timeSeconds', 60, 86400, true);
+    if (timeSeconds / distanceKm < 120 || timeSeconds / distanceKm > 1800) {
+      throw new RangeError('result pace must be between 2 and 30 minutes per km');
+    }
+    return { distanceKm, timeSeconds, date: result.date || null };
+  }) : [];
   return {
     maxContinuousMinutes: continuous,
     weeklyKm,
@@ -61,7 +70,7 @@ function normalizeProfile(input) {
     injuryHistory: input.injuryHistory || '',
     recentInjury: Boolean(input.recentInjury),
     activeInjury: Boolean(input.activeInjury),
-    currentPain: finiteNumber(input.currentPain, 'currentPain', 0, 10) ?? 0,
+    currentPain: integerNumber(input.currentPain, 'currentPain', 0, 10) ?? 0,
     concerningSymptoms: Boolean(input.concerningSymptoms),
     availability: availableDays,
     goal,
@@ -201,7 +210,7 @@ function generate5kWeek(input, week = 1, options = {}) {
   if (p.availability.length === 0) return { engineVersion: VERSION, classification, status: 'incomplete_availability', sessions: [], explanation: 'Informe os dias disponíveis para corrida.' };
 
   const cap = p.habitualPaceSecondsPerKm;
-  const easyPace = cap == null ? null : cap + (p.paceRpe != null && p.paceRpe > 4 ? 30 : 0);
+  const easyPace = cap == null ? null : Math.min(1800, cap + (p.paceRpe != null && p.paceRpe > 4 ? 30 : 0));
   const desiredSessions = classification.level === 'R0' || classification.level === 'R1' ? 2 : 3;
   const workloadLimit = p.runningDaysPerWeek > 0 ? p.runningDaysPerWeek : (classification.level === 'R0' || classification.level === 'R1' ? 2 : 1);
   const days = chooseSpacedDays(p.availability, Math.min(desiredSessions, workloadLimit));
@@ -237,7 +246,9 @@ function generate5kWeek(input, week = 1, options = {}) {
       .filter(r => r.distanceKm >= 3 && r.distanceKm <= 10 && r.date && (asOfDate - new Date(r.date)) <= 90 * 86400000 && (asOfDate - new Date(r.date)) >= 0)
       .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
     const predicted5kTime = latestResult ? latestResult.timeSeconds * Math.pow(5 / latestResult.distanceKm, 1.06) : null;
-    const racePace = predicted5kTime ? predicted5kTime / 5 : cap;
+    const estimatedRacePace = predicted5kTime ? predicted5kTime / 5 : null;
+    const racePace = estimatedRacePace != null && estimatedRacePace >= 120 && estimatedRacePace <= 1800
+      ? estimatedRacePace : cap;
     days.forEach((day, index) => {
       if (index === 1) {
         const workPace = racePace == null ? null : racePace;
@@ -262,9 +273,12 @@ function generate5kWeek(input, week = 1, options = {}) {
 
 function recommendNext(input) {
   const log = input || {};
-  const pain = finiteNumber(log.pain, 'pain', 0, 10, true);
-  const rpe = finiteNumber(log.rpe, 'rpe', 0, 10, true);
-  const fatigue = finiteNumber(log.fatigue, 'fatigue', 0, 10, true);
+  if (typeof log.completed !== 'boolean') throw new TypeError('completed must be a boolean');
+  if (!['good', 'partial', 'poor'].includes(log.recovery)) throw new RangeError('recovery is invalid');
+  if (log.difficulty != null && !['easy', 'moderate', 'hard'].includes(log.difficulty)) throw new RangeError('difficulty is invalid');
+  const pain = integerNumber(log.pain, 'pain', 0, 10, true);
+  const rpe = integerNumber(log.rpe, 'rpe', 0, 10, true);
+  const fatigue = integerNumber(log.fatigue, 'fatigue', 0, 10, true);
   const recovery = log.recovery;
   const history = Array.isArray(log.recentHistory) ? log.recentHistory.slice(-2) : [];
   if (log.concerningSymptoms || pain >= 4) return { action: 'professional_review', progressAllowed: false, reason: 'Sintoma relevante ou dor de intensidade alta. Interromper a sessão e solicitar avaliação profissional.' };
@@ -273,8 +287,14 @@ function recommendNext(input) {
   if (pain > 0) return { action: 'maintain', progressAllowed: false, reason: 'Dor relatada. Manter ou reduzir a carga, sem progressão automática.' };
   if (fatigue >= 8 || recovery === 'poor' || rpe >= 9) return { action: 'reduce', progressAllowed: false, reason: 'Fadiga alta, recuperação ruim ou esforço muito alto.' };
   if (log.difficulty === 'hard' || rpe >= 8 || recovery === 'partial') return { action: 'maintain', progressAllowed: false, reason: 'Esforço alto ou recuperação parcial. Manter o estágio atual.' };
-  const tolerated = [log, ...history].filter(x => x.completed && (x.pain ?? 0) === 0 && (x.rpe ?? 10) <= 6 && (x.fatigue ?? 10) < 8 && x.recovery === 'good');
-  if (tolerated.length >= 2) return { action: 'progress', progressAllowed: true, reason: 'Duas sessões recentes foram concluídas com boa tolerância.' };
+  const isTolerated = x => x?.completed === true && (x.pain ?? 0) === 0
+    && (x.rpe ?? 10) <= 6 && (x.fatigue ?? 10) < 8 && x.recovery === 'good';
+  // The database authorizes progression only when the immediately previous
+  // persisted execution and the current execution were both tolerated. Keep
+  // the local recommendation identical so the UI cannot offer a rejected week.
+  if (isTolerated(log) && isTolerated(history.at(-1))) {
+    return { action: 'progress', progressAllowed: true, reason: 'Duas sessões consecutivas foram concluídas com boa tolerância.' };
+  }
   return { action: 'repeat', progressAllowed: false, reason: 'Aguardar outra sessão bem tolerada antes de progredir.' };
 }
 
@@ -283,9 +303,9 @@ function buildRunRecord(input) {
   if (typeof input.completed !== 'boolean') throw new TypeError('completed is required');
   const durationSeconds = Math.round(finiteNumber(input.durationSeconds, 'durationSeconds', 0, 86400, true));
   const distanceKm = finiteNumber(input.distanceKm, 'distanceKm', 0, 100, true);
-  const rpe = finiteNumber(input.rpe, 'rpe', 0, 10, true);
-  const pain = finiteNumber(input.pain, 'pain', 0, 10, true);
-  const fatigue = finiteNumber(input.fatigue, 'fatigue', 0, 10, true);
+  const rpe = integerNumber(input.rpe, 'rpe', 0, 10, true);
+  const pain = integerNumber(input.pain, 'pain', 0, 10, true);
+  const fatigue = integerNumber(input.fatigue, 'fatigue', 0, 10, true);
   const difficulty = input.difficulty;
   const recovery = input.recovery;
   if (!['easy', 'moderate', 'hard'].includes(difficulty)) throw new RangeError('difficulty is invalid');

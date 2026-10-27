@@ -43,23 +43,30 @@ No diretório `HAG_RUN_dev`, rode:
 python3 -m http.server 8766 --bind 127.0.0.1
 ```
 
-Abra `http://127.0.0.1:8766/hag_run_HAG.html`. Sem token pessoal e sem configuração Supabase, use um perfil fictício no modo demonstração. A persistência requer um projeto Supabase isolado, migration aplicada nesse ambiente e configuração pública do host. A integração real não foi executada porque a única instância conectada disponível é produção.
+Abra `http://127.0.0.1:8766/hag_run_HAG.html`. Sem token pessoal e sem configuração Supabase, use um perfil fictício no modo demonstração.
 
-## Verificações executadas
+## Testes
 
 ```sh
-node --check hag_run_engine.js
-node --check hag_run_store.js
-node --test tests/*.test.js
+npm run verify
+npm run test:postgres
+npm run test:supabase
+npm run test:ui
 ```
 
-A suíte tem 45 testes aprovados e cobre o motor, o store e contratos de autorização. Inclui perfis R0 a R5, pace/esteira, progressão, sessão incompleta, recuperação insuficiente, dor, sintomas, isolamento simulado entre tokens A e B, token inválido, idempotência e invariantes de RLS/grants/migração. Os testes de autorização executados sem banco são mocks e verificações estáticas, não comprovam a execução real das políticas ou funções SQL. Integração com PostgreSQL isolado permanece pendente.
+- `npm run verify` executa os testes determinísticos Node e a checagem de integridade. Os 48 testes não exigem banco.
+- `npm run test:postgres` cria um cluster PostgreSQL 17 temporário, aplica fixtures sintéticas e a migração, executa testes SQL e duas gravações concorrentes. Requer `brew install postgresql@17` no macOS.
+- `npm run test:supabase` prepara uma stack Supabase local e temporária, sem link a projeto remoto, testa a migração, Database Advisors e chamadas RPC reais via PostgREST, e destrói a stack no final. Requer Supabase CLI, Python 3 e PostgreSQL 17. Em Apple Silicon sem Docker, usa o runtime nativo experimental do CLI.
+- `npm run test:ui` exerce o aplicativo em navegador Chromium com emulação mobile a 320 px, iPhone 13 e tablet a 768 px. Na primeira execução do browser, use `npx playwright install chromium`. É emulação, não aparelho físico.
+
+Os testes de banco usam somente dois pacientes sintéticos. Não verificam a configuração ou o schema do projeto remoto de produção.
 
 ## Limites
 
-- O motor e os critérios ainda exigem revisão clínica antes de uso com pacientes.
+- O motor e os critérios ainda exigem aprovação clínica antes de uso com pacientes. R0 e R1 ainda usam o mesmo protocolo inicial; veja [relatório de homologação](docs/HAG_RUN_HOMOLOGACAO.md).
 - O motor atual gera planos na página; validação clínica formal ainda é necessária antes de uso assistencial.
-- O HAG RUN não tem configuração de projeto Supabase isolado neste checkout. O recurso persistente está implementado, mas não pode ser exercitado contra a instância de produção.
 - A aplicação guarda a sessão em andamento somente em memória; a execução começa a ser persistida quando a pessoa envia o registro ao fim ou interrompe a sessão.
+- O identificador idempotente pendente sobrevive à recarga da mesma aba; a sessão cronometrada e seus campos ainda não são persistidos antes do envio do formulário.
+- A tela ainda não está conectada ao host HAG Treino, que deve fornecer a URL e a chave publicável do ambiente de desenvolvimento.
 - O catálogo HAG existente e seus 42 programas permanecem intactos. A correção local para dor articular importante está apenas no clone, em `treino_HAG.html`.
 - Produção e `main` não foram modificadas. Nenhuma migração, publicação ou alteração em dados reais foi feita.
