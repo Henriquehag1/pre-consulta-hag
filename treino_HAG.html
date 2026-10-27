@@ -849,7 +849,8 @@ function semaforo(){
   const p=S.pront; if([p.sono,p.energia,p.musc,p.art].some(v=>v==null)) return null;
   const ant=historico().filter(s=>s.pront).slice(-8).map(s=>scorePront(s.pront)); const sc=scorePront(p);
   const b=ant.length>=3 ? ant.reduce((a,x)=>a+x,0)/ant.length : 14;
-  if(p.art>=4 || sc<b-4) return {c:"r", t:"Bem abaixo do habitual ou dor articular forte.", s:"Siga o plano. Dor articular persistente: avise o consultório."};
+  if(p.art>=4) return {c:"r", t:"Dor articular importante hoje.", s:"Interrompa o treino. Não retome enquanto houver dor importante; fale com o consultório para avaliar."};
+  if(sc<b-4) return {c:"r", t:"Prontidão muito abaixo do habitual.", s:"Adie o treino e priorize recuperação. Se houver sintomas incomuns, fale com o consultório."};
   if(sc<b-1.5) return {c:"y", t:"Prontidão abaixo do habitual.", s:"Se precisar, reduza a carga; não troque o exercício."};
   return {c:"g", t:"Prontidão normal para você.", s:"Bom treino."};
 }
