@@ -29,7 +29,7 @@ Date: 2026-10-27
 - Do not run migrations or issue writes to Supabase from this development checkout.
 - Keep all edits and commits on `codex/hag-run-discovery`; do not push or deploy without review and explicit approval.
 - Rollback of local code changes: switch to `main` or discard this development clone. The baseline is preserved by commit `e70179d`; production is untouched.
-- The prior GitHub 403 is not reproducible from the available evidence. Anonymous read access works. A remote branch push requires an authenticated GitHub identity with write access to this repository. No push has been attempted.
+- The initial GitHub 403 could not be attributed to a permission failure: anonymous clone/read worked, and an authenticated push created the development branch successfully. GitHub reported that the repository moved to `Henriquehag1/pre-consulta-hag` and redirected the push from the lowercase owner URL. Remote branch `codex/hag-run-discovery` now tracks the isolated local branch. No production branch was changed.
 
 ## Next audit requirements
 
