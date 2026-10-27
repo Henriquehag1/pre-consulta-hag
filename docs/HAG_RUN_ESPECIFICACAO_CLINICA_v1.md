@@ -4,7 +4,7 @@
 
 Este documento converte o parecer preliminar do responsável médico em requisitos verificáveis e uma lista estruturada dos parâmetros que ainda precisam de decisão. Valores ausentes permanecem pendentes; não foram completados por inferência. A descrição linha a linha do comportamento atual e as simulações estão em [HAG_RUN_AUDITORIA_CLINICA.md](HAG_RUN_AUDITORIA_CLINICA.md).
 
-Uma primeira tradução dos requisitos em parâmetros discutíveis para R0–R2 está em [HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v1_R0-R2.md](HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v1_R0-R2.md). A comparação solicitada para a segunda versão está em [HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v2_R0-R2.md](HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v2_R0-R2.md). Todos os valores de ambas as matrizes seguem como proposta sem aprovação clínica.
+Uma primeira tradução dos requisitos em parâmetros discutíveis para R0–R2 está em [HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v1_R0-R2.md](HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v1_R0-R2.md). A comparação solicitada para a segunda versão está em [HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v2_R0-R2.md](HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v2_R0-R2.md). A revisão subsequente de entradas e dois modelos de transição R2 está em [HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v3_R0-R2.md](HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v3_R0-R2.md). Todos os valores das matrizes seguem como proposta sem aprovação clínica.
 
 ## 1. Decisão recebida
 
