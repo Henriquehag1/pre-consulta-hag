@@ -8,6 +8,10 @@
 - Escopo: regras efetivamente executadas pela interface, motor e RPC de gravação. Não foram alteradas regras de prescrição.
 - As simulações são sintéticas. “Volume estimado” nas tabelas é cálculo desta auditoria, não campo calculado ou exibido pelo motor.
 
+## Parecer médico preliminar recebido
+
+O responsável médico aprovou a estrutura técnica apenas como base de desenvolvimento e solicitou modificações clínicas antes da liberação a pacientes. A decisão é manter R0–R5 provisoriamente como níveis funcionais, não de risco; diferenciar R0 de R1; corrigir o platô de R2; substituir o avanço baseado somente em duas sessões por avaliação do ciclo; ampliar a triagem e definir um desfecho funcional de 5 km contínuos, condicionado à prontidão. O HAG RUN não está aprovado para uso assistencial. A especificação de trabalho, com os valores ainda pendentes claramente separados, está em [HAG_RUN_ESPECIFICACAO_CLINICA_v1.md](HAG_RUN_ESPECIFICACAO_CLINICA_v1.md).
+
 ## Como revisar e decidir
 
 Para cada item marcado **Decisão médica**, registrar: **Aprovar**, **Rejeitar** ou **Solicitar modificação**, com justificativa. Este relatório descreve comportamento de software; não presume que os limiares sejam clinicamente adequados.
