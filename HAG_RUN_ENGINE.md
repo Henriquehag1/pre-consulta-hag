@@ -7,11 +7,14 @@ Implementação inicial independente para Rumo aos 5 km. A interface está em `h
 - Avaliação com capacidade contínua, frequência, volume semanal, maior corrida, dias livres, pace conhecido, modalidade, dor e alertas de lesão ou sintomas.
 - Resultado recente opcional para individualizar o nível avançado R5 e calcular uma referência de pace. A página aceita testes de 3 a 10 km.
 - Classificação funcional R0 a R5 e prescrição da semana 1 em sessões segmentadas, com aquecimento, corrida, caminhada e volta à calma.
-- Timer de intervalos, pausa, retomada, pulo de etapa e encerramento. Pular etapas deixa a execução como incompleta. A contagem usa relógio monotônico aproximado por `Date.now()` e recalcula após retorno à aba.
+- Timer de intervalos, pausa, retomada, pulo de etapa e encerramento. Pular etapas deixa a execução como incompleta. A contagem usa `performance.now()`, preserva pausas e limita cada etapa à duração prescrita.
 - Registro separado da execução real: conclusão, duração, distância, RPE, dificuldade, dor, fadiga, recuperação, sintomas e nova lesão.
-- Progressão local somente após duas sessões recentes bem toleradas. Fadiga alta, recuperação ruim, dor ou sintomas bloqueiam o avanço. A tela informa que o histórico local vive apenas enquanto a página estiver aberta.
-- Adaptador de gravação por uma RPC atômica, somente com JWT que contenha `sub`. Programa, prescrição e execução ficam em tabelas próprias.
-- Migração cria novas tabelas, força RLS e restringe as políticas a `auth.uid()`. Não altera tabelas nem histórico HAG existentes.
+- Progresso condicionado a sessões concluídas e bem toleradas. Dor, sintomas, fadiga alta ou recuperação insuficiente bloqueiam ou seguram o avanço.
+- Temporizador por segmento com pausa, retomada, encerramento e registro da execução realmente realizada.
+- Adaptador Supabase por link pessoal, enviando o token apenas no corpo das RPCs. Não usa `patient_id` do navegador nem chave `service_role`.
+- Histórico do programa, avaliação, perfil funcional, snapshots imutáveis de prescrição, execução, sintomas e recomendação de progressão.
+- Recuperação do plano vigente, semana e até 200 sessões anteriores quando a pessoa reabre o aplicativo.
+- Migração aditiva com RLS habilitada e forçada, acesso às tabelas negado e wrappers públicos `SECURITY INVOKER` delegando a funções internas que validam o token.
 
 ## Classificação operacional
 
@@ -28,11 +31,9 @@ Lesão ativa/recente, sintomas preocupantes ou dor atual igual ou superior a 4/1
 
 ## Supabase e identidade
 
-O projeto Supabase aberto anteriormente é o de produção. Não foi executada migração nem gravação nesta etapa. O repositório não tem migrações existentes para treino; a nova migração é aditiva e isolada. Supabase CLI, Docker e `psql` não estão instalados, por isso a validação disponível foi estática e por testes de contrato, não uma execução real de PostgreSQL.
+A arquitetura detalhada está em [HAG_RUN_DECISION.md](HAG_RUN_DECISION.md). O paciente continua sem conta, como no link existente `treino_HAG.html?t=<token>`. O banco confirma token, revogação e expiração opcional, e deriva `patient_id`. Nenhuma migração ou escrita foi feita no projeto de produção.
 
-A RPC `hag_run_save` é `SECURITY INVOKER`, usa RLS e grava as três entidades numa transação. A página somente habilita essa integração se o host definir `window.HAG_RUN_CONFIG` com `url`, `anonKey` publicável e `getAccessToken()` que retorne um JWT de usuário autenticado. Nunca configure chave `service_role` no navegador.
-
-O fluxo existente do HAG Treino também usa links pessoais sem usuário Supabase autenticado. Esses links não têm um `auth.uid()` compatível com as novas políticas. A integração da página com esse fluxo depende de uma decisão de identidade/autorização própria; não se deve contornar RLS nem usar credenciais de serviço. Por isso, no clone atual, o salvamento está desativado e os registros da sessão ficam apenas em memória.
+A integração requer que o host defina `window.HAG_RUN_CONFIG` com `url` e `anonKey` publicável de um projeto isolado que tenha a migração aplicada. Sem essa configuração, o aplicativo oferece apenas demonstração local. Nunca configure chave `service_role` no navegador. O schema `hag_run_private` deve ficar fora das schemas expostas pela Data API.
 
 ## Executar localmente
 
@@ -42,7 +43,7 @@ No diretório `HAG_RUN_dev`, rode:
 python3 -m http.server 8766 --bind 127.0.0.1
 ```
 
-Abra `http://127.0.0.1:8766/hag_run_HAG.html`. Use um perfil fictício. Sem `HAG_RUN_CONFIG`, nenhum dado é enviado ou persistido. Para usar a migração, copie-a para o ambiente Supabase de desenvolvimento e valide a identidade autenticada, RLS e a RPC nesse ambiente antes de qualquer conexão da interface.
+Abra `http://127.0.0.1:8766/hag_run_HAG.html`. Sem token pessoal e sem configuração Supabase, use um perfil fictício no modo demonstração. A persistência requer um projeto Supabase isolado, migration aplicada nesse ambiente e configuração pública do host. A integração real não foi executada porque a única instância conectada disponível é produção.
 
 ## Verificações executadas
 
@@ -52,12 +53,13 @@ node --check hag_run_store.js
 node --test tests/*.test.js
 ```
 
-A suíte tem 36 testes unitários e de contrato. Inclui perfis R0 a R5, resultados recentes, dias de recuperação, duração exata das sessões, pace/esteira, progressão, sessão incompleta, baixa recuperação, dor, sintomas, token JWT e separação de dados na RPC. A migração foi inspecionada por testes de estrutura e políticas. A interface teve o HTML analisado e o JavaScript embutido passou em `node --check`; uma verificação visual interativa e uma integração real ao PostgreSQL ainda não foram concluídas.
+A suíte tem 45 testes aprovados e cobre o motor, o store e contratos de autorização. Inclui perfis R0 a R5, pace/esteira, progressão, sessão incompleta, recuperação insuficiente, dor, sintomas, isolamento simulado entre tokens A e B, token inválido, idempotência e invariantes de RLS/grants/migração. Os testes de autorização executados sem banco são mocks e verificações estáticas, não comprovam a execução real das políticas ou funções SQL. Integração com PostgreSQL isolado permanece pendente.
 
 ## Limites
 
 - O motor e os critérios ainda exigem revisão clínica antes de uso com pacientes.
-- O plano está na semana 1 e contém progressão até 12 semanas para R0/R1. Não há acompanhamento persistente nem carregamento do histórico após fechar a página.
-- Sessões demonstradas e avaliação ficam no estado da página. Sem banco de desenvolvimento, não há teste de persistência real.
+- O motor atual gera planos na página; validação clínica formal ainda é necessária antes de uso assistencial.
+- O HAG RUN não tem configuração de projeto Supabase isolado neste checkout. O recurso persistente está implementado, mas não pode ser exercitado contra a instância de produção.
+- A aplicação guarda a sessão em andamento somente em memória; a execução começa a ser persistida quando a pessoa envia o registro ao fim ou interrompe a sessão.
 - O catálogo HAG existente e seus 42 programas permanecem intactos. A correção local para dor articular importante está apenas no clone, em `treino_HAG.html`.
 - Produção e `main` não foram modificadas. Nenhuma migração, publicação ou alteração em dados reais foi feita.
