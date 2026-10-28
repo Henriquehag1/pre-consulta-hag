@@ -232,6 +232,20 @@ body.descansando .wrap{padding-bottom:190px}
 .iso.segura .btn{background:var(--on-navy);color:var(--navy)}
 .navx{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:4px}
 .navx .btn{min-height:52px}
+/* HAG_TREINO_CORRIDA_GUIADA_v1: tela da corrida guiada */
+.gtag{font-family:var(--display);font-size:46px;font-weight:700;text-align:center;letter-spacing:.02em;line-height:1;margin-top:12px}
+.g-corre .gtag,.g-forte .gtag,.g-acel .gtag,.g-prova .gtag{color:var(--gold)}
+.g-caminha .gtag,.g-trote .gtag,.g-solta .gtag{color:var(--good)}
+.g-aquec .gtag,.g-mob .gtag{color:var(--ink-2)}
+.gtx{text-align:center;color:var(--ink-2);font-size:14px;margin-top:4px}
+.gbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:4px 0 10px}
+.gbar i{display:block;height:100%;background:var(--gold)}
+.g-caminha .gbar i,.g-trote .gbar i,.g-solta .gbar i{background:var(--good)}
+.gnx{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2)}
+.gres{font-size:13.5px;color:var(--ink-2);line-height:1.45;margin:10px 0 8px}
+.gres b{color:var(--ink)}
+.btn.gdor{background:var(--crit-bg);color:var(--crit);border:1px solid var(--crit);margin-top:12px}
+.gok{font-size:13.5px;margin:10px 0 4px;color:var(--good)}
 .sos{font-size:13px;color:var(--crit);background:none;border:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px 0}
 .alerta-cv{border:2px solid var(--crit);background:var(--crit-bg);border-radius:12px;padding:16px}
 .alerta-cv h3{color:var(--crit)}
@@ -749,7 +763,7 @@ function sugestao(it){
 /* ---------- estado da sessão ---------- */
 const vHoje=document.getElementById("v-hoje"), vEvo=document.getElementById("v-evo"), elTimer=document.getElementById("timer");
 const vProg=document.getElementById("v-prog"), vLivre=document.getElementById("v-livre"), tabLivre=document.getElementById("tab-livre");
-const novoEstado = () => ({fase:"inicio", diaId:null, pront:{sono:null,energia:null,musc:null,art:null}, prontPulou:false, prontOk:false, rpe:null, durAj:null, i:0, sub:{}, feitas:{}, cardio:{}, voltas:{}, crono:null, ajuste:null, abrirAjuste:false, verPq:false, verVideo:false, inicio:null, cv:false, salvo:null, nota:"", livre:null, diaEscolhido:false, vc:0});
+const novoEstado = () => ({fase:"inicio", diaId:null, pront:{sono:null,energia:null,musc:null,art:null}, prontPulou:false, prontOk:false, rpe:null, durAj:null, i:0, sub:{}, feitas:{}, cardio:{}, voltas:{}, crono:null, ajuste:null, abrirAjuste:false, verPq:false, verVideo:false, inicio:null, cv:false, salvo:null, nota:"", livre:null, diaEscolhido:false, vc:0, guia:null, notaCorrida:""}); /* HAG_TREINO_CORRIDA_GUIADA_v1 */
 let S = novoEstado();
 /* HAG_TREINO_LISTA_TOCAVEL_v1: video e nota abertos nas listas (Meu programa e tela de entrada do treino) */
 let pvAberto=null; const pnAberto=new Set();
@@ -852,7 +866,10 @@ function semaforo(){
   const p=S.pront; if([p.sono,p.energia,p.musc,p.art].some(v=>v==null)) return null;
   const ant=historico().filter(s=>s.pront).slice(-8).map(s=>scorePront(s.pront)); const sc=scorePront(p);
   const b=ant.length>=3 ? ant.reduce((a,x)=>a+x,0)/ant.length : 14;
-  if(p.art>=4 || sc<b-4) return {c:"r", t:"Bem abaixo do habitual ou dor articular forte.", s:"Siga o plano. Dor articular persistente: avise o consultório."};
+  /* HAG_TREINO_SEMAFORO_v2 (28/10/2026, aprovado pelo Dr. Henrique): dor articular 4+ não treina e avisa o consultório;
+     prontidão muito baixa vira "treine leve ou adie", não "adie" absoluto (noite ruim é comum e adiar sempre ensina a pular). */
+  if(p.art>=4) return {c:"r", t:"Dor articular forte hoje.", s:"Não treine hoje. Fale com o consultório antes de retomar."};
+  if(sc<b-4) return {c:"r", t:"Bem abaixo do habitual.", s:"Treine leve hoje (menos carga ou séries) ou adie."};
   if(sc<b-1.5) return {c:"y", t:"Prontidão abaixo do habitual.", s:"Se precisar, reduza a carga; não troque o exercício."};
   return {c:"g", t:"Prontidão normal para você.", s:"Bom treino."};
 }
@@ -1066,10 +1083,14 @@ function renderItem(){
    </div>${rodapeTreino()}`;
 }
 function renderCardio(it,ex,its,barra){
+  const g=S.guia; if(g && !g.fim && g.i===S.i) return renderGuia(barra); /* HAG_TREINO_CORRIDA_GUIADA_v1 */
+  const gfeito=!!(g && g.fim && (g.itens||[]).includes(S.i)), G=gfeito?null:gCadeia(S.i);
   const c = S.cardio[S.i] || (S.cardio[S.i]={sup:null,km:"",min:"",fc:"",z2:""});
   const sups = ["corrida","caminhada"].includes(it.id) ? ["Rua","Pista","Esteira motorizada","Esteira curva","Trilha"] : [];
   vHoje.innerHTML=`${barra}<div class="card">${cabecalhoItem(it,ex,S.i+1,its.length)}
     ${it.alvo?`<div class="porque" style="margin-top:10px"><b>Hoje:</b> ${esc(it.alvo)}</div>`:""}
+    ${G?`<div class="gres"><b>Guiada:</b> ${esc(G.resumo)}${G.total?` · ~${Math.max(1,Math.round(G.total/60))} min`:""}</div><button type="button" class="btn wide" data-a="guia">▶ CORRIDA GUIADA</button><p class="note" style="margin:4px 0 0">Som e vibração a cada troca. Tela acesa.</p>`:""}
+    ${gfeito?gResultado(g):""}
     <div class="ajuste" style="border-top:0;margin-top:6px">
       ${sups.length?`<div><span class="lbl">Onde foi</span><div class="chips" style="margin-top:6px">${sups.map(s=>`<button type="button" class="chip" data-a="sup" data-v="${s}" aria-pressed="${c.sup===s}">${s}</button>`).join("")}</div></div>`:""}
       <div class="grid2"><label class="campo"><span class="lbl">Distância (km)</span><input inputmode="decimal" data-c="km" value="${esc(c.km)}" placeholder="0,0"></label>
@@ -1079,6 +1100,158 @@ function renderCardio(it,ex,its,barra){
       <button type="button" class="btn wide" data-a="cardiook">${S.i<its.length-1?"REGISTRAR E SEGUIR":"REGISTRAR"}</button>
       <p class="note" id="cardio-msg" style="margin:0"></p>
     </div></div>${rodapeTreino()}`;
+}
+/* HAG_TREINO_CORRIDA_GUIADA_v1 (28/10/2026): corrida guiada DENTRO da sessão do catálogo, sem área separada.
+   Pedido do Dr. Henrique: não setorizar o HAG RUN. A corrida fica na trilha Corrida do catálogo, liberada por ele como
+   qualquer programa, e o paciente corre guiado por som e vibração lendo o próprio alvo do programa
+   ("8 × (1 min correndo + 2 min caminhando)"). Itens de corrida seguidos (aquecimento, principal, soltar) viram uma
+   corrida só. Nada muda no banco: o tempo vai para o registro de cardio de sempre e a parada por dor vai na nota da
+   sessão. Alvo que o leitor não entende não ganha o botão: o paciente registra à mão, como antes. */
+/* HAG_CORRIDA_LEITOR_INICIO (funções puras; o teste extrai este trecho) */
+const GUIA_EX=new Set(["corrida","caminhada"]);
+const gNum = x => +String(x).replace(",",".");
+const gT = s => s%60 ? Math.floor(s/60)+":"+String(s%60).padStart(2,"0") : (s/60)+" min";
+function gDur(t){ t=String(t||"").toLowerCase();
+  let m=t.match(/(\d+(?:[.,]\d+)?)\s*min(?:utos?)?\b(?:\s*(?:e\s*)?(\d+)\s*s\b)?/);
+  if(m) return {seg:Math.round(gNum(m[1])*60+(m[2]?+m[2]:0)), at:m.index, len:m[0].length};
+  m=t.match(/(\d+)\s*s\b/); if(m) return {seg:+m[1], at:m.index, len:m[0].length};
+  return null; }
+function gDist(t){ const m=String(t||"").match(/(\d+(?:[.,]\d+)?)\s*(km|m)\b/i); return m?{txt:m[1].replace(".",",")+" "+m[2].toLowerCase(), at:m.index, len:m[0].length}:null; }
+function gTipo(t){ t=String(t||"").toLowerCase();
+  if(/caminh/.test(t)) return "caminha";
+  if(/trot/.test(t)) return "trote";
+  if(/acelera/.test(t)) return "acel";
+  if(/mobilidade/.test(t)) return "mob";
+  if(/forte|firme|rápid|ritmo|moderad|limiar/.test(t)) return "forte";
+  return "corre"; }
+function gRot(tipo,t){ t=String(t||"").toLowerCase();
+  if(tipo==="forte") return /firme/.test(t)?"Firme":/forte/.test(t)?"Forte":/rápid/.test(t)?"Rápido":/limiar/.test(t)?"Limiar":/moderad/.test(t)?"Moderado":"No ritmo";
+  if(tipo==="corre") return /sem parar|contínu/.test(t)?"Corra sem parar":/leve|confort|zona 2/.test(t)?"Corra leve":"Corra";
+  return {caminha:"Caminhe",trote:"Trote",acel:"Acelere",mob:"Mobilidade",aquec:"Aqueça",solta:"Solte",prova:"Sua prova"}[tipo]||"Corra"; }
+function gLimpa(x){ return String(x||"").replace(/^[\s,;:+]+|[\s,;:.+]+$/g,"").replace(/\s{2,}/g," "); }
+function gParte(p,fase){
+  p=gLimpa(p); const d=gDur(p), k=gDist(p); let seg=null, dist=null, resto;
+  if(k && (!d || k.at<d.at)){ dist=k.txt; resto=p.slice(0,k.at)+p.slice(k.at+k.len); }
+  else if(d){ seg=d.seg; resto=p.slice(0,d.at)+p.slice(d.at+d.len); }
+  else return null;
+  if(seg!=null && !(seg>0 && seg<=6*3600)) return null;
+  resto=gLimpa(resto.replace(/^\s*(de|em)\s+/i,""));
+  let tipo=gTipo(resto); if(fase && tipo!=="mob" && tipo!=="acel") tipo=fase;
+  return {tipo, seg, dist, txt:resto, rot:gRot(tipo,resto)};
+}
+const gRes = a => `${(a.tipo==="forte"&&/^(no |em )?ritmo/i.test(a.txt||""))?a.txt.toLowerCase():a.rot.toLowerCase()} ${a.seg?gT(a.seg):a.dist||""}`.trim();
+function gAcel(p){ const m=String(p).match(/(\d+)\s*acelera\S*(?:\s*de\s*(\d+)\s*s)?/i); if(!m) return null;
+  const n=Math.min(+m[1],12), s=m[2]?+m[2]:null, out=[];
+  for(let j=1;j<=n;j++){ out.push({tipo:"acel", seg:s, dist:null, txt:"aceleração", rot:"Acelere", rep:[j,n]});
+    if(j<n) out.push({tipo:"trote", seg:null, dist:null, txt:"recupere trotando", rot:"Trote", rep:[j,n]}); }
+  return {segs:out, res:`${n} × acelere${s?" "+gT(s):""}`}; }
+function gFecha(segs,resumo,obs){ return {segs, resumo, obs, total:segs.reduce((a,x)=>a+(x.seg||0),0), abertos:segs.filter(x=>!x.seg).length}; }
+function guiaCorrida(alvo,nota){
+  let t=String(alvo||"").replace(/\s+/g," ").trim(); if(!t) return null;
+  const obs=[], nl=String(nota||"").trim().toLowerCase();
+  t=t.replace(/\.?\s*Opção:.*$/i,"").replace(/\.\s*Registre[^.]*\.?$/i,"").replace(/\.\s*(Pode (alternar|ser)[^.]*)\.?$/i,(x,y)=>{ obs.push(y); return ""; });
+  t=t.replace(/\s*\(([^()]*)\)\s*\.?$/,(x,y)=>{ if(/semana|plano|polimento/i.test(y)){ obs.push(y); return ""; } return x; }).replace(/[.\s]+$/,"").trim();
+  let fase=null;
+  if(/^aquecimento\b/i.test(t)||/^aquecimento/.test(nl)){ fase="aquec"; t=t.replace(/^aquecimento:?\s*/i,""); }
+  else if(/^(soltar|desaquecimento)\b/i.test(t)||/^desaquec/.test(nl)){ fase="solta"; t=t.replace(/^(soltar|desaquecimento:?)\s*/i,""); }
+  t=t.replace(/^logo depois:?\s*/i,"");
+  if(/^(seus|sua|seu)\b/i.test(t)||/^\d+(?:[.,]\d+)?\s*km:\s*teste/i.test(t)){
+    const i=t.indexOf(":"), nome=(i>0?t.slice(0,i):t).trim();
+    return gFecha([{tipo:"prova", seg:null, dist:(gDist(nome)||{}).txt||null, txt:i>0?gLimpa(t.slice(i+1)):"", rot:"Sua prova"}], nome.toLowerCase(), obs); }
+  let m=t.match(/^(\d+)\s*[×x]\s*\((.+)\)$/i), A, B;
+  if(m){ const i=m[2].lastIndexOf("+"); if(i<0) return null; A=m[2].slice(0,i); B=m[2].slice(i+1); }
+  else if((m=t.match(/^(\d+)\s*[×x]\s*(.+?)\s+com\s+(.+)$/i))){ A=m[2]; B=m[3]; }
+  if(m){ const n=+m[1]; if(!(n>=1&&n<=30)) return null; const a=gParte(A,fase), b=gParte(B,fase); if(!a||!b) return null;
+    const segs=[]; for(let j=1;j<=n;j++){ segs.push({...a,rep:[j,n]}); segs.push({...b,rep:[j,n]}); }
+    return gFecha(segs, `${n} × (${gRes(a)} + ${gRes(b)})`, obs); }
+  if(/[×]/.test(t)) return null;
+  const partes=t.split(/\s*\+\s*/), main=partes.shift(), segs=[], res=[];
+  const u=main.match(/^(.*?),?\s*(?:com\s+)?(?:os\s+)?últimos\s+(\d+(?:[.,]\d+)?)\s*(min|km)\s+(.+)$/i);
+  const r=u?null:main.match(/^(\d+)\s*a\s*(\d+)\s*min\b\s*(.*)$/i);
+  if(u){ const tot=gParte(u[1],fase), ult=gNum(u[2]); if(!tot) return null;
+    if(u[3].toLowerCase()==="min"){ if(!tot.seg||tot.seg<=ult*60) return null; const a={...tot,seg:tot.seg-Math.round(ult*60)}, b=gParte(`${u[2]} min ${u[4]}`,fase); if(!b) return null; segs.push(a,b); res.push(gRes(a),gRes(b)); }
+    else { const km=gNum(String(tot.dist||"").replace(/[^\d,.]/g,"")); if(!tot.dist||!(km>ult)) return null;
+      const a={...tot, dist:String(+(km-ult).toFixed(1)).replace(".",",")+" km", rot:tot.tipo==="corre"?"Corra leve":tot.rot}, b=gParte(`${u[2]} km ${u[4]}`,fase); if(!b) return null; segs.push(a,b); res.push(gRes(a),gRes(b)); } }
+  else if(r){ const a=gParte(`${r[1]} min ${r[3]}`,fase); if(!a) return null; segs.push(a); res.push(`${a.rot.toLowerCase()} ${r[1]} a ${r[2]} min`);
+    if(!fase) segs.push({...a, seg:null, txt:`opcional, até ${r[2]} min`}); }
+  else { const a=gParte(main,fase); if(!a) return null; segs.push(a); res.push(gRes(a)); }
+  for(const p of partes){ const ac=gAcel(p); if(ac){ segs.push(...ac.segs); res.push(ac.res); continue; }
+    const x=gParte(p,null)||(gLimpa(p)?{tipo:gTipo(p), seg:null, dist:null, txt:gLimpa(p), rot:gRot(gTipo(p),p)}:null); if(!x) continue; segs.push(x); res.push(gRes(x)); }
+  return gFecha(segs, res.join(" + "), obs);
+}
+/* HAG_CORRIDA_LEITOR_FIM */
+let tickGuia=null;
+const gAtual = () => (S.guia && !S.guia.fim) ? S.guia : null;
+const gDecorrido = g => Math.max(0,((g.pausa||Date.now())-g.ini)/1000);
+function gCadeia(i){ /* itens de corrida/caminhada seguidos viram uma corrida só (aquecimento, principal, soltar) */
+  const its=itens(); if(!its[i]||its[i].bloco||its[i].mod!=="cardio"||!GUIA_EX.has(its[i].id)) return null;
+  const segs=[], res=[], ids=[];
+  for(let j=i;j<its.length;j++){ const x=its[j]; if(x.bloco||x.mod!=="cardio"||!GUIA_EX.has(x.id)||(j>i&&S.cardio[j]&&S.cardio[j].ok)) break;
+    const G=guiaCorrida(x.alvo,x.nota); if(!G){ if(j===i) return null; break; }
+    G.segs.forEach(s=>segs.push({...s,item:j})); res.push(G.resumo); ids.push(j); }
+  return {segs, resumo:res.join(" · "), itens:ids, total:segs.reduce((a,s)=>a+(s.seg||0),0)};
+}
+function gTotTxt(g){ const s=g.segs[g.k], d=gDecorrido(g), feito=g.real.reduce((a,x)=>a+x,0)+d;
+  const falta=g.segs.slice(g.k).reduce((a,x)=>a+(x.seg||0),0)-(s.seg?Math.min(d,s.seg):0), ab=g.segs.slice(g.k).some(x=>!x.seg);
+  return `${mmss(feito)}${falta>0?` · faltam ~${Math.ceil(falta/60)} min`:""}${ab&&falta<=0?" · por distância":""}`; }
+function gIniciar(G){ somPronto(); manterTelaAcesa(); if(!S.inicio) S.inicio=Date.now();
+  S.guia={i:S.i, itens:G.itens, segs:G.segs, k:0, ini:Date.now(), pausa:null, real:[], fim:false, parou:null, ult:null};
+  bip(); salvarRascunho(); clearInterval(tickGuia); tickGuia=setInterval(gTick,250); }
+function gAvanca(g,seg){ g.real.push(Math.round(seg)); g.k++; g.ini=Date.now(); g.ult=null; if(g.k>=g.segs.length){ gEncerrar("fim"); return; } bip(); salvarRascunho(); }
+function gTick(){
+  const g=gAtual(); if(!g){ clearInterval(tickGuia); tickGuia=null; return; }
+  if(S.fase!=="treino"||S.i!==g.i){ gEncerrar("saiu"); return; }
+  if(g.pausa) return;
+  let mudou=false;
+  while(!g.fim){ const s=g.segs[g.k]; if(!s.seg) break; const el=(Date.now()-g.ini)/1000;
+    if(el<s.seg){ const f=Math.ceil(s.seg-el); if(f<=3&&g.ult!==f){ g.ult=f; bipCurto(); } break; }
+    g.real.push(s.seg); g.ini+=s.seg*1000; g.k++; g.ult=null; mudou=true;
+    if(g.k>=g.segs.length){ gEncerrar("fim"); break; } }
+  if(mudou){ if(!g.fim){ bip(); salvarRascunho(); } if(document.getElementById("gcrono")) render(); return; }
+  const el=document.getElementById("gcrono"); if(!el) return; const s=g.segs[g.k], d=gDecorrido(g);
+  el.textContent=s.seg?mmss(Math.max(0,s.seg-d)):mmss(d);
+  const b=document.getElementById("gbar"); if(b) b.style.width=(s.seg?Math.min(100,100*d/s.seg):0)+"%";
+  const tt=document.getElementById("gtot"); if(tt) tt.textContent=gTotTxt(g);
+}
+function gEncerrar(motivo){
+  const g=S.guia; if(!g||g.fim) return;
+  if(motivo!=="fim"){ const d=gDecorrido(g); if(d>=1 && g.k<g.segs.length) g.real.push(Math.round(d)); }
+  g.fim=true; g.parou=motivo==="fim"?null:motivo; g.pausa=null; clearInterval(tickGuia); tickGuia=null;
+  const tot=g.real.reduce((a,x)=>a+x,0), porItem={}; g.real.forEach((x,j)=>{ const it=(g.segs[j]||{}).item; if(it!=null) porItem[it]=(porItem[it]||0)+x; });
+  const ultimo=motivo==="fim" ? g.itens[g.itens.length-1] : (g.segs[Math.min(g.k,g.segs.length-1)]||{}).item;
+  for(const j of g.itens){ if(j>ultimo) break; const sec=porItem[j]||0, c=S.cardio[j]||(S.cardio[j]={sup:null,km:"",min:"",fc:"",z2:""});
+    if(sec>=30){ c.min=String(Math.round(sec/6)/10).replace(".",","); if(j<ultimo) c.ok=true; } }
+  g.itens=g.itens.filter(j=>j<=ultimo);
+  const et=g.segs[Math.min(g.k,g.segs.length-1)]||{rot:""}, nome=EX(((itens()[g.i])||{}).id||"corrida").nome||"Corrida";
+  if(motivo==="dor") S.notaCorrida=`${nome} guiada interrompida por dor aos ${mmss(tot)} (${String(et.rot).toLowerCase()}${et.rep?` ${et.rep[0]} de ${et.rep[1]}`:""}).`;
+  else if(motivo==="parou" && !S.notaCorrida) S.notaCorrida=`${nome} guiada encerrada antes do fim aos ${mmss(tot)}.`;
+  bip(); if(motivo!=="saiu" && ultimo!=null && ultimo!==S.i){ const p=passos().find(x=>x.i===ultimo); if(p) irPasso(p); }
+  salvarRascunho();
+}
+function gResultado(g){
+  const tot=mmss(g.real.reduce((a,x)=>a+x,0));
+  if(g.parou==="dor") return `<div class="alerta-cv" role="alert" style="margin-top:10px"><h3>Pare a corrida.</h3><p style="margin:6px 0 0">Não retome hoje. Dor forte, que piora ou que continua amanhã: fale com o consultório.</p><p class="note" style="margin:6px 0 0">Registrado: dor aos ${tot}.</p></div>`;
+  if(g.parou) return `<p class="note" style="margin:10px 0 4px">Guiada encerrada aos ${tot}. Confira o tempo e registre.</p>`;
+  return `<p class="gok">Guiada concluída · ${tot}. Some a distância, se tiver.</p>`;
+}
+function renderGuia(barra){
+  const g=S.guia, s=g.segs[g.k], nx=g.segs[g.k+1], d=gDecorrido(g);
+  vHoje.innerHTML=`${barra}<div class="card g-${s.tipo}">
+   <div class="row between"><div class="kicker">Corrida guiada · ${g.k+1} de ${g.segs.length}</div>${s.rep?`<span class="lbl">bloco ${s.rep[0]} de ${s.rep[1]}</span>`:""}</div>
+   <div class="gtag">${esc(s.rot.toUpperCase())}</div>
+   ${s.txt&&s.txt.toLowerCase()!==s.rot.toLowerCase()&&!/^(correndo|caminhando|trotando|corrida|aceleração)$/i.test(s.txt)?`<div class="gtx">${esc(s.txt)}</div>`:""}
+   <div class="crono" id="gcrono">${s.seg?mmss(Math.max(0,s.seg-d)):mmss(d)}</div>
+   ${s.seg?"":`<div class="gtx">${s.dist?`<b>${esc(s.dist)}</b> · `:""}toque em FIZ ao completar</div>`}
+   <div class="gbar"><i id="gbar" style="width:${s.seg?Math.min(100,100*d/s.seg):0}%"></i></div>
+   <div class="gnx"><span>${nx?`Depois: ${esc(gRes(nx))}`:"Última etapa"}</span><span id="gtot">${gTotTxt(g)}</span></div>
+   <div class="row" style="gap:8px;margin-top:12px">
+     ${s.seg?"":`<button type="button" class="btn" data-a="gfiz" style="flex:2">FIZ ›</button>`}
+     <button type="button" class="btn ${s.seg?"":"ghost"}" data-a="${g.pausa?"gseguir":"gpausa"}" style="flex:1">${g.pausa?"▶ CONTINUAR":"❚❚ PAUSAR"}</button>
+   </div>
+   <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="gpula">pular etapa</button><button type="button" class="link" data-a="gfim">encerrar aqui</button></div>
+   <button type="button" class="btn wide gdor" data-a="gdor">PARAR · SENTI DOR</button>
+  </div>${rodapeTreino()}`;
+  if(!tickGuia) tickGuia=setInterval(gTick,250);
 }
 function renderHyrox(it,ex,its,barra){
   const v = S.voltas[S.i] || (S.voltas[S.i]=[]); const rodando = S.crono && S.crono.i===S.i;
@@ -1141,6 +1314,7 @@ function renderSalvo(){
      ${r.enviada?"":`<br><span class="note">Sem sinal · envia sozinha quando voltar.</span>`}
      ${r.rec.length?`<ul>${r.rec.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
      ${r.dor.length?`<p style="color:var(--crit);margin:6px 0 0">Dor 4 ou mais em ${r.dor.map(esc).join(", ")}: carga travada até o Dr. Henrique liberar.</p>`:""}
+     ${/por dor/.test(r.nota||"")?`<p style="color:var(--crit);margin:6px 0 0">Corrida interrompida por dor. Não retome hoje; se a dor continuar, fale com o consultório.</p>`:""}
      ${r.cv?`<p style="color:var(--crit);margin:6px 0 0">Sintoma registrado. O consultório foi avisado. Não retome o treino antes de falar com o Dr. Henrique.</p>`:""}</div>
    ${r.prox.length?`<div class="card"><div class="kicker">Próxima vez neste treino</div>${r.prox.map(p=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><b>${esc(p.nome)}: ${p.sobe?`${fkg(p.de)} → ${fkg(p.kg)} kg`:`${p.un==="kg"?fkg(p.kg)+" kg × ":""}${p.reps}${p.un==="seg"?" seg":""}`}</b><div class="note">${esc(p.motivo)}</div></div>`).join("")}</div>`:""}
    <button type="button" class="btn ghost wide" data-a="novo">Voltar ao início</button>`;
@@ -1254,14 +1428,14 @@ function salvar(){
   const {series,cardio,hyrox}=coletar();
   const antes={}; for(const s of historico()) for(const x of s.series){ if(x.trab) continue; const v=e1rm(x.kg,x.reps,x.rir); if(v&&(!antes[x.ex]||v>antes[x.ex])) antes[x.ex]=v; }
   const pr=(!S.prontPulou && Object.values(S.pront).every(v=>v!=null))?{...S.pront}:null;
-  const payload={client_id:uid(), data:HOJE(), dia_id:d.id, dia:d.nome, tipo:d.tipo, cat:d.cat||null, cs:d.cs||null, /* HAG_TREINO_CATALOGO_v1 */ inicio:S.inicio?new Date(S.inicio).toISOString():null, dur, rpe, pront:pr, cv:S.cv, series, cardio, hyrox};
+  const payload={client_id:uid(), data:HOJE(), dia_id:d.id, dia:d.nome, tipo:d.tipo, cat:d.cat||null, cs:d.cs||null, /* HAG_TREINO_CATALOGO_v1 */ inicio:S.inicio?new Date(S.inicio).toISOString():null, dur, rpe, pront:pr, cv:S.cv, series, cardio, hyrox, ...(S.notaCorrida?{nota:S.notaCorrida}:{})}; /* HAG_TREINO_CORRIDA_GUIADA_v1: parada por dor vai na nota da sessão */
   FILA.push(payload); store.set("hagtreino.fila",FILA); store.del("hagtreino.rascunho");
   const rec=[], vistos=new Set();
   for(const x of series){ if(x.trab) continue; const v=e1rm(x.kg,x.reps,x.rir); if(v&&antes[x.ex]&&v>antes[x.ex]+.05&&!vistos.has(x.ex)){ rec.push(`${esc(EX(x.ex).nome)}: força estimada ${fmt(v)} kg (melhor anterior ${fmt(antes[x.ex])})`); vistos.add(x.ex);} }
   const dor=[...new Set(series.filter(x=>x.dor>=4).map(x=>EX(x.ex).nome))];
   const prox=its.filter(it=>it.mod==="forca"||it.mod==="mobilidade").map(it=>({nome:EX(it.id).nome, un:(it.livre&&EX(it.id).un==="kg")?"pc":EX(it.id).un, ...sugestao(it)})); /* HAG_TREINO_LIVRE_v1: sem "0 kg" no treino de qualquer lugar */
   const partes=[series.length?`${series.length} ${series.length===1?"série":"séries"}`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} ${hyrox.length===1?"tempo":"tempos"}`:""].filter(Boolean).join(" · ");
-  S.salvo={n:series.length, um:series.filter(x=>x.um).length, rpe, dur, ci:rpe*dur, rec, dor, prox, cv:S.cv, partes, enviada:false};
+  S.salvo={n:series.length, um:series.filter(x=>x.um).length, rpe, dur, ci:rpe*dur, rec, dor, prox, cv:S.cv, partes, enviada:false, nota:S.notaCorrida||""};
   if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; }
   render();
   enviarFila().then(ok=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
@@ -1316,6 +1490,13 @@ vHoje.addEventListener("click", e=>{
     if(!((a==="kg-"||a==="kg+") && !A.sug)) A.mexeu=true; return render();
   }
   if(a==="sup"){ S.cardio[S.i].sup=b.dataset.v; return render(); }
+  /* HAG_TREINO_CORRIDA_GUIADA_v1 */
+  if(a==="guia"){ const G=gCadeia(S.i); if(G) gIniciar(G); return render(); }
+  if(a==="gpausa"){ const g=gAtual(); if(g&&!g.pausa){ g.pausa=Date.now(); salvarRascunho(); } return render(); }
+  if(a==="gseguir"){ const g=gAtual(); if(g&&g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; somPronto(); manterTelaAcesa(); salvarRascunho(); } return render(); }
+  if(a==="gfiz"||a==="gpula"){ const g=gAtual(); if(g){ if(g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; } const s=g.segs[g.k], d=gDecorrido(g); gAvanca(g, s.seg?Math.min(d,s.seg):d); } return render(); }
+  if(a==="gfim"){ gEncerrar("parou"); return render(); }
+  if(a==="gdor"){ gEncerrar("dor"); return render(); }
   if(a==="cardiook"){ const c=S.cardio[S.i]; if(num(c.min)==null && num(c.km)==null){ document.getElementById("cardio-msg").textContent="Preencha pelo menos o tempo ou a distância."; return; } c.ok=true; salvarRascunho(); avancar(0); return render(); }
   if(a==="hxstart"){ somPronto(); S.crono={i:S.i,t0:Date.now()}; return render(); }
   if(a==="hxstop"){ const it=itens()[S.i]; const seg=Math.round((Date.now()-S.crono.t0)/1000); (S.voltas[S.i] ||= []).push({seg, kg:S.cargaHx.kg}); S.crono=null; clearInterval(tickCrono); salvarRascunho();
