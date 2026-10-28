@@ -809,7 +809,7 @@ const livres = () => (CTX && Array.isArray(CTX.livres)) ? CTX.livres : [];
    (card em_casa). Programa com semanas conta a semana a partir de inicio (gravado no primeiro "Começar"). */
 const CORES = {verde:"#5DD39E", dourado:"#E3B964", azul:"#6CB4F0", rosa:"#F08CB4", vermelho:"#FF8A80", grafite:"#A9B1C2", laranja:"#F0A35A", lilas:"#B79CF0", amarelo:"#F2D35B"};
 function cats(){
-  const c=(CTX && Array.isArray(CTX.catalogo)) ? CTX.catalogo : null; if(c){ for(const x of c) if(x.id==="corrida_5k") ajustaPonte(x); return c; }   /* HAG_TREINO_CORRIDA_PONTE_v1 */
+  const c=(CTX && Array.isArray(CTX.catalogo)) ? CTX.catalogo : null; if(c){ for(const x of c){ if(x.id==="corrida_5k") ajustaPonte(x); else if(LONGOS[x.id]||x.id==="corrida_42k") ajustaLongos(x); } return c; }   /* HAG_TREINO_CORRIDA_PONTE_v1 */
   const L=livres(); return L.length ? [{id:"em_casa", nome:"Em casa", sub:"Peso do corpo · casa, hotel, viagem", tipo:"bloco", niveis:["iniciante","intermediario"], lib:true, sessoes:L.map(l=>({...l, pc:true}))}] : [];
 }
 const catLib = () => cats().filter(c=>c.lib);
@@ -1240,6 +1240,20 @@ function planoPonte(t5){
   for(let i=0;i<slots.length;i+=2){ const a=slots[i], b=slots[i+1]; semanas.push(b===undefined ? ["leve", a] : [a, "leve", b]); }
   return {s8:longs[0], semanas};
 }
+/* HAG_TREINO_CORRIDA_TODOS_v1 (28/10/2026): pedido do Dr. Henrique, "o que fizemos para a de 5 km tem que fazer para
+   todos os cards". Perguntas, pace e esteira já valiam para todos. Agora:
+   - entrada pela pergunta de quanto corre: Rumo aos 5 km e o card novo Começar a correr (os outros têm pré-requisito e
+     começam na semana 1, para não pular a base de volume);
+   - longões no ritmo de cada um (10 km, 15 km, meia): o mais longo vai até o tempo estimado da prova (10 km), 90% (15 km)
+     ou 85% (meia), com teto de 90, 120 e 150 min; sobe em rampa da semana 1 até o pico, no máximo +20%, e as semanas
+     depois do pico (alívio e véspera) sobem na mesma proporção. Quem é rápido segue o plano como está;
+   - maratona: longão em km que passaria de 3 h no ritmo leve da pessoa vira "180 min leve, cerca de X km";
+   - aviso quando a pessoa corre menos que o pré-requisito do programa. */
+const ENTRADA={corrida_5k:entrada5k, corrida_inicio:m=>m>=3?5:m>=1?3:1};
+const LONGOS={corrida_10k:{km:10,z:"r10",fr:1,teto:90}, corrida_15k:{km:15,z:"r15",fr:0.9,teto:120}, corrida_21k:{km:21.1,z:"r21",fr:0.85,teto:150}};
+function fatorLongo(cfg,p5,maxL){ if(!cfg||!p5||!(maxL>0)) return 1; const d=ZONAS[cfg.z], tp=cfg.km*(p5+(d[0]+d[1])/2)/60, alvo=Math.min(cfg.fr*tp, cfg.teto), f=alvo/maxL; return f<1.02?1:Math.min(1.2, Math.round(f*100)/100); }
+function rampaLongo(n,w,pico,f){ const r=w>=pico?f:1+(f-1)*(w-1)/Math.max(1,pico-1); return Math.round(n*r); }
+function tetoMaratona(km,p5,teto){ teto=teto||180; if(!p5||!(km>0)) return null; const t=km*(p5+75)/60; return t>teto?{min:teto, km:Math.round(teto*60/(p5+75))}:null; }
 /* HAG_CORRIDA_PACE_FIM */
 function t5Corrida(c){   /* minutos para os 5 km no leve: pelo perfil (P5 + 75 s/km) ou pelas corridas contínuas registradas */
   const p5=p5Perfil(perfilCorrida()); if(p5) return 5*(p5+75)/60;
@@ -1267,6 +1281,26 @@ function ajustaPonte(c){
     else novas.push({...mk(sl,`${longo.id}_p${w}_${k+1}`,w), nome}); }); });
   c.sessoes=c._sessOrig.map(x=>x===teste?{...mk(pl.s8,teste.id,8), nome:teste.nome}:x).concat(novas);
   c.semanas=N0+pl.semanas.length; c._ponte=pl.semanas.length;
+}
+function ajustaLongos(c){   /* HAG_TREINO_CORRIDA_TODOS_v1 */
+  if(!c||!c.lib||!Array.isArray(c.sessoes)) return; if(!c._sessOrig) c._sessOrig=c.sessoes;
+  const p5=p5Perfil(perfilCorrida()), cfg=LONGOS[c.id], chave=c.id+"|"+(p5||""); if(c._lgKey===chave) return; c._lgKey=chave;
+  c.sessoes=c._sessOrig; c._longoMsg=""; if(!p5) return;
+  const wOf=s=>(s.semanas||[])[0]||0;
+  if(cfg){
+    const re=/^(\d+) min leve/, minDe=s=>{ const it=(s.itens||[]).find(it=>it.ex==="corrida"&&re.test(it.alvo||"")); return it?+it.alvo.match(re)[1]:0; };
+    const longos=c._sessOrig.filter(s=>/^longo/i.test(s.nome||"")&&minDe(s)>0);
+    let maxL=0, pico=0; for(const s of longos){ const n=minDe(s); if(n>maxL){ maxL=n; pico=wOf(s); } }
+    const f=fatorLongo(cfg,p5,maxL); if(f<=1) return;
+    c.sessoes=c._sessOrig.map(s=>!longos.includes(s)?s:{...s, itens:s.itens.map(it=>it.ex==="corrida"&&re.test(it.alvo||"")?{...it, alvo:String(it.alvo).replace(re,(x,n)=>`${rampaLongo(+n,wOf(s),pico,f)} min leve`)}:it)});
+    c._longoMsg=`Seus longões acompanham o seu ritmo: o mais longo fica em ${rampaLongo(maxL,pico,pico,f)} min.`;
+  } else if(c.id==="corrida_42k"){
+    const rk=/^(\d+(?:[.,]\d+)?) km leve/; let n=0, kmMax=0;
+    c.sessoes=c._sessOrig.map(s=>{ let mud=false; const its=(s.itens||[]).map(it=>{ const m=String(it.alvo||"").match(rk); if(it.ex!=="corrida"||!m) return it;
+      const t=tetoMaratona(gNum(m[1]),p5); if(!t) return it; mud=true; kmMax=t.km; return {...it, alvo:String(it.alvo).replace(rk,`${t.min} min leve, cerca de ${t.km} km no seu ritmo`)}; });
+      if(mud) n++; return mud?{...s,itens:its}:s; });
+    if(n) c._longoMsg=`Longões limitados a 3 h no seu ritmo (cerca de ${kmMax} km), para proteger a recuperação.`;
+  }
 }
 let qCor=null;   /* rascunho das 4 perguntas */
 const perfilCorrida = () => (CTX && CTX.corrida_perfil) || null;
@@ -1308,6 +1342,9 @@ function perfilResumoHTML(c){ const pf=perfilCorrida(); if(!pf) return ""; const
    ${w0>1?`<div style="font-size:14px">Você começa na <b>semana ${w0}</b>.</div>`:""}
    ${L?`<div style="font-size:14px">Seu leve: <b>${txtFaixa(L,pf.local)}</b></div>`:""}
    ${c._ponte?`<div style="font-size:14px">Seu programa ganhou <b>${c._ponte} ${c._ponte>1?"semanas":"semana"} de ponte</b> para chegar aos 5 km no seu ritmo.</div>`:""}
+   ${c._longoMsg?`<div style="font-size:14px">${esc(c._longoMsg)}</div>`:""}
+   ${c.id==="corrida_inicio"&&+pf.corre_min>=3?`<p class="note" style="margin:4px 0 0">Você já corre alguns minutos: o Rumo aos 5 km pode ser o próximo passo. Fale com o Dr. Henrique.</p>`:""}
+   ${["corrida_10k","corrida_15k","corrida_21k","corrida_42k","corrida_5k_rapido"].includes(c.id)&&+pf.corre_min<30?`<p class="note" style="margin:4px 0 0;color:var(--warn)">Pré-requisito: ${esc(c.req||"correr 30 min sem parar.")} Hoje você corre menos que isso; fale com o Dr. Henrique antes de começar.</p>`:""}
    ${c.id==="corrida_5k"&&+pf.corre_min>=30?`<p class="note" style="margin:4px 0 0">Você já corre 30 minutos: fale com o Dr. Henrique sobre o 5 km mais rápido ou o 10 km.</p>`:""}</div>`;
 }
 function qSalvar(){
@@ -1315,7 +1352,7 @@ function qSalvar(){
   const pf={corre_min:+q.min, local:q.local, dor4sem:q.dor===true||q.dor==="true", pace_conf_seg:null, teste_km:null, teste_seg:null, questionario:true, entrada:{}};
   if(pf.corre_min>=5 && q.modo==="teste"){ const sg=tempoSeg(q.tempo); if(!sg||sg/q.km<150||sg/q.km>1200){ q.erro="Escreva o tempo da prova, por exemplo 32:30."; return renderLivre(); } pf.teste_km=+q.km; pf.teste_seg=sg; }
   if(pf.corre_min>=5 && q.modo==="pace"){ const sg=tempoSeg(q.pace); if(!sg||sg<150||sg>1200){ q.erro="Escreva o pace em minutos por km, por exemplo 7:00."; return renderLivre(); } pf.pace_conf_seg=sg; }
-  for(const k of catLib().filter(ehCorrida)) if(k.id==="corrida_5k" && !feitasCat(k).length) pf.entrada[k.id]=entrada5k(pf.corre_min);
+  for(const k of catLib().filter(ehCorrida)) if(ENTRADA[k.id] && !feitasCat(k).length) pf.entrada[k.id]=ENTRADA[k.id](pf.corre_min);   /* HAG_TREINO_CORRIDA_TODOS_v1 */
   const old=perfilCorrida();
   if(CTX) CTX.corrida_perfil={...(old||{}), ...pf, entrada:{...((old&&old.entrada)||{}), ...pf.entrada},
     dor_liberada_em:pf.dor4sem?null:((old&&old.dor_liberada_em)||null), atualizado_em:new Date().toISOString()};
