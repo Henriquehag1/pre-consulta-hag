@@ -235,8 +235,14 @@ function corridaPainelHTML(P){
         :pf.dor4sem?`<p class="note" style="margin:6px 0 0">Relatou dor; liberado por ${esc(pf.dor_liberada_por||"")} em ${br(String(pf.dor_liberada_em).slice(0,10))}.</p>`:""}
   </div>`;
 }
+const NF_MOT={sem_tempo:"sem tempo",cansaco:"cansaço",doente:"doente",dor:"dor",viagem:"viagem",outro:"outro"};   /* HAG_TREINO_NAO_FIZ_v1 */
 function historia(P){
   const h=P.historico||[], L=[], prog=P.programa;
+  /* HAG_TREINO_PAUSA_v1 (28/10/2026): pausa do médico no alto */
+  const pz=P.pausa_info; if(pz) L.push({c:"r",t:`Treino pausado desde ${brA(String(pz.inicio).slice(0,10))}${pz.motivo?": "+pz.motivo:""}. O paciente vê só "fale com o Dr. Henrique".`});
+  /* HAG_TREINO_NAO_FIZ_v1 (28/10/2026): dias que o paciente avisou que não ia treinar, últimos 28 dias */
+  const nf=(P.nao_feitos||[]).filter(x=>diasAtras(x.data)<28);
+  if(nf.length) L.push({c:nf.some(x=>x.motivo==="dor"||x.motivo==="doente")?"y":"n",t:`Avisou que não ia treinar em ${nf.length} ${nf.length===1?"dia":"dias"}: ${nf.map(x=>`${br(x.data)} ${NF_MOT[x.motivo]||x.motivo}`).join(", ")}.`});
   const cpf=P.corrida_perfil; if(cpf && cpf.dor4sem && !cpf.dor_liberada_em) L.push({c:"r",t:"Relatou dor ao correr nas últimas 4 semanas. Os programas de corrida estão pausados até você liberar no cartão Corrida."});   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
   if(!h.length){ L.push({c:"n",t:prog?"Programa ativo, nenhuma sessão registrada ainda.":"Sem programa ativo e sem sessões registradas."}); return L; }
   const ult=h.at(-1), cv=h.filter(s=>s.cv && diasAtras(s.data)<=60);
@@ -287,6 +293,10 @@ function renderPaciente(){
   h+=`<div><div class="kicker">${esc(P.paciente.plano||"")}</div><h2>${esc(P.paciente.nome)}</h2>
      <div class="note">${prog?`Programa ativo: ${esc(prog.nome)} v${prog.versao}, desde ${brA(prog.inicio)}`:"Sem programa ativo"}${rasc.length?` · ${rasc.length} rascunho${rasc.length>1?"s":""} aguardando publicação`:""}</div></div>
    <div class="card"><div class="kicker">O que aconteceu</div><ul class="hist">${H.map(l=>`<li class="${l.c}"><i></i><span>${esc(l.t)}</span></li>`).join("")}</ul></div>`;
+  /* HAG_TREINO_PAUSA_v1: pausar ou retomar todo o treino deste paciente */
+  const pz=P.pausa_info;
+  h+=pz?`<div class="card" style="border:1px solid var(--crit)"><div class="row between" style="gap:10px"><div><h3 style="margin:0">Treino pausado</h3><div class="note">Desde ${brA(String(pz.inicio).slice(0,10))}${pz.por?" · "+esc(pz.por):""}${pz.motivo?" · "+esc(pz.motivo):""}</div></div><button class="btn small" data-a="pausaoff">Retomar treino</button></div></div>`
+    :`<div class="card"><div class="row between" style="gap:10px;align-items:flex-end"><div class="f" style="flex:1;min-width:200px"><label class="lbl" for="pausamot">Pausar todo o treino (lesão, exame, procedimento)</label><input id="pausamot" placeholder="motivo · só você vê"></div><button class="btn small ghost" data-a="pausaon">Pausar treino</button></div></div>`;
   if(tr.length) h+=`<div class="card"><h3>Cargas travadas por dor</h3><p class="note">Liberar devolve a progressão ao exercício. A decisão é sua, depois de avaliar.</p>
      ${tr.map(t=>`<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${esc(EX(t.ex).nome)}</b> <span class="tag r">dor ${t.dor}</span><div class="note">${br(t.data)}${t.local?" · "+esc(t.local):""}${t.lado?" "+esc(t.lado):""}${t.tipo?" · parece "+esc(t.tipo):""}</div></div><button class="btn small" data-a="liberar" data-v="${esc(t.ex)}">Liberar a progressão</button></div>`).join("")}</div>`;
   if(hist.length) h+=`<div class="grid">
@@ -517,6 +527,8 @@ main.addEventListener("click",e=>{
   if(a==="catoff") return acao(async()=>{ await api(`treino_catalogo_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&catalogo_id=eq.${encodeURIComponent(v)}`,{method:"DELETE"}); await lerCat(); },"Programa retirado deste paciente. As sessões já feitas continuam no histórico.");
   if(a==="cataprova"){ if(E.catConf!==v){ E.catConf=v; return render(); } E.catConf=null; return acao(async()=>{ await api(`treino_catalogo?id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:{aprovado:true,atualizado_em:new Date().toISOString()}}); await lerCat(); },"Programa aprovado. Passa a aparecer no app de todos os pacientes, com cadeado para quem não tem liberação."); }
   if(a==="corlib") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api(`treino_corrida_perfil?patient_id=eq.${encodeURIComponent(E.pid)}`,{method:"PATCH",body:{dor_liberada_em:new Date().toISOString(),dor_liberada_por:(s&&s.user)||"painel"}}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Corrida liberada. O paciente já pode começar.");   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
+  if(a==="pausaon") return acao(async()=>{ const s=Auth.session&&Auth.session(), m=(document.getElementById("pausamot")||{}).value||""; await api("treino_pausas",{method:"POST",body:{patient_id:E.pid,motivo:m.trim()||null,por:(s&&s.user)||"painel"}}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Treino pausado. O paciente vê o aviso na próxima vez que abrir o app.");   /* HAG_TREINO_PAUSA_v1 */
+  if(a==="pausaoff") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api(`treino_pausas?patient_id=eq.${encodeURIComponent(E.pid)}&fim=is.null`,{method:"PATCH",body:{fim:new Date().toISOString(),fim_por:(s&&s.user)||"painel"}}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Treino retomado. O paciente volta a ver o programa.");
   if(a==="gerarlink") return acao(async()=>{ await rpc("hag_treino_link",{p_patient_id:E.pid}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Link criado.");
   if(a==="copiar"){ const t=document.getElementById("link").textContent; return acao(async()=>{ await navigator.clipboard.writeText(t); },"Link copiado."); }
   if(p){
