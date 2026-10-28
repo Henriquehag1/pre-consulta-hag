@@ -1,0 +1,34 @@
+# HAG_OS_CI_v1 (28/10/2026): produz o check "Testes e integridade" que a protecao do main exige,
+# para as paginas do HAG OS. O HAG RUN tem o seu proprio workflow no branch dele.
+name: HAG OS CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hag-os-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Testes e integridade
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Configurar Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Sintaxe das paginas e scripts
+        run: node .github/scripts/check-paginas.mjs
