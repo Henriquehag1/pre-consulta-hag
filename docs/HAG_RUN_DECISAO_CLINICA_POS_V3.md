@@ -1,11 +1,14 @@
-# HAG RUN, registro do parecer clínico após a matriz v3
+# HAG RUN, registro de decisões clínicas após a matriz v3
 
-**Data do registro:** 27/10/2026
-**Status:** registro de decisão preliminar. Não aprova parâmetros numéricos, não autoriza implementação clínica nem liberação a pacientes.
+**Data do registro original:** 27/10/2026
+**Atualização:** 27/10/2026
+**Status:** registro histórico acrescido de aprovação expressa de dez diretrizes de produto. A aprovação não valida parâmetros clínicos numéricos nem libera o sistema para uso assistencial.
+
+**Leitura vigente:** a seção 8 é a decisão mais recente e prevalece sobre estados provisórios das seções anteriores somente nos dez itens que enumera. Todo parâmetro não explicitamente coberto permanece pendente.
 
 ## 1. Documentos de referência
 
-Este adendo registra o parecer recebido após a revisão da [matriz clínica proposta v3 R0–R2](HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v3_R0-R2.md). A v3 permanece como referência comparativa, sem ser substituída por uma v4. A [especificação clínica preliminar](HAG_RUN_ESPECIFICACAO_CLINICA_v1.md) continua sendo a lista principal de requisitos pendentes.
+Este registro preserva o parecer recebido após a revisão da [matriz clínica proposta v3 R0–R2](HAG_RUN_MATRIZ_CLINICA_PROPOSTA_v3_R0-R2.md). A v3 permanece como referência histórica. A especificação consolidada vigente é [HAG_RUN_ESPECIFICACAO_FINAL_v1.md](HAG_RUN_ESPECIFICACAO_FINAL_v1.md). A seção 8 abaixo atualiza somente as decisões expressamente aprovadas em 27/10/2026; pareceres anteriores permanecem como histórico e não se sobrepõem a essa atualização.
 
 ## 2. Parecer registrado
 
@@ -95,3 +98,33 @@ O parecer recebido considera adequada a arquitetura da triagem breve, dos estado
 | Implementação | Nenhuma autorização para modificar regras clínicas do motor. | Não autorizada |
 
 A próxima prioridade clínica é definir critérios de progressão, manutenção, redução concreta de carga e retorno após interrupções. A preferência pelo Modelo B de R2 permanece apenas como hipótese de refinamento.
+
+
+## 8. Aprovação expressa de diretrizes de produto, 27/10/2026
+
+O médico responsável aprovou expressamente as dez diretrizes abaixo. A aprovação está limitada à redação desta lista. Não converte parâmetros de matrizes, limiares do código ou recomendações deste registro em protocolo clínico aprovado.
+
+| # | Diretriz aprovada | Limite que permanece pendente |
+|---:|---|---|
+| 1 | População inicial adulta. | Exclusões e critérios adicionais de elegibilidade. |
+| 2 | Objetivo principal: completar 5 km contínuos. | Protocolo de avaliação e prontidão. |
+| 3 | R0–R4 no escopo inicial; R5 reservado para versão futura. | Cortes funcionais e critérios finais de entrada R4. |
+| 4 | Duas ou três sessões semanais individualizadas. | Escolha da frequência e espaçamento por perfil. |
+| 5 | Intensidade inicial predominantemente leve. | Escala, faixa de RPE, talk test e parâmetros operacionais. |
+| 6 | Autorização médica obrigatória do primeiro plano. | Campos, escopo codificável, validade e fluxos de revisão. |
+| 7 | Adaptação automática somente dentro do escopo autorizado. | Envelope quantitativo e eventos invalidadores. |
+| 8 | Avaliação do ciclo completo. | Métricas, limiares, janela e tratamento de sessões parciais. |
+| 9 | Quatro resultados: progredir, manter, reduzir ou revisão profissional. | Gatilhos e dose concreta de manutenção/redução. |
+| 10 | Conclusão baseada em 5 km contínuos efetivamente registrados. | Método de medição, tolerância operacional e registro de interrupções. |
+
+### 8.1 Efeito sobre o parecer anterior
+
+As afirmações nas seções 2 a 7 que diziam que a progressão automática, autorização inicial e escopo de R5 não estavam decididos são registros do estado anterior à aprovação. Para fins de decisão vigente, aplicar a lista da seção 8 e a classificação MED-01 a MED-26 da especificação consolidada. Os parâmetros não contemplados continuam pendentes. Em particular, esta aprovação **não** aprova tempos de corrida/caminhada, frequências por nível, limiares de RPE/dor/fadiga, janela de carga, regra de progressão, dose de redução, retorno após interrupção, protocolo de urgência nem fórmula R3/R4.
+
+### 8.2 Quadro residual único
+
+O único quadro residual vigente está na seção 17 de [HAG_RUN_ESPECIFICACAO_FINAL_v1.md](HAG_RUN_ESPECIFICACAO_FINAL_v1.md). Ele recomenda decisões específicas para cada assunto ainda aberto, preservando alternativas quando não há base para selecionar um parâmetro. Não manter tabelas paralelas de pendências neste registro; usar aquele quadro como referência para a revisão conjunta.
+
+### 8.3 Limites de implementação
+
+A aprovação de diretrizes de produto não autoriza por si só alterar código clínico. Motor, interface, RPCs, migrações, Supabase e produção permanecem inalterados nesta atualização documental. Implementar somente após registrar os parâmetros clínicos específicos aplicáveis e convertê-los em critérios verificáveis e testes.

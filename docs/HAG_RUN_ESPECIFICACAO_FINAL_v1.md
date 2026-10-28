@@ -1,14 +1,14 @@
-# HAG RUN v1.0, especificação clínica consolidada para aprovação
+# HAG RUN v1.0, especificação clínica consolidada e registro de aprovação parcial
 
-**Estado: documento único de requisitos e propostas. Não é protocolo assistencial aprovado, não autoriza alterar o motor clínico e não autoriza uso com pacientes.**
+**Decisão registrada em 27/10/2026:** o médico responsável aprovou expressamente dez diretrizes de produto e governança listadas na seção 1.1. Essa aprovação não inclui doses, limiares, triagem detalhada ou regras numéricas que não foram apresentados. A especificação não equivale ainda a protocolo assistencial completo nem autoriza implementação clínica ou uso com pacientes.
 
-**Escopo desta versão:** consolidar decisões recebidas, propostas ainda em discussão, comportamento observado no código e requisitos verificáveis para uma futura implementação. Quando faltar decisão clínica, a regra fica explicitamente pendente e o comportamento seguro é bloquear a decisão automatizada correspondente, sem inventar um limiar.
+**Escopo desta versão:** consolidar decisões expressas, propostas ainda pendentes, comportamento observado no código e requisitos verificáveis para futura implementação. Parâmetro não aprovado permanece pendente; não preencher lacunas por inferência.
 
 ## 1. Resumo executivo e vocabulário de decisão
 
-O HAG RUN é proposto como módulo adaptativo do HAG OS para acompanhar uma pessoa desde a triagem até a tentativa de completar 5 km continuamente, com decisão profissional e registro longitudinal. R0–R5 são categorias funcionais provisórias, não diagnóstico, risco cardiovascular ou liberação médica.
+O HAG RUN v1.0 destina-se à população adulta, com objetivo principal de completar 5 km contínuos efetivamente registrados. O escopo inicial inclui R0–R4; R5 fica reservado para versão futura. R0–R4 são níveis funcionais, não diagnóstico, risco cardiovascular ou liberação médica.
 
-A governança proposta pelo responsável é híbrida: após triagem e avaliação completas, o estado VERDE pode seguir para prescrição sem clique médico obrigatório em todos os casos, salvo decisão institucional em contrário; a primeira prescrição que exigir decisão médica recebe uma autorização inicial simples, uma única vez, por cartão com quatro ações. O profissional autoriza o plano e o escopo. Adaptações seguintes só podem ocorrer dentro dos limites previamente aprovados. Intercorrência pode suspender a corrida e solicitar revisão. Alteração além do escopo ou restrição exige nova decisão registrada. Essa política operacional é proposta; a decisão institucional sobre revisão obrigatória de todos os pacientes segue pendente.
+O médico responsável aprovou autorização médica obrigatória do primeiro plano e adaptação automática posterior somente dentro do escopo autorizado. O sistema deve avaliar o ciclo completo e retornar um de quatro resultados: progredir, manter, reduzir ou revisão profissional. A intensidade inicial será predominantemente leve. Os pacientes poderão receber duas ou três sessões semanais individualizadas. A aprovação do princípio não define frequência por nível, escala/limiar de intensidade, dose, critérios quantitativos para cada resultado ou envelope de adaptação. Conclusão exige 5 km contínuos efetivamente registrados; 30 minutos corridos não equivalem automaticamente a 5 km.
 
 Legenda usada ao longo do documento:
 
@@ -18,18 +18,39 @@ Legenda usada ao longo do documento:
 - **Não definido:** não há regra implementada nem parâmetro aprovado. Não preencher por inferência.
 - **Gate:** condição que impede automação até existir dado ou decisão autorizada.
 
-### 1.1 Consolidações recebidas
+### 1.1 Dez diretrizes expressamente aprovadas em 27/10/2026
 
-| Tema | Estado consolidado | Limite |
+| # | Diretriz aprovada | O que a aprovação não define |
+|---:|---|---|
+| 1 | População inicial adulta. | Critérios adicionais de elegibilidade, exclusões e necessidade de avaliação presencial. |
+| 2 | Objetivo principal: completar 5 km contínuos. | Método de mensuração, tolerância do GPS, protocolo e critérios clínicos de prontidão. |
+| 3 | Escopo inicial R0–R4; R5 reservado para versão futura. | Cortes funcionais finais e regras de entrada R4. |
+| 4 | Duas ou três sessões semanais, individualizadas. | Como selecionar frequência e espaçamento de cada pessoa. |
+| 5 | Intensidade inicial predominantemente leve. | Escala, faixa de RPE, talk test operacional, ritmos ou exceções. |
+| 6 | Autorização médica obrigatória do primeiro plano. | Campos clínicos, restrições codificáveis e forma detalhada de validade. |
+| 7 | Adaptação automática somente dentro do escopo autorizado. | Limites numéricos e eventos que suspendem/invalidam cada adaptação. |
+| 8 | Decisão baseada na avaliação do ciclo completo. | Métricas, janela, peso de sessões parciais e critérios de suficiência. |
+| 9 | Quatro resultados: progredir, manter, reduzir ou revisão profissional. | Gatilhos objetivos e dose concreta de manter/reduzir. |
+| 10 | Conclusão baseada em 5 km contínuos efetivamente registrados. | Método de medição, margem de erro, intensidade e confirmação de recuperação. |
+
+### 1.2 Princípios ainda vigentes
+
+| Tema | Princípio | Parâmetros ainda em aberto |
 |---|---|---|
-| Objetivo | Completar 5 km contínuos em esforço confortável, com segurança e recuperação adequada; sem prazo fixo de 12 semanas. | Conforto, prontidão, protocolo e recuperação não têm critérios quantitativos aprovados. |
-| Estrutura funcional | Manter R0–R5 provisoriamente, separada da triagem. | Cortes R4/R5 e entrada final continuam pendentes. |
-| Resultados do ciclo | Distinguir progredir, manter, reduzir e encaminhar para revisão profissional. | Limiares e doses de manter/reduzir não aprovados. |
-| Frequência | Duas ou três sessões podem ser individualizadas; três é padrão proposto apenas quando compatível. | Frequência concreta e espaçamento finais dependem de avaliação. |
-| Dados de carga | Separar capacidade funcional, carga recente tolerada e estágio prescrito. | Janela sugerida de quatro semanas é hipótese da matriz v3, não regra aprovada. |
-| Revisão individual | Médico pode ajustar uma prescrição individual sem alterar o protocolo geral; registrar autor, momento, justificativa, versão-base e alterações. | Papéis e interface administrativa ainda precisam ser implementados e validados. |
-| Segurança | Quatro ações médicas, liberação com escopo, suspensão da corrida quando apropriado e evento novo pode suspender autorização anterior. | Perguntas, combinações, prazos e condutas finais pendentes de aprovação. |
-| Autorização inicial | Modelo híbrido indicado pelo responsável: autorização do primeiro plano quando cabível, adaptação subsequente dentro do escopo. | Exigir clique médico para todo paciente VERDE é decisão de governança pendente. |
+| Segurança e capacidade | Triagem separada da classificação funcional. | Perguntas, combinações, bloqueios e encaminhamentos. |
+| Dose | Separar capacidade funcional, carga recente tolerada e estágio prescrito. | Janela histórica e regra de seleção inicial. |
+| Prescrição individual | Ajuste médico por paciente sem alterar protocolo geral, com registro de autor, quando, por quê e versão. | Papéis, campos, assinatura e trilha técnica. |
+| Retorno | Interrupções por falta, viagem, doença ou lesão não são equivalentes. | Critérios de retomar, reduzir ou reavaliar. |
+| Progressão | Não usar aumento universal de 10% nem semana fixa como autorização automática. | Critérios aprovados por ciclo. |
+
+### 1.3 Vocabulário de decisão
+
+- **Aprovado expressamente:** diretriz aprovada pelo médico no parecer de 27/10/2026, nos limites literais registrados.
+- **Parcialmente aprovado:** princípio ou parte da regra foi aprovada; faltam parâmetros clínicos ou operacionais.
+- **Pendente de decisão clínica específica:** não há decisão suficiente para automatizar a regra.
+- **Comportamento atual:** descrição do código vigente; não significa aprovação clínica.
+- **Proposta pendente:** hipótese em matriz ou análise, ainda sem aprovação.
+- **Gate:** condição que bloqueia automação até haver dado ou decisão autorizada.
 
 ## 2. Objetivo, população e limites
 
@@ -37,11 +58,9 @@ Legenda usada ao longo do documento:
 
 Oferecer avaliação funcional, prescrição individualizada de corrida e caminhada, execução guiada, registro de resposta, adaptação baseada em histórico persistido e acompanhamento médico até um objetivo de 5 km contínuos. O plano não usa uma semana de calendário como garantia de avanço nem presume que 30 minutos contínuos correspondam a 5 km.
 
-### 2.2 População-alvo proposta
+### 2.2 População-alvo
 
-Pessoas acompanhadas no contexto clínico do HAG OS que desejam iniciar ou organizar corrida recreativa até 5 km, bem como pessoas com experiência que possam necessitar de avaliação ou prescrição individual. R5, voltado a desempenho, está no código atual mas excede o objetivo mínimo de concluir 5 km; sua manutenção no escopo v1 precisa de decisão médica.
-
-Idade mínima/máxima, populações excluídas, gestação, doenças específicas, capacidade cognitiva ou funcional e necessidade de consulta presencial não estão definidas. Não inferir elegibilidade a partir de R0–R5.
+A população inicial adulta foi aprovada em 27/10/2026. O escopo inicial é R0–R4; R5 está reservado para versão futura. Continuam pendentes critérios adicionais de elegibilidade, exclusões, populações que demandem fluxo separado e necessidade de avaliação presencial. Não inferir elegibilidade clínica apenas do nível funcional.
 
 ### 2.3 Não objetivos
 
@@ -479,48 +498,74 @@ As matrizes anteriores citam ACSM para triagem pré-participação e CDC para ta
 
 As denominações de funções acima são rastreabilidade do comportamento vigente. Se o código mudar, a revisão deve confirmar linhas/funções atuais antes de converter esta especificação em implementação.
 
-## 16. Quadro único de decisões médicas pendentes
+## 16. Classificação das decisões MED-01 a MED-26
 
-Este é o quadro consolidado para revisão conjunta. “Recomendação” orienta debate; não é aprovação nem implementação. Alternativas são preservadas quando existem decisões anteriores.
+A classificação abaixo aplica somente as diretrizes expressamente aprovadas em 27/10/2026 e decisões anteriores explicitamente registradas. “Aprovado expressamente” não amplia o texto aprovado. Valores, critérios ou comportamentos não apresentados permanecem no quadro residual seguinte.
 
-| ID | Decisão pendente | Recomendação para avaliação | Alternativas/impacto a decidir | Prioridade |
-|---|---|---|---|---|
-| MED-01 | População elegível, exclusões e necessidade de avaliação presencial | Definir população e contexto HAG antes de qualquer prescrição | Definir escopo restrito a adultos; incluir grupos mediante fluxo específico; excluir grupos até evidência | Bloqueadora |
-| MED-02 | Questionário final, seguimentos, estados e prioridade entre respostas | Aprovar Q1–Q8 revisadas, dados de atividade/intensidade e regra de desconhecido como pendência | Alterar perguntas/combinações; adicionar avaliação dirigida | Bloqueadora |
-| MED-03 | Situações URGÊNCIA, mensagem e orientação brasileira | Validar sinais, texto, interrupção e rota de atendimento | Mensagem geral aprovada; regras diferenciadas por sinal | Bloqueadora |
-| MED-04 | Governança da primeira liberação | Adotar modelo híbrido proposto: primeiro plano revisto quando necessário e adaptação autorizada no envelope | Exigir autorização médica inicial para todos; VERDE seguir sem clique individual conforme política institucional | Bloqueadora de governança |
-| MED-05 | Escopo, validade, revisão e revogação da autorização | Escopo específico e validade definida individualmente, sem prazo universal | Prazo institucional definido; revisão por evento; ambos combinados | Bloqueadora |
-| MED-06 | Restrições e suspensão de corrida versus atividade física geral | VERMELHO suspende corrida HAG RUN; restrição ampla precisa ser explícita | Permitir alternativas somente com decisão profissional documentada | Bloqueadora |
-| MED-07 | Critérios funcionais R0–R3 e método de demonstrar capacidade | Manter cortes provisórios de 5, 15 e 30 min apenas para classificar; confirmar repetibilidade/condição de teste | Outros cortes; classificação sem teste formal | Alta |
-| MED-08 | Critérios finais R4/R5 e necessidade de R5 no produto 5 km | Separar capacidade para completar 5 km de objetivo de desempenho; validar carga e prova recente | R5 fora da v1; trilha avançada independente; manter com critérios revisados | Alta |
-| MED-09 | Janela e métricas de carga recente | Avaliar a janela candidata de quatro semanas, incluindo minutos, frequência, maior bloco, esforço, sintomas e recuperação | Outra janela; histórico não disponível gera avaliação profissional | Bloqueadora para seleção automática |
-| MED-10 | Doses candidatas de R0/R1 e intervalos | Revisar todas as linhas R0-A–J/R1-A–K, aquecimento, recuperação e distinção R0/R1 | Aprovar com ajustes; criar estágios intermediários; substituir matriz | Bloqueadora |
-| MED-11 | Pontes R0→R1 e R1→R2 | Registrar continuidade funcional como motivo distinto de regressão e comparar ciclo 2x/3x | Manter reduções candidatas de 5 min; recalibrar doses; fluxo individual alternativo | Alta |
-| MED-12 | Entrada R2 e candidatos E/G/J | Não mapear só por maior contínuo; condicionar a carga recente e recuperação | Aprovar E/G/J com gate; mudar candidato; abandonar mapeamento | Bloqueadora |
-| MED-13 | Modelo de transição R2 até contínuo | Refinar Modelo B preferido sem afirmar superioridade; comparar adequação da redução de 15 min por 2x/3x com Modelo A | Escolher A, B, modelo diferente por frequência ou nenhum | Bloqueadora |
-| MED-14 | Incrementos e resposta entre estágios R2 | Avaliar incremento candidato de 2 min e repetição/ajuste individual | Usar incremento diferente; adaptar sem incremento fixo; etapa abaixo de 15 min | Bloqueadora |
-| MED-15 | Prescrições R3–R5 | Substituir/ratificar as fórmulas do motor com matriz por sessão e frequência, sem avanço por calendário | Nova matriz; R5 fora da v1; trilhas distintas por objetivo | Bloqueadora |
-| MED-16 | Frequência individual, espaçamento e recuperação | Permitir 2x/3x conforme pessoa e contabilizar exatamente sessões prescritas | Manter ao menos um dia sem corrida; espaçamento individual com gate de recuperação | Alta |
-| MED-17 | Intensidade/RPE/talk test, pace e esteira | Usar alvo leve subjetivo como candidato; pace/velocidade só quando medidos e contextualizados | Definir escalas e faixa; não usar pace em iniciantes; protocolo específico de desempenho | Alta |
-| MED-18 | Progressão no fechamento do ciclo | Considerar dose prescrita versus realizada, maior bloco, esforço, sintomas e recuperação; dados insuficientes não avançam | Aprovar dois eventos tolerados; critérios por frequência; outra combinação | Bloqueadora |
-| MED-19 | Manter e reduzir, com dose concreta | Definir ação por causa, reavaliação e limite do envelope automático | Repetir estágio; reduzir blocos/repetições/frequência; retorno a etapa anterior; decisão individual | Bloqueadora |
-| MED-20 | Dor, sintomas, fadiga e recuperação | Não manter limiar de dor 4/10/RPE/fadiga do código sem validação; separar alerta de limitação musculoesquelética | Escalas/limiares e comportamento por evento aprovados pelo médico | Bloqueadora |
-| MED-21 | Sessão parcial, falta, pausa e adesão | Classificar status/motivo e avaliar contra prescrição individual sem penalizar indisponibilidade automaticamente | Limiares de ciclo; tratamento distinto por motivo | Alta |
-| MED-22 | Retorno após viagem, doença, lesão ou inatividade | Definir reavaliação por causa, estado clínico e histórico; não reiniciar por prazo arbitrário | Retorno por estágio anterior; novo teste funcional; revisão profissional | Bloqueadora |
-| MED-23 | Check-in pré/pós e sintomas durante execução | Aprovar perguntas breves, seguimentos e prioridade de interrupção | Três perguntas da proposta; conjunto ajustado; regra por evento | Bloqueadora |
-| MED-24 | Prontidão e protocolo de 5 km | Definir distância contínua, método de medição, esforço, sintomas, recuperação e confirmação | Conclusão autorrelatada; medição GPS/manual; confirmação clínica | Bloqueadora |
-| MED-25 | Conteúdo clínico da adaptação automática | Delimitar envelope autorizado, eventos que suspendem, restrições e nova aprovação fora do escopo | Proibir adaptação clínica automática; autorizar somente alterações de baixa consequência previamente limitadas | Bloqueadora de governança |
-| MED-26 | Ajuste individual versionado | Confirmar papéis, campos, assinatura/auditoria e invalidadores | Apenas médico; equipe clínica com permissão definida; justificativa estruturada ou texto curto | Alta |
+| ID | Tema | Classificação | Limite registrado |
+|---|---|---|---|
+| MED-01 | População inicial | **Aprovado expressamente** | População adulta. Exclusões e demais requisitos de elegibilidade pendentes. |
+| MED-02 | Questionário de triagem e combinações | **Pendente de decisão clínica específica** | Oito perguntas e regras por resposta seguem como proposta. |
+| MED-03 | Urgência, sinais e orientação ao paciente | **Pendente de decisão clínica específica** | Sinais, prioridade, texto e conduta não foram definidos pelas dez diretrizes. |
+| MED-04 | Autorização médica do primeiro plano | **Aprovado expressamente** | Primeiro plano exige autorização médica. A forma detalhada da interface e os dados obrigatórios são especificação técnica posterior. |
+| MED-05 | Escopo, validade, revisão e revogação da autorização | **Parcialmente aprovado** | Adaptação fica dentro do escopo autorizado; validade, eventos invalidadores e restrições codificáveis pendem. |
+| MED-06 | Suspensão de corrida versus atividade geral | **Parcialmente aprovado** | A proposta anterior restringe VERMELHO à corrida HAG RUN, salvo ordem ampla explícita; critérios de entrada/saída do estado pendem. |
+| MED-07 | Cortes funcionais R0–R3 | **Parcialmente aprovado** | R0–R4 incluídos no escopo; cortes de minutos e método de demonstração não foram aprovados numericamente. |
+| MED-08 | Critérios R4/R5 | **Parcialmente aprovado** | R4 incluído e R5 reservado para versão futura; critérios funcionais de R4 ainda pendem. |
+| MED-09 | Janela e métricas de carga recente | **Parcialmente aprovado** | Avaliar ciclo completo e individualizar são aprovados; janela de quatro semanas e composição/limiares de carga pendem. |
+| MED-10 | Doses candidatas R0/R1 | **Pendente de decisão clínica específica** | Tabelas, intervalos, aquecimento e recuperação numéricos não foram aprovados. |
+| MED-11 | Pontes R0→R1 e R1→R2 | **Pendente de decisão clínica específica** | Princípio de adaptação individual não aprova doses, teste contínuo ou reduções das pontes. |
+| MED-12 | Entrada R2 e candidatos E/G/J | **Pendente de decisão clínica específica** | Mapeamento e gates de carga continuam propostas. |
+| MED-13 | Modelo de transição R2 até corrida contínua | **Pendente de decisão clínica específica** | Modelos A/B, redução de 15 min e caminho 2x/3x não foram aprovados. |
+| MED-14 | Incrementos e critérios de resposta R2 | **Pendente de decisão clínica específica** | Incremento de dois minutos e repetição/avanço permanecem hipóteses. |
+| MED-15 | Prescrições R3–R5 | **Parcialmente aprovado** | Escopo R0–R4 aprovado e R5 postergado; adequação das fórmulas existentes em R3/R4 e doses finais pendem. |
+| MED-16 | Frequência e espaçamento | **Parcialmente aprovado** | Duas ou três sessões semanais individualizadas aprovadas; seleção por nível, dias mínimos e espaçamento pendem. |
+| MED-17 | Intensidade, RPE, talk test, pace e esteira | **Parcialmente aprovado** | Intensidade inicial predominantemente leve aprovada; escala e parâmetros operacionais pendem. |
+| MED-18 | Progressão após ciclo | **Parcialmente aprovado** | Avaliação do ciclo completo aprovada; suficiência de carga, critérios numéricos e tratamento de dados faltantes pendem. |
+| MED-19 | Progredir, manter, reduzir ou revisão | **Parcialmente aprovado** | Quatro resultados aprovados; gatilhos e dose concreta de manter/reduzir pendem. |
+| MED-20 | Dor, sintomas, fadiga e recuperação | **Pendente de decisão clínica específica** | Limiares e condutas individualizadas não constam das dez diretrizes. |
+| MED-21 | Sessões parciais, faltas e adesão | **Parcialmente aprovado** | Avaliar ciclo completo é aprovado; classificação por motivo e influência no resultado pendem. |
+| MED-22 | Retorno após viagem, doença, lesão ou inatividade | **Pendente de decisão clínica específica** | Nenhum prazo ou regra de retorno foi aprovado. |
+| MED-23 | Check-ins e interrupção durante sessão | **Pendente de decisão clínica específica** | Perguntas, frequência, gatilhos e condutas ainda são propostas. |
+| MED-24 | Conclusão dos 5 km | **Aprovado expressamente** | Exige 5 km contínuos efetivamente registrados; método de medição e tolerância operacional pendem. Não equivale a 30 minutos. |
+| MED-25 | Limites da adaptação automática | **Parcialmente aprovado** | Automação somente dentro do escopo autorizado; envelope quantitativo e eventos que suspendem pendem. |
+| MED-26 | Ajuste individual versionado | **Pendente de decisão clínica específica** | A recomendação de ajuste auditável existe, mas autorização, papéis e campos não foram incluídos nas dez diretrizes aprovadas. |
 
-## 17. Registro de aprovação
+## 17. Quadro residual único para aprovação conjunta
+
+As recomendações abaixo são propostas para decisão do médico responsável. Nenhuma altera o motor ou aprova parâmetros automaticamente. O aceite pode ser registrado por ID MED, com valor, versão e data.
+
+| ID | Decisão concreta ainda necessária | Recomendação para deliberação | Justificativa e alternativas |
+|---|---|---|---|
+| MED-01 | Definir exclusões e critérios adicionais de elegibilidade adulta. | Aprovar uma lista explícita de condições que exigem fluxo individual ou avaliação presencial; até isso existir, sinalizar pendência em vez de inferir elegibilidade. | “Adulto” define faixa geral, mas não resolve populações especiais. Alternativa: escopo v1 mais restrito e ampliar depois. |
+| MED-02 | Aprovar Q1–Q8, atividade atual/intensidade, seguimentos e regra de resposta desconhecida. | Manter desconhecido/omisso como pendência; mapear cada resposta a prosseguir, revisão ou suspensão e especificar seguimentos direcionados. | Evita assumir resposta negativa. Alternativa: triagem clínica profissional completa antes da avaliação funcional. |
+| MED-03 | Definir sinais de urgência e texto/ação no aplicativo. | Aprovar uma lista fechada de sinais para interromper, impedir retomada e exibir orientação de atendimento; revisar a redação brasileira com referências oficiais já listadas. | Segurança não pode depender de limiar de dor musculoesquelética. Alternativa: desativar início guiado até finalizar a mensagem e o fluxo. |
+| MED-05/06 | Definir validade clínica, eventos que suspendem autorização e alcance da suspensão. | Manter liberação vinculada a paciente, objetivo de corrida e restrições; revisar por evento novo relevante; limitar VERMELHO à corrida, salvo restrição ampla explícita; deixar prazo de revisão individual. | Evita autorização genérica/permanente e não proíbe outra atividade sem ordem. Alternativa: validade temporal institucional, que precisa de prazo aprovado. |
+| MED-07 | Ratificar cortes funcionais R0 `<5`, R1 `5–<15`, R2 `15–<30`, R3 `≥30` minutos e método de avaliação. | Confirmar que os cortes classificam capacidade apenas, sem liberar ou determinar dose; definir como registrar teste autorrelatado versus observado. | Mantém continuidade com matrizes existentes sem tratar limites como fisiológicos universais. Alternativa: ajustar cortes ou exigir avaliação clínica para classificação limítrofe. |
+| MED-08 | Definir critério final de entrada R4, mantendo R5 fora da v1. | Usar R4 como trilha de conclusão/ manutenção de capacidade de 5 km, sujeita à carga recente, e não importar automaticamente os cortes atuais de 5 km/8 km/semana. | Evita confundir prova isolada com dose tolerada. Alternativa: restringir a versão inicial a R0–R3 até formalizar R4. |
+| MED-09 | Escolher janela e dados mínimos para carga recente. | Avaliar janela candidata de quatro semanas, com sessões, minutos de corrida/caminhada, maior bloco, frequência prescrita/realizada, esforço, sintomas e recuperação; sem dados, não selecionar dose automaticamente. | A janela vem da proposta v3, não de validação HAG. Alternativa: outra janela ou decisão profissional individual. |
+| MED-10 | Aprovar ou substituir cada linha R0-A–J e R1-A–K, incluindo aquecimento, recuperação e intensidade. | Revisar tabelas estágio a estágio; confirmar que caminhada de recuperação existe somente entre blocos e distinguir as doses R0/R1. | Números atuais são propostas e R0/R1 compartilham código. Alternativa: redesenhar com estágios intermediários. |
+| MED-11 | Aprovar as duas pontes funcionais, seus critérios e razões registradas. | Tratar R0→R1 e R1→R2 como transições de continuidade somente se capacidade e resposta forem demonstradas; decidir se a redução de 5 min por ciclo é aceitável em 2x/3x. | Volume menor pode ser planejado ou sinal de baixa tolerância. Alternativa: ajustar cada frequência ou prescrever ponte individual. |
+| MED-12 | Definir entrada R2 e o uso dos candidatos E/G/J. | Não escolher somente pelo maior tempo contínuo; comparar candidatos de 18/22/28 min corridos por sessão com a carga recente e recuperação. Definir o que fazer quando não há histórico. | Capacidade não equivale a tolerância semanal. Alternativa: abolir mapeamento E/G/J e selecionar por avaliação profissional. |
+| MED-13 | Selecionar desenho da transição R2 à corrida contínua. | Comparar Modelo A com volume por sessão mantido e Modelo B com redução planejada; aprovar também se doses diferem em 2x e 3x. Não presumir superioridade do B. | Evita oscilações sem justificativa e explicita a redistribuição. Alternativa: criar outro desenho ou adiar a automação de R2. |
+| MED-14 | Aprovar incremento contínuo e regra de repetir/ajustar etapa. | Tratar +2 min como candidato apenas; decidir incremento, resposta exigida, frequência de avaliação e entrada abaixo de 15 min. | O valor não foi validado. Alternativa: incremento individual sem valor fixo ou progressão por blocos definidos pelo médico. |
+| MED-15 | Aprovar matriz de R3/R4 ou retirar fórmulas atuais do caminho clínico. | Revisar por sessão a dose existente e trocar avanço por calendário por avaliação do ciclo; deixar R5 fora da v1. | As fórmulas atuais não usam toda a carga recente nem resposta de ciclo. Alternativa: limitar versão inicial a níveis com protocolo aprovado. |
+| MED-16/17 | Definir seleção de 2x/3x, espaçamento e alvo operacional de intensidade leve. | Escolher frequência pela disponibilidade e recuperação; avaliar um dia sem corrida entre sessões como padrão candidato; definir RPE/talk test e quando não usar pace. | A frequência e leveza foram aprovadas, mas não seus valores por nível. Alternativa: critérios individualizados documentados pelo médico. |
+| MED-18/19/21 | Fixar decisão ao fim do ciclo completo e critérios de quatro resultados. | Comparar dose prescrita/realizada, sessões concluídas/parciais/faltas por motivo, maior bloco, esforço, sintomas e recuperação; aprovar critérios sem teto universal de 10%. Definir dose concreta de reduzir e quando manter/reavaliar. | Os quatro resultados estão aprovados; sua execução objetiva ainda não. Alternativa: não automatizar resultado ambíguo e encaminhar para revisão. |
+| MED-20/23 | Aprovar check-in, limiares de dor/fadiga, sintoma, pausa e interrupção. | Separar sinal potencialmente urgente, limitação musculoesquelética e recuperação insuficiente; definir perguntas, ação durante timer, registro parcial e bloqueio/retorno. | O limiar atual de dor 4/10 e limites RPE/fadiga são código existente, não aprovados. Alternativa: revisão profissional sempre que evento não estiver numa regra aprovada. |
+| MED-22 | Definir retorno para falta, viagem, doença, lesão e inatividade. | Criar fluxo por motivo, estado de segurança, histórico ainda relevante e nova capacidade demonstrada; não usar apenas dias decorridos para reiniciar ou avançar. | Tipos de interrupção têm significados diferentes. Alternativa: revisão médica antes de qualquer retorno após doença/lesão. |
+| MED-24 | Definir protocolo técnico de registro dos 5 km. | Registrar distância contínua medida, fonte do dado, tempo e interrupções; não declarar conclusão por 30 minutos. Aprovar método aceito e eventual margem antes de automatizar o selo de conclusão. | A meta foi aprovada, mas GPS, esteira, registro manual e tolerância não. Alternativa: confirmação médica do resultado. |
+| MED-25 | Definir envelope autorizado para adaptação automática. | Autorizar somente mudanças de estágio/frequência/dose explicitamente previstas no plano inicial; qualquer mudança além dos limites, nova restrição ou sinal clínico sai da automação e exige decisão médica. | Concretiza a diretriz aprovada sem presumir autonomia irrestrita. Alternativa: cada ciclo exige nova confirmação médica. |
+| MED-26 | Formalizar ajuste individual, permissão e auditoria. | Permitir ao médico criar uma nova versão vinculada à prescrição-base, registrando valor anterior/novo, motivo, data/hora, autor e escopo; não sobrescrever matriz geral. | Preserva autoria e permite auditoria clínica. Alternativa: primeiro ciclo somente por prescrição fixa, sem ajuste pelo painel, até autenticação/autorização estar homologada. |
+
+**Situação após a decisão de 27/10/2026:** dez diretrizes de produto estão aprovadas. Os itens acima ainda precisam de decisão específica antes que as regras correspondentes sejam implementadas clinicamente. A autorização do primeiro plano e os quatro resultados estão definidos como produto; não estão definidos seus campos e limiares clínicos. Nenhum item numérico foi aprovado por inferência.
+
+## 18. Registro de aprovação
 
 | Item | Decisão | Responsável | Data | Versão/escopo |
 |---|---|---|---|---|
-| Estrutura conceitual R0–R5, segurança separada | Favorável provisoriamente, conforme decisões registradas | Responsável médico |  | Não aprova números |
-| Matriz R0–R2 v3 | Estrutura favorável, alterações obrigatórias ainda em discussão | Responsável médico |  | Proposta comparativa |
-| Triagem e liberação | Arquitetura favorável, regras clínicas pendentes | Responsável médico |  | Proposta v1 |
-| Modelo híbrido de autorização | Recomendação recebida; decisão institucional inicial ainda pendente | Responsável médico/gestor |  | Sem implementação |
-| Parâmetros numéricos e protocolo assistencial | Pendente |  |  | Não liberar a pacientes |
-| Revisão desta especificação integral | Pendente |  |  | Aprovar, rejeitar ou solicitar ajustes por ID MED-* |
+| Dez diretrizes de produto e governança | Aprovadas expressamente nos limites do parecer | Médico responsável | 27/10/2026 | Seção 1.1 desta especificação |
+| Parâmetros clínicos e numéricos não apresentados | Pendentes conforme MED-01 a MED-26 e quadro residual | Médico responsável |  | Não presumir aprovação |
+| Aprovação assistencial integral | Pendente |  |  | Não liberar a pacientes até revisão aplicável |
 
-**Conclusão de prontidão:** requisitos consolidados para revisão única; não há aprovação clínica integral. Implementação clínica permanece bloqueada até que os itens bloqueadores do quadro MED-* sejam decididos e registrados. Nenhuma regra clínica foi alterada neste trabalho.
+**Conclusão de prontidão:** as diretrizes de produto listadas na seção 1.1 foram aprovadas. A especificação clínica integral ainda contém parâmetros e condutas pendentes; implementação clínica permanece bloqueada somente para as regras que dependem dessas decisões. Nenhuma regra do motor foi alterada nesta tarefa.
