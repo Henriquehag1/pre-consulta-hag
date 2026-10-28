@@ -71,7 +71,7 @@ Essas categorias são requisitos semânticos para discussão. Os nomes, campos, 
 | 9 | Incremento contínuo R2 | Dois minutos são apenas um incremento candidato. Quais respostas permitem avançar, repetir, usar incremento diferente ou interromper a sequência? Como considerar blocos de 15 a 30 min e o ciclo correspondente? |
 | 10 | Frequência 2x versus 3x | A mesma progressão contínua pode ser usada com as duas frequências? Qual separação mínima se aplica e como recuperação insuficiente adia o ciclo? |
 
-Esta agenda delimita decisões clínicas; não preenche as respostas. O Modelo B da v3 permanece somente uma hipótese preferida para refinamento, e o Modelo A permanece disponível para comparação.
+Esta agenda delimita decisões clínicas; não preenche as respostas. O Modelo B da v3 permanece somente uma hipótese preferida para refinamento, e o Modelo A permanece disponível para comparação. A proposta de triagem e liberação a revisar linha a linha está em [HAG_RUN_MATRIZ_TRIAGEM_SEGURANCA_LIBERACAO_PROPOSTA_v1.md](HAG_RUN_MATRIZ_TRIAGEM_SEGURANCA_LIBERACAO_PROPOSTA_v1.md).
 
 ## 5. Critérios de implementação futura
 
