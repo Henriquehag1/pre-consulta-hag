@@ -604,6 +604,36 @@ const mmss = s => { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+Str
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const hojeLocal = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(16).slice(2)));
+/* HAG_TREINO_PAUSA_v1 (28/10/2026). Pedido do Dr. Henrique: pausar TODO o treino de um paciente (lesão, exame alterado,
+   pós-procedimento). Com pausa ativa (hag_treino_dados.pausa), Treino, Meu programa e Programas mostram só o aviso; a
+   Evolução continua. O motivo fica no painel, nunca aqui. O banco recusa iniciar programa e avisa o médico se chegar
+   sessão feita durante a pausa. */
+const pausado = () => !!(CTX && CTX.ok && CTX.pausa && !VITRINE);
+const pausaHTML = () => `<div class="card"><div class="kicker">Treino pausado</div><h3>Fale com o Dr. Henrique antes de treinar</h3><p class="sub">Pausado desde ${br(CTX.pausa.desde)}. Ele libera de novo quando for a hora.</p><button type="button" class="btn small ghost" data-a="recarregar" style="margin-top:10px">Atualizar</button></div>`;
+/* HAG_TREINO_NAO_FIZ_v1 (28/10/2026): "Não vou treinar hoje" com motivo. O dia sem treino deixa de ser só ausência:
+   o painel mostra os motivos ao lado da adesão. Um toque grava (hag_treino_nao_fiz); "desfazer" apaga o mesmo registro. */
+const NF_MOT = {sem_tempo:"Sem tempo", cansaco:"Cansaço", doente:"Doente", dor:"Dor", viagem:"Viagem", outro:"Outro"};
+const nfHoje = () => ((CTX && CTX.nao_feitos) || []).find(x => x.data === HOJE()) || null;
+function nfSalvar(m){
+  const cid=uid(); S.nfErro="";
+  return rpc("hag_treino_nao_fiz",{p_token:TOKEN,p:{client_id:cid,data:HOJE(),motivo:m}}).then(r=>{
+    if(!r||!r.ok){ S.nfErro="Não consegui registrar. Tente de novo."; return render(); }
+    (CTX.nao_feitos ||= []).push({data:HOJE(), motivo:m, cid}); if(!VER) store.set("hagtreino.ctx",CTX); S.nfAberto=false; render(); window.scrollTo(0,0);
+  }).catch(()=>{ S.nfErro="Sem sinal agora. Tente de novo."; render(); });
+}
+function nfDesfazer(){
+  const n=nfHoje(); if(!n) return render();
+  return rpc("hag_treino_nao_fiz",{p_token:TOKEN,p:{client_id:n.cid,desfazer:true}}).then(r=>{
+    if(r&&r.ok){ CTX.nao_feitos=(CTX.nao_feitos||[]).filter(x=>x!==n); if(!VER) store.set("hagtreino.ctx",CTX); } render();
+  }).catch(()=>render());
+}
+const nfAvisoHTML = () => { const n=nfHoje(); return n ? `<div class="aviso">Hoje sem treino · ${esc(NF_MOT[n.motivo]||n.motivo)}${n.motivo==="dor"?". Se a dor continuar, avise o consultório":""}. <button type="button" class="link" data-a="nfdesfaz">desfazer</button></div>` : ""; };
+function nfEscolhaHTML(){
+  return `${filaHTML()}<div><div class="kicker">${diaSem(HOJE())}, ${br(HOJE())}</div><h2>Hoje não vai dar?</h2><p class="sub">Um toque. O Dr. Henrique vê o motivo.</p></div>
+  <div class="card"><div class="chips" role="group" aria-label="Motivo">${Object.entries(NF_MOT).map(([k,t])=>`<button type="button" class="chip" data-a="nfmot" data-v="${k}">${t}</button>`).join("")}</div>
+  ${S.nfErro?`<p class="sub" style="color:var(--crit);margin-top:8px">${esc(S.nfErro)}</p>`:""}</div>
+  <button type="button" class="link" data-a="nfcancela" style="align-self:center">Voltar ao treino</button>`;
+}
 const EX = id => (CTX && CTX.exercicios && CTX.exercicios[id]) || {nome:id, mod:"forca", m:{}, inc:2.5, un:"kg", subs:[]};
 const HOJE = () => hojeLocal();
 /* histórico = o que o servidor tem + o que ainda está na fila deste aparelho */
@@ -890,6 +920,7 @@ function render(){
   if(!CTX) return vHoje.innerHTML=`<p class="note">Carregando o seu treino…</p>`;
   if(VITRINE && CTX.ok===false) return vHoje.innerHTML=`<div class="card"><h3>Abra pelo painel do médico</h3><p class="sub">O catálogo completo só abre com o login da equipe. Entre no Painel do HAG Treino e toque em "Ver o catálogo como o paciente vê".</p></div>`;
   if(CTX.ok===false) return vHoje.innerHTML=`<div class="card"><h3>Link não reconhecido</h3><p class="sub">Peça um link novo ao consultório do Dr. Henrique.</p></div>`;
+  if(pausado()) return vHoje.innerHTML=`${filaHTML()}${pausaHTML()}`;   /* HAG_TREINO_PAUSA_v1 */
   if(S.fase==="ativ") return renderAtiv();
   if(S.fase==="fim" && S.salvo) return renderSalvo();
   if(S.livre && !livreDia(S.livre)) S.livre=null;
@@ -933,10 +964,12 @@ function renderInicio(){
   const d=diaAtual(), its=itens(), sm=semaforo(), ds=diaDaSemana(p), visto=store.get("hagtreino.rir.visto",false);
   const hojeTxt=`${diaSem(HOJE())}, ${br(HOJE())}`, nome=(CTX&&CTX.paciente&&CTX.paciente.nome)||"";
   const completo=Object.values(S.pront).every(v=>v!=null);
-  const extra=`${catLib().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">${catLib().some(c=>c.id==="em_casa")?"Sem academia? Em casa · ":""}Programas</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje</button>`;
+  if(S.nfAberto) return vHoje.innerHTML=nfEscolhaHTML();   /* HAG_TREINO_NAO_FIZ_v1 */
+  const treinouHoje=historico().some(x=>x.data===HOJE());
+  const extra=`${catLib().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">${catLib().some(c=>c.id==="em_casa")?"Sem academia? Em casa · ":""}Programas</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje</button>${!nfHoje()&&!treinouHoje?`<button type="button" class="link" data-a="nfabre" style="align-self:center">Não vou treinar hoje</button>`:""}`;
   if(!S.prontOk && !S.prontPulou){
     const esc_=(k,t,de,ate,e,dd)=>`<div class="esc"><div class="t">${t}</div><div class="g" style="grid-template-columns:repeat(${ate-de+1},1fr)">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div><div class="l"><span>${de} = ${e}</span><span>${ate} = ${dd}</span></div></div>`;
-    vHoje.innerHTML=`${filaHTML()}
+    vHoje.innerHTML=`${filaHTML()}${nfAvisoHTML()}
     <div><div class="kicker">${hojeTxt} · antes de começar</div><h2>${nome?`Oi, ${esc(nome)}. `:""}Como você chega hoje?</h2>
     <p class="sub">4 toques · não muda o treino.</p></div>
     <div class="card ready">${esc_("sono","Como foi o seu sono?",1,5,"péssimo","ótimo")}${esc_("energia","Sua energia agora",1,5,"sem energia","ótima")}${esc_("musc","Dor muscular",0,5,"nenhuma","forte")}${esc_("art","Dor nas articulações",0,5,"nenhuma","forte")}
@@ -950,7 +983,7 @@ function renderInicio(){
   const linha=(it,n)=>{ const r=resumoItem(it); return `<div class="it"><div><b>${n?n+". ":""}${esc(EX(it.id).nome)}</b><div class="s">${r.s}</div></div><div class="r">${r.r}</div></div>`; };
   const temCarga=its.some(it=>it.mod!=="cardio"&&it.mod!=="hyrox"&&tipoReg(it,EX(it.id))==="carga");
   const feitoHoje=historico().some(x=>x.data===HOJE()&&x.dia_id===d.id);
-  vHoje.innerHTML=`${filaHTML()}${blocoHTML()}
+  vHoje.innerHTML=`${filaHTML()}${nfAvisoHTML()}${blocoHTML()}
   ${p.dias.length>1?escolhaHTML(p,d):""}
   ${catHojeHTML()}
   <div><div class="kicker">${hojeTxt} · treino de hoje</div><h2>${esc(d.nome)}</h2><div class="kw"><span>~${minutosEstimados()} min</span><span>${its.length} ex</span></div>${focoHTML(d.foco)}</div>
@@ -1641,6 +1674,10 @@ vHoje.addEventListener("click", e=>{
   if(a==="pvideo"){ pvAberto=pvAberto===b.dataset.v?null:b.dataset.v; return render(); }
   if(a==="pnota"){ const k=b.dataset.v; pnAberto.has(k)?pnAberto.delete(k):pnAberto.add(k); return render(); }
   if(a==="ativ"){ S.fase="ativ"; S.ativ=null; return render(); }
+  if(a==="nfabre"){ S.nfAberto=true; S.nfErro=""; window.scrollTo(0,0); return render(); }   /* HAG_TREINO_NAO_FIZ_v1 */
+  if(a==="nfcancela"){ S.nfAberto=false; return render(); }
+  if(a==="nfmot") return nfSalvar(b.dataset.v);
+  if(a==="nfdesfaz") return nfDesfazer();
   if(a==="acancela"){ S=novoEstado(); return render(); }
   if(a==="atv"){ S.ativ.nome=b.dataset.v; return render(); }
   if(a==="am-"||a==="am+"){ S.ativ.min=Math.max(5,Math.min(600,S.ativ.min+(a==="am+"?5:-5))); return render(); }
@@ -1793,6 +1830,7 @@ function listaItensHTML(its, chave, grupos){
 }
 function renderProg(){
   if(!CTX||CTX.ok===false){ vProg.innerHTML=""; return; }
+  if(pausado()){ vProg.innerHTML=pausaHTML(); return; }   /* HAG_TREINO_PAUSA_v1 */
   const p=prog();
   if(!p){ vProg.innerHTML=`<div class="card"><h3>Seu programa ainda não foi liberado</h3><p class="sub">Assim que o Dr. Henrique liberar o seu programa de treino, ele aparece aqui por inteiro.</p></div>`; return; }
   const sug=diaSugerido(), h=historico();
@@ -1817,6 +1855,7 @@ vProg.addEventListener("touchend",e=>{ if(pTx==null) return; const t=e.changedTo
   const i=p.dias.findIndex(x=>x.id===pDia), j=Math.min(p.dias.length-1,Math.max(0,i+(dx<0?1:-1))); if(j!==i){ pDia=p.dias[j].id; pvAberto=null; renderProg(); } },{passive:true});
 vProg.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a;
+  if(a==="recarregar") return carregar();   /* HAG_TREINO_PAUSA_v1 */
   if(a==="pvideo"){ pvAberto=pvAberto===b.dataset.v?null:b.dataset.v; return renderProg(); }
   if(a==="pnota"){ const k=b.dataset.v; pnAberto.has(k)?pnAberto.delete(k):pnAberto.add(k); return renderProg(); }
   if(a==="pdia"){ pDia=b.dataset.v; pvAberto=null; renderProg(); const c=vProg.querySelector(".pdias"); if(c) c.scrollIntoView({block:"nearest"}); return; }
@@ -1920,6 +1959,7 @@ function renderLivre(){
   const C=cats(); if(tabLivre) tabLivre.hidden=!C.length;
   const tEvo=document.querySelector('nav.tabs [data-v="evo"]'); if(tEvo) tEvo.textContent=C.length?"Evolução":"Estou evoluindo?";
   if(!C.length){ vLivre.innerHTML=""; return; }
+  if(pausado()){ vLivre.innerHTML=pausaHTML(); return; }   /* HAG_TREINO_PAUSA_v1 */
   const ab=catAberto&&C.find(c=>c.id===catAberto&&c.lib); if(ab) return renderCatAberto(ab);
   const lib=C.filter(c=>c.lib), tr=C.filter(c=>!c.lib);
   /* HAG_TREINO_TRILHAS_v1 (23/10/2026): com trilhas, uma seção por trilha com os cards deslizando para o lado; os liberados
@@ -1963,6 +2003,8 @@ function renderLivreAntigo(){
 }
 function catAcao(b){
   const a=b.dataset.a;
+  if(a==="recarregar") return carregar();   /* HAG_TREINO_PAUSA_v1 */
+  if(pausado()) return renderLivre();
   if(a==="cat"){ const c=cats().find(x=>x.id===b.dataset.v); if(!c) return; if(c.lib){ catAberto=c.id; catSem=null; catReini=null; catSel=null; catAvisoSem=null; window.scrollTo(0,0); } else catInfo=catInfo===c.id?null:c.id; return renderLivre(); }
   if(a==="catvolta"){ catAberto=null; catReini=null; catSel=null; catAvisoSem=null; vLivre.style.removeProperty("--cc"); window.scrollTo(0,0); return renderLivre(); }
   if(a==="vittranc"){ vitTranc=b.dataset.v==="1"; cats().forEach(c=>{ c.lib=!vitTranc; }); catAberto=null; catInfo=null; render(); return renderLivre(); }   /* HAG_TREINO_VITRINE_v1 */
