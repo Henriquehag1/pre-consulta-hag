@@ -10,3 +10,4 @@ _backup_*.html
 # Local test dependencies and temporary Supabase stack metadata
 node_modules/
 supabase/.temp/
+.local/

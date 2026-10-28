@@ -13,6 +13,7 @@
   var hostOrigin=new URLSearchParams(location.search).get('hag_run_host_origin')||'';
   try{if(new URL(hostOrigin).origin!==hostOrigin)hostOrigin='';}catch(_){hostOrigin='';}
   function status(message,kind){$('status').textContent=message;$('status').className='status '+(kind||'');}
+  function errorMessage(error){var message=String(error?.message||'Falha na operação.');if(message==='rpc_http_401'||message==='rpc_http_403')return 'Acesso não autorizado. Confirme sua sessão e o vínculo profissional com este paciente.';return message;}
   function hostRpc(name,body){
     return new Promise(function(resolve,reject){
       if(!hostOrigin||window.parent===window)return reject(new Error('HAG OS não conectado.'));
@@ -55,7 +56,7 @@
       $('request').textContent=JSON.stringify({request:result.request,program:result.program,prescription:result.prescription,history:result.history,authorization_history:result.authorization_history},null,2);
       $('requestCard').classList.remove('hide');
       status(result.request?'Solicitação carregada. Revise os dados e registre uma decisão.':'Programa e histórico carregados. Você pode registrar revisão, ajuste ou suspensão.','ok');
-    }catch(err){$('requestCard').classList.add('hide');status(err.message,'error');}
+    }catch(err){$('requestCard').classList.add('hide');status(errorMessage(err),'error');}
   });
   document.addEventListener('click',async function(event){
     var button=event.target.closest('[data-action]');if(!button)return;
@@ -66,7 +67,7 @@
       if(!result.ok)throw new Error('Decisão não confirmada.');
       status('Decisão registrada. Autorização '+result.authorization_id+'. Prescrição '+(result.prescription_id||'não emitida')+'.','ok');
       $('requestCard').classList.add('hide');
-    }catch(err){status(err.message,'error');}finally{button.disabled=false;}
+    }catch(err){status(errorMessage(err),'error');}finally{button.disabled=false;}
   });
   requestHostSession();
 })();

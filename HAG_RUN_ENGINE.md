@@ -49,7 +49,24 @@ npm run test:ui
 
 `npm run test:supabase` também abre o aplicativo real no Playwright, conecta à stack temporária por PostgREST, executa a sessão de prescrição sintética e confirma a recuperação do histórico após recarga. Os testes do PostgreSQL 17 temporário e da stack Supabase local usam apenas dados sintéticos. A interface usa emulação móvel; não substitui aparelho físico. Nenhum desses scripts aponta para Supabase remoto.
 
-O host HAG OS disponível no workspace é operacional e não há clone persistente de desenvolvimento. O teste local cria um host efêmero isolado, carrega o `hag_auth.js` real em modo somente leitura, autentica um profissional sintético pelo Supabase local e monta o bridge. Não altera o host HAG OS operacional. O fluxo clínico/paciente é exercitado contra PostgREST local; a ativação em uma página de desenvolvimento do HAG OS continua pendente.
+O HAG OS operacional não é alterado. Um host persistente de desenvolvimento, mínimo e isolado, fica em `dev/hag_os_dev`; ele carrega o `hag_auth.js` versionado, integra o bridge e serve somente os arquivos permitidos do HAG RUN. Não é um clone integral das telas do consultório. A configuração aponta exclusivamente para uma stack Supabase local gerenciada, guardada em `.local/hag-run-supabase` e ignorada pelo Git. A inicialização não usa projeto linkado nem credenciais remotas. Veja “Host persistente HAG OS Dev” abaixo.
+
+## Host persistente HAG OS Dev
+
+Requer Node.js 22+, Supabase CLI 2.122+ e `psql`. O runtime Supabase nativo pode ser escolhido automaticamente quando Docker não está disponível. A primeira configuração aplica o fixture sintético e as migrações exclusivamente à stack local, cria um profissional sintético e vincula somente `synthetic-patient-a`.
+
+```sh
+npm run dev:hag-os
+# Na primeira execução, o comando inicia a stack e pede para executar o setup:
+npm run dev:hag-os:setup-db
+npm run dev:hag-os
+```
+
+Abra `http://127.0.0.1:8787/`. O host exige login HAGAuth e permite revisar o paciente sintético A. As credenciais sintéticas são geradas localmente em `.local/hag-run-supabase/dev-clinician.json`, com permissões de arquivo restritas; esse arquivo não é versionado. O seletor B é destinado a verificar que a troca de identificador não concede autorização. O botão do app de paciente usa somente os tokens sintéticos dos fixtures.
+
+Ctrl+C encerra o host, mas mantém os dados locais para retomada. `npm run dev:hag-os` reabre o mesmo stack e o mesmo histórico. `npm run dev:hag-os:stop` interrompe a stack sem apagar o diretório local. Para limpar e recriar, pare o stack e remova manualmente `.local/hag-run-supabase`, após preservar qualquer dado sintético que queira reter.
+
+O host escuta somente em loopback. Não abre nem serve `treino_painel_HAG.html` ou páginas do consultório operacional, que podem conter configuração remota. O comando de inicialização suprime a saída de ambiente da CLI para não registrar chaves locais secretas; somente URL local e chave publicável são passadas ao servidor em memória. Nenhum segredo `service_role` é usado no navegador.
 
 ## Fora da homologação clínica
 

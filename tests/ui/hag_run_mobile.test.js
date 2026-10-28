@@ -74,6 +74,24 @@ async function main() {
       assert.equal(await page.locator('[data-start]').count(),0,'patient cannot start a plan before clinician authorization');
       await context.close();
 
+      // Reopening an already-submitted intake must not show the form again.
+      const pendingContext=await browser.newContext({
+        viewport:viewport.viewport||{width:viewport.width,height:viewport.height},
+        screen:viewport.screen,deviceScaleFactor:viewport.deviceScaleFactor||2,isMobile:viewport.mobile,hasTouch:true,
+      });
+      const pendingPage=await pendingContext.newPage();
+      pendingPage.on('pageerror',error=>errors.push(viewport.name+' pending: '+error.message));
+      await pendingPage.addInitScript(()=>{window.HAG_RUN_CONFIG={url:'https://dev.supabase.co',anonKey:'public-anon-key',token:'a'.repeat(48)};});
+      await pendingPage.route('https://dev.supabase.co/rest/v1/rpc/**',async route=>{
+        if(route.request().method()==='OPTIONS') return route.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'apikey,authorization,content-type'}});
+        if(route.request().url().endsWith('hag_run_patient_context_v2')) return route.fulfill({headers:{'access-control-allow-origin':'*','content-type':'application/json'},json:{ok:true,program:null,prescription:null,history:[],pending_review:true,medical_authorization:null}});
+        return route.fulfill({status:404,json:{ok:false,error:'not_found'}});
+      });
+      await pendingPage.goto('http://127.0.0.1:'+address.port+'/hag_run_HAG.html?t='+('a'.repeat(48)));
+      await pendingPage.getByRole('heading',{name:'Aguardando avaliação da equipe'}).waitFor();
+      assert.equal(await pendingPage.locator('#intake').isVisible(),false,'pending assessment must not be submitted again on reopen');
+      await pendingContext.close();
+
       // Reopen through a synthetic physician-authorized context to exercise the guided timer.
       const approvedContext=await browser.newContext({
         viewport:viewport.viewport||{width:viewport.width,height:viewport.height},

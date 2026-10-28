@@ -98,7 +98,33 @@
   $('plan').addEventListener('click',e=>{const b=e.target.closest('[data-start]');if(b)beginSession(Number(b.dataset.start));});
   $('run').addEventListener('click',e=>{const b=e.target.closest('[data-timer]');if(!b)return;if(b.dataset.timer==='pause'){accountActiveTime();clearInterval(state.timer);state.timer=null;state.paused=true;b.dataset.timer='resume';b.textContent='Retomar';return;}if(b.dataset.timer==='resume'){state.paused=false;startTick();return;}if(b.dataset.timer==='skip'){accountActiveTime();state.skipped=true;nextSegment();return;}if(b.dataset.timer==='stop'){accountActiveTime();state.completed=false;renderLog();}});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.timer){accountActiveTime();if(state.remaining===0)nextSegment();else timerRender();}});
-  async function restore(){if(!linkToken){$('saveStatus').textContent='Modo de demonstração. Nenhum dado será enviado ou salvo.';$('saveStatus').hidden=false;return;}if(!store.available){$('intake').hidden=true;$('saveStatus').textContent=store.reason;$('saveStatus').className='status error';$('saveStatus').hidden=false;return;}try{const ctx=await store.load();if(!ctx.ok)throw new Error('Link inválido, expirado ou revogado. Solicite um novo link à equipe.');if(!ctx.program&&!ctx.medical_authorization){$('saveStatus').textContent='Link validado. Preencha a triagem e a avaliação para enviar à revisão clínica.';$('saveStatus').className='status ok';return;}state.profile=ctx.program?.profile?.inputs||{};state.week=Math.max(1,Math.min(12,Number(ctx.program?.progression_state?.current_week)||Number(ctx.prescription?.plan?.week)||1));state.history=(ctx.history||[]).map(x=>({sessionId:x.session_id,completed:x.completed,durationSeconds:x.duration_seconds,distanceKm:Number(x.distance_km),rpe:x.rpe,difficulty:x.difficulty,pain:x.pain,fatigue:x.fatigue,recovery:x.recovery,concerningSymptoms:x.concerning_symptoms,injuryDuringRun:x.injury_during_run,recordedAt:x.recorded_at}));$('intake').hidden=true;const auth=ctx.medical_authorization;const active=auth&&!['review','suspended'].includes(auth.decision)&&auth.authorized_plan; if(active){state.prescription=auth.authorized_plan;state.prescription.week=Number(state.prescription.week)||state.week;renderPlan(state.prescription,auth);$('saveStatus').textContent=`Plano autorizado recuperado. Histórico: ${state.history.length} sessão(ões).`;$('saveStatus').className='status ok';}else{$('plan').innerHTML=`<div class="card"><div class="kicker">${ctx.pending_review?'Revisão pendente':'Acesso individual validado'}</div><h2>${auth?.decision==='suspended'?'Corrida suspensa':auth?.decision==='review'?'Solicitação de avaliação profissional':'Aguardando autorização médica'}</h2><p class="sub">A primeira prescrição precisa ser autorizada pelo médico. O aplicativo não ativa automaticamente planos ou mudanças de dose.</p>${state.history.length?`<p class="meta">${state.history.length} sessões anteriores foram recuperadas.</p>`:''}</div>`;$('plan').hidden=false;$('saveStatus').textContent='';} }catch(err){$('intake').hidden=true;$('saveStatus').textContent=err.message;$('saveStatus').className='status error';$('saveStatus').hidden=false;}}
+  async function restore(){
+    if(!linkToken){$('saveStatus').textContent='Modo de demonstração. Nenhum dado será enviado ou salvo.';$('saveStatus').hidden=false;return;}
+    if(!store.available){$('intake').hidden=true;$('saveStatus').textContent=store.reason;$('saveStatus').className='status error';$('saveStatus').hidden=false;return;}
+    try{
+      const ctx=await store.load();
+      if(!ctx.ok)throw new Error('Link inválido, expirado ou revogado. Solicite um novo link à equipe.');
+      state.history=(ctx.history||[]).map(x=>({sessionId:x.session_id,completed:x.completed,durationSeconds:x.duration_seconds,distanceKm:Number(x.distance_km),rpe:x.rpe,difficulty:x.difficulty,pain:x.pain,fatigue:x.fatigue,recovery:x.recovery,concerningSymptoms:x.concerning_symptoms,injuryDuringRun:x.injury_during_run,recordedAt:x.recorded_at}));
+      if(!ctx.program&&!ctx.medical_authorization){
+        if(ctx.pending_review){
+          $('intake').hidden=true;
+          $('plan').innerHTML=`<div class="card"><div class="kicker">Revisão pendente</div><h2>Aguardando avaliação da equipe</h2><p class="sub">Sua avaliação já foi enviada. Não é necessário preencher novamente. Aguarde a revisão profissional antes de iniciar uma corrida.</p>${state.history.length?`<p class="meta">${state.history.length} sessões anteriores foram recuperadas.</p>`:''}</div>`;
+          $('plan').hidden=false;
+          $('saveStatus').textContent='Solicitação registrada. Você poderá reabrir este link para acompanhar a decisão da equipe.';
+          $('saveStatus').className='status ok';
+          return;
+        }
+        $('saveStatus').textContent='Link validado. Preencha a triagem e a avaliação para enviar à revisão clínica.';$('saveStatus').className='status ok';return;
+      }
+      state.profile=ctx.program?.profile?.inputs||{};
+      state.week=Math.max(1,Math.min(12,Number(ctx.program?.progression_state?.current_week)||Number(ctx.prescription?.plan?.week)||1));
+      $('intake').hidden=true;
+      const auth=ctx.medical_authorization;
+      const active=auth&&!['review','suspended'].includes(auth.decision)&&auth.authorized_plan;
+      if(active){state.prescription=auth.authorized_plan;state.prescription.week=Number(state.prescription.week)||state.week;renderPlan(state.prescription,auth);$('saveStatus').textContent=`Plano autorizado recuperado. Histórico: ${state.history.length} sessão(ões).`;$('saveStatus').className='status ok';}
+      else{$('plan').innerHTML=`<div class="card"><div class="kicker">${ctx.pending_review?'Revisão pendente':'Acesso individual validado'}</div><h2>${auth?.decision==='suspended'?'Corrida suspensa':auth?.decision==='review'?'Solicitação de avaliação profissional':'Aguardando autorização médica'}</h2><p class="sub">A primeira prescrição precisa ser autorizada pelo médico. O aplicativo não ativa automaticamente planos ou mudanças de dose.</p>${state.history.length?`<p class="meta">${state.history.length} sessões anteriores foram recuperadas.</p>`:''}</div>`;$('plan').hidden=false;$('saveStatus').textContent='';}
+    }catch(err){$('intake').hidden=true;$('saveStatus').textContent=err.message;$('saveStatus').className='status error';$('saveStatus').hidden=false;}
+  }
   restore();
 })();
 </script>

@@ -12,7 +12,10 @@
     "test:supabase": "bash scripts/test-hag-run-supabase-local.sh",
     "test:ui": "node tests/ui/hag_run_mobile.test.js",
     "check": "node scripts/check-hag-run.mjs",
-    "verify": "npm test && npm run check"
+    "verify": "npm test && npm run check",
+    "dev:hag-os": "bash scripts/hag-run-dev-up.sh",
+    "dev:hag-os:setup-db": "node scripts/hag-run-dev-db-setup.mjs",
+    "dev:hag-os:stop": "bash scripts/hag-run-dev-stop.sh"
   },
   "devDependencies": {
     "playwright": "1.64.1"
