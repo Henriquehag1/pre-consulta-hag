@@ -29,8 +29,12 @@ DB_URL="postgresql://$(id -un)@127.0.0.1:$PORT/postgres"
 "$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/supabase/migrations/202610270001_hag_run.sql" >/dev/null
 "$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_security.test.sql"
 
+# Exercise the additive medical gate only after legacy RPC behavior has been checked.
+"$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/supabase/migrations/202610270002_hag_run_medical_gate.sql" >/dev/null
+"$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_medical_gate.test.sql"
+
 EVENT_ID="66666666-6666-4666-8666-666666666666"
-CALL_SQL="set role anon; select public.hag_run_patient_save_execution(repeat('a',48), '$EVENT_ID'::uuid, 'synthetic-session-mon', '{\"completed\":false,\"duration_seconds\":300,\"distance_km\":0.5,\"rpe\":5,\"difficulty\":\"easy\",\"pain\":0,\"fatigue\":3,\"recovery\":\"good\"}'::jsonb);"
+CALL_SQL="set role anon; select public.hag_run_patient_save_execution(repeat('a',48), '$EVENT_ID'::uuid, 'clinician-session-next', '{\"completed\":false,\"duration_seconds\":300,\"distance_km\":0.5,\"rpe\":5,\"difficulty\":\"easy\",\"pain\":0,\"fatigue\":3,\"recovery\":\"good\"}'::jsonb);"
 "$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -Atc "$CALL_SQL" >"$TMP_ROOT/concurrent-a.out" & PID_A=$!
 "$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -Atc "$CALL_SQL" >"$TMP_ROOT/concurrent-b.out" & PID_B=$!
 wait "$PID_A"
@@ -38,4 +42,5 @@ wait "$PID_B"
 ROWS="$("$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select count(*) from public.hag_run_executions where client_event_id = '$EVENT_ID'::uuid;")"
 [[ "$ROWS" == "1" ]] || { echo "Concurrent idempotency failed: expected 1 row, got $ROWS" >&2; exit 1; }
 grep -q '"duplicate": true' "$TMP_ROOT/concurrent-a.out" "$TMP_ROOT/concurrent-b.out"
+"$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_patient_hold.test.sql"
 echo "PostgreSQL 17 integration checks passed, including two concurrent retries with one persisted row."

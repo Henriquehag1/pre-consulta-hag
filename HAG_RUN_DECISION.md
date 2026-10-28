@@ -58,3 +58,19 @@ Abra `http://127.0.0.1:8766/hag_run_HAG.html`. Sem configuração Supabase e sem
 - A revisão encontrou e corrigiu divergência de progressão entre cliente e servidor, validação de valores fracionários, cálculo de pace R5 fora do intervalo e perda da chave idempotente em recarga.
 - A aprovação clínica e a conexão de desenvolvimento ao host HAG Treino permanecem pendentes. Veja [HAG_RUN_HOMOLOGACAO.md](docs/HAG_RUN_HOMOLOGACAO.md).
 - Nenhuma migration, query de dados, escrita, secret, deploy ou publicação foi feita em projetos remotos; `main` não foi modificada.
+
+## Atualização de implementação, 27/10/2026
+
+A versão seguinte acrescenta um gate médico e não aplica os limiares numéricos ainda pendentes:
+
+- hag_run_HAG.html exige oito respostas de triagem e encaminha avaliação pelo token do link pessoal. Não apresenta nem inicia uma prescrição gerada no navegador antes da autorização médica.
+- hag_run_policy.js implementa estados de segurança e resultados conservadores. Desconhecido, resposta faltante, sintoma ou evidência incompleta não libera progressão. O módulo não define limiares universais de carga.
+- hag_run_store.js usa hag_run_patient_context_v2 e hag_run_patient_submit_assessment; identificadores de paciente continuam ausentes das chamadas do paciente. A compatibilidade saveAssessment encaminha somente uma solicitação, sem salvar o plano recebido do cliente.
+- A migração aditiva 202610270002_hag_run_medical_gate.sql adiciona pedidos, vínculo profissional por paciente, autorizações e auditoria. O profissional precisa ter sessão Supabase autenticada e vínculo ativo validado por auth.uid() no servidor. A RPC do paciente deriva escopo pelo token HAG Treino. RLS fica habilitada e forçada, sem grants diretos às tabelas.
+- A prescrição autorizada é fornecida pelo médico no painel hag_run_medico.html. A migração grava o plano e o escopo como snapshots. A adaptação automática permanece desativada por padrão e as RPCs antigas que permitiam ao paciente enviar uma prescrição foram revogadas.
+- O RPC recusa liberar corrida quando a solicitação contém sintoma de urgência ainda ativo ou quando o escopo não declara `running_allowed: true`; a pendência permanece para nova decisão após resolução e revisão.
+- A saída antiga do motor e da RPC de execução não é suficiente para avançar ciclo. O paciente não recebe botão de avanço automático. Uma mudança de dose depende de nova decisão clínica e registro auditável.
+- O painel ainda depende de integração do HAG OS para injetar temporariamente URL, chave publicável e access token autenticado, e de provisionamento administrativo do vínculo profissional com o paciente. Não inserir esse vínculo pelo navegador.
+- A autorização local é vinculada ao paciente e ao plano salvo. Revogação é registrada em nova linha de autorização com decisão suspended; não há interface para revogar individualmente token HAG Treino nem prazo automático universal.
+
+Essa implementação é uma barreira técnica e um fluxo de revisão, não homologação clínica. R0–R4, doses, critérios quantitativos de adaptação, orientação completa de urgência, retorno pós-doença/lesão, escopo granular de restrições e critérios adicionais de elegibilidade adulta continuam exigindo regras aprovadas. A interface e o RPC bloqueiam autorização para menores de 18 anos. A demonstração local não persiste dados. Nenhuma alteração foi aplicada ao HAG OS de produção, ao Supabase remoto, à branch `main` ou ao site.

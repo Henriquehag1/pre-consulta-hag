@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const sql = fs.readFileSync(path.join(__dirname, '../supabase/migrations/202610270001_hag_run.sql'), 'utf8').toLowerCase();
+const medicalSql = fs.readFileSync(path.join(__dirname, '../supabase/migrations/202610270002_hag_run_medical_gate.sql'), 'utf8').toLowerCase();
 
 test('migration creates isolated patient-owned program, immutable prescription snapshots and executions', () => {
   for (const table of ['hag_run_programs', 'hag_run_prescriptions', 'hag_run_executions']) {
@@ -94,4 +95,26 @@ test('migration preserves existing HAG access records and does not mutate legacy
   assert.match(sql, /alter table public\.treino_acessos\s+add column if not exists hag_run_expires_at/);
   assert.doesNotMatch(sql, /drop table|truncate|delete from public\.(patients|treino_acessos)/);
   assert.doesNotMatch(sql, /create or replace function public\.hag_treino_/);
+});
+
+test('medical gate is additive, patient token scoped, and clinician scoped server side', () => {
+  for (const table of ['hag_run_assessment_requests','hag_run_clinician_patient_access','hag_run_patient_holds','hag_run_medical_authorizations','hag_run_medical_audit']) {
+    assert.match(medicalSql,new RegExp(`create table if not exists public\\.${table}`));
+    assert.match(medicalSql,new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(medicalSql,new RegExp(`alter table public\\.${table} force row level security`));
+  }
+  assert.match(medicalSql,/patient_submit_assessment_impl/);
+  assert.match(medicalSql,/a\.token=p_token/);
+  assert.match(medicalSql,/a\.revogado is false/);
+  assert.match(medicalSql,/a\.hag_run_expires_at is null or a\.hag_run_expires_at>pg_catalog\.now\(\)/);
+  assert.match(medicalSql,/auth\.uid\(\)/);
+  assert.match(medicalSql,/adult_population_required/);
+  assert.match(medicalSql,/active_urgent_symptom_requires_resolution/);
+  assert.match(medicalSql,/running_not_in_authorized_scope/);
+  assert.match(medicalSql,/restricted_instructions_required/);
+  assert.match(medicalSql,/a\.clinician_user_id=v_user and a\.patient_id=p_patient_id and a\.revoked_at is null/);
+  assert.match(medicalSql,/revoke all on function public\.hag_run_patient_save_assessment/);
+  assert.match(medicalSql,/grant execute on function public\.hag_run_clinician_review\([^;]+to authenticated/);
+  assert.doesNotMatch(medicalSql,/service_role/i);
+  assert.doesNotMatch(medicalSql,/drop table|truncate|delete from public\.(patients|treino_acessos)/);
 });

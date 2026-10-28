@@ -48,22 +48,24 @@ function createRunStore(config, fetchImpl = fetch) {
   return {
     available: true,
     async load() {
-      const context = await rpc('hag_run_patient_context', { p_token: config.token });
+      const context = await rpc('hag_run_patient_context_v2', { p_token: config.token });
       return context;
     },
-    async saveAssessment(program, prescription, profile, assessment = profile) {
-      const result = await rpc('hag_run_patient_save_assessment', {
+    async submitAssessment(profile, assessment = profile, triage = {}) {
+      const result = await rpc('hag_run_patient_submit_assessment', {
         p_token: config.token,
         p_assessment: assessment,
-        p_profile: { inputs: profile, functional: prescription.classification },
-        p_program: { slug: program.slug, title: program.title, goal: profile.goal },
-        p_prescription: {
-          engine_version: prescription.engineVersion,
-          plan: prescription,
-        },
+        p_profile: { inputs: profile },
+        p_triage: triage,
       });
-      if (!result.program_id || !result.prescription_id) throw new Error('O Supabase não confirmou avaliação e prescrição.');
+      if (!result.request_id) throw new Error('O Supabase não confirmou o envio para revisão clínica.');
       return result;
+    },
+    async saveAssessment(program, prescription, profile, assessment = profile) {
+      // Kept as a compatibility shim; patient supplied prescriptions are never
+      // persisted or activated by this adapter.
+      return this.submitAssessment(profile, assessment, { legacy: true, requested_program: program?.slug || null,
+        engine_version: prescription?.engineVersion || null });
     },
     async saveExecution(program, prescription, execution) {
       const result = await rpc('hag_run_patient_save_execution', {
@@ -94,6 +96,26 @@ function createRunStore(config, fetchImpl = fetch) {
   };
 }
 
-const HAGRunStore = { createRunStore, validLinkToken, isServiceRoleKey };
+function createClinicianStore(config, fetchImpl = fetch) {
+  if (!config?.url || !config?.anonKey || !config?.accessToken || isServiceRoleKey(config.anonKey)) {
+    return { available: false, reason: 'Abra pelo HAG OS autenticado para revisar pacientes autorizados.' };
+  }
+  const base = config.url.replace(/\/$/, '');
+  async function rpc(name, body) {
+    const response = await fetchImpl(`${base}/rest/v1/rpc/${name}`, {
+      method: 'POST', headers: { apikey: config.anonKey, Authorization: `Bearer ${config.accessToken}`,
+        'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error(`A operação clínica foi recusada (${response.status}).`);
+    return response.json();
+  }
+  return { available: true,
+    context: patientId => rpc('hag_run_clinician_context', { p_patient_id: patientId }),
+    review: (patientId, decision, scope, plan, reason) => rpc('hag_run_clinician_review', {
+      p_patient_id: patientId, p_decision: decision, p_scope: scope, p_plan: plan, p_reason: reason,
+    }) };
+}
+
+const HAGRunStore = { createRunStore, createClinicianStore, validLinkToken, isServiceRoleKey };
 if (typeof module !== 'undefined' && module.exports) module.exports = HAGRunStore;
 if (typeof window !== 'undefined') window.HAGRunStore = HAGRunStore;

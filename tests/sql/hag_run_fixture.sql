@@ -2,6 +2,15 @@
 do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
 do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
 
+do $$ begin
+  if to_regnamespace('auth') is null then execute 'create schema auth'; end if;
+  if to_regprocedure('auth.uid()') is null then execute $fn$
+    create function auth.uid() returns uuid language sql stable as
+      'select nullif(current_setting(''request.jwt.claim.sub'', true), '''')::uuid'
+  $fn$; end if;
+exception when insufficient_privilege then null;
+end $$;
+
 create table public.patients (
   id text primary key
 );
@@ -12,12 +21,13 @@ create table public.treino_acessos (
   revogado boolean not null default false
 );
 
-insert into public.patients(id) values ('synthetic-patient-a'), ('synthetic-patient-b');
+insert into public.patients(id) values ('synthetic-patient-a'), ('synthetic-patient-b'), ('synthetic-patient-c');
 insert into public.treino_acessos(token, patient_id, revogado) values
   (repeat('a', 48), 'synthetic-patient-a', false),
   (repeat('b', 48), 'synthetic-patient-b', false),
   (repeat('c', 48), 'synthetic-patient-a', true),
-  (repeat('d', 48), 'synthetic-patient-a', false);
+  (repeat('d', 48), 'synthetic-patient-a', false),
+  (repeat('e', 48), 'synthetic-patient-c', false);
 
 alter table public.treino_acessos add column hag_run_expires_at timestamptz;
 update public.treino_acessos set hag_run_expires_at = now() - interval '1 day' where token = repeat('d', 48);

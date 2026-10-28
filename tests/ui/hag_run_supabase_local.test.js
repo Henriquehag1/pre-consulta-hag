@@ -17,19 +17,33 @@ async function rpc(name, body) {
 }
 
 async function main() {
-  const patientA = await rpc('hag_run_patient_context', { p_token: 'a'.repeat(48) });
+  const patientA = await rpc('hag_run_patient_context_v2', { p_token: 'a'.repeat(48) });
   assert.equal(patientA.ok, true);
   assert.equal(patientA.history.length, 5);
+  assert.equal(patientA.medical_authorization.decision, 'released_with_restrictions', 'the SQL fixture created the latest physician authorization');
+  assert.equal(patientA.medical_authorization.authorized_plan.sessions[0].id, 'clinician-session-next');
+  assert.equal(patientA.prescription.plan.sessions[0].id, 'clinician-session-next', 'only the latest authorized prescription is restored');
 
-  const patientB = await rpc('hag_run_patient_context', { p_token: 'b'.repeat(48) });
+  const patientB = await rpc('hag_run_patient_context_v2', { p_token: 'b'.repeat(48) });
   assert.equal(patientB.ok, true);
   assert.equal(patientB.program, null, 'patient B must receive only its own empty context');
 
   for (const token of ['x'.repeat(48), 'c'.repeat(48), 'd'.repeat(48)]) {
-    const rejected = await rpc('hag_run_patient_context', { p_token: token });
+    const rejected = await rpc('hag_run_patient_context_v2', { p_token: token });
     assert.equal(rejected.ok, false, 'invalid, revoked and expired tokens must not authorize');
     assert.equal(rejected.error, 'invalid_link');
   }
+
+  const intake = await rpc('hag_run_patient_submit_assessment', {
+    p_token: 'b'.repeat(48),
+    p_assessment: { assessmentDate: '2026-10-27', synthetic: true },
+    p_profile: { inputs: { maxContinuousMinutes: 20, synthetic: true } },
+    p_triage: { state: 'AMARELO', synthetic: true },
+  });
+  assert.equal(intake.status, 'pending_review');
+  const pending = await rpc('hag_run_patient_context_v2', { p_token: 'b'.repeat(48) });
+  assert.equal(pending.pending_review, true);
+  assert.equal(pending.medical_authorization, null);
 
   const eventId = '77777777-7777-4777-8777-777777777777';
   const execution = {
@@ -39,11 +53,11 @@ async function main() {
   const requests = await Promise.all([
     rpc('hag_run_patient_save_execution', {
       p_token: 'a'.repeat(48), p_client_event_id: eventId,
-      p_session_id: 'synthetic-session-mon', p_execution: execution,
+      p_session_id: 'clinician-session-next', p_execution: execution,
     }),
     rpc('hag_run_patient_save_execution', {
       p_token: 'a'.repeat(48), p_client_event_id: eventId,
-      p_session_id: 'synthetic-session-mon', p_execution: execution,
+      p_session_id: 'clinician-session-next', p_execution: execution,
     }),
   ]);
   assert.equal(requests[0].ok, true);
@@ -51,7 +65,7 @@ async function main() {
   assert.equal(requests[0].execution_id, requests[1].execution_id);
   assert.deepEqual(requests.map(result => result.duplicate).sort(), [false, true]);
 
-  const restored = await rpc('hag_run_patient_context', { p_token: 'a'.repeat(48) });
+  const restored = await rpc('hag_run_patient_context_v2', { p_token: 'a'.repeat(48) });
   assert.equal(restored.history.length, 6, 'PostgREST must restore the single concurrent event');
   console.log('Supabase local PostgREST checks passed: token isolation, revocation, expiry, persistence and concurrent idempotency.');
 }

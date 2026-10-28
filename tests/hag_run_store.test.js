@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createRunStore, validLinkToken, isServiceRoleKey } = require('../hag_run_store.js');
+const { createRunStore, createClinicianStore, validLinkToken, isServiceRoleKey } = require('../hag_run_store.js');
 
 const tokenA = 'a'.repeat(48);
 const tokenB = 'b'.repeat(48);
@@ -32,7 +32,7 @@ test('context recovery sends only the bearer token, never a patient identifier',
   });
   const context = await store.load();
   assert.equal(requests.length, 1);
-  assert.equal(requests[0].url, 'https://dev.supabase.co/rest/v1/rpc/hag_run_patient_context');
+  assert.equal(requests[0].url, 'https://dev.supabase.co/rest/v1/rpc/hag_run_patient_context_v2');
   assert.deepEqual(JSON.parse(requests[0].options.body), { p_token: tokenA });
   assert.match(requests[0].options.headers.Authorization, /^Bearer public-anon-key$/);
   assert.equal(context.prescription.plan.week, 2);
@@ -56,29 +56,43 @@ test('adding or changing a patient identifier cannot override token-based author
   });
   await store.load();
   assert.deepEqual(request.body, { p_token: tokenA });
-  assert.equal(request.url.endsWith('hag_run_patient_context'), true);
+  assert.equal(request.url.endsWith('hag_run_patient_context_v2'), true);
 });
 
 test('invalid, expired or revoked links are rejected without fallback to client identity', async () => {
   const store = createRunStore(config(tokenA), async () => response({ ok: false, error: 'invalid_link' }));
   await assert.rejects(() => store.load(), /Link inválido, expirado ou revogado/);
-  await assert.rejects(() => store.saveAssessment({ slug: 'rumo_5k' }, { engineVersion: 'v1', week: 1 }, {}), /Link inválido, expirado ou revogado/);
+  await assert.rejects(() => store.submitAssessment({}, {}, {}), /Link inválido, expirado ou revogado/);
   await assert.rejects(() => store.saveExecution({}, {}, { clientEventId: 'd2719b2d-d8e1-47e0-95a5-a181f087dcef', sessionId: 's1' }), /Link inválido, expirado ou revogado/);
 });
 
-test('assessment writes program, profile and immutable prescription as distinct payloads', async () => {
+test('patient assessment submits triage for review and never sends an executable plan', async () => {
   const requests = [];
   const store = createRunStore(config(tokenA), async (url, options) => {
     requests.push({ url, body: JSON.parse(options.body) });
-    return response({ ok: true, program_id: 'p1', prescription_id: 'rx1' });
+    return response({ ok: true, request_id: 'r1', status: 'pending_review' });
   });
-  await store.saveAssessment({ slug: 'rumo_5k', title: 'Rumo aos 5 km' },
-    { engineVersion: 'hag-run-engine/0.1.0', week: 1, sessions: [], classification: { level: 'R0' } }, { level: 'R0' });
-  assert.equal(requests[0].url, 'https://dev.supabase.co/rest/v1/rpc/hag_run_patient_save_assessment');
-  assert.deepEqual(Object.keys(requests[0].body).sort(), ['p_assessment', 'p_prescription', 'p_profile', 'p_program', 'p_token'].sort());
-  assert.deepEqual(requests[0].body.p_prescription.plan.sessions, []);
-  assert.deepEqual(requests[0].body.p_profile, { inputs: { level: 'R0' }, functional: { level: 'R0' } });
+  await store.submitAssessment({ level: 'R0' }, { assessmentDate: '2026-10-27' }, { state: 'VERDE' });
+  assert.equal(requests[0].url, 'https://dev.supabase.co/rest/v1/rpc/hag_run_patient_submit_assessment');
+  assert.deepEqual(Object.keys(requests[0].body).sort(), ['p_assessment', 'p_profile', 'p_token', 'p_triage'].sort());
+  assert.deepEqual(requests[0].body.p_profile, { inputs: { level: 'R0' } });
+  assert.equal('p_prescription' in requests[0].body, false);
+  assert.equal('p_program' in requests[0].body, false);
   assert.equal('patient_id' in requests[0].body, false);
+});
+
+test('clinician operations require an ephemeral authenticated session and never accept service role', async () => {
+  assert.equal(createClinicianStore({ url: 'https://dev.supabase.co', anonKey: 'anon' }).available, false);
+  const serviceJwt = `header.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.signature`;
+  assert.equal(createClinicianStore({ url: 'https://dev.supabase.co', anonKey: serviceJwt, accessToken: 'x' }).available, false);
+  const calls=[];
+  const clinician=createClinicianStore({url:'https://dev.supabase.co',anonKey:'anon',accessToken:'session-jwt'},async(url,options)=>{
+    calls.push({url,options}); return response({ok:true,request:{id:'r1'}});
+  });
+  await clinician.context('patient-A');
+  assert.equal(calls[0].url.endsWith('/hag_run_clinician_context'),true);
+  assert.match(calls[0].options.headers.Authorization,/^Bearer session-jwt$/);
+  assert.deepEqual(JSON.parse(calls[0].options.body),{p_patient_id:'patient-A'});
 });
 
 test('execution writes idempotency key, observations, recovery and progression recommendation', async () => {
@@ -119,27 +133,27 @@ test('reopening the application restores persisted profile, prescription and run
   const persisted = { program: null, prescription: null, history: [] };
   const fetchMock = async (url, options) => {
     const body = JSON.parse(options.body);
-    if (url.endsWith('hag_run_patient_save_assessment')) {
-      persisted.program = { profile: body.p_profile, assessment: body.p_assessment };
-      persisted.prescription = body.p_prescription;
-      return response({ ok: true, program_id: 'p1', prescription_id: 'rx1' });
+    if (url.endsWith('hag_run_patient_submit_assessment')) {
+      persisted.request = { profile: body.p_profile, assessment: body.p_assessment, triage: body.p_triage };
+      return response({ ok: true, request_id: 'r1', status: 'pending_review' });
     }
     if (url.endsWith('hag_run_patient_save_execution')) {
       persisted.history.push({ session_id: body.p_session_id, ...body.p_execution });
       return response({ ok: true, execution_id: 'ex1', duplicate: false });
     }
-    return response({ ok: true, ...persisted });
+    return response({ ok: true, program: null, prescription: null, pending_review: true, ...persisted });
   };
   const firstVisit = createRunStore(config(tokenA), fetchMock);
   const profile = { assessmentDate: '2026-10-27', goal: '5k', level: 'R0' };
   const plan = { engineVersion: 'hag-run-engine/0.1.0', week: 1, classification: { level: 'R0' }, sessions: [] };
-  await firstVisit.saveAssessment({ slug: 'rumo_5k', title: 'Rumo aos 5 km' }, plan, profile);
+  await firstVisit.submitAssessment(profile, profile, { state: 'VERDE' });
   await firstVisit.saveExecution({ slug: 'rumo_5k', title: 'Rumo aos 5 km' }, plan,
     { clientEventId: 'd2719b2d-d8e1-47e0-95a5-a181f087dcef', sessionId: 'hag-run-r0-w1-mon', completed: false,
       durationSeconds: 240, distanceKm: 0.4, rpe: 4, difficulty: 'easy', pain: 0, fatigue: 2, recovery: 'good' });
   const reopened = await createRunStore(config(tokenA), fetchMock).load();
-  assert.deepEqual(reopened.program.profile.inputs, profile);
-  assert.deepEqual(reopened.prescription.plan, plan);
+  assert.deepEqual(reopened.request.profile.inputs, profile);
+  assert.equal(reopened.pending_review, true);
+  assert.equal(reopened.prescription, null);
   assert.equal(reopened.history[0].session_id, 'hag-run-r0-w1-mon');
 });
 

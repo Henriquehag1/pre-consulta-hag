@@ -569,3 +569,19 @@ As recomendações abaixo são propostas para decisão do médico responsável. 
 | Aprovação assistencial integral | Pendente |  |  | Não liberar a pacientes até revisão aplicável |
 
 **Conclusão de prontidão:** as diretrizes de produto listadas na seção 1.1 foram aprovadas. A especificação clínica integral ainda contém parâmetros e condutas pendentes; implementação clínica permanece bloqueada somente para as regras que dependem dessas decisões. Nenhuma regra do motor foi alterada nesta tarefa.
+
+## Atualização técnica da branch de desenvolvimento, 27/10/2026
+
+Esta seção registra comportamento de segurança implementado, sem aprovar regras clínicas pendentes.
+
+1. A primeira prescrição exige decisão médica autenticada, vinculada ao paciente e ao plano. A triagem do paciente não libera por si só a corrida.
+2. A faixa inicial adulta é verificada na interface e novamente no RPC de autorização. A emissão de plano é bloqueada quando a idade está ausente ou é menor que 18 anos.
+3. O paciente envia respostas da triagem e avaliação pelo token pessoal. O servidor valida token ativo e deriva o paciente em banco. ID enviado pelo navegador não concede acesso.
+4. O contexto do paciente oculta programa e prescrição sem autorização ativa. Pedido pendente, suspensão e solicitação de avaliação não expõem plano executável.
+5. A autorização profissional exige sessão Supabase autenticada e vínculo ativo profissional-paciente verificado no RPC por auth.uid(). O painel não provisiona esse vínculo; ele deve ser criado por processo administrativo confiável.
+6. O médico informa plano e escopo individual. Snapshot da prescrição, decisão, justificativa, usuário profissional e auditoria são gravados no servidor. Adaptação automática inicia desativada.
+7. O servidor bloqueia a liberação quando a solicitação contém sintoma de urgência ativo ou quando o escopo não permite corrida. A urgência permanece pendente até nova decisão profissional após resolução.
+8. Os limiares e recomendações antigos permanecem no motor, mas não são tratados como aprovação clínica. O paciente não pode avançar a dose pelo aplicativo. Mudanças aguardam decisão profissional.
+9. A migração 202610270002_hag_run_medical_gate.sql é aditiva, local e não foi executada em Supabase remoto. As cinco tabelas novas têm RLS habilitada e forçada, sem grants diretos às roles da Data API.
+
+As lacunas clínicas continuam conforme MED-01 a MED-26. Respostas positivas, desconhecidas ou ausentes encaminham para revisão como proteção conservadora; a lista final de perguntas, orientação de urgência e condutas precisam de homologação antes do uso assistencial. Retorno após doença, lesão ou inatividade não é automático. R0–R4 continuam sem matriz numérica clinicamente aprovada; R5 fica fora do escopo inicial.

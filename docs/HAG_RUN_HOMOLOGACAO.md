@@ -71,3 +71,22 @@ Os testes PostgreSQL e Supabase são integração real em ambiente local. Eles n
 ## Segurança e implantação
 
 O `main`, o projeto Supabase remoto, os dados de pacientes e a publicação do aplicativo não foram modificados. A branch de desenvolvimento contém os scripts e fixtures para reproduzir os testes. Não houve instalação de GitHub Apps, criação de tokens ou alteração de secrets/permissões.
+
+## Gate clínico e integração local, 27/10/2026
+
+Esta rodada acrescentou o gate de triagem e autorização médica na migração 202610270002. O paciente envia avaliação pelo token pessoal e não envia plano prescrito. Sem autorização ativa o contexto esconde programa e prescrição. Um novo questionário, dor ou sintoma em execução abre pendência e suspende o acesso ao plano. O endpoint legado de contexto e a RPC legada de autogeração foram revogados. A gravação de execução exige autorização ativa correspondente à prescrição. Adaptação automática fica bloqueada; não houve aprovação dos limiares existentes no motor.
+
+O RPC também bloqueia a liberação quando a solicitação mantém urgência ativa ou quando o escopo não declara explicitamente que a corrida está permitida.
+
+- `npm run verify`: 55 testes unitários/contratuais Node aprovados e integridade aprovada.
+- `npm run test:postgres`: PostgreSQL 17 temporário aprovado. Inclui duas gravações concorrentes idempotentes, token e escopo de paciente, vínculo profissional, revisão/autorizações, audit trail, bloqueio ao modificar identificador, autorização revogada por nova triagem e retenção de RLS.
+- `npm run test:supabase`: stack Supabase/PostgREST local aprovada, migrações 001 e 002, Advisors sem issues, isolamento de tokens, contextos autorizados, envio pendente, revogação/expiração, persistência e concorrência. Os registros são sintéticos.
+- `npm run test:ui`: interface emulada em 320 px, iPhone 13 e 768 px. O paciente sem autorização não vê sessões; plano sintético aprovado abre o timer; duração medida confere exatamente com os segmentos.
+
+Os testes de PostgreSQL e Supabase são integração real contra bancos efêmeros locais, não contra projeto remoto. O teste de UI usa resposta RPC sintética controlada; não é uma sessão clínica real nem aparelho físico. A análise clínica e os parâmetros do motor continuam pendentes.
+
+## Limitações para uso assistencial
+
+O HAG OS ainda precisa integrar o painel hag_run_medico.html, fornecendo access token de sessão autenticada em memória. O vínculo clinician_user_id/patient_id deve ser provisionado por processo administrativo confiável e revogável, nunca pelo navegador. Não foi alterado nenhum HTML do HAG OS hospedeiro nesta rodada. Não há provisionamento de equipe, tela de gestão de vínculos, expiração da autorização médica ou edição granular de restrições. O médico precisa informar um plano JSON estruturalmente válido; a migração valida o formato, mas não homologa adequação clínica. R0–R4 e suas matrizes numéricas não estão liberados como algoritmo clínico.
+
+Nenhuma migração foi aplicada a Supabase remoto. Nenhum dado real foi lido ou alterado, não houve mudança em main, merge ou publicação.
