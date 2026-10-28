@@ -373,13 +373,17 @@ var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){re
 var fmt=function(v,d){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0})};
 /* HAG_VER_COMO_PACIENTE_v1 (23/10/2026): &ver=1 = o médico vendo pelo painel. Nada fica no aparelho, eventos não
    sobem e as orientações abrem pela versão que não marca "último uso". */
-var VER=new URLSearchParams(location.search).get('ver')==='1';
+/* HAG_COZINHA_VITRINE_v1 (28/10/2026): ?vitrine=1 = o Dr. vendo a Cozinha inteira pelo painel, sem paciente. Vale tudo do
+   modo ver (nada gravado, nada guardado no aparelho) e o conteúdo vem de hag_cozinha_vitrine, que só responde com o login
+   da equipe: o token vem do painel que abriu esta aba (window.opener) ou da sessão de login deste navegador. Nunca na URL. */
+var VITRINE=new URLSearchParams(location.search).get('vitrine')==='1';
+var VER=VITRINE||new URLSearchParams(location.search).get('ver')==='1';
 var ls=VER?(function(){var m={};return {get:function(k){return Object.prototype.hasOwnProperty.call(m,k)?JSON.parse(m[k]):null},set:function(k,v){m[k]=JSON.stringify(v)}}})()
   :{get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent='Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
+if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent=VITRINE?'Cozinha como o paciente vê · todas as receitas e guias aprovados · nada é gravado':'Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
 
 /* link pessoal: ?t=TOKEN fica guardado neste aparelho */
-var qs=new URLSearchParams(location.search), TOKEN=qs.get('t')||ls.get('hagcozinha.col.token')||null;
+var qs=new URLSearchParams(location.search), TOKEN=VITRINE?'vitrine':(qs.get('t')||ls.get('hagcozinha.col.token')||null);
 if(qs.get('t')) ls.set('hagcozinha.col.token',qs.get('t'));
 // HAG_COZINHA_SO_LIBERADO_v1: a versão anterior guardava a coleção inteira no aparelho. Apaga esse cache antigo.
 try{ Object.keys(localStorage).forEach(function(k){ if(k==='hagcozinha.col.indice'||k.indexOf('hagcozinha.col.f.')===0) localStorage.removeItem(k); }); }catch(e){}
@@ -417,7 +421,22 @@ function aplicaTema(c){
 aplicaTema(claro());
 $('#tema').addEventListener('click',function(){ var c=!claro(); try{ localStorage.setItem('hagcozinha.tema',c?'claro':'escuro'); }catch(e){} aplicaTema(c); });
 
+function tokenEquipe(){   /* HAG_COZINHA_VITRINE_v1 */
+  try{ var o=window.opener; if(o&&o.HAGAuth&&o.HAGAuth.token){ var t=o.HAGAuth.token(); if(t) return t; } }catch(e){}
+  try{ var s=JSON.parse(localStorage.getItem('hag_auth_session')||'null'); if(s&&s.access_token){ var x=+s.expires_at||0; if(x&&x<1e12) x*=1000; if(!x||Date.now()<x-5000) return s.access_token; } }catch(e){}
+  return null;
+}
 async function rpc(nome,args){
+  if(VITRINE){   /* HAG_COZINHA_VITRINE_v1: coleção e ficha pela vitrine da equipe; orientações e eventos não existem aqui */
+    if(nome==='hag_orientacoes_paciente'||nome==='hag_orientacoes_paciente_ver') return {ok:true,itens:[]};
+    if(nome==='hag_cozinha_evento') return {ok:true,ver:true};
+    var col=nome==='hag_cozinha_colecao', tk=tokenEquipe();
+    if(!tk) return col?{paciente:false,vitrine:true}:{erro:'so_paciente'};
+    var rv=await fetch(SURL+'/rest/v1/rpc/'+(col?'hag_cozinha_vitrine':'hag_cozinha_vitrine_item'),{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify(col?{}:{p_id:args.p_id})});
+    if(rv.status===401||rv.status===403) return col?{paciente:false,vitrine:true}:{erro:'so_paciente'};
+    if(!rv.ok) throw new Error('erro '+rv.status);
+    return rv.json();
+  }
   if(VER){ if(nome==='hag_cozinha_evento') return {ok:true,ver:true}; if(nome==='hag_orientacoes_paciente') nome='hag_orientacoes_paciente_ver'; }   /* HAG_VER_COMO_PACIENTE_v1 */
   var r=await fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
   if(!r.ok) throw new Error('erro '+r.status);
@@ -550,7 +569,7 @@ function telaInicio(tipo){
 
 function telaPorta(){
   app.innerHTML='<div><div class="kick">Método HAG</div><h1 class="tit">Cozinha</h1></div><div class="estado">Receitas e guias que o Dr. Henrique separa para cada paciente, a partir do plano e do momento de cada um.</div>'+
-    (st.linkInvalido?'<div class="aviso">Este link pessoal não está mais ativo. Peça um link novo à equipe do consultório pelo WhatsApp.</div>'
+    (VITRINE?'<div class="aviso">Abra pelo painel da Cozinha, com o seu login da equipe (link "Ver a Cozinha como o paciente vê").</div>':st.linkInvalido?'<div class="aviso">Este link pessoal não está mais ativo. Peça um link novo à equipe do consultório pelo WhatsApp.</div>'
                     :'<p class="small muted">O acesso é pelo link pessoal enviado pelo consultório. Se você é paciente e não encontra o seu, peça à equipe pelo WhatsApp.</p>');
 }
 
