@@ -197,6 +197,8 @@ details.outro .chips{margin-top:8px;justify-content:center}
 .step{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);width:170px}
 .step button{width:46px;height:42px;border:0;background:var(--cream);cursor:pointer;font-size:20px}
 .step output{flex:1;text-align:center;font-family:var(--mono);font-size:15px}
+.step input.stepin{flex:1;min-width:0;width:100%;height:42px;border:0;background:transparent;color:inherit;text-align:center;font-family:var(--mono);font-size:16px;padding:0;-moz-appearance:textfield;appearance:textfield}   /* HAG_TREINO_CARGA_DIGITAR_v1: 16px evita o zoom do iPhone */
+.step input.stepin:focus{outline:2px solid var(--accent,#c9a96e);outline-offset:-2px}
 .feitas{font-family:var(--mono);font-size:12.5px;color:var(--muted);text-align:center;margin-top:10px}
 .campo{display:flex;flex-direction:column;gap:4px}
 .campo input{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:10px 12px;font-family:var(--mono);font-size:16px;width:100%}
@@ -573,7 +575,8 @@ const ALVO = {quad:[8,16], glut:[8,14], post:[8,14], peito:[8,16], costas:[8,18]
 const e1rm = (kg,reps,rir) => (!kg || !reps || (reps+(rir||0))>15) ? null : kg*(1+(reps+(rir||0))/30);
 const roundTo = (x,step) => Math.round(x/step)*step;
 const fmt = (x,d=1) => (+x).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
-const fkg = x => fmt(x, Number.isInteger(+x)?0:1);
+const fkg = x => fmt(x, Number.isInteger(+x)?0:(Number.isInteger(Math.round(+x*100)/10)?1:2));   /* HAG_TREINO_CARGA_DIGITAR_v1: 26,25 kg aparece 26,25, nao 26,3 */
+const fkgIn = x => String(Math.round((+x||0)*100)/100).replace(".",",");   /* HAG_TREINO_CARGA_DIGITAR_v1: o campo mostra a carga exata digitada (23,75), sem arredondar */
 const br = s => String(s).slice(8,10)+"/"+String(s).slice(5,7);
 const diaSem = s => ["domingo","segunda","terça","quarta","quinta","sexta","sábado"][new Date(s+"T12:00:00Z").getUTCDay()];
 const mmss = s => { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
@@ -1051,7 +1054,7 @@ function renderItem(){
      </div>
      <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="ajustar" aria-expanded="${S.abrirAjuste}">${tp==="aquec"||tp==="mob"?`${un==="seg"?"Tempo":"Reps"} · dor`:un==="kg"?`Alterar carga · reps · dor`:`Alterar ${un==="seg"?"tempo":"reps"} · dor`}</button>${a.mexeu?`<span class="lbl" style="color:var(--warn)">ajustado</span>`:""}</div>
      ${S.abrirAjuste?`<div class="ajuste">
-       ${un!=="seg"?`<div class="row between"><span class="lbl">${un==="pc"?"Carga extra (kg)":"Carga (kg)"}</span><div class="step"><button type="button" data-a="kg-" aria-label="Menos carga">−</button><output>${fkg(a.kg)}</output><button type="button" data-a="kg+" aria-label="Mais carga">+</button></div></div>`:""}
+       ${un!=="seg"?`<div class="row between"><span class="lbl">${un==="pc"?"Carga extra (kg)":"Carga (kg)"}</span><div class="step"><button type="button" data-a="kg-" aria-label="Menos carga">−</button><input class="stepin" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" data-in="kg" value="${fkgIn(a.kg)}" aria-label="Carga em kg: toque para digitar"><button type="button" data-a="kg+" aria-label="Mais carga">+</button></div></div>`:""}
        <div class="row between"><span class="lbl">${un==="seg"?"Tempo (seg)":"Repetições"}</span><div class="step"><button type="button" data-a="r-" aria-label="Menos">−</button><output>${a.reps}</output><button type="button" data-a="r+" aria-label="Mais">+</button></div></div>
        <div><span class="lbl">Dor nesta série (0 a 10)</span><div class="chips" style="margin-top:6px">${[0,2,4,6,8].map(v=>`<button type="button" class="chip pain" data-a="dor" data-v="${v}" aria-pressed="${a.dor===v}">${v===0?"sem dor":v}</button>`).join("")}</div></div>
        ${a.dor>0?`<div><span class="lbl">Onde</span><div class="chips" style="margin-top:6px">${locais.map(l=>`<button type="button" class="chip" data-a="local" data-v="${l}" aria-pressed="${a.local===l}">${l}</button>`).join("")}</div></div>
@@ -1085,7 +1088,7 @@ function renderHyrox(it,ex,its,barra){
     <div class="serie" style="padding-bottom:0"><div class="k">${it.ns>1?`Volta ${Math.min(v.length+1,it.ns)} de ${it.ns}`:"Cronômetro"}</div></div>
     <div class="crono" id="crono">${rodando?mmss((Date.now()-S.crono.t0)/1000):"0:00"}</div>
     ${rodando?`<button type="button" class="btn wide" data-a="hxstop" style="background:var(--good);color:#fff">■ CONCLUIR</button>`:`<button type="button" class="btn wide" data-a="hxstart">▶ INICIAR</button>`}
-    <div class="row between" style="margin-top:12px"><span class="lbl">Carga (kg), se houver</span><div class="step"><button type="button" data-a="hx-" aria-label="Menos carga">−</button><output>${fkg(S.cargaHx.kg)}</output><button type="button" data-a="hx+" aria-label="Mais carga">+</button></div></div>
+    <div class="row between" style="margin-top:12px"><span class="lbl">Carga (kg), se houver</span><div class="step"><button type="button" data-a="hx-" aria-label="Menos carga">−</button><input class="stepin" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" data-in="hx" value="${fkgIn(S.cargaHx.kg)}" aria-label="Carga em kg: toque para digitar"><button type="button" data-a="hx+" aria-label="Mais carga">+</button></div></div>
     <div class="feitas">${v.length?v.map((x,j)=>`V${j+1} ${mmss(x.seg)}`).join("   "):"nenhum tempo ainda"}</div>
   </div>${rodapeTreino()}`;
   clearInterval(tickCrono); if(rodando) tickCrono=setInterval(()=>{ const el=document.getElementById("crono"); if(el&&S.crono) el.textContent=mmss((Date.now()-S.crono.t0)/1000); },500);
@@ -1332,6 +1335,24 @@ vHoje.addEventListener("click", e=>{
   if(a==="salvar") return salvar();
   if(a==="novo"){ S=novoEstado(); return render(); }
 });
+/* HAG_TREINO_CARGA_DIGITAR_v1 (28/10/2026): a carga tambem se digita. Grava ao confirmar (Enter, OK do
+   teclado ou sair do campo), nao a cada tecla, para o campo nao perder o foco no meio da digitacao.
+   Aceita virgula. Vazio ou invalido volta ao valor anterior. Teto de 500 kg contra erro de digitacao. */
+function cargaDigitada(t){
+  const v=String(t.value||"").trim().replace(",",".");
+  const n=v===""?NaN:+v;
+  if(t.dataset.in==="kg"){ const A=S.ajuste; if(!A) return;
+    if(!isFinite(n) || n<0 || n>500){ t.value=fkgIn(A.kg); return; }
+    const novo=Math.round(n*100)/100; if(novo===A.kg) return;
+    A.kg=novo; if(A.sug) A.mexeu=true; return render(); }
+  if(t.dataset.in==="hx"){ if(!S.cargaHx) return;
+    if(!isFinite(n) || n<0 || n>500){ t.value=fkgIn(S.cargaHx.kg); return; }
+    const novo=Math.round(n*100)/100; if(novo===S.cargaHx.kg) return;
+    S.cargaHx.kg=novo; return render(); }
+}
+vHoje.addEventListener("change", e=>{ if(e.target.dataset && e.target.dataset.in) cargaDigitada(e.target); });
+vHoje.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.dataset && e.target.dataset.in){ e.preventDefault(); e.target.blur(); } });
+vHoje.addEventListener("focusin", e=>{ if(e.target.classList && e.target.classList.contains("stepin")) setTimeout(()=>{ try{ e.target.select(); }catch(_){} },0); });
 vHoje.addEventListener("input", e=>{
   const t=e.target;
   if(t.id==="arpe" && S.ativ){ S.ativ.rpe=+t.value; document.getElementById("arpe-v").textContent=t.value; document.getElementById("arpe-t").textContent=rpeTexto(+t.value); }
