@@ -218,6 +218,9 @@ function historia(P){
   if(!h.length){ L.push({c:"n",t:prog?"Programa ativo, nenhuma sessão registrada ainda.":"Sem programa ativo e sem sessões registradas."}); return L; }
   const ult=h.at(-1), cv=h.filter(s=>s.cv && diasAtras(s.data)<=60);
   if(cv.length) L.push({c:"r",t:`Sintoma cardiovascular registrado em ${cv.map(s=>br(s.data)).join(", ")}. A sessão foi encerrada e a tarefa foi criada.`});
+  /* HAG_TREINO_CORRIDA_GUIADA_v1: corrida guiada parada por dor (vem na nota da sessão) */
+  const dorC=h.filter(s=>/por dor/i.test(s.nota||"") && diasAtras(s.data)<=60);
+  if(dorC.length) L.push({c:"r",t:`Corrida parada por dor em ${dorC.map(s=>br(s.data)).join(", ")}. Última: ${dorC.at(-1).nota}`});
   /* janela = desde a primeira sessão, no máximo 28 dias: programa novo não nasce devendo */
   const alvo=(prog&&prog.sessoes_semana)||3, jan=Math.min(28,diasAtras(h[0].data)+1), esp=Math.max(1,Math.round(alvo*jan/7)), s28=h.filter(s=>diasAtras(s.data)<jan&&s.tipo!=="Atividade").length, ad=s28/esp;
   L.push({c:ad>=.75?"g":ad>=.5?"y":"r",t:`Adesão: ${s28} de ${esp} sessões esperadas nos últimos ${jan} dias (${fmt(Math.min(ad,9.99)*100,0)}%). Última sessão em ${br(ult.data)}, há ${diasAtras(ult.data)} ${diasAtras(ult.data)===1?"dia":"dias"}.`});
@@ -227,7 +230,7 @@ function historia(P){
     if(dn.length) L.push({c:"y",t:`Queda de 5% ou mais em: ${dn.map(x=>`${EX(x.id).nome} (${fmt(x.g)}%)`).join(", ")}.`}); }
   const tr=travas(P);
   if(tr.length) L.push({c:"r",t:`Carga travada por dor em ${tr.map(x=>`${EX(x.ex).nome} (dor ${x.dor}${x.local?", "+x.local:""}${x.lado?" "+x.lado:""}, ${br(x.data)})`).join("; ")}.`});
-  else { const d28=h.filter(s=>diasAtras(s.data)<28).flatMap(s=>s.series).filter(x=>(x.dor||0)>0); L.push({c:d28.length?"y":"g",t:d28.length?`Dor leve (abaixo de 4) em ${d28.length} ${d28.length===1?"série":"séries"} nos últimos 28 dias, sem trava.`:"Nenhuma dor registrada nos últimos 28 dias."}); }
+  else { const d28=h.filter(s=>diasAtras(s.data)<28).flatMap(s=>s.series).filter(x=>(x.dor||0)>0); const dc=h.some(s=>/por dor/i.test(s.nota||"")&&diasAtras(s.data)<28); L.push({c:(d28.length||dc)?"y":"g",t:d28.length?`Dor leve (abaixo de 4) em ${d28.length} ${d28.length===1?"série":"séries"} nos últimos 28 dias, sem trava.`:dc?"Sem dor nas séries de força nos últimos 28 dias; a corrida parada por dor está acima.":"Nenhuma dor registrada nos últimos 28 dias."}); }
   const sem=new Map(); for(const s of h){ const k=semanaDe(s.data); sem.set(k,(sem.get(k)||0)+(s.rpe||0)*(s.dur||0)); }
   const ks=[...sem.keys()].sort().filter(k=>k<semanaDe(hojeISO()));
   if(ks.length>=3){ const u=sem.get(ks.at(-1)), ant=ks.slice(-4,-1).map(k=>sem.get(k)), m=ant.reduce((a,b)=>a+b,0)/ant.length; if(m>0){ const v=(u/m-1)*100; L.push({c:v>30?"y":"n",t:`Carga interna da semana de ${br(ks.at(-1))}: ${fmt(u,0)}, ${v>=0?"+":""}${fmt(v,0)}% contra a média das ${ant.length} semanas anteriores${v>30?". Salto acima de 30%":""}.`}); } }
@@ -270,7 +273,7 @@ function renderPaciente(){
      ${(P.bia||[]).filter(b=>b.mme!=null).length>1?`<div class="card"><h3>Massa muscular esquelética (bioimpedância)</h3>${linha(P.bia.filter(b=>num(b.mme)!=null).map(b=>({x:br(b.data),y:num(b.mme)})),"Massa muscular esquelética em kg")}</div>`:""}
    </div>
    <div class="card"><h3>Últimas sessões</h3><div class="scroll"><table><thead><tr><th>Data</th><th>Treino</th><th>Min</th><th>Esforço</th><th>Registros</th><th>Dor máx.</th><th>Prontidão</th><th></th></tr></thead><tbody>
-     ${hist.slice(-12).reverse().map(s=>{ const dm=Math.max(0,...s.series.map(x=>x.dor||0)); return `<tr><td class="mono">${br(s.data)}</td><td>${esc(s.dia||"")}<div class="note">v${s.versao||""}</div></td><td class="mono">${s.dur??""}</td><td class="mono">${s.rpe??""}</td><td class="mono">${[s.series.length?s.series.length+" séries":"",(s.cardio||[]).map(c=>`${c.km!=null?fmt(c.km)+" km":""}${c.seg?" "+Math.round(c.seg/60)+" min":""}`).join(", "),(s.hyrox||[]).length?(s.hyrox.length+" tempos"):""].filter(Boolean).join(" · ")}</td><td>${dm?`<span class="tag ${dm>=4?"r":"y"}">${dm}</span>`:""}</td><td class="mono">${s.pront?(s.pront.sono+s.pront.energia+(5-s.pront.musc)+(5-s.pront.art))+"/20":""}</td><td>${s.cv?`<span class="tag r">sintoma</span>`:""}</td></tr>`; }).join("")}
+     ${hist.slice(-12).reverse().map(s=>{ const dm=Math.max(0,...s.series.map(x=>x.dor||0)); return `<tr><td class="mono">${br(s.data)}</td><td>${esc(s.dia||"")}<div class="note">v${s.versao||""}</div>${s.nota?`<div class="note" style="color:${/por dor/i.test(s.nota)?"var(--crit)":"inherit"}">${esc(s.nota)}</div>`:""}</td><td class="mono">${s.dur??""}</td><td class="mono">${s.rpe??""}</td><td class="mono">${[s.series.length?s.series.length+" séries":"",(s.cardio||[]).map(c=>`${c.km!=null?fmt(c.km)+" km":""}${c.seg?" "+Math.round(c.seg/60)+" min":""}`).join(", "),(s.hyrox||[]).length?(s.hyrox.length+" tempos"):""].filter(Boolean).join(" · ")}</td><td>${dm?`<span class="tag ${dm>=4?"r":"y"}">${dm}</span>`:""}</td><td class="mono">${s.pront?(s.pront.sono+s.pront.energia+(5-s.pront.musc)+(5-s.pront.art))+"/20":""}</td><td>${s.cv?`<span class="tag r">sintoma</span>`:""}</td></tr>`; }).join("")}
    </tbody></table></div></div>`;
   h+=`<div class="grid">
    <div class="card"><h3>Programas</h3>
