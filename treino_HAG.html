@@ -809,7 +809,7 @@ const livres = () => (CTX && Array.isArray(CTX.livres)) ? CTX.livres : [];
    (card em_casa). Programa com semanas conta a semana a partir de inicio (gravado no primeiro "Começar"). */
 const CORES = {verde:"#5DD39E", dourado:"#E3B964", azul:"#6CB4F0", rosa:"#F08CB4", vermelho:"#FF8A80", grafite:"#A9B1C2", laranja:"#F0A35A", lilas:"#B79CF0", amarelo:"#F2D35B"};
 function cats(){
-  const c=(CTX && Array.isArray(CTX.catalogo)) ? CTX.catalogo : null; if(c) return c;
+  const c=(CTX && Array.isArray(CTX.catalogo)) ? CTX.catalogo : null; if(c){ for(const x of c) if(x.id==="corrida_5k") ajustaPonte(x); return c; }   /* HAG_TREINO_CORRIDA_PONTE_v1 */
   const L=livres(); return L.length ? [{id:"em_casa", nome:"Em casa", sub:"Peso do corpo · casa, hotel, viagem", tipo:"bloco", niveis:["iniciante","intermediario"], lib:true, sessoes:L.map(l=>({...l, pc:true}))}] : [];
 }
 const catLib = () => cats().filter(c=>c.lib);
@@ -1226,7 +1226,48 @@ function zonaSeg(s){ if(!s) return null; const t=(String(s.txt||"")+" "+String(s
     return null; }
   return null; }
 const ajusteZona = (z,cat,sem) => (z==="r5" && cat==="corrida_5k_rapido" && sem>=5) ? -10 : 0;
+/* HAG_TREINO_CORRIDA_PONTE_v1 (28/10/2026): pedido do Dr. Henrique, "da melhor forma para encaixar todos os públicos".
+   O Rumo aos 5 km chega a 30 min sem parar e testa 5 km; quem leva mais de 33 min para os 5 km no ritmo leve treinaria
+   menos tempo do que o teste pede. Para essa pessoa a S8 troca o teste por uma corrida contínua um pouco mais longa e
+   entram semanas de ponte: corridas contínuas que crescem no máximo 8% por vez até 90% do tempo estimado dos 5 km
+   (teto 46 min, no máximo 3 semanas), com um treino leve no meio de cada semana; o teste vai para o último treino.
+   Quem leva até 33 min segue o programa de 8 semanas como está. */
+function planoPonte(t5){
+  if(!(t5>33)) return null; const alvo=Math.min(0.9*t5, 46), longs=[]; let x=30;
+  while(x<alvo && longs.length<6){ x=Math.max(31, Math.min(Math.floor(x*1.08), Math.ceil(alvo))); longs.push(x); }
+  if(!longs.length) longs.push(31);
+  const slots=[...longs.slice(1), "teste"], semanas=[];
+  for(let i=0;i<slots.length;i+=2){ const a=slots[i], b=slots[i+1]; semanas.push(b===undefined ? ["leve", a] : [a, "leve", b]); }
+  return {s8:longs[0], semanas};
+}
 /* HAG_CORRIDA_PACE_FIM */
+function t5Corrida(c){   /* minutos para os 5 km no leve: pelo perfil (P5 + 75 s/km) ou pelas corridas contínuas registradas */
+  const p5=p5Perfil(perfilCorrida()); if(p5) return 5*(p5+75)/60;
+  const base=c._sessOrig||c.sessoes||[], ps=[];
+  for(const h of historico()){ if(h.cat!==c.id||!h.cs) continue; const s=base.find(x=>x.id===h.cs||String(h.cs).startsWith(x.id+"_p")); if(!s) continue;
+    if(!(s.itens||[]).some(it=>/sem parar/.test(it.alvo||""))) continue;
+    const cd=(h.cardio||[]).filter(x=>x.ex==="corrida"&&+x.km>=1.5&&+x.seg>=900).sort((a,b)=>b.seg-a.seg)[0];
+    if(cd){ const pc=cd.seg/cd.km; if(pc>=180&&pc<=900) ps.push(pc); } }
+  if(!ps.length) return null; const u=ps.slice(-3).sort((a,b)=>a-b); return 5*u[Math.floor(u.length/2)]/60;
+}
+function ajustaPonte(c){
+  if(!c||c.id!=="corrida_5k"||!c.lib||!Array.isArray(c.sessoes)) return;
+  if(!c._sessOrig){ c._sessOrig=c.sessoes; c._semOrig=c.semanas; }
+  const pl=perfilCorrida()?planoPonte(t5Corrida(c)):null, chave=JSON.stringify(pl);
+  if(c._ptKey===chave) return; c._ptKey=chave;
+  c.sessoes=c._sessOrig; c.semanas=c._semOrig; c._ponte=0; if(!pl) return;
+  const s8=c._sessOrig.filter(x=>(x.semanas||[]).includes(8)), N0=c._semOrig||8;
+  const longo=s8.find(x=>(x.itens||[]).some(it=>/sem parar/.test(it.alvo||""))), leve=s8.find(x=>(x.itens||[]).some(it=>/acelera/.test(it.alvo||""))), teste=s8.find(x=>(x.itens||[]).some(it=>/^Seus 5 km/.test(it.alvo||"")));
+  if(!longo||!leve||!teste||N0!==8) return;
+  const mk=(n,id,w)=>({...longo, id, semanas:[w], min:(+longo.min||30)+(n-30), itens:longo.itens.map(it=>/sem parar/.test(it.alvo||"")?{...it, alvo:`${n} min correndo sem parar`}:it)});
+  const novas=[];
+  pl.semanas.forEach((sem,j)=>{ const w=N0+1+j; sem.forEach((sl,k)=>{ const nome=`Corrida ${k+1}`;
+    if(sl==="leve") novas.push({...leve, id:`${leve.id}_p${w}`, nome, semanas:[w]});
+    else if(sl==="teste") novas.push({...teste, id:`${teste.id}_p${w}`, nome, semanas:[w]});
+    else novas.push({...mk(sl,`${longo.id}_p${w}_${k+1}`,w), nome}); }); });
+  c.sessoes=c._sessOrig.map(x=>x===teste?{...mk(pl.s8,teste.id,8), nome:teste.nome}:x).concat(novas);
+  c.semanas=N0+pl.semanas.length; c._ponte=pl.semanas.length;
+}
 let qCor=null;   /* rascunho das 4 perguntas */
 const perfilCorrida = () => (CTX && CTX.corrida_perfil) || null;
 const ehCorrida = c => !!(c && c.trilha==="corrida" && c.tipo==="programa");
@@ -1236,7 +1277,7 @@ const precisaPerfil = c => ehCorrida(c) && (!perfilCorrida() || travaDor(perfilC
 function ritmoHTML(segs,d){
   const pf=perfilCorrida(); if(!pf||!segs||!segs.length) return ""; const p5=p5Perfil(pf), zs=[...new Set(segs.map(zonaSeg).filter(Boolean))];
   if(!zs.length) return "";
-  if(!p5) return zs.includes("leve")?`<p class="cpace"><b>Ritmo:</b> o da conversa. Se não conseguir falar frases curtas, desacelere.</p>`:"";
+  if(!p5) return zs.includes("leve")?`<p class="cpace"><b>Ritmo:</b> o da conversa. Se não conseguir falar frases curtas, desacelere.${d&&d.cat==="corrida_5k"?"<br>Ao registrar, anote também a distância: ela ajusta o fim do programa ao seu ritmo.":""}</p>`:"";
   const pv=segs.find(x=>x.tipo==="prova"&&x.dist), zp=pv&&zonaSeg(pv), kp=pv&&gNum(String(pv.dist).replace(/[^\d,.]/g,"")), fp=zp&&faixaZona(p5,zp,ajusteZona(zp,d&&d.cat,d&&d.semana));
   const est=fp&&kp>0?`<div>Estimativa para ${esc(pv.dist)}: <b>${fTempo(kp*fp.rapido)} a ${fTempo(kp*fp.lento)}</b>.</div>`:"";   /* o teste do programa mostra quanto tempo esperar */
   return `<div class="cpace">${zs.map(z=>`<div><b>${ZNOME[z]}:</b> ${txtFaixa(faixaZona(p5,z,ajusteZona(z,d&&d.cat,d&&d.semana)),pf.local)}</div>`).join("")}${est}${zs.includes("leve")?`<div>Se não conseguir falar frases curtas no leve, desacelere.</div>`:""}</div>`;
@@ -1266,6 +1307,7 @@ function perfilResumoHTML(c){ const pf=perfilCorrida(); if(!pf) return ""; const
    <div style="font-size:14px">Corre sem parar: <b>${esc((CORR_MIN.find(x=>x[0]===+pf.corre_min)||[0,""])[1])}</b> · Base: <b>${esc(base)}</b></div>
    ${w0>1?`<div style="font-size:14px">Você começa na <b>semana ${w0}</b>.</div>`:""}
    ${L?`<div style="font-size:14px">Seu leve: <b>${txtFaixa(L,pf.local)}</b></div>`:""}
+   ${c._ponte?`<div style="font-size:14px">Seu programa ganhou <b>${c._ponte} ${c._ponte>1?"semanas":"semana"} de ponte</b> para chegar aos 5 km no seu ritmo.</div>`:""}
    ${c.id==="corrida_5k"&&+pf.corre_min>=30?`<p class="note" style="margin:4px 0 0">Você já corre 30 minutos: fale com o Dr. Henrique sobre o 5 km mais rápido ou o 10 km.</p>`:""}</div>`;
 }
 function qSalvar(){
