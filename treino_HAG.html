@@ -1195,8 +1195,8 @@ function guiaCorrida(alvo,nota){
    Esteira: km/h = 3600 ÷ pace em s/km, sempre em faixa. Entrada no Rumo aos 5 km pelo tempo que corre sem parar. */
 const CORR_MIN=[[0,"Nunca corri"],[1,"Até 1 min"],[3,"2 a 3 min"],[5,"5 min"],[10,"10 min"],[20,"20 min"],[30,"30 min ou mais"]];
 const entrada5k = m => m>=20?7 : m>=10?5 : m>=5?4 : m>=3?2 : 1;
-const ZONAS={leve:[60,90], moderado:[15,30], r5:[0,0], forte:[-20,-10], r10:[10,15], r21:[25,35], r42:[45,60]};
-const ZNOME={leve:"Leve", moderado:"Moderado", r5:"Ritmo de 5 km", forte:"Forte", r10:"Ritmo de 10 km", r21:"Ritmo da meia", r42:"Ritmo da maratona"};
+const ZONAS={leve:[60,90], moderado:[15,30], r5:[0,0], forte:[-20,-10], r10:[10,15], r15:[18,25], r21:[25,35], r42:[45,60]};   /* r15: entre 10 km e meia, interpolado */
+const ZNOME={leve:"Leve", moderado:"Moderado", r5:"Ritmo de 5 km", forte:"Forte", r10:"Ritmo de 10 km", r15:"Ritmo de 15 km", r21:"Ritmo da meia", r42:"Ritmo da maratona"};
 function p5Perfil(pf){ if(!pf) return null; const km=+pf.teste_km, sg=+pf.teste_seg; let v=null;
   if(km>=1 && sg>0) v=sg*Math.pow(5/km,1.06)/5; else if(+pf.pace_conf_seg>0) v=+pf.pace_conf_seg-60;
   return v && v>=150 && v<=900 ? Math.round(v) : null; }
@@ -1214,11 +1214,11 @@ function zonaSeg(s){ if(!s) return null; const t=(String(s.txt||"")+" "+String(s
   if(["caminha","mob","acel","trote"].includes(s.tipo)) return null;
   if(s.tipo==="aquec"||s.tipo==="solta") return /trot|leve/.test(t)?"leve":null;
   if(s.tipo==="corre") return "leve";
-  if(s.tipo==="prova") return /confort/.test(t)?"leve":/meia/.test(t)?"r21":/maratona/.test(t)?"r42":/ritmo-alvo/.test(t)?"r5":/\b10 km/.test(t)?"r10":/\b5 km/.test(t)?"r5":null;
+  if(s.tipo==="prova") return /confort/.test(t)?"leve":/meia/.test(t)?"r21":/maratona/.test(t)?"r42":/ritmo-alvo/.test(t)?"r5":/\b15 km/.test(t)?"r15":/\b10 km/.test(t)?"r10":/\b5 km/.test(t)?"r5":null;
   if(s.tipo==="forte"){ const mr=/mais rápid/.test(t);
     if(/meia/.test(t)) return mr?"r10":"r21";
     if(/maratona/.test(t)) return mr?"r21":"r42";
-    if(/15 km/.test(t)) return null;
+    if(/15 km/.test(t)) return "r15";
     if(/10 km/.test(t)) return "r10";
     if(/ritmo-alvo|5 km/.test(t)) return mr?"forte":"r5";
     if(/moderad|firme|limiar/.test(t)) return "moderado";
@@ -1237,7 +1237,9 @@ function ritmoHTML(segs,d){
   const pf=perfilCorrida(); if(!pf||!segs||!segs.length) return ""; const p5=p5Perfil(pf), zs=[...new Set(segs.map(zonaSeg).filter(Boolean))];
   if(!zs.length) return "";
   if(!p5) return zs.includes("leve")?`<p class="cpace"><b>Ritmo:</b> o da conversa. Se não conseguir falar frases curtas, desacelere.</p>`:"";
-  return `<div class="cpace">${zs.map(z=>`<div><b>${ZNOME[z]}:</b> ${txtFaixa(faixaZona(p5,z,ajusteZona(z,d&&d.cat,d&&d.semana)),pf.local)}</div>`).join("")}${zs.includes("leve")?`<div>Se não conseguir falar frases curtas no leve, desacelere.</div>`:""}</div>`;
+  const pv=segs.find(x=>x.tipo==="prova"&&x.dist), zp=pv&&zonaSeg(pv), kp=pv&&gNum(String(pv.dist).replace(/[^\d,.]/g,"")), fp=zp&&faixaZona(p5,zp,ajusteZona(zp,d&&d.cat,d&&d.semana));
+  const est=fp&&kp>0?`<div>Estimativa para ${esc(pv.dist)}: <b>${fTempo(kp*fp.rapido)} a ${fTempo(kp*fp.lento)}</b>.</div>`:"";   /* o teste do programa mostra quanto tempo esperar */
+  return `<div class="cpace">${zs.map(z=>`<div><b>${ZNOME[z]}:</b> ${txtFaixa(faixaZona(p5,z,ajusteZona(z,d&&d.cat,d&&d.semana)),pf.local)}</div>`).join("")}${est}${zs.includes("leve")?`<div>Se não conseguir falar frases curtas no leve, desacelere.</div>`:""}</div>`;
 }
 function paceSegTxt(s){ const pf=perfilCorrida(), p5=p5Perfil(pf), z=zonaSeg(s); if(!pf||!p5||!z) return ""; const d=diaAtual()||{}; return txtFaixa(faixaZona(p5,z,ajusteZona(z,d.cat,d.semana)),pf.local); }
 function formCorridaHTML(c){
