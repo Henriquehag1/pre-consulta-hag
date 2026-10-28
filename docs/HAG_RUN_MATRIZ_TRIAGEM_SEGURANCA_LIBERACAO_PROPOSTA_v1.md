@@ -17,11 +17,11 @@ O parecer não fornece critérios clínicos quantitativos para estabilidade, gra
 | 1. Primeira triagem | Paciente responde às oito perguntas. Cada item aceita Sim, Não ou Não sei. Informações complementares aparecem somente após resposta relevante. | Estado de segurança preliminar e possíveis perguntas de seguimento. |
 | 2. Decisão de segurança | O sistema combina respostas, eventos registrados, escopo da atividade e eventual decisão médica vigente. | VERDE, AMARELO, VERMELHO ou URGÊNCIA. |
 | 3. Avaliação funcional | Só ocorre quando o estado permite. Capacidade contínua, carga recente, recuperação e disponibilidade permanecem campos separados. | Candidato a nível funcional e seleção de estágio para decisão clínica. |
-| 4. Liberação quando necessária | Médico autorizado revisa a triagem e registra liberar, liberar com restrições, solicitar avaliação adicional ou suspender. | Prescrição permitida somente dentro do escopo e das condições documentadas. |
+| 4. Liberação quando necessária | Médico autorizado revisa a triagem e registra Liberar, Liberar com restrições, Solicitar avaliação ou Suspender. | Prescrição permitida somente dentro do escopo e das condições documentadas. |
 | 5. Check-in pré-sessão | Paciente responde a três perguntas breves antes do treino. | Iniciar, adiar, impedir progressão ou solicitar revisão, conforme as regras aprovadas. |
 | 6. Intercorrência | Durante ou após a sessão, paciente registra evento ou interrompe o treino por sintoma. | O evento mais recente determina o estado efetivo até ser resolvido. |
 
-VERDE significa elegível para seguir no fluxo HAG RUN dentro da autorização aplicável; não certifica ausência de doença. AMARELO mantém a prescrição automática pendente. VERMELHO suspende corrida até decisão documentada. URGÊNCIA interrompe o exercício e apresenta orientação de atendimento urgente aprovada.
+VERDE significa elegível para seguir no fluxo HAG RUN dentro da autorização aplicável; não certifica ausência de doença. AMARELO mantém a prescrição automática pendente. VERMELHO suspende a corrida HAG RUN até decisão documentada; não proíbe automaticamente toda atividade física. URGÊNCIA interrompe o exercício e apresenta orientação de atendimento urgente aprovada.
 
 As oito perguntas não registram por si só o nível atual de atividade nem a intensidade pretendida. Portanto, a proposta é que VERDE permita avançar para a avaliação funcional; a geração da prescrição só ocorre depois de esses dados serem conhecidos e considerados na decisão. O modelo de triagem do ACSM inclui atividade atual, sintomas/doença conhecida e intensidade desejada, mas não valida este questionário nem os estados HAG. [ACSM, recomendações de triagem pré-participação](https://journals.lww.com/acsm-msse/fulltext/2015/11000/updating_acsm_s_recommendations_for_exercise.28.aspx)
 
@@ -37,7 +37,7 @@ As perguntas abaixo mantêm o conteúdo proposto pelo responsável. A redação 
 | Q4 | Possui diabetes, doença renal, hipertensão ou doença pulmonar relevante? | O diagnóstico isolado não bloqueia automaticamente. Considerar sintomas, estabilidade clínica, atividade atual, intensidade pretendida e decisão profissional. Se a necessidade de revisão não estiver resolvida: AMARELO. Se já houver decisão vigente para o mesmo escopo e nenhum evento novo: manter liberação dentro das condições registradas. | AMARELO até esclarecer condição possivelmente relevante. |
 | Q5 | Sente dor ou possui alguma lesão que dificulta caminhar ou correr? | AMARELO para avaliação musculoesquelética e decisão antes de prescrever corrida. VERMELHO se houver suspensão profissional ativa ou se o médico decidir suspender. Não inferir gravidade apenas da resposta Sim. | AMARELO se não for possível determinar se a marcha ou corrida está limitada. |
 | Q6 | Apresentou febre, doença aguda ou piora importante da saúde recentemente? | AMARELO e adiar o início até a condição ser revista ou resolvida conforme orientação clínica. Sintoma potencialmente grave atual segue a regra de URGÊNCIA. A janela de “recentemente” e o critério de retorno estão pendentes. | AMARELO se não for possível determinar se existe condição aguda ativa. |
-| Q7 | Utiliza medicamentos que podem interferir na frequência cardíaca, pressão arterial ou glicemia durante o exercício? | Registrar medicamento e mudança recente. Não bloquear só pelo uso. AMARELO se o efeito/condição ainda não foi considerado para o escopo pretendido; manter liberação vigente quando a situação já foi revisada e não mudou. | AMARELO para esclarecer medicamento, mudança e relevância clínica, sem exigir que o paciente estime sozinho o efeito farmacológico. |
+| Q7 | Você utiliza medicamentos regularmente ou teve alguma mudança recente nos seus medicamentos? | Solicitar os nomes e, se necessário, dose e mudança recente; ou consultar os medicamentos já registrados no HAG OS conforme acesso autorizado. O paciente não classifica o risco. A relevância clínica é avaliada pelo profissional ou por regras previamente validadas. O uso estável já revisado não bloqueia por si só. | Esclarecer somente o necessário com o paciente ou o profissional. Não interpretar “Não sei” como ausência de medicamento ou mudança. |
 | Q8 | Algum profissional de saúde orientou você a evitar ou limitar exercícios? | Restrição ativa incompatível com corrida: VERMELHO. Restrição parcial ainda não traduzida em condições HAG RUN: AMARELO até o médico registrar escopo e limites. Restrições já documentadas e compatíveis: permitir somente dentro delas. | AMARELO até esclarecer se há uma recomendação ativa. |
 
 ### Respostas negativas e combinações
@@ -54,7 +54,7 @@ As perguntas abaixo mantêm o conteúdo proposto pelo responsável. A redação 
 |---|---|---|
 | VERDE, elegível para avaliação funcional | Respostas relevantes completas, sem sinal de alerta ativo, restrição incompatível ou revisão pendente. Uma liberação com restrições pode resultar em VERDE somente dentro do escopo documentado. | Permitir avaliação funcional e, quando a política médica aplicável estiver atendida, oferecer apenas prescrição dentro da autorização. Manter monitoramento em cada check-in. |
 | AMARELO, avaliação necessária | Informação “Não sei” relevante; diagnóstico, medicamento, dor, doença aguda, mudança clínica ou restrição que precisa de interpretação; ou revisão solicitada ainda pendente. | Bloquear prescrição automática de corrida até decisão. Pode permitir completar dados ou avaliação funcional não prescritiva se isso for explicitamente aprovado. AMARELO não é uma proibição geral de toda atividade física. |
-| VERMELHO, exercício suspenso | Restrição ativa incompatível com corrida; evento de esforço relevante não avaliado; suspensão profissional; ou outra condição que o médico classifique como impedimento temporário. | Não iniciar ou retomar sessão HAG RUN. Não permitir que uma liberação anterior sobreponha o evento. Retorno somente após resolução e nova decisão registrada. |
+| VERMELHO, corrida HAG RUN suspensa | Restrição ativa incompatível com corrida; evento de esforço relevante não avaliado; suspensão profissional da corrida; ou outra condição que o médico classifique como impedimento temporário para correr. | Não iniciar ou retomar sessão HAG RUN. Não permitir que uma liberação anterior sobreponha o evento. Retorno à corrida somente após resolução e nova decisão registrada. Não inferir proibição de outras modalidades; restrições mais amplas precisam ser registradas explicitamente pelo profissional. |
 | URGÊNCIA, sintomas potencialmente graves | Relato de sintoma potencialmente grave presente, durante ou próximo ao exercício, conforme lista e texto de gravidade aprovados pelo médico. | Interromper a sessão, impedir retomada automática e apresentar instrução urgente localizada. No Brasil, a mensagem candidata deve orientar acionar SAMU 192 quando houver emergência; redação e condições precisam de aprovação. |
 
 ### Prioridade e atualização do estado
@@ -74,7 +74,7 @@ Uma seleção manual de VERDE não pode apagar um evento urgente ou uma suspens�
 |---|---|---|
 | Liberar | Profissional autenticado, paciente autorizado, data/hora do servidor, versão e respostas da triagem revisada, escopo e justificativa. | VERDE dentro do escopo, enquanto a decisão estiver vigente e não houver evento novo que altere a segurança. |
 | Liberar com restrições | Os mesmos campos, mais limites de frequência, intensidade, duração, restrições e condição de reavaliação definidos pelo médico. | VERDE apenas para sessões que respeitem integralmente os limites. Fora do escopo: AMARELO para ajuste ou VERMELHO se houver suspensão expressa. |
-| Solicitar avaliação adicional | Motivo, avaliação necessária, profissional/responsável e condição para revisar a pendência. | AMARELO; sem prescrição automática até a decisão requerida. |
+| Solicitar avaliação | Motivo, avaliação necessária, profissional/responsável e condição para revisar a pendência. | AMARELO; sem prescrição automática até a decisão requerida. |
 | Suspender | Motivo, escopo da suspensão e condição para reconsiderar. | VERMELHO; nenhuma retomada automática por passagem do tempo ou por respostas negativas subsequentes. |
 
 O registro deve ser auditável e versionado. Uma nova decisão não apaga a anterior; registra sua sucessão e o evento ou avaliação que motivou a alteração. O prazo de revisão pode ser definido pelo médico em cada decisão, sem validade universal de 30, 60 ou 90 dias.
@@ -94,7 +94,7 @@ A liberação mantém efeito somente se a pessoa continuar sem evento impeditivo
 | Febre, doença aguda ou piora importante de saúde | Adiar sessão e colocar em AMARELO se a condição puder interferir no exercício. Nova decisão quando necessário. | Definição de “recentemente”, duração da pausa e critério de retorno. |
 | Mudança de medicamento ou condição clínica relevante | AMARELO se puder alterar a resposta ou ultrapassar o escopo registrado. Não apagar a decisão anterior. | Quais mudanças exigem revisão e qual informação pedir. |
 | Restrição profissional nova | VERMELHO se incompatível com corrida; AMARELO enquanto limites parciais aguardam documentação. | Como registrar, validar e encerrar a restrição. |
-| Recuperação insuficiente, sem outro sintoma | Não invalida automaticamente a liberação médica. Adiar ou não realizar a sessão e impedir progressão conforme o protocolo de treino aprovado. | Limiares, recorrência, prazo e quando encaminhar. |
+| Recuperação insuficiente, sem outro sintoma | Não invalida automaticamente a liberação médica. Adiar ou não realizar a corrida e impedir progressão conforme o protocolo de treino aprovado. | Limiares, recorrência, prazo e quando encaminhar. |
 | RPE fora do alvo ou sessão não concluída, sem novo sinal de segurança | Registrar execução e resposta; não converter por si só em URGÊNCIA ou diagnóstico. Aplicar regra de manter/reduzir/revisar do protocolo de carga. | Critérios quantitativos de ação e redução concreta. |
 | Data de revisão definida pelo médico atingida | AMARELO para nova revisão antes de prescrever fora de qualquer decisão ainda vigente. Não apagar a decisão anterior. | Definir se a decisão fica suspensa integralmente ou se algum escopo limitado permanece válido. |
 
@@ -180,3 +180,76 @@ Essas fontes sustentam apenas os princípios citados. Não determinam os cortes 
 ## 13. Segurança do desenvolvimento
 
 Este documento é uma proposta clínica documental. Não alterou motor, interface, RPCs, migrações ou Supabase. Não executar regras no código até decisão médica registrada. Após aprovação, especificar testes de cada combinação em dados sintéticos e validar o comportamento no servidor e na interface antes de qualquer consideração de uso assistencial.
+
+## 14. Adendo de usabilidade e política de liberação
+
+Este adendo registra o parecer favorável à arquitetura e os ajustes solicitados. A matriz continua como proposta clínica. Nenhuma decisão desta seção implementa o motor nem aprova os limiares clínicos.
+
+### 14.1 Q7, medicamentos
+
+**Redação proposta ao paciente:** “Você utiliza medicamentos regularmente ou teve alguma mudança recente nos seus medicamentos?”
+
+Se a resposta for Sim, solicitar apenas os nomes e as mudanças recentes necessárias para revisar a situação, ou mostrar os medicamentos já registrados no HAG OS para confirmação pelo paciente. A consulta aos registros deve respeitar a autorização já existente. O paciente não precisa conhecer a farmacologia nem classificar medicamentos como de risco. A relevância para o exercício cabe ao profissional ou a regras previamente validadas. Não bloquear apenas pelo uso estável de um medicamento já considerado em uma decisão vigente.
+
+Se a resposta for Não sei, solicitar esclarecimento ou revisão profissional, sem converter a resposta em ausência de medicamento. A ausência de registro no HAG OS não prova que a pessoa não use medicamentos.
+
+### 14.2 Cartão profissional com quatro ações
+
+Proposta de cartão resumido no prontuário:
+
+**HAG RUN | Segurança e liberação**
+
+| Ação | Efeito candidato |
+|---|---|
+| **Liberar** | Registra corrida permitida dentro do escopo confirmado. |
+| **Liberar com restrições** | Registra limites explícitos, como frequência, intensidade, duração, condições e reavaliação, definidos pelo médico. |
+| **Solicitar avaliação** | Mantém AMARELO e indica somente a informação ou avaliação necessária para resolver a pendência. |
+| **Suspender** | Mantém VERMELHO para corrida HAG RUN, registra escopo e condição para reconsideração. |
+
+Para uma condição estável já avaliada, a ação não deve exigir uma evolução longa. A proposta é confirmar o escopo, registrar decisão, justificativa breve estruturada e, quando necessário, texto livre opcional. O registro precisa identificar médico, paciente autorizado, data/hora do servidor, versão da triagem consultada e decisão. A exigência de preenchimento adicional depende do evento e da política de auditoria aprovada.
+
+Não deve haver botão simples que mude URGÊNCIA para VERDE enquanto o evento urgente estiver ativo. Primeiro é necessária avaliação, resolução registrada e uma nova decisão médica.
+
+### 14.3 Escopo de VERMELHO
+
+VERMELHO significa **corrida HAG RUN suspensa**. Ele não deve ser apresentado como proibição de toda atividade física. Se a avaliação médica determinar restrição mais ampla, registrar explicitamente esse escopo e suas condições; o estado de corrida, por si só, não autoriza nem proíbe outra modalidade.
+
+Exemplo para discussão: dor no joelho que altera a marcha mantém a corrida HAG RUN suspensa enquanto se avalia a limitação. A possibilidade de outra atividade depende de decisão clínica própria e não é inferida pelo aplicativo.
+
+### 14.4 Política de autorização inicial
+
+O parecer recomenda que VERDE, sem intercorrências e com dados necessários completos, permita seguir à avaliação funcional e à prescrição segundo regras clínicas aprovadas, sem exigir um clique médico individual em todos os casos. AMARELO exige análise médica antes de prescrição automática; VERMELHO suspende corrida até resolução e decisão documentada; URGÊNCIA interrompe e orienta atendimento imediato quando indicado.
+
+Há uma decisão de governança ainda pendente: exigir autorização médica inicial para todos ou permitir o fluxo automático em VERDE. São opções institucionais, não regras clínicas equivalentes:
+
+| Opção | Regra de produto proposta | Estado |
+|---|---|---|
+| A. Liberação automática em VERDE | Após triagem completa e avaliação funcional, permitir prescrição somente dentro do protocolo aprovado e sem sinal, restrição ou revisão pendente. AMARELO continua exigindo decisão médica. | Opção preferida no parecer; aprovação de governança pendente. |
+| B. Autorização médica inicial obrigatória | Todo paciente aguarda uma decisão médica antes da primeira prescrição, inclusive quem teria resultado VERDE. | Alternativa disponível; aprovação de governança pendente. |
+
+Qualquer política escolhida deve ser única, explícita e auditável. Não presumir que “VERDE” signifique liberação irrestrita ou que uma decisão médica inicial cubra alterações futuras de saúde, escopo ou intensidade.
+
+### 14.5 Resolução dirigida de pendências sem repetir a triagem
+
+O médico deve receber a resposta original, a pergunta que gerou a pendência, o seguimento já respondido, o estado vigente, eventual liberação anterior, o evento novo e o escopo de corrida pretendido. A tela solicita somente o dado faltante para aquela decisão.
+
+Exemplos de fluxo:
+
+1. **Condição estável já avaliada:** Q4 identifica hipertensão previamente registrada, sem evento novo. O cartão apresenta a decisão e o escopo já documentados. O médico confirma que continuam aplicáveis, escolhe Liberar ou Liberar com restrições e registra justificativa breve. O paciente não precisa responder outra vez às oito perguntas.
+2. **Mudança de medicamento:** Q7 registra o nome e a mudança, ou pede confirmação do registro existente. O médico avalia o efeito dentro do escopo atual e escolhe manter a liberação, restringir ou solicitar avaliação. A triagem original permanece no histórico.
+3. **Limitação musculoesquelética:** Q5 abre somente o seguimento relacionado à dor e função. O médico pode manter AMARELO, suspender corrida ou registrar decisão individual. Não se presume autorização de outra modalidade.
+4. **Sintoma potencialmente grave novo:** a ocorrência suspende o efeito da liberação anterior. O cartão mostra o evento e não oferece uma liberação direta enquanto ele estiver ativo. Após avaliação e resolução documentadas, o médico registra uma decisão nova, relacionada à anterior.
+5. **Informação insuficiente sem evento grave:** o cartão destaca somente a pergunta sem resposta e oferece Solicitar avaliação. O estado permanece AMARELO até esclarecimento, sem reiniciar o questionário completo.
+
+O histórico de triagem e de decisões é append-only na proposta: uma nova decisão referencia e sucede a anterior, sem apagar a resposta que originou a pendência.
+
+### 14.6 Estado desta decisão
+
+| Item | Estado |
+|---|---|
+| Nova redação de Q7 e responsabilidade de classificar medicamentos | Proposta incorporada; redação e fluxo aguardam aprovação final |
+| Quatro ações do cartão profissional | Proposta incorporada |
+| VERMELHO limitado à corrida HAG RUN, salvo escopo médico mais amplo | Proposta incorporada |
+| Liberação automática após VERDE ou autorização médica inicial para todos | Decisão de governança pendente; preferência recebida por VERDE automático, sem aprovação formal registrada |
+| Resolução dirigida de pendências sem repetir as oito perguntas | Proposta incorporada |
+| Alteração do motor, interface, RPCs, migrações ou Supabase | Não realizada nem autorizada nesta etapa |

@@ -80,3 +80,18 @@ Não alterar o motor até haver decisões clínicas registradas para triagem, se
 ## 6. Limites desta decisão
 
 Este registro não modifica a matriz global nem as prescrições individuais existentes. Não altera motor, interface, RPCs, migrações ou dados; não aprova segurança para exercício; não substitui avaliação clínica; e não autoriza uso do HAG RUN com pacientes.
+
+## 7. Parecer de usabilidade da matriz de segurança
+
+O parecer recebido considera adequada a arquitetura da triagem breve, dos estados operacionais, da liberação individual e com restrições, do check-in, da interrupção por sintoma e da autorização auditável no servidor. Os ajustes propostos estão registrados na seção 14 da [matriz de triagem e liberação](HAG_RUN_MATRIZ_TRIAGEM_SEGURANCA_LIBERACAO_PROPOSTA_v1.md).
+
+| Item | Registro do parecer | Estado |
+|---|---|---|
+| Q7, medicamentos | Perguntar se usa medicamentos regularmente ou se houve mudança recente. O paciente informa nomes ou confirma dados existentes; não classifica risco farmacológico. | Redação proposta incorporada; revisão final pendente |
+| Cartão médico | Ações Liberar, Liberar com restrições, Solicitar avaliação e Suspender, com escopo e justificativa breve | Proposta incorporada |
+| VERMELHO | Suspende a corrida HAG RUN. Restrições mais amplas precisam ser explicitadas pelo profissional. | Proposta incorporada |
+| Autorização inicial | Preferência recebida por permitir fluxo automático em VERDE quando triagem e avaliação funcional estiverem completas; manter análise médica no AMARELO. A autorização obrigatória para todos continua como opção institucional. | Decisão de governança pendente |
+| Resolução de pendências | Médico revisa somente resposta/evento e dados necessários, preservando a triagem anterior, sem repetir o questionário completo. | Proposta incorporada |
+| Implementação | Nenhuma autorização para modificar regras clínicas do motor. | Não autorizada |
+
+A próxima prioridade clínica é definir critérios de progressão, manutenção, redução concreta de carga e retorno após interrupções. A preferência pelo Modelo B de R2 permanece apenas como hipótese de refinamento.
