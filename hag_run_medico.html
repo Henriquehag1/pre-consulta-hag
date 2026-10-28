@@ -5,7 +5,69 @@
 </style></head><body><header><div class="kicker">HAG OS · HAG RUN</div><h1>Revisão clínica</h1><div class="sub">A autorização é individual, versionada e validada no servidor.</div></header><main>
 <section class="card"><div class="field"><label for="patientId">Identificador interno do paciente</label><input id="patientId" autocomplete="off"><small class="hint">O identificador localiza o pedido; o servidor exige vínculo profissional ativo antes de revelar ou alterar dados.</small></div><button id="load" class="btn">Carregar contexto autorizado</button><div id="status" class="status" role="status"></div></section>
 <section id="requestCard" class="card hide"><div class="kicker">Resumo submetido pelo paciente</div><h2>Triagem e avaliação</h2><pre id="request"></pre><div class="field"><label for="decision">Decisão clínica</label><select id="decision"><option value="released">Liberar</option><option value="released_with_restrictions">Liberar com restrições</option><option value="review">Solicitar avaliação</option><option value="suspended">Suspender corrida</option></select></div><div class="field"><label for="scope">Escopo autorizado, em JSON</label><textarea id="scope">{"running_allowed":true,"adaptation_allowed":false,"scope_version":"1"}</textarea><small class="hint">Adaptação automática começa desativada. Defina limites individualizados e documente o escopo.</small></div><div class="field"><label for="plan">Plano inicial prescrito pelo médico, em JSON</label><textarea id="plan" placeholder='{"week":1,"sessions":[{"id":"sessao-1","title":"Plano definido pelo médico","segments":[]}]} '></textarea></div><div class="field"><label for="reason">Justificativa</label><textarea id="reason" minlength="3" maxlength="1000" required></textarea></div><button class="btn" data-action="released">Liberar</button><button class="btn warn" data-action="released_with_restrictions">Liberar com restrições</button><button class="btn secondary" data-action="review">Solicitar avaliação</button><button class="btn danger" data-action="suspended">Suspender</button></section>
-<section class="card"><h2>Integração do HAG OS necessária</h2><p class="sub">Este painel recebe uma configuração efêmera em <code>window.HAG_RUN_CLINICIAN_CONFIG</code> contendo URL Supabase, chave publicável e access token da sessão autenticada. Não coloque service_role, token na URL ou credenciais em armazenamento persistente. A autorização final e o escopo do profissional são conferidos pelo RPC.</p></section>
+<section class="card"><h2>Conexão segura com o HAG OS</h2><p class="sub">Quando aberto pelo contêiner do HAG OS, o painel solicita a sessão autenticada por mensagem same-origin. O token de sessão trafega somente em memória e no header Authorization; não vai para URL ou armazenamento local. A chave service_role não é aceita. A autorização do profissional e o vínculo com o paciente são verificados pelo RPC.</p></section>
 </main><script src="hag_run_store.js"></script><script>
-'use strict';(function(){var $=function(id){return document.getElementById(id)},cfg=window.HAG_RUN_CLINICIAN_CONFIG||{},store=HAGRunStore.createClinicianStore(cfg),patientId='';function status(message,kind){$('status').textContent=message;$('status').className='status '+(kind||'');}if(!store.available)status(store.reason,'error');$('load').addEventListener('click',async function(){patientId=$('patientId').value.trim();if(!patientId){status('Informe o identificador interno.','error');return;}try{status('Consultando o contexto autorizado pelo servidor…');var result=await store.context(patientId);if(!result.ok)throw new Error('Não foi possível carregar o contexto.');if(!result.request&&!result.program)throw new Error('Não há solicitação ou programa para este paciente.');$('request').textContent=JSON.stringify({request:result.request,program:result.program,prescription:result.prescription,history:result.history,authorization_history:result.authorization_history},null,2);$('requestCard').classList.remove('hide');status(result.request?'Solicitação carregada. Revise os dados e registre uma decisão.':'Programa e histórico carregados. Você pode registrar revisão, ajuste ou suspensão.','ok');}catch(err){$('requestCard').classList.add('hide');status(err.message,'error');}});document.addEventListener('click',async function(e){var button=e.target.closest('[data-action]');if(!button)return;try{var decision=button.dataset.action,scope=JSON.parse($('scope').value),plan=['released','released_with_restrictions'].includes(decision)?JSON.parse($('plan').value):null,reason=$('reason').value.trim();button.disabled=true;var result=await store.review(patientId,decision,scope,plan,reason);if(!result.ok)throw new Error('Decisão não confirmada.');status('Decisão registrada. Autorização '+result.authorization_id+'. Prescrição '+(result.prescription_id||'não emitida')+'.','ok');$('requestCard').classList.add('hide');}catch(err){status(err.message,'error');}finally{button.disabled=false;}});})();
+'use strict';
+(function(){
+  var $=function(id){return document.getElementById(id)},store=null,patientId='',pending=new Map();
+  var hostOrigin=new URLSearchParams(location.search).get('hag_run_host_origin')||'';
+  try{if(new URL(hostOrigin).origin!==hostOrigin)hostOrigin='';}catch(_){hostOrigin='';}
+  function status(message,kind){$('status').textContent=message;$('status').className='status '+(kind||'');}
+  function hostRpc(name,body){
+    return new Promise(function(resolve,reject){
+      if(!hostOrigin||window.parent===window)return reject(new Error('HAG OS não conectado.'));
+      var requestId=crypto.randomUUID(),timeout=setTimeout(function(){pending.delete(requestId);reject(new Error('O HAG OS não respondeu à solicitação.'));},15000);
+      pending.set(requestId,{resolve:resolve,reject:reject,timeout:timeout});
+      window.parent.postMessage({type:'HAG_RUN_CLINICIAN_RPC_REQUEST',requestId:requestId,name:name,body:body},hostOrigin);
+    });
+  }
+  function connect(config){
+    store=HAGRunStore.createClinicianStore(config||{});
+    if(!store.available){status(store.reason,'error');return false;}
+    patientId=String(config.patientId||'');
+    if(patientId)$('patientId').value=patientId;
+    status('Canal autenticado do HAG OS conectado. O token permanece no host; o servidor valida o vínculo profissional.','ok');
+    return true;
+  }
+  window.addEventListener('message',function(event){
+    if(event.source!==window.parent||event.origin!==hostOrigin)return;
+    if(event.data?.type==='HAG_RUN_CLINICIAN_SESSION_ERROR'){status(event.data.message||'Sessão profissional indisponível.','error');return;}
+    if(event.data?.type==='HAG_RUN_CLINICIAN_SESSION'){connect({rpcTransport:hostRpc,patientId:event.data.patientId||''});return;}
+    if(event.data?.type==='HAG_RUN_CLINICIAN_RPC_RESPONSE'){
+      var item=pending.get(event.data.requestId);if(!item)return;clearTimeout(item.timeout);pending.delete(event.data.requestId);
+      if(event.data.error)item.reject(new Error(event.data.error));else item.resolve(event.data.result);
+    }
+  });
+  function requestHostSession(){
+    if(window.HAG_RUN_CLINICIAN_CONFIG){connect(window.HAG_RUN_CLINICIAN_CONFIG);return;}
+    if(window.parent!==window&&hostOrigin){window.parent.postMessage({type:'HAG_RUN_REQUEST_CLINICIAN_SESSION'},hostOrigin);return;}
+    status('Abra este painel pelo contêiner autenticado do HAG OS para revisar pacientes.','error');
+  }
+  $('load').addEventListener('click',async function(){
+    patientId=$('patientId').value.trim();
+    if(!patientId){status('Informe o identificador interno.','error');return;}
+    if(!store?.available){status('Abra pelo HAG OS autenticado para revisar pacientes.','error');return;}
+    try{
+      status('Consultando o contexto autorizado pelo servidor…');
+      var result=await store.context(patientId);
+      if(!result.ok)throw new Error('Não foi possível carregar o contexto.');
+      if(!result.request&&!result.program)throw new Error('Não há solicitação ou programa para este paciente.');
+      $('request').textContent=JSON.stringify({request:result.request,program:result.program,prescription:result.prescription,history:result.history,authorization_history:result.authorization_history},null,2);
+      $('requestCard').classList.remove('hide');
+      status(result.request?'Solicitação carregada. Revise os dados e registre uma decisão.':'Programa e histórico carregados. Você pode registrar revisão, ajuste ou suspensão.','ok');
+    }catch(err){$('requestCard').classList.add('hide');status(err.message,'error');}
+  });
+  document.addEventListener('click',async function(event){
+    var button=event.target.closest('[data-action]');if(!button)return;
+    if(!store?.available||!patientId){status('Carregue um paciente autorizado antes de registrar a decisão.','error');return;}
+    try{
+      var decision=button.dataset.action,scope=JSON.parse($('scope').value),plan=['released','released_with_restrictions'].includes(decision)?JSON.parse($('plan').value):null,reason=$('reason').value.trim();
+      button.disabled=true;var result=await store.review(patientId,decision,scope,plan,reason);
+      if(!result.ok)throw new Error('Decisão não confirmada.');
+      status('Decisão registrada. Autorização '+result.authorization_id+'. Prescrição '+(result.prescription_id||'não emitida')+'.','ok');
+      $('requestCard').classList.add('hide');
+    }catch(err){status(err.message,'error');}finally{button.disabled=false;}
+  });
+  requestHostSession();
+})();
 </script></body></html>

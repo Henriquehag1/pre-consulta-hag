@@ -85,6 +85,7 @@ test('clinician operations require an ephemeral authenticated session and never 
   assert.equal(createClinicianStore({ url: 'https://dev.supabase.co', anonKey: 'anon' }).available, false);
   const serviceJwt = `header.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.signature`;
   assert.equal(createClinicianStore({ url: 'https://dev.supabase.co', anonKey: serviceJwt, accessToken: 'x' }).available, false);
+  assert.equal(createClinicianStore({ url: 'https://dev.supabase.co', anonKey: 'anon-public', accessToken: serviceJwt }).available, false);
   const calls=[];
   const clinician=createClinicianStore({url:'https://dev.supabase.co',anonKey:'anon',accessToken:'session-jwt'},async(url,options)=>{
     calls.push({url,options}); return response({ok:true,request:{id:'r1'}});
@@ -93,6 +94,16 @@ test('clinician operations require an ephemeral authenticated session and never 
   assert.equal(calls[0].url.endsWith('/hag_run_clinician_context'),true);
   assert.match(calls[0].options.headers.Authorization,/^Bearer session-jwt$/);
   assert.deepEqual(JSON.parse(calls[0].options.body),{p_patient_id:'patient-A'});
+});
+
+test('clinician panel can use a host RPC channel without receiving a key or access token', async () => {
+  const calls=[];
+  const clinician=createClinicianStore({patientId:'synthetic-patient-a',rpcTransport:async(name,body)=>{
+    calls.push({name,body});return {ok:true,request:{id:'request-1'}};
+  }});
+  assert.equal(clinician.available,true);
+  await clinician.context('synthetic-patient-a');
+  assert.deepEqual(calls,[{name:'hag_run_clinician_context',body:{p_patient_id:'synthetic-patient-a'}}]);
 });
 
 test('execution writes idempotency key, observations, recovery and progression recommendation', async () => {

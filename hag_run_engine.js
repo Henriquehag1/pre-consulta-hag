@@ -1,8 +1,8 @@
-/* HAG RUN deterministic prescription core. No storage or network side effects. */
+/* HAG RUN functional assessment and run-record utilities. No dose activation until protocol approval. */
 'use strict';
 
-const VERSION = 'hag-run-engine/0.1.0';
-const LEVELS = ['R0', 'R1', 'R2', 'R3', 'R4', 'R5'];
+const VERSION = 'hag-run-engine/0.2.0-clinical-gate';
+const LEVELS = ['R0', 'R1', 'R2', 'R3', 'R4'];
 
 function finiteNumber(value, name, min, max, required = false) {
   if (value == null || value === '') {
@@ -79,6 +79,7 @@ function normalizeProfile(input) {
   };
 }
 
+// The existing R0-R4 cutoffs are provisional labels only; never treat them as clearance or dose selection.
 function classifyRunner(input, options = {}) {
   const p = normalizeProfile(input);
   const asOf = options.asOf || input.assessmentDate ? new Date(options.asOf || input.assessmentDate) : new Date();
@@ -91,9 +92,7 @@ function classifyRunner(input, options = {}) {
   const usablePerformanceResult = datedResults.find(r => r.distanceKm >= 3 && r.distanceKm <= 10) || null;
   const hasRecent5k = datedResults.some(r => r.distanceKm >= 5 && r.distanceKm <= 10);
   let level;
-  if (p.goal === 'improve_5k' && usablePerformanceResult && p.runningDaysPerWeek >= 3 && p.weeklyKm >= 15 && p.longestRunKm >= 5) {
-    level = 'R5';
-  } else if ((hasRecent5k || p.longestRunKm >= 5) && p.runningDaysPerWeek >= 2 && p.weeklyKm >= 8) {
+  if ((hasRecent5k || p.longestRunKm >= 5) && p.runningDaysPerWeek >= 2 && p.weeklyKm >= 8) {
     level = 'R4';
   } else if (p.maxContinuousMinutes >= 30) {
     level = 'R3';
@@ -116,8 +115,9 @@ function classifyRunner(input, options = {}) {
   return {
     engineVersion: VERSION,
     level,
-    eligibleForAutomaticPlan: reviewReasons.length === 0,
-    requiresProfessionalReview: reviewReasons.length > 0,
+    functionalClassificationOnly: true,
+    eligibleForAutomaticPlan: false,
+    requiresProfessionalReview: true,
     reviewReasons,
     cautionReasons,
     evidence: {
@@ -132,170 +132,26 @@ function classifyRunner(input, options = {}) {
   };
 }
 
-function segment(type, seconds, paceSecondsPerKm, rpeTarget, modality) {
-  const s = { type, seconds, rpeTarget };
-  if (paceSecondsPerKm != null) {
-    s.paceSecondsPerKm = Math.round(paceSecondsPerKm);
-    s.pace = formatPace(paceSecondsPerKm);
-    if (modality === 'treadmill') s.speedKmh = paceToKmh(paceSecondsPerKm);
-  }
-  return s;
-}
-
-function makeIntervals(runMinutes, recoveryMinutes, cycles, pace, rpe, modality) {
-  const out = [];
-  for (let i = 0; i < cycles; i++) {
-    out.push(segment('run', runMinutes * 60, pace, rpe, modality));
-    if (recoveryMinutes > 0) out.push(segment('walk', recoveryMinutes * 60, null, 2, modality));
-  }
-  return out;
-}
-
-const BEGINNER_STAGES = [
-  [60, 90, 7], [60, 90, 7], [90, 90, 7], [90, 90, 7], [120, 120, 6], [120, 120, 6],
-  [180, 120, 5], [180, 120, 5], [240, 120, 4], [240, 120, 4], [360, 120, 3], [600, 120, 2],
-];
-const R2_STAGES = [
-  [180, 120, 5], [180, 120, 5], [240, 120, 4], [180, 120, 5],
-  [300, 120, 3], [300, 120, 3], [600, 120, 2], [900, 120, 1],
-];
-const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-
-function chooseSpacedDays(available, maximum) {
-  const sorted = [...available].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
-  // Brute-force the seven-day set so an early greedy choice cannot hide a
-  // larger valid schedule. Prefer more recovery spacing when ties remain.
-  let best = [];
-  function search(start, chosen) {
-    if (chosen.length > best.length) best = [...chosen];
-    if (chosen.length === maximum) return;
-    for (let i = start; i < sorted.length; i++) {
-      const index = DAY_ORDER.indexOf(sorted[i]);
-      if (chosen.every(day => {
-        const otherIndex = DAY_ORDER.indexOf(day);
-        const gap = Math.min((index - otherIndex + 7) % 7, (otherIndex - index + 7) % 7);
-        return gap >= 2;
-      })) search(i + 1, [...chosen, sorted[i]]);
-    }
-  }
-  search(0, []);
-  return best;
-}
-
-function sumSeconds(segments) { return segments.reduce((sum, item) => sum + item.seconds, 0); }
-
-function makeSession({ id, title, segments, modality, level, objective, cautionReasons }) {
-  return {
-    id,
-    title,
-    level,
-    objective,
-    modality,
-    segments,
-    durationSeconds: sumSeconds(segments),
-    durationMinutes: Math.ceil(sumSeconds(segments) / 60),
-    cautionReasons: [...cautionReasons],
-  };
-}
-
-function generate5kWeek(input, week = 1, options = {}) {
-  const p = normalizeProfile(input);
-  const asOf = options.asOf || input.assessmentDate || new Date().toISOString().slice(0, 10);
+function generate5kWeek(input, week = null, options = {}) {
+  const asOf = options.asOf || input?.assessmentDate || new Date().toISOString().slice(0, 10);
   const classification = classifyRunner(input, { asOf });
-  if (!Number.isInteger(week) || week < 1 || week > 12) throw new RangeError('week must be an integer from 1 to 12');
-  if (!classification.eligibleForAutomaticPlan) {
-    return { engineVersion: VERSION, classification, status: 'professional_review', sessions: [], explanation: 'A avaliação profissional é necessária antes de gerar ou progredir a prescrição.' };
-  }
-  if (!['5k', 'improve_5k'].includes(p.goal)) throw new RangeError('generate5kWeek only accepts 5 km goals');
-  if (p.availability.length === 0) return { engineVersion: VERSION, classification, status: 'incomplete_availability', sessions: [], explanation: 'Informe os dias disponíveis para corrida.' };
-
-  const cap = p.habitualPaceSecondsPerKm;
-  const easyPace = cap == null ? null : Math.min(1800, cap + (p.paceRpe != null && p.paceRpe > 4 ? 30 : 0));
-  const desiredSessions = classification.level === 'R0' || classification.level === 'R1' ? 2 : 3;
-  const workloadLimit = p.runningDaysPerWeek > 0 ? p.runningDaysPerWeek : (classification.level === 'R0' || classification.level === 'R1' ? 2 : 1);
-  const days = chooseSpacedDays(p.availability, Math.min(desiredSessions, workloadLimit));
-  if (days.length === 0) return { engineVersion: VERSION, classification, status: 'insufficient_recovery_days', sessions: [], explanation: 'Selecione dias com pelo menos um dia sem corrida entre as sessões.' };
-  const sessions = [];
-  const addEasy = (day, minutes, name = 'Corrida leve') => {
-    const body = [segment('warmup_walk', 5 * 60, null, 2, p.modality), segment('run', minutes * 60, easyPace, 3, p.modality), segment('cooldown_walk', 5 * 60, null, 2, p.modality)];
-    sessions.push({ day, ...makeSession({ id: `hag-run-${classification.level.toLowerCase()}-w${week}-${day}`, title: name, segments: body, modality: p.modality, level: classification.level, objective: 'Ritmo confortável, com esforço percebido baixo e controlado.', cautionReasons: classification.cautionReasons }) });
-  };
-  const addIntervals = (runSec, walkSec, cycles, day) => {
-    const body = [segment('warmup_walk', 5 * 60, null, 2, p.modality), ...makeIntervals(runSec / 60, walkSec / 60, cycles, easyPace, 3, p.modality), segment('cooldown_walk', 5 * 60, null, 2, p.modality)];
-    sessions.push({ day, ...makeSession({ id: `hag-run-${classification.level.toLowerCase()}-w${week}-${day}`, title: 'Corrida e caminhada', segments: body, modality: p.modality, level: classification.level, objective: 'Alternar corrida leve e caminhada sem ultrapassar o esforço indicado.', cautionReasons: classification.cautionReasons }) });
-  };
-
-  if (classification.level === 'R0' || classification.level === 'R1') {
-    const [runSec, walkSec, cycles] = BEGINNER_STAGES[week - 1];
-    days.forEach(day => addIntervals(runSec, walkSec, cycles, day));
-  } else if (classification.level === 'R2') {
-    const [runSec, walkSec, cycles] = R2_STAGES[Math.min(week, R2_STAGES.length) - 1];
-    days.forEach((day, index) => addIntervals(runSec, walkSec, index === days.length - 1 ? Math.max(1, cycles - 1) : cycles, day));
-  } else if (classification.level === 'R3') {
-    const base = Math.min(35, Math.max(18, Math.floor(p.maxContinuousMinutes * 0.7)));
-    const gain = Math.floor((week - 1) / 2) * 3;
-    days.forEach((day, index) => addEasy(day, Math.min(base + gain + (index === days.length - 1 ? 5 : 0), 40), index === days.length - 1 ? 'Corrida contínua mais longa' : 'Corrida contínua leve'));
-  } else if (classification.level === 'R4') {
-    days.forEach((day, index) => {
-      if (index === 1) addIntervals(180, 120, 4 + Math.floor((week - 1) / 3), day);
-      else addEasy(day, index === days.length - 1 ? Math.min(45, 30 + week) : Math.min(35, 25 + Math.floor((week - 1) / 2)), index === days.length - 1 ? 'Corrida longa confortável' : 'Corrida leve');
-    });
-  } else {
-    const asOfDate = new Date(asOf);
-    const latestResult = p.recentResults
-      .filter(r => r.distanceKm >= 3 && r.distanceKm <= 10 && r.date && (asOfDate - new Date(r.date)) <= 90 * 86400000 && (asOfDate - new Date(r.date)) >= 0)
-      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-    const predicted5kTime = latestResult ? latestResult.timeSeconds * Math.pow(5 / latestResult.distanceKm, 1.06) : null;
-    const estimatedRacePace = predicted5kTime ? predicted5kTime / 5 : null;
-    const racePace = estimatedRacePace != null && estimatedRacePace >= 120 && estimatedRacePace <= 1800
-      ? estimatedRacePace : cap;
-    days.forEach((day, index) => {
-      if (index === 1) {
-        const workPace = racePace == null ? null : racePace;
-        const body = [segment('warmup_walk', 5 * 60, null, 2, p.modality), ...makeIntervals(3, 2, 5, workPace, 7, p.modality), segment('cooldown_walk', 5 * 60, null, 2, p.modality)];
-        sessions.push({ day, ...makeSession({ id: `hag-run-r5-w${week}-${day}`, title: 'Intervalos em ritmo-alvo estimado de 5 km', segments: body, modality: p.modality, level: 'R5', objective: 'Ritmo-alvo estimado por resultado recente; confirmar esforço percebido e ajustar se não for controlado.', cautionReasons: classification.cautionReasons }) });
-      } else addEasy(day, index === days.length - 1 ? Math.min(50, 35 + week) : 30, index === days.length - 1 ? 'Corrida longa confortável' : 'Corrida leve');
-    });
-  }
-
   return {
     engineVersion: VERSION,
-    assessedAt: new Date(asOf).toISOString().slice(0, 10),
     classification,
-    status: 'ready',
-    goal: p.goal,
-    week,
-    plannedDays: sessions.map(s => s.day),
-    progressionPolicy: 'A semana seguinte depende de tolerância e conclusão registradas; uma única sessão bem tolerada não avança o plano.',
-    sessions,
+    status: 'clinical_protocol_pending',
+    sessions: [],
+    week: null,
+    requestedStage: week,
+    explanation: 'As matrizes e os critérios quantitativos ainda não foram aprovados para prescrição automática. Solicite um plano individual ao profissional responsável.',
   };
 }
 
-function recommendNext(input) {
-  const log = input || {};
-  if (typeof log.completed !== 'boolean') throw new TypeError('completed must be a boolean');
-  if (!['good', 'partial', 'poor'].includes(log.recovery)) throw new RangeError('recovery is invalid');
-  if (log.difficulty != null && !['easy', 'moderate', 'hard'].includes(log.difficulty)) throw new RangeError('difficulty is invalid');
-  const pain = integerNumber(log.pain, 'pain', 0, 10, true);
-  const rpe = integerNumber(log.rpe, 'rpe', 0, 10, true);
-  const fatigue = integerNumber(log.fatigue, 'fatigue', 0, 10, true);
-  const recovery = log.recovery;
-  const history = Array.isArray(log.recentHistory) ? log.recentHistory.slice(-2) : [];
-  if (log.concerningSymptoms || pain >= 4) return { action: 'professional_review', progressAllowed: false, reason: 'Sintoma relevante ou dor de intensidade alta. Interromper a sessão e solicitar avaliação profissional.' };
-  if (log.injuryDuringRun || log.newInjury) return { action: 'professional_review', progressAllowed: false, reason: 'Nova lesão relatada durante ou após a corrida.' };
-  if (!log.completed) return { action: 'repeat', progressAllowed: false, reason: 'Sessão não concluída. Repetir o estágio após revisar a causa da interrupção.' };
-  if (pain > 0) return { action: 'maintain', progressAllowed: false, reason: 'Dor relatada. Manter ou reduzir a carga, sem progressão automática.' };
-  if (fatigue >= 8 || recovery === 'poor' || rpe >= 9) return { action: 'reduce', progressAllowed: false, reason: 'Fadiga alta, recuperação ruim ou esforço muito alto.' };
-  if (log.difficulty === 'hard' || rpe >= 8 || recovery === 'partial') return { action: 'maintain', progressAllowed: false, reason: 'Esforço alto ou recuperação parcial. Manter o estágio atual.' };
-  const isTolerated = x => x?.completed === true && (x.pain ?? 0) === 0
-    && (x.rpe ?? 10) <= 6 && (x.fatigue ?? 10) < 8 && x.recovery === 'good';
-  // The database authorizes progression only when the immediately previous
-  // persisted execution and the current execution were both tolerated. Keep
-  // the local recommendation identical so the UI cannot offer a rejected week.
-  if (isTolerated(log) && isTolerated(history.at(-1))) {
-    return { action: 'progress', progressAllowed: true, reason: 'Duas sessões consecutivas foram concluídas com boa tolerância.' };
-  }
-  return { action: 'repeat', progressAllowed: false, reason: 'Aguardar outra sessão bem tolerada antes de progredir.' };
+function recommendNext() {
+  return {
+    action: 'professional_review',
+    progressAllowed: false,
+    reason: 'Os critérios clínicos de progressão, manutenção e redução ainda não estão autorizados para automação.',
+  };
 }
 
 function buildRunRecord(input) {

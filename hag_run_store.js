@@ -24,7 +24,7 @@ function createRunStore(config, fetchImpl = fetch) {
   if (isServiceRoleKey(config.anonKey)) {
     return { available: false, reason: 'A chave configurada não pode ser usada no navegador.' };
   }
-  const base = config.url.replace(/\/$/, '');
+  const base = config?.url ? config.url.replace(/\/$/, '') : '';
 
   async function rpc(name, body) {
     const response = await fetchImpl(`${base}/rest/v1/rpc/${name}`, {
@@ -97,11 +97,13 @@ function createRunStore(config, fetchImpl = fetch) {
 }
 
 function createClinicianStore(config, fetchImpl = fetch) {
-  if (!config?.url || !config?.anonKey || !config?.accessToken || isServiceRoleKey(config.anonKey)) {
+  const hostTransport = typeof config?.rpcTransport === 'function' ? config.rpcTransport : null;
+  if (!hostTransport && (!config?.url || !config?.anonKey || !config?.accessToken || isServiceRoleKey(config.anonKey) || isServiceRoleKey(config.accessToken))) {
     return { available: false, reason: 'Abra pelo HAG OS autenticado para revisar pacientes autorizados.' };
   }
-  const base = config.url.replace(/\/$/, '');
+  const base = config?.url ? config.url.replace(/\/$/, '') : '';
   async function rpc(name, body) {
+    if (hostTransport) return hostTransport(name, body);
     const response = await fetchImpl(`${base}/rest/v1/rpc/${name}`, {
       method: 'POST', headers: { apikey: config.anonKey, Authorization: `Bearer ${config.accessToken}`,
         'Content-Type': 'application/json' }, body: JSON.stringify(body),

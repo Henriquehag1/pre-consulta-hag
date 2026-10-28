@@ -90,3 +90,11 @@ Os testes de PostgreSQL e Supabase são integração real contra bancos efêmero
 O HAG OS ainda precisa integrar o painel hag_run_medico.html, fornecendo access token de sessão autenticada em memória. O vínculo clinician_user_id/patient_id deve ser provisionado por processo administrativo confiável e revogável, nunca pelo navegador. Não foi alterado nenhum HTML do HAG OS hospedeiro nesta rodada. Não há provisionamento de equipe, tela de gestão de vínculos, expiração da autorização médica ou edição granular de restrições. O médico precisa informar um plano JSON estruturalmente válido; a migração valida o formato, mas não homologa adequação clínica. R0–R4 e suas matrizes numéricas não estão liberados como algoritmo clínico.
 
 Nenhuma migração foi aplicada a Supabase remoto. Nenhum dado real foi lido ou alterado, não houve mudança em main, merge ou publicação.
+
+## Motor clínico em fail-closed e integração do painel, 27/10/2026
+
+- `npm run verify`: **48 testes Node aprovados** e integridade aprovada. Os testes do motor agora verificam R0–R4 como classificação apenas provisória, bloqueio da geração de sessões, inatividade de R5 e revisão profissional para todos os ciclos enquanto parâmetros clínicos não forem aprovados.
+- `npm run test:ui`: Playwright aprovado em 320 px, iPhone 13 e 768 px. O teste do host sintético valida acesso sem sessão, contexto do paciente, envio de decisão clínica e escopo pelo canal RPC, duração do timer e visibilidade das restrições.
+- O iframe médico está sandboxed sem `allow-same-origin`. A ponte aceita mensagens somente da janela iframe criada, limita as RPCs a contexto e revisão clínica, mantém o access token no host HAG OS e nunca o repassa ao painel, URL ou armazenamento.
+- O HAG OS hospedeiro não foi modificado. A ponte foi preparada e validada em harness local sintético; a inclusão do script no host de desenvolvimento ainda é necessária para ativação real.
+- Doses R0–R4, triagem integral e limites de decisão seguem pendentes de homologação médica. A prescrição continua sendo escrita e versionada por um profissional; o motor não ativa fórmulas numéricas antigas.

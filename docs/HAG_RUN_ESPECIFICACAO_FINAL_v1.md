@@ -581,7 +581,8 @@ Esta seção registra comportamento de segurança implementado, sem aprovar regr
 5. A autorização profissional exige sessão Supabase autenticada e vínculo ativo profissional-paciente verificado no RPC por auth.uid(). O painel não provisiona esse vínculo; ele deve ser criado por processo administrativo confiável.
 6. O médico informa plano e escopo individual. Snapshot da prescrição, decisão, justificativa, usuário profissional e auditoria são gravados no servidor. Adaptação automática inicia desativada.
 7. O servidor bloqueia a liberação quando a solicitação contém sintoma de urgência ativo ou quando o escopo não permite corrida. A urgência permanece pendente até nova decisão profissional após resolução.
-8. Os limiares e recomendações antigos permanecem no motor, mas não são tratados como aprovação clínica. O paciente não pode avançar a dose pelo aplicativo. Mudanças aguardam decisão profissional.
-9. A migração 202610270002_hag_run_medical_gate.sql é aditiva, local e não foi executada em Supabase remoto. As cinco tabelas novas têm RLS habilitada e forçada, sem grants diretos às roles da Data API.
+8. O motor legado de dose e progressão foi removido. `generate5kWeek()` não produz sessões enquanto não houver protocolo clínico aprovado; `recommendNext()` retorna revisão profissional. R0–R4 são informativos e provisórios; R5 permanece reservado.
+9. A ponte HAG OS mantém a sessão no host e expõe ao iframe sandbox somente as RPCs médicas permitidas. A autorização e o vínculo profissional-paciente são verificados no banco.
+10. A migração 202610270002_hag_run_medical_gate.sql é aditiva, local e não foi executada em Supabase remoto. As cinco tabelas novas têm RLS habilitada e forçada, sem grants diretos às roles da Data API.
 
 As lacunas clínicas continuam conforme MED-01 a MED-26. Respostas positivas, desconhecidas ou ausentes encaminham para revisão como proteção conservadora; a lista final de perguntas, orientação de urgência e condutas precisam de homologação antes do uso assistencial. Retorno após doença, lesão ou inatividade não é automático. R0–R4 continuam sem matriz numérica clinicamente aprovada; R5 fica fora do escopo inicial.

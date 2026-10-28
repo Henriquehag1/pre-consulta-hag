@@ -4,6 +4,8 @@ Data: 27/10/2026
 Branch: `codex/hag-run-discovery`
 Status: implementação local, sem aplicação em banco.
 
+**Nota histórica:** a descrição e as decisões anteriores à seção final refletem a arquitetura da primeira migration. Para o estado vigente, consulte também a atualização de integração e motor no final deste registro.
+
 ## Investigação do HAG Treino existente
 
 - O painel autenticado solicita `hag_treino_link(p_patient_id)` e monta o endereço pessoal `treino_HAG.html?t=<token>`.
@@ -74,3 +76,10 @@ A versão seguinte acrescenta um gate médico e não aplica os limiares numéric
 - A autorização local é vinculada ao paciente e ao plano salvo. Revogação é registrada em nova linha de autorização com decisão suspended; não há interface para revogar individualmente token HAG Treino nem prazo automático universal.
 
 Essa implementação é uma barreira técnica e um fluxo de revisão, não homologação clínica. R0–R4, doses, critérios quantitativos de adaptação, orientação completa de urgência, retorno pós-doença/lesão, escopo granular de restrições e critérios adicionais de elegibilidade adulta continuam exigindo regras aprovadas. A interface e o RPC bloqueiam autorização para menores de 18 anos. A demonstração local não persiste dados. Nenhuma alteração foi aplicada ao HAG OS de produção, ao Supabase remoto, à branch `main` ou ao site.
+
+## Integração HAG OS e bloqueio do motor legado, 27/10/2026
+
+- `hag_run_hag_os_bridge.js` usa `HAGAuth` e `HAG_CFG` existentes. O painel abre em iframe sandbox sem `allow-same-origin`; não recebe access token nem chave Supabase. Envia somente duas RPCs permitidas ao host por `postMessage`; o host aplica a sessão atual e o banco verifica `auth.uid()` e o vínculo profissional-paciente. O ID do paciente serve somente para localizar o contexto.
+- O bridge foi testado em host sintético. Não foi adicionado ao HAG OS real/local, porque não houve alteração no hospedeiro. O snippet de montagem e os requisitos de origem estão em `HAG_RUN_ENGINE.md`.
+- `hag_run_engine.js` versão `0.2.0-clinical-gate` não contém mais as matrizes antigas nem progressão por semana. `generate5kWeek()` retorna `clinical_protocol_pending`; `recommendNext()` encaminha a revisão profissional. R0–R4 seguem como classificação funcional provisória; R5 está reservado e inativo.
+- A prescrição individual continua a cargo do médico no painel, com snapshots versionados e auditoria. Isso mantém a execução funcional enquanto evita ativar valores numéricos sem aprovação clínica.

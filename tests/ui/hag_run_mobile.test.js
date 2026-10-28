@@ -11,6 +11,16 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 function createServer() {
   return http.createServer((req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
+    if (pathname === '/hag_os_bridge_fixture.html') {
+      const html = `<!doctype html><html><head><meta name="referrer" content="no-referrer"></head><body>
+        <div id="mount"></div><script>window.HAG_CFG={SUPA_URL:'https://dev.supabase.co',SUPA_KEY:'public-anon-key'};
+        window.HAGAuth={valid:function(){return !location.search.includes('unauth=1')},token:function(){return location.search.includes('service=1')?'header.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature':'header.eyJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.signature'}};
+        window.HAGMotor={paciente:{id:'synthetic-patient-a'}};</script>
+        <script src="/hag_run_hag_os_bridge.js"></script><script>HAGRunHostBridge.mount(document.getElementById('mount'),{panelUrl:'/hag_run_medico.html'});</script>
+      </body></html>`;
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(html);
+      return;
+    }
     const target = path.resolve(root, '.' + pathname);
     if (!target.startsWith(root + path.sep)) return res.writeHead(403).end();
     fs.readFile(target, (error, data) => {
@@ -106,8 +116,60 @@ async function main() {
       }
       await approvedContext.close();
     }
+    const hostContext=await browser.newContext();
+    const hostPage=await hostContext.newPage();
+    const clinicianRequests=[];
+    await hostPage.route('https://dev.supabase.co/rest/v1/rpc/**',async route=>{
+      const request=route.request();
+      if(request.method()==='OPTIONS') return route.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'apikey,authorization,content-type'}});
+      clinicianRequests.push({url:request.url(),headers:request.headers(),body:request.postDataJSON()});
+      const isReview=request.url().endsWith('/hag_run_clinician_review');
+      await route.fulfill({status:200,contentType:'application/json',json:isReview
+        ?{ok:true,authorization_id:'auth-synthetic',prescription_id:'rx-synthetic',decision:'released'}
+        :{ok:true,request:{id:'synthetic-request'},program:null,prescription:null,history:[],authorization_history:[]}});
+    });
+    await hostPage.goto('http://127.0.0.1:'+address.port+'/hag_os_bridge_fixture.html');
+    const panel=hostPage.frameLocator('iframe[title="Painel médico HAG RUN"]');
+    await panel.getByText(/Canal autenticado do HAG OS conectado/).waitFor();
+    assert.equal(await panel.locator('#patientId').inputValue(),'synthetic-patient-a');
+    const panelFrame=hostPage.frames().find(frame=>frame.url().includes('hag_run_medico.html'));
+    const panelUrl=new URL(panelFrame.url());
+    assert.equal(panelUrl.searchParams.has('access_token'),false,'access token must not be placed in the panel URL');
+    assert.equal(panelUrl.searchParams.has('apikey'),false,'Supabase key must not be placed in the panel URL');
+    assert.equal(await panelFrame.evaluate(()=>window.HAG_RUN_CLINICIAN_CONFIG||null),null,'the iframe must not receive an access token config');
+    assert.match(await hostPage.locator('iframe').getAttribute('sandbox'),/allow-scripts/);
+    assert.doesNotMatch(await hostPage.locator('iframe').getAttribute('sandbox'),/allow-same-origin/);
+    await panel.getByRole('button',{name:'Carregar contexto autorizado'}).click();
+    await panel.getByText('Solicitação carregada. Revise os dados e registre uma decisão.').waitFor();
+    assert.equal(clinicianRequests[0].url.endsWith('/hag_run_clinician_context'),true);
+    assert.match(clinicianRequests[0].headers.authorization,/^Bearer header\.eyJyb2xlIjoiYXV0aGVudGljYXRlZCJ9\.signature$/);
+    assert.deepEqual(clinicianRequests[0].body,{p_patient_id:'synthetic-patient-a'});
+    await panel.locator('#scope').fill(JSON.stringify({running_allowed:true,adaptation_allowed:false,patient_instructions:'Plano sintético revisado.'}));
+    await panel.locator('#plan').fill(JSON.stringify({week:1,sessions:[{id:'session-synthetic',segments:[{type:'run',seconds:60,rpeTarget:3}]}]}));
+    await panel.locator('#reason').fill('Autorização sintética para validar o bridge.');
+    await panel.locator('button[data-action="released"]').click();
+    await panel.getByText(/Decisão registrada\. Autorização auth-synthetic/).waitFor();
+    assert.equal(clinicianRequests[1].url.endsWith('/hag_run_clinician_review'),true);
+    assert.deepEqual(clinicianRequests[1].body,{p_patient_id:'synthetic-patient-a',p_decision:'released',
+      p_scope:{running_allowed:true,adaptation_allowed:false,patient_instructions:'Plano sintético revisado.'},
+      p_plan:{week:1,sessions:[{id:'session-synthetic',segments:[{type:'run',seconds:60,rpeTarget:3}]}]},
+      p_reason:'Autorização sintética para validar o bridge.'});
+    await hostContext.close();
+
+    const unauthContext=await browser.newContext();
+    const unauthPage=await unauthContext.newPage();
+    await unauthPage.goto('http://127.0.0.1:'+address.port+'/hag_os_bridge_fixture.html?unauth=1');
+    const unauthPanel=unauthPage.frameLocator('iframe[title="Painel médico HAG RUN"]');
+    await unauthPanel.getByText('Entre no HAG OS para abrir a revisão clínica.').waitFor();
+    await unauthContext.close();
+    const serviceContext=await browser.newContext();
+    const servicePage=await serviceContext.newPage();
+    await servicePage.goto('http://127.0.0.1:'+address.port+'/hag_os_bridge_fixture.html?service=1');
+    const servicePanel=servicePage.frameLocator('iframe[title="Painel médico HAG RUN"]');
+    await servicePanel.getByText('Entre no HAG OS para abrir a revisão clínica.').waitFor();
+    await serviceContext.close();
     assert.deepEqual(errors,[],'browser errors: '+errors.join('; '));
-    console.log('Mobile interface passed at 320px, iPhone 13, and 768px. Unauthorized patients see no prescription; an authorized synthetic plan runs with exact timer duration.');
+    console.log('Mobile UI passed at 320px, iPhone 13, and 768px. Sandboxed HAG OS panel used a host RPC channel without receiving browser credentials; unauthenticated host access was denied.');
   } finally {
     await browser.close();
     await new Promise(resolve=>server.close(resolve));

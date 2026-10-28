@@ -1,51 +1,44 @@
-# HAG RUN, desenvolvimento
+# HAG RUN, motor em desenvolvimento
 
-Implementação inicial independente para Rumo aos 5 km. A interface está em `hag_run_HAG.html`, o motor puro em `hag_run_engine.js`, a persistência opcional em `hag_run_store.js` e a migração aditiva em `supabase/migrations/202610270001_hag_run.sql`.
+A interface do paciente está em `hag_run_HAG.html`; a classificação funcional e os registros puros estão em `hag_run_engine.js`; as regras de segurança ficam em `hag_run_policy.js`; o acesso à persistência passa por `hag_run_store.js`; o gate clínico e as RPCs estão em `supabase/migrations/202610270002_hag_run_medical_gate.sql`.
 
-## O que está pronto
+## Estado do motor
 
-- Avaliação com capacidade contínua, frequência, volume semanal, maior corrida, dias livres, pace conhecido, modalidade, dor e alertas de lesão ou sintomas.
-- Resultado recente opcional para individualizar o nível avançado R5 e calcular uma referência de pace. A página aceita testes de 3 a 10 km.
-- Classificação funcional R0 a R5 e prescrição da semana 1 em sessões segmentadas, com aquecimento, corrida, caminhada e volta à calma.
-- Timer de intervalos, pausa, retomada, pulo de etapa e encerramento. Pular etapas deixa a execução como incompleta. A contagem usa `performance.now()`, preserva pausas e limita cada etapa à duração prescrita.
-- Registro separado da execução real: conclusão, duração, distância, RPE, dificuldade, dor, fadiga, recuperação, sintomas e nova lesão.
-- Progresso condicionado a sessões concluídas e bem toleradas. Dor, sintomas, fadiga alta ou recuperação insuficiente bloqueiam ou seguram o avanço.
-- Temporizador por segmento com pausa, retomada, encerramento e registro da execução realmente realizada.
-- Adaptador Supabase por link pessoal, enviando o token apenas no corpo das RPCs. Não usa `patient_id` do navegador nem chave `service_role`.
-- Histórico do programa, avaliação, perfil funcional, snapshots imutáveis de prescrição, execução, sintomas e recomendação de progressão.
-- Recuperação do plano vigente, semana e até 200 sessões anteriores quando a pessoa reabre o aplicativo.
-- Migração aditiva com RLS habilitada e forçada, acesso às tabelas negado e wrappers públicos `SECURITY INVOKER` delegando a funções internas que validam o token.
+- A faixa inicial ativa contempla R0–R4. A classificação retornada pelo código é apenas funcional e provisória. Não autoriza corrida nem libera plano.
+- R5 foi removido do conjunto ativo e fica reservado para versão futura.
+- `generate5kWeek()` não cria sessões. Retorna `clinical_protocol_pending` até haver matrizes clínicas aprovadas e codificadas.
+- `recommendNext()` sempre retorna `professional_review`. Os antigos cálculos de dose semanal, avanço por semana, intervalos e pace estimado foram removidos do motor executável.
+- O profissional pode registrar uma prescrição individual no painel. O servidor valida estrutura, faixa etária, escopo de corrida, ausência de urgência ativa, identidade profissional e vínculo individual. A prescrição fica versionada e auditada.
+- O paciente executa somente um plano vigente autorizado. O cronômetro respeita a soma prescrita; RPE, dor, fadiga, recuperação e sintomas são registrados separadamente da prescrição.
+- Um relato de dor, lesão ou sintoma cria bloqueio e requer revisão. A adaptação automática continua desativada até existir regra aprovada e dentro do escopo autorizado.
 
-## Classificação operacional
+## Integração com HAG OS
 
-| Nível | Critério principal |
-| --- | --- |
-| R0 | Menos de 5 minutos contínuos |
-| R1 | 5 a menos de 15 minutos contínuos |
-| R2 | 15 a menos de 30 minutos contínuos |
-| R3 | 30 minutos contínuos, sem critério de R4/R5 |
-| R4 | Corrida mais longa de pelo menos 5 km, frequência de 2 dias e volume semanal de 8 km; ou resultado recente de 5 a 10 km |
-| R5 | Melhorar 5 km, teste recente de 3 a 10 km, frequência de 3 dias, volume semanal de 15 km e corrida mais longa de pelo menos 5 km |
+`hag_run_hag_os_bridge.js` conecta o painel a `HAGAuth` e `HAG_CFG` existentes. O iframe usa sandbox sem `allow-same-origin`; a sessão permanece no host. O painel pede operações RPC por `postMessage`; o host limita as chamadas a `hag_run_clinician_context` e `hag_run_clinician_review`, usa a sessão atual no header HTTP e envia somente a resposta ao iframe. Não envia access token ou chave Supabase ao painel, URL ou armazenamento local. O banco valida `auth.uid()` e vínculo profissional-paciente em cada chamada.
 
-Lesão ativa/recente, sintomas preocupantes ou dor atual igual ou superior a 4/10 bloqueiam prescrição automática. Dor leve impede progressão automática. A projeção de pace é uma referência calculada, não promessa de resultado.
+A integração está pronta para inclusão controlada no HAG OS, mas não foi ativada no host. Exemplo do contêiner de desenvolvimento:
 
-## Supabase e identidade
+```html
+<div id="hag-run-medical-panel"></div>
+<script src="hag_run_hag_os_bridge.js"></script>
+<script>
+  HAGRunHostBridge.mount(document.getElementById('hag-run-medical-panel'), {
+    panelUrl: '/hag_run_medico.html'
+  });
+</script>
+```
 
-A arquitetura detalhada está em [HAG_RUN_DECISION.md](HAG_RUN_DECISION.md). O paciente continua sem conta, como no link existente `treino_HAG.html?t=<token>`. O banco confirma token, revogação e expiração opcional, e deriva `patient_id`. Nenhuma migração ou escrita foi feita no projeto de produção.
+O painel e o host precisam estar na mesma origem. O HAG OS deve ter carregado `hag_auth.js` e definir `HAG_CFG.SUPA_URL` e `HAG_CFG.SUPA_KEY`. O vínculo entre o usuário profissional e o paciente continua sendo provisionado por processo administrativo confiável; o ID recebido pelo painel serve somente para localizar o contexto e nunca concede acesso.
 
-A integração requer que o host defina `window.HAG_RUN_CONFIG` com `url` e `anonKey` publicável de um projeto isolado que tenha a migração aplicada. Sem essa configuração, o aplicativo oferece apenas demonstração local. Nunca configure chave `service_role` no navegador. O schema `hag_run_private` deve ficar fora das schemas expostas pela Data API.
-
-## Executar localmente
-
-No diretório `HAG_RUN_dev`, rode:
+## Rodar localmente
 
 ```sh
 python3 -m http.server 8766 --bind 127.0.0.1
 ```
 
-Abra `http://127.0.0.1:8766/hag_run_HAG.html`. Sem token pessoal e sem configuração Supabase, use um perfil fictício no modo demonstração.
+Abra `http://127.0.0.1:8766/hag_run_HAG.html` para demonstração sem persistência. Para testar o bridge, a origem local precisa servir também o fixture sintético existente em `tests/ui/hag_run_mobile.test.js`.
 
-## Testes
+## Verificações
 
 ```sh
 npm run verify
@@ -54,19 +47,8 @@ npm run test:supabase
 npm run test:ui
 ```
 
-- `npm run verify` executa os testes determinísticos Node e a checagem de integridade. Os 48 testes não exigem banco.
-- `npm run test:postgres` cria um cluster PostgreSQL 17 temporário, aplica fixtures sintéticas e a migração, executa testes SQL e duas gravações concorrentes. Requer `brew install postgresql@17` no macOS.
-- `npm run test:supabase` prepara uma stack Supabase local e temporária, sem link a projeto remoto, testa a migração, Database Advisors e chamadas RPC reais via PostgREST, e destrói a stack no final. Requer Supabase CLI, Python 3 e PostgreSQL 17. Em Apple Silicon sem Docker, usa o runtime nativo experimental do CLI.
-- `npm run test:ui` exerce o aplicativo em navegador Chromium com emulação mobile a 320 px, iPhone 13 e tablet a 768 px. Na primeira execução do browser, use `npx playwright install chromium`. É emulação, não aparelho físico.
+Os testes do PostgreSQL 17 temporário e da stack Supabase local usam apenas dados sintéticos. A interface usa Playwright em emulação móvel; não substitui aparelho físico. Nenhum desses scripts aponta para Supabase remoto.
 
-Os testes de banco usam somente dois pacientes sintéticos. Não verificam a configuração ou o schema do projeto remoto de produção.
+## Fora da homologação clínica
 
-## Limites
-
-- O motor e os critérios ainda exigem aprovação clínica antes de uso com pacientes. R0 e R1 ainda usam o mesmo protocolo inicial; veja [relatório de homologação](docs/HAG_RUN_HOMOLOGACAO.md).
-- O motor atual gera planos na página; validação clínica formal ainda é necessária antes de uso assistencial.
-- A aplicação guarda a sessão em andamento somente em memória; a execução começa a ser persistida quando a pessoa envia o registro ao fim ou interrompe a sessão.
-- O identificador idempotente pendente sobrevive à recarga da mesma aba; a sessão cronometrada e seus campos ainda não são persistidos antes do envio do formulário.
-- A tela ainda não está conectada ao host HAG Treino, que deve fornecer a URL e a chave publicável do ambiente de desenvolvimento.
-- O catálogo HAG existente e seus 42 programas permanecem intactos. A correção local para dor articular importante está apenas no clone, em `treino_HAG.html`.
-- Produção e `main` não foram modificadas. Nenhuma migração, publicação ou alteração em dados reais foi feita.
+Os valores numéricos de dose, os limites R0–R4, as regras de entrada, a interpretação quantitativa da recuperação e os critérios de progressão, manutenção e redução ainda não foram aprovados como protocolo assistencial. Não ativar geração automática para preencher essas lacunas. A prescrição individual atual é escrita pelo profissional e deve ser revisada clinicamente antes de uso com pacientes. Produção, `main`, dados reais e publicação não foram alterados.
