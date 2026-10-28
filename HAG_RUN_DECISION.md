@@ -80,6 +80,7 @@ Essa implementação é uma barreira técnica e um fluxo de revisão, não homol
 ## Integração HAG OS e bloqueio do motor legado, 27/10/2026
 
 - `hag_run_hag_os_bridge.js` usa `HAGAuth` e `HAG_CFG` existentes. O painel abre em iframe sandbox sem `allow-same-origin`; não recebe access token nem chave Supabase. Envia somente duas RPCs permitidas ao host por `postMessage`; o host aplica a sessão atual e o banco verifica `auth.uid()` e o vínculo profissional-paciente. O ID do paciente serve somente para localizar o contexto.
-- O bridge foi testado em host sintético. Não foi adicionado ao HAG OS real/local, porque não houve alteração no hospedeiro. O snippet de montagem e os requisitos de origem estão em `HAG_RUN_ENGINE.md`.
+- O bridge não foi adicionado às páginas operacionais do HAG OS. O snippet de montagem e os requisitos de origem estão em `HAG_RUN_ENGINE.md`.
+- O teste de homologação local também monta um host efêmero com o `HAG_Consultas/hag_auth.js` real em modo somente leitura, emite uma sessão sintética no Supabase local, testa vínculo, prescrição restrita, execução, recuperação do histórico e suspensão auditada. Não equivale a integrar páginas operacionais nem a criar um clone persistente do HAG OS.
 - `hag_run_engine.js` versão `0.2.0-clinical-gate` não contém mais as matrizes antigas nem progressão por semana. `generate5kWeek()` retorna `clinical_protocol_pending`; `recommendNext()` encaminha a revisão profissional. R0–R4 seguem como classificação funcional provisória; R5 está reservado e inativo.
 - A prescrição individual continua a cargo do médico no painel, com snapshots versionados e auditoria. Isso mantém a execução funcional enquanto evita ativar valores numéricos sem aprovação clínica.

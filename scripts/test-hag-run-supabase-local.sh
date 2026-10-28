@@ -85,4 +85,12 @@ supabase db advisors --workdir "$TMP_ROOT" --local --type all --level warn --fai
 HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" node "$REPO_ROOT/tests/ui/hag_run_supabase_local.test.js"
 HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" node "$REPO_ROOT/tests/ui/hag_run_patient_supabase_e2e.test.js"
 "$PG_BIN/psql" "$DB_URL" -q -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_patient_hold.test.sql"
+HAG_OS_AUTH_JS="$REPO_ROOT/../HAG_Consultas/hag_auth.js"
+if [[ -f "$HAG_OS_AUTH_JS" ]]; then
+  HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" \
+    HAG_RUN_LOCAL_DB_URL="$DB_URL" HAG_RUN_LOCAL_PSQL="$PG_BIN/psql" \
+    HAG_OS_AUTH_JS_PATH="$HAG_OS_AUTH_JS" node "$REPO_ROOT/tests/ui/hag_run_hag_os_local_e2e.test.js"
+else
+  echo "HAG OS bridge E2E skipped: local HAG_Consultas/hag_auth.js is unavailable; synthetic host test remains enabled."
+fi
 echo "HAG RUN local Supabase integration passed using synthetic-only records."

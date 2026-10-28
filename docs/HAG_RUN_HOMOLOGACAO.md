@@ -105,3 +105,10 @@ Nenhuma migração foi aplicada a Supabase remoto. Nenhum dado real foi lido ou 
 - Após recarregar a página, o teste confirma que a prescrição e o histórico ampliado foram recuperados do banco local. O ciclo não avança automaticamente.
 - O cenário usa somente tokens e pacientes sintéticos; a stack é local e destruída ao fim do script. Não acessa o Supabase remoto.
 - A integração com o HAG OS real continua pendente: não há clone de desenvolvimento do host no workspace. O arquivo `hag_run_hag_os_bridge.js` foi exercitado no harness sintético; nenhum HTML operacional do HAG OS foi alterado.
+
+## Bridge com HAGAuth real em host efêmero isolado, 27/10/2026
+
+- Quando `../HAG_Consultas/hag_auth.js` está disponível, `npm run test:supabase` cria um host temporário de desenvolvimento, carrega esse arquivo em modo somente leitura, autentica um usuário profissional sintético no Supabase local e cria o vínculo desse usuário apenas no banco temporário.
+- O teste usa o bridge real e os RPCs reais via PostgREST. O profissional carrega o paciente sintético, publica uma prescrição restrita, o paciente executa e persiste uma sessão, o profissional recarrega o histórico e suspende a corrida. O paciente então recebe a suspensão; a auditoria local contém as duas decisões.
+- O token autenticado permanece no contexto do host; o teste confirma que o iframe não recebe token nem configuração de credenciais. O cadastro, vínculo, prescrição, execução e auditoria desaparecem quando a stack temporária é destruída.
+- Em clones do repositório sem a pasta vizinha `HAG_Consultas`, esse subteste é informado como ignorado; a cobertura de bridge com host sintético continua ativa. Nenhuma página operacional do HAG OS foi modificada. A montagem em uma página de desenvolvimento persistente e os testes em aparelho físico continuam pendentes.

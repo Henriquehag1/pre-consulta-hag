@@ -49,7 +49,7 @@ npm run test:ui
 
 `npm run test:supabase` também abre o aplicativo real no Playwright, conecta à stack temporária por PostgREST, executa a sessão de prescrição sintética e confirma a recuperação do histórico após recarga. Os testes do PostgreSQL 17 temporário e da stack Supabase local usam apenas dados sintéticos. A interface usa emulação móvel; não substitui aparelho físico. Nenhum desses scripts aponta para Supabase remoto.
 
-O host HAG OS disponível no workspace é operacional e não há clone de desenvolvimento separado. Por isso o bridge ainda não foi inserido no host; a comunicação do profissional foi validada com host sintético, e a persistência do paciente foi validada em fluxo de navegador contra Supabase local.
+O host HAG OS disponível no workspace é operacional e não há clone persistente de desenvolvimento. O teste local cria um host efêmero isolado, carrega o `hag_auth.js` real em modo somente leitura, autentica um profissional sintético pelo Supabase local e monta o bridge. Não altera o host HAG OS operacional. O fluxo clínico/paciente é exercitado contra PostgREST local; a ativação em uma página de desenvolvimento do HAG OS continua pendente.
 
 ## Fora da homologação clínica
 
