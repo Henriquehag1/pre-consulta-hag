@@ -194,6 +194,9 @@ details.outro .chips{margin-top:8px;justify-content:center}
 .rirbtns button.alvo{background:var(--btn);color:var(--on-btn)}
 .rirbtns small{display:block;font-family:var(--body);font-size:10.5px;font-weight:400;opacity:.8;margin-top:-2px}
 .ajuste{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.runcard{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0;background:var(--surface)}   /* HAG_RUN_INTEGRACAO_v1 */
+.runcard .rt{flex:1}.runcard .rk{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}.runcard b{display:block;font-size:17px}
+.runcard .pl{font-size:12px;font-weight:700;border-radius:99px;padding:3px 9px;background:var(--cream)}.runcard .pl.g{color:#2d7a3a}.runcard .pl.y{color:#8d6b33}.runcard .pl.r{color:#a33}
 .step{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);width:170px}
 .step button{width:46px;height:42px;border:0;background:var(--cream);cursor:pointer;font-size:20px}
 .step output{flex:1;text-align:center;font-family:var(--mono);font-size:15px}
@@ -852,7 +855,8 @@ function semaforo(){
   const p=S.pront; if([p.sono,p.energia,p.musc,p.art].some(v=>v==null)) return null;
   const ant=historico().filter(s=>s.pront).slice(-8).map(s=>scorePront(s.pront)); const sc=scorePront(p);
   const b=ant.length>=3 ? ant.reduce((a,x)=>a+x,0)/ant.length : 14;
-  if(p.art>=4 || sc<b-4) return {c:"r", t:"Bem abaixo do habitual ou dor articular forte.", s:"Siga o plano. Dor articular persistente: avise o consultório."};
+  if(p.art>=4) return {c:"r", t:"Dor articular importante hoje.", s:"Interrompa o treino. Não retome enquanto houver dor importante; fale com o consultório para avaliar."};
+  if(sc<b-4) return {c:"r", t:"Prontidão muito abaixo do habitual.", s:"Adie o treino e priorize recuperação. Se houver sintomas incomuns, fale com o consultório."};
   if(sc<b-1.5) return {c:"y", t:"Prontidão abaixo do habitual.", s:"Se precisar, reduza a carga; não troque o exercício."};
   return {c:"g", t:"Prontidão normal para você.", s:"Bom treino."};
 }
@@ -1542,7 +1546,30 @@ function renderCatAberto(c){
   ${diaPickHTML(c, sessDaSemana(c,ver), ver<cur||p.fim?"passada":"atual")}
   ${w?`<button type="button" class="link" data-a="catreini" data-v="${esc(c.id)}" style="align-self:center">${catReini===c.id?"Toque de novo para recomeçar da semana 1":"Recomeçar da semana 1"}</button>`:""}`;
 }
+/* HAG_RUN_INTEGRACAO_v1 (28/10/2026): a corrida guiada (HAG RUN) entra como card no alto dos Programas,
+   so para quem ja tem HAG RUN. O estado vem do servidor pelo mesmo link; nada e gravado aqui. */
+let RUN=null;
+function carregarRun(){
+  if(VER || !TOKEN) return;
+  rpc("hag_run_patient_context_v2",{p_token:TOKEN}).then(r=>{
+    RUN=(r && r.ok && (r.medical_authorization || r.pending_review || r.program || (Array.isArray(r.history)&&r.history.length))) ? r : null;
+    if(RUN && tabLivre) tabLivre.hidden=false;
+    if(!vLivre.hidden) renderLivre();
+  }).catch(()=>{ RUN=null; });
+}
+function runCardHTML(){
+  if(!RUN) return "";
+  const d=RUN.medical_authorization && RUN.medical_authorization.decision;
+  const st = RUN.pending_review ? ["Em avaliação médica","y"]
+    : (d==="released"||d==="released_with_restrictions") ? ["Liberada","g"]
+    : d==="suspended" ? ["Suspensa","r"] : ["Em avaliação","y"];
+  return `<a class="runcard" href="hag_run_HAG.html?t=${encodeURIComponent(TOKEN)}"><span class="rt"><span class="rk">Corrida guiada</span><b>Rumo aos 5 km</b></span><span class="pl ${st[1]}">${st[0]}</span><span aria-hidden="true">›</span></a>`;
+}
 function renderLivre(){
+  renderLivreBase();
+  if(RUN && !(catAberto && cats().some(c=>c.id===catAberto&&c.lib))){ if(tabLivre) tabLivre.hidden=false; vLivre.insertAdjacentHTML("afterbegin", runCardHTML()); }
+}
+function renderLivreBase(){
   /* HAG_TREINO_CATALOGO_v1: a aba aparece com qualquer card aprovado, mesmo todos trancados (vitrine do Método) */
   const C=cats(); if(tabLivre) tabLivre.hidden=!C.length;
   const tEvo=document.querySelector('nav.tabs [data-v="evo"]'); if(tEvo) tEvo.textContent=C.length?"Evolução":"Estou evoluindo?";
@@ -1711,6 +1738,7 @@ const rasc=store.get("hagtreino.rascunho",null);
 if(rasc && rasc.dia===HOJE() && rasc.S && rasc.S.fase==="treino"){ S=Object.assign(novoEstado(),rasc.S); }
 if(CTX && CTX.ok){ if(CTX.paciente) document.getElementById("titulo").textContent="Treino de "+CTX.paciente.nome; render(); renderLivre(); }
 enviarFila().then(sent=>{ if(!sent) carregar(); });
+carregarRun();   /* HAG_RUN_INTEGRACAO_v1 */
 })();
 </script>
 </body>

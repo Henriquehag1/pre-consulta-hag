@@ -1,0 +1,47 @@
+name: Planejamento ou melhoria
+description: Registre objetivo, escopo e critérios de aceite antes da implementação.
+title: "[HAG RUN] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Este repositório é público. Não inclua nomes, dados clínicos, tokens, URLs privadas ou credenciais. Se uma tarefa depender de dados reais, descreva apenas o requisito de forma abstrata.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objetivo
+      description: Qual problema precisa ser resolvido?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Escopo e limites
+      description: O que deve mudar e o que fica fora desta tarefa?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critérios de aceite
+      description: Liste resultados verificáveis.
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: dropdown
+    id: data
+    attributes:
+      label: Dados e segurança
+      options:
+        - A tarefa usa apenas código ou dados fictícios
+        - Exige análise clínica, acesso ou informação que não deve estar neste repositório público
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Limites de execução
+      options:
+        - label: Não autorizei publicação, alteração de produção, execução de migração nem merge automático.
+          required: true

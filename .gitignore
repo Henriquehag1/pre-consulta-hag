@@ -6,3 +6,8 @@ _backups/
 
 # HAG_LINK_INJETAVEL_v1: copias de seguranca dos patches nao entram no site
 _backup_*.html
+
+# Local test dependencies and temporary Supabase stack metadata
+node_modules/
+supabase/.temp/
+.local/

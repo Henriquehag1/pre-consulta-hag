@@ -1,0 +1,42 @@
+name: Relato de problema
+description: Registre uma falha reproduzível sem dados reais de pacientes.
+title: "[HAG RUN] Falha: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Este repositório é público. Nunca inclua dados de pacientes, tokens, chaves, capturas com identificadores ou links pessoais.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamento observado
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passos para reproduzir com dados fictícios
+      placeholder: |
+        1. ...
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impacto e risco
+      description: Indique se afeta segurança, dados, prescrição ou execução.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safe
+    attributes:
+      label: Segurança
+      options:
+        - label: Confirmei que não incluí dados reais, credenciais ou tokens.
+          required: true

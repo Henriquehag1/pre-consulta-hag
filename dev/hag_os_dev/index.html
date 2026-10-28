@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>HAG OS Dev · HAG RUN</title>
+  <style>
+    :root{color-scheme:light;--ink:#262822;--muted:#696b62;--line:#e6e4dc;--cream:#f8f7f4;--green:#48674c;--gold:#a27939;--surface:#fff}
+    *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:15px/1.5 "DM Sans",Arial,sans-serif}
+    header{background:#202b38;color:white;padding:15px max(16px,calc((100% - 1120px)/2))}header strong{font:600 18px Georgia,serif}header small{display:block;color:#d3d9d8;font:11px monospace;letter-spacing:.12em;text-transform:uppercase}
+    nav{display:flex;gap:5px;max-width:1120px;margin:14px auto 0;padding:0 16px;border-bottom:1px solid var(--line)}nav span{padding:10px 14px;color:var(--muted)}nav .active{color:var(--ink);border-bottom:3px solid var(--gold);font-weight:700}
+    main{max-width:1120px;margin:20px auto;padding:0 16px 36px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.top{justify-content:space-between}.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}.note{color:var(--muted);font-size:13px}.tag{border-radius:20px;background:#f4eddf;color:#765522;padding:4px 9px;font:11px monospace;letter-spacing:.06em;text-transform:uppercase}
+    h1,h2{font-family:Georgia,serif;font-weight:500}h1{font-size:27px;margin:0}h2{font-size:20px;margin:0 0 8px}select,button{font:inherit;min-height:44px;border-radius:9px;padding:9px 12px}select{border:1px solid #cbc9c0;background:white;color:var(--ink)}button{border:0;background:var(--green);color:white;font-weight:650;cursor:pointer}button.secondary{background:#ebe8df;color:var(--ink)}button:focus-visible,select:focus-visible{outline:3px solid #a2793966;outline-offset:2px}
+    #panel{min-height:780px}.warning{border-left:4px solid var(--gold);padding-left:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+    @media(max-width:600px){header{padding:14px 16px}nav{overflow:auto;white-space:nowrap}main{margin:12px auto}.card{padding:13px}#panel{min-height:820px}}
+  </style>
+  <script src="/hag-os-dev-config.js"></script>
+  <script src="/hag_auth.js"></script>
+</head>
+<body>
+  <header><small>Ambiente isolado · Supabase local · Dados sintéticos</small><strong>HAG OS · Desenvolvimento</strong></header>
+  <nav aria-label="Navegação do consultório"><span>Pacientes sintéticos</span><span>Treino</span><span class="active" aria-current="page">HAG RUN</span></nav>
+  <main>
+    <section class="card">
+      <div class="row top"><div><h1>Revisão clínica HAG RUN</h1><p class="note">Host de desenvolvimento separado do consultório operacional. A sessão profissional usa o HAGAuth existente; o banco aponta somente para a stack local.</p></div><span class="tag">Local</span></div>
+      <div class="row"><label for="patient">Paciente sintético</label><select id="patient"><option value="synthetic-patient-a">Paciente A, com triagem</option><option value="synthetic-patient-b">Paciente B, teste de isolamento</option></select>
+        <div class="actions"><button id="open-patient" class="secondary">Abrir app do paciente</button><button id="reload-panel">Recarregar painel</button></div>
+      </div>
+      <p class="note warning">A autorização do profissional continua sendo validada no RPC e no banco. Trocar o paciente no seletor não concede acesso. A stack local não contém cadastro real nem conexão ao projeto Supabase remoto.</p>
+    </section>
+    <section id="panel" aria-label="Painel médico HAG RUN"></section>
+  </main>
+  <script src="/hag_run_hag_os_bridge.js"></script>
+  <script>
+  'use strict';
+  (function(){
+    var container=document.getElementById('panel'),selector=document.getElementById('patient'),mounted=null;
+    window.HAGMotor=window.HAGMotor||{};
+    window.HAGMotor.paciente={id:selector.value,nome:selector.options[selector.selectedIndex].text};
+    function mount(){
+      if(mounted)mounted.destroy();
+      window.HAGMotor.paciente={id:selector.value,nome:selector.options[selector.selectedIndex].text};
+      mounted=window.HAGRunHostBridge.mount(container,{panelUrl:'/hag_run_medico.html',patientId:function(){return selector.value;}});
+    }
+    selector.addEventListener('change',mount);
+    document.getElementById('reload-panel').addEventListener('click',mount);
+    document.getElementById('open-patient').addEventListener('click',function(){
+      var token=selector.value==='synthetic-patient-a'?'a'.repeat(48):'b'.repeat(48);
+      window.open('/hag_run_HAG.html?t='+token,'_blank','noopener');
+    });
+    mount();
+  })();
+  </script>
+</body>
+</html>

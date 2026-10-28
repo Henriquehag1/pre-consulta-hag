@@ -1,0 +1,55 @@
+name: HAG RUN CI
+
+on:
+  push:
+    branches:
+      - "codex/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hag-run-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Testes e integridade
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Testes automatizados
+        id: tests
+        run: npm test
+
+      - name: Integridade e sintaxe
+        id: integrity
+        run: npm run check
+
+      - name: Registrar resumo no GitHub Actions
+        if: always()
+        env:
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          INTEGRITY_RESULT: ${{ steps.integrity.outcome }}
+        run: |
+          {
+            echo "## HAG RUN CI"
+            echo "- Testes Node.js: ${TEST_RESULT:-não executados}"
+            echo "- Integridade HTML/JavaScript: ${INTEGRITY_RESULT:-não executada}"
+            echo "- Nenhuma credencial, chamada de modelo ou conexão Supabase foi usada."
+          } >> "$GITHUB_STEP_SUMMARY"
