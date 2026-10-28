@@ -83,5 +83,6 @@ fi
 "$PG_BIN/psql" "$DB_URL" -q -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_medical_gate.test.sql"
 supabase db advisors --workdir "$TMP_ROOT" --local --type all --level warn --fail-on error
 HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" node "$REPO_ROOT/tests/ui/hag_run_supabase_local.test.js"
+HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" node "$REPO_ROOT/tests/ui/hag_run_patient_supabase_e2e.test.js"
 "$PG_BIN/psql" "$DB_URL" -q -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_patient_hold.test.sql"
 echo "HAG RUN local Supabase integration passed using synthetic-only records."

@@ -85,9 +85,9 @@ O RPC também bloqueia a liberação quando a solicitação mantém urgência at
 
 Os testes de PostgreSQL e Supabase são integração real contra bancos efêmeros locais, não contra projeto remoto. O teste de UI usa resposta RPC sintética controlada; não é uma sessão clínica real nem aparelho físico. A análise clínica e os parâmetros do motor continuam pendentes.
 
-## Limitações para uso assistencial
+## Limitações para uso assistencial na homologação anterior ao bridge
 
-O HAG OS ainda precisa integrar o painel hag_run_medico.html, fornecendo access token de sessão autenticada em memória. O vínculo clinician_user_id/patient_id deve ser provisionado por processo administrativo confiável e revogável, nunca pelo navegador. Não foi alterado nenhum HTML do HAG OS hospedeiro nesta rodada. Não há provisionamento de equipe, tela de gestão de vínculos, expiração da autorização médica ou edição granular de restrições. O médico precisa informar um plano JSON estruturalmente válido; a migração valida o formato, mas não homologa adequação clínica. R0–R4 e suas matrizes numéricas não estão liberados como algoritmo clínico.
+Naquela etapa, o HAG OS ainda precisava integrar o painel. A ponte descrita na seção posterior mantém a sessão no host e não envia access token ao iframe. O vínculo clinician_user_id/patient_id deve ser provisionado por processo administrativo confiável e revogável, nunca pelo navegador. Não foi alterado nenhum HTML do HAG OS hospedeiro. Não há provisionamento de equipe, tela de gestão de vínculos, expiração da autorização médica ou edição granular de restrições. O médico precisa informar um plano JSON estruturalmente válido; a migração valida o formato, mas não homologa adequação clínica. R0–R4 e suas matrizes numéricas não estão liberados como algoritmo clínico.
 
 Nenhuma migração foi aplicada a Supabase remoto. Nenhum dado real foi lido ou alterado, não houve mudança em main, merge ou publicação.
 
@@ -98,3 +98,10 @@ Nenhuma migração foi aplicada a Supabase remoto. Nenhum dado real foi lido ou 
 - O iframe médico está sandboxed sem `allow-same-origin`. A ponte aceita mensagens somente da janela iframe criada, limita as RPCs a contexto e revisão clínica, mantém o access token no host HAG OS e nunca o repassa ao painel, URL ou armazenamento.
 - O HAG OS hospedeiro não foi modificado. A ponte foi preparada e validada em harness local sintético; a inclusão do script no host de desenvolvimento ainda é necessária para ativação real.
 - Doses R0–R4, triagem integral e limites de decisão seguem pendentes de homologação médica. A prescrição continua sendo escrita e versionada por um profissional; o motor não ativa fórmulas numéricas antigas.
+
+## Fluxo de paciente no navegador com Supabase local, 27/10/2026
+
+- `npm run test:supabase` agora abre `hag_run_HAG.html` em emulação móvel conectado ao PostgREST da stack temporária. Recupera uma prescrição sintética previamente autorizada pelo fixture SQL, exibe restrições e sessões, executa o timer de 120 segundos em relógio controlado pelo teste e grava a execução pela RPC real.
+- Após recarregar a página, o teste confirma que a prescrição e o histórico ampliado foram recuperados do banco local. O ciclo não avança automaticamente.
+- O cenário usa somente tokens e pacientes sintéticos; a stack é local e destruída ao fim do script. Não acessa o Supabase remoto.
+- A integração com o HAG OS real continua pendente: não há clone de desenvolvimento do host no workspace. O arquivo `hag_run_hag_os_bridge.js` foi exercitado no harness sintético; nenhum HTML operacional do HAG OS foi alterado.

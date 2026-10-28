@@ -21,6 +21,7 @@ for (const source of sources) {
   if (!existsSync(path)) throw new Error(`Arquivo referenciado ausente: ${source}`);
   checkJavaScript(path);
 }
+checkJavaScript(join(root, 'tests/ui/hag_run_patient_supabase_e2e.test.js'));
 
 const references = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)].map(match => match[1]);
 for (const reference of references) {
@@ -59,4 +60,4 @@ if (/(?:sb_secret_[a-z0-9_-]{20,}|SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["'][^$])/i
   throw new Error('Possível chave Supabase privada encontrada no HTML.');
 }
 
-console.log(`Integridade HAG RUN aprovada: ${sources.length} arquivos JavaScript, ${references.length} scripts locais e script inline.`);
+console.log(`Integridade HAG RUN aprovada: ${sources.length + 1} arquivos JavaScript, ${references.length} scripts locais e scripts inline.`);

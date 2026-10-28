@@ -71,7 +71,7 @@ begin
   exception when invalid_parameter_value then null; end;
   result:=public.hag_run_clinician_review('synthetic-patient-a','released_with_restrictions',
     '{"running_allowed":true,"adaptation_allowed":false,"scope_version":"2","patient_instructions":"Siga as restrições registradas pelo médico."}'::jsonb,
-    '{"week":2,"sessions":[{"id":"clinician-session-next","title":"Ajuste sintético","segments":[{"type":"walk","seconds":120,"rpeTarget":2}]}]}'::jsonb,
+    '{"engineVersion":"synthetic-e2e-v1","status":"ready","week":2,"classification":{"level":"R0","reviewReasons":[]},"sessions":[{"id":"clinician-session-next","day":"mon","title":"Sessão sintética de homologação","level":"R0","objective":"Fluxo local de teste.","modality":"road","durationSeconds":120,"durationMinutes":2,"segments":[{"type":"walk","seconds":120,"rpeTarget":2}]}]}'::jsonb,
     'Ajuste individual após revisão do ciclo sintético');
   if result->>'ok'<>'true' or result->>'prescription_id' is null then raise exception 'no-pending-cycle adjustment failed: %',result; end if;
   begin
