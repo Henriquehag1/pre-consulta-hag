@@ -213,8 +213,31 @@ function travas(P){
     if(dor>=4 && !(P.liberacoes||[]).some(l=>l.ex===id&&String(l.em)>=String(ult.data))){ const s=ser.find(x=>(x.dor||0)===dor); out.push({ex:id,data:ult.data,dor,local:s.local,lado:s.lado,tipo:s.tipo}); } }
   return out;
 }
+/* HAG_TREINO_CORRIDA_PERFIL_v1 (28/10/2026): perfil de corrida respondido pelo paciente (4 perguntas no app). Mostra a base
+   de pace, a semana de entrada e, se ele relatou dor ao correr, a trava com o botão para o médico liberar. */
+const CMIN={0:"nunca correu",1:"até 1 min",3:"2 a 3 min",5:"5 min",10:"10 min",20:"20 min",30:"30 min ou mais"};
+function cP5(pf){ const km=+pf.teste_km, sg=+pf.teste_seg; let v=null; if(km>=1&&sg>0) v=sg*Math.pow(5/km,1.06)/5; else if(+pf.pace_conf_seg>0) v=+pf.pace_conf_seg-60; return v&&v>=150&&v<=900?Math.round(v):null; }
+const cPace = s => Math.floor(s/60)+":"+String(Math.round(s%60)).padStart(2,"0");
+function cTempo(s){ s=Math.round(+s||0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=String(s%60).padStart(2,"0"); return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`; }
+function corridaPainelHTML(P){
+  const pf=P&&P.corrida_perfil; if(!pf) return "";
+  const p5=cP5(pf), r=x=>Math.round(x/5)*5, kmh=x=>(Math.round(36000/x)/10).toFixed(1).replace(".",",");
+  const base=pf.teste_km?`${String(+pf.teste_km).replace(".",",")} km em ${cTempo(pf.teste_seg)}${pf.teste_data?` (${br(pf.teste_data)})`:""}`:pf.pace_conf_seg?`pace confortável ${cPace(+pf.pace_conf_seg)}/km`:"sem pace (teste da fala)";
+  const nomeCat=k=>((E.cat||[]).find(c=>c.id===k)||{nome:k}).nome;
+  const ent=Object.entries(pf.entrada||{}).map(([k,w])=>`${esc(nomeCat(k))} a partir da semana ${w}`).join(" · ");
+  const trav=pf.dor4sem&&!pf.dor_liberada_em;
+  return `<div class="card"><h3>Corrida</h3>
+   <p class="note" style="margin:0 0 6px">Respondido pelo paciente em ${br(String(pf.atualizado_em||"").slice(0,10))}</p>
+   <div>Corre sem parar: <b>${CMIN[pf.corre_min]??esc(pf.corre_min)}</b> · Onde: <b>${({rua:"rua",esteira:"esteira",ambos:"rua e esteira"})[pf.local]||esc(pf.local)}</b></div>
+   <div>Base: <b>${esc(base)}</b>${p5?` · pace de 5 km ${cPace(p5)}/km · leve ${cPace(r(p5+60))} a ${cPace(r(p5+90))}/km (${kmh(r(p5+90))} a ${kmh(r(p5+60))} km/h)`:""}</div>
+   ${ent?`<div>Entrada: ${ent}</div>`:""}
+   ${trav?`<div class="row between" style="margin-top:10px;padding:10px 12px;border:1px solid var(--crit);border-radius:10px;gap:10px"><span style="color:var(--crit)">Relatou dor ao correr nas últimas 4 semanas · corrida pausada</span><button class="btn small" data-a="corlib">Liberar corrida</button></div>`
+        :pf.dor4sem?`<p class="note" style="margin:6px 0 0">Relatou dor; liberado por ${esc(pf.dor_liberada_por||"")} em ${br(String(pf.dor_liberada_em).slice(0,10))}.</p>`:""}
+  </div>`;
+}
 function historia(P){
   const h=P.historico||[], L=[], prog=P.programa;
+  const cpf=P.corrida_perfil; if(cpf && cpf.dor4sem && !cpf.dor_liberada_em) L.push({c:"r",t:"Relatou dor ao correr nas últimas 4 semanas. Os programas de corrida estão pausados até você liberar no cartão Corrida."});   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
   if(!h.length){ L.push({c:"n",t:prog?"Programa ativo, nenhuma sessão registrada ainda.":"Sem programa ativo e sem sessões registradas."}); return L; }
   const ult=h.at(-1), cv=h.filter(s=>s.cv && diasAtras(s.data)<=60);
   if(cv.length) L.push({c:"r",t:`Sintoma cardiovascular registrado em ${cv.map(s=>br(s.data)).join(", ")}. A sessão foi encerrada e a tarefa foi criada.`});
@@ -275,6 +298,7 @@ function renderPaciente(){
    <div class="card"><h3>Últimas sessões</h3><div class="scroll"><table><thead><tr><th>Data</th><th>Treino</th><th>Min</th><th>Esforço</th><th>Registros</th><th>Dor máx.</th><th>Prontidão</th><th></th></tr></thead><tbody>
      ${hist.slice(-12).reverse().map(s=>{ const dm=Math.max(0,...s.series.map(x=>x.dor||0)); return `<tr><td class="mono">${br(s.data)}</td><td>${esc(s.dia||"")}<div class="note">v${s.versao||""}</div>${s.nota?`<div class="note" style="color:${/por dor/i.test(s.nota)?"var(--crit)":"inherit"}">${esc(s.nota)}</div>`:""}</td><td class="mono">${s.dur??""}</td><td class="mono">${s.rpe??""}</td><td class="mono">${[s.series.length?s.series.length+" séries":"",(s.cardio||[]).map(c=>`${c.km!=null?fmt(c.km)+" km":""}${c.seg?" "+Math.round(c.seg/60)+" min":""}`).join(", "),(s.hyrox||[]).length?(s.hyrox.length+" tempos"):""].filter(Boolean).join(" · ")}</td><td>${dm?`<span class="tag ${dm>=4?"r":"y"}">${dm}</span>`:""}</td><td class="mono">${s.pront?(s.pront.sono+s.pront.energia+(5-s.pront.musc)+(5-s.pront.art))+"/20":""}</td><td>${s.cv?`<span class="tag r">sintoma</span>`:""}</td></tr>`; }).join("")}
    </tbody></table></div></div>`;
+  h+=corridaPainelHTML(P);   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
   h+=`<div class="grid">
    <div class="card"><h3>Programas</h3>
      ${(P.programas||[]).length?P.programas.map(p=>`<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${esc(p.nome)}</b> <span class="mono">v${p.versao}</span> <span class="tag ${p.status==="ativo"?"g":p.status==="rascunho"?"y":""}">${p.status}</span><div class="note">${p.inicio?brA(p.inicio):""}${p.fim?" a "+brA(p.fim):""}${p.mudanca?" · "+esc(p.mudanca):""}</div></div>
@@ -492,6 +516,7 @@ main.addEventListener("click",e=>{
   if(a==="caton") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_catalogo_acesso",{method:"POST",body:{patient_id:E.pid,catalogo_id:v,por:(s&&s.user)||"painel"},prefer:"resolution=ignore-duplicates"}); await lerCat(); },"Programa liberado. Aparece no app do paciente na próxima vez que ele abrir.");
   if(a==="catoff") return acao(async()=>{ await api(`treino_catalogo_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&catalogo_id=eq.${encodeURIComponent(v)}`,{method:"DELETE"}); await lerCat(); },"Programa retirado deste paciente. As sessões já feitas continuam no histórico.");
   if(a==="cataprova"){ if(E.catConf!==v){ E.catConf=v; return render(); } E.catConf=null; return acao(async()=>{ await api(`treino_catalogo?id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:{aprovado:true,atualizado_em:new Date().toISOString()}}); await lerCat(); },"Programa aprovado. Passa a aparecer no app de todos os pacientes, com cadeado para quem não tem liberação."); }
+  if(a==="corlib") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api(`treino_corrida_perfil?patient_id=eq.${encodeURIComponent(E.pid)}`,{method:"PATCH",body:{dor_liberada_em:new Date().toISOString(),dor_liberada_por:(s&&s.user)||"painel"}}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Corrida liberada. O paciente já pode começar.");   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
   if(a==="gerarlink") return acao(async()=>{ await rpc("hag_treino_link",{p_patient_id:E.pid}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Link criado.");
   if(a==="copiar"){ const t=document.getElementById("link").textContent; return acao(async()=>{ await navigator.clipboard.writeText(t); },"Link copiado."); }
   if(p){
