@@ -100,6 +100,7 @@ async function main() {
     runSqlFile(psql, dbUrl, resolve(root, 'tests/sql/hag_run_fixture.sql'));
     runSqlFile(psql, dbUrl, resolve(root, 'supabase/migrations/202610270001_hag_run.sql'));
     runSqlFile(psql, dbUrl, resolve(root, 'supabase/migrations/202610270002_hag_run_medical_gate.sql'));
+    runSqlFile(psql, dbUrl, resolve(root, 'supabase/migrations/202610280003_hag_run_clinician_registry.sql'));
     execFileSync(psql, [dbUrl, '-X', '-v', 'ON_ERROR_STOP=1', '-c', `
       set role anon;
       select public.hag_run_patient_submit_assessment(
@@ -116,8 +117,14 @@ async function main() {
   } else {
     process.stdout.write('Schema local já inicializado; nenhum dado foi apagado ou recriado.\n');
   }
+  // HAG_RUN_CLINICIAN_REGISTRY_v1: stack criada antes da 0003 recebe a migracao aditiva uma vez.
+  if (query(psql, dbUrl, `select to_regclass('public.hag_run_clinicians') is null`) === 't') {
+    runSqlFile(psql, dbUrl, resolve(root, 'supabase/migrations/202610280003_hag_run_clinician_registry.sql'));
+  }
 
   const clinicianId = await authenticateOrCreate({ apiUrl, anonKey });
+  // Processo administrativo (dono do banco local): cadastra o medico sintetico; o vinculo vale so para medico cadastrado.
+  query(psql, dbUrl, `select hag_run_private.register_clinician('${clinicianId}','Médico sintético local','CRM-DEV','hag-run-dev-db-setup')`);
   query(psql, dbUrl, `insert into public.hag_run_clinician_patient_access(clinician_user_id,patient_id)
     values ('${clinicianId}','synthetic-patient-a') on conflict (clinician_user_id,patient_id)
     do update set revoked_at=null`);

@@ -1,19 +1,50 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>HAG RUN · Revisão clínica</title>
+<!-- HAG_RUN_MEDICO_FORM_v1 (28/10/2026): o medico prescrevia e restringia digitando JSON. Agora le a
+     avaliacao em linguagem clara e monta o plano por sessoes e etapas. Nenhuma dose e sugerida: o
+     formulario comeca vazio e todo numero vem do medico (diretrizes 6 e 7; MED-10 a MED-15 pendentes).
+     A adaptacao automatica fica desligada: nao ha regra clinica homologada. -->
 <style>
-:root{color-scheme:light;--ink:#262822;--muted:#696b62;--line:#e6e4dc;--cream:#f8f7f4;--green:#48674c;--gold:#a27939;--red:#9d3e35}*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.55 "DM Sans",Arial,sans-serif}header{background:#fff;border-bottom:1px solid var(--line);padding:22px max(18px,calc((100% - 880px)/2))}main{max-width:880px;margin:24px auto;padding:0 16px 48px}h1,h2{font-family:Georgia,serif;font-weight:500}h1{font-size:30px;margin:2px 0}h2{font-size:22px;margin:4px 0 12px}.kicker{font:11px/1.5 monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin:14px 0;box-shadow:0 3px 14px #20201408}.sub,.hint{color:var(--muted)}.field{display:grid;gap:7px;margin:14px 0}input,select,textarea{width:100%;border:1px solid #cbc9c0;border-radius:9px;padding:11px;font:inherit;background:white;color:inherit}textarea{min-height:110px;font:13px/1.45 monospace}.btn{border:0;border-radius:9px;padding:12px 16px;min-height:46px;background:var(--green);color:white;font:inherit;cursor:pointer;margin:5px 5px 5px 0}.btn.secondary{background:#ebe8df;color:var(--ink)}.btn.warn{background:#8d6b33}.btn.danger{background:var(--red)}.status{padding:11px 13px;border-radius:9px;background:#f1efe9;color:var(--muted);white-space:pre-wrap}.status.error{background:#f8eae7;color:var(--red)}.status.ok{background:#eaf2e9;color:var(--green)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f6f2;padding:14px;border-radius:9px;font:13px/1.5 monospace}.hide{display:none!important}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #a2793966;outline-offset:2px}@media(max-width:600px){.card{padding:15px}h1{font-size:26px}}
-</style></head><body><header><div class="kicker">HAG OS · HAG RUN</div><h1>Revisão clínica</h1><div class="sub">A autorização é individual, versionada e validada no servidor.</div></header><main>
-<section class="card"><div class="field"><label for="patientId">Identificador interno do paciente</label><input id="patientId" autocomplete="off"><small class="hint">O identificador localiza o pedido; o servidor exige vínculo profissional ativo antes de revelar ou alterar dados.</small></div><button id="load" class="btn">Carregar contexto autorizado</button><div id="status" class="status" role="status"></div></section>
-<section id="requestCard" class="card hide"><div class="kicker">Resumo submetido pelo paciente</div><h2>Triagem e avaliação</h2><pre id="request"></pre><div class="field"><label for="decision">Decisão clínica</label><select id="decision"><option value="released">Liberar</option><option value="released_with_restrictions">Liberar com restrições</option><option value="review">Solicitar avaliação</option><option value="suspended">Suspender corrida</option></select></div><div class="field"><label for="scope">Escopo autorizado, em JSON</label><textarea id="scope">{"running_allowed":true,"adaptation_allowed":false,"scope_version":"1"}</textarea><small class="hint">Adaptação automática começa desativada. Defina limites individualizados e documente o escopo.</small></div><div class="field"><label for="plan">Plano inicial prescrito pelo médico, em JSON</label><textarea id="plan" placeholder='{"week":1,"sessions":[{"id":"sessao-1","title":"Plano definido pelo médico","segments":[]}]} '></textarea></div><div class="field"><label for="reason">Justificativa</label><textarea id="reason" minlength="3" maxlength="1000" required></textarea></div><button class="btn" data-action="released">Liberar</button><button class="btn warn" data-action="released_with_restrictions">Liberar com restrições</button><button class="btn secondary" data-action="review">Solicitar avaliação</button><button class="btn danger" data-action="suspended">Suspender</button></section>
-<section class="card"><h2>Conexão segura com o HAG OS</h2><p class="sub">Quando aberto pelo contêiner do HAG OS, o painel solicita a sessão autenticada por mensagem same-origin. O token de sessão trafega somente em memória e no header Authorization; não vai para URL ou armazenamento local. A chave service_role não é aceita. A autorização do profissional e o vínculo com o paciente são verificados pelo RPC.</p></section>
+:root{color-scheme:light;--ink:#262822;--muted:#696b62;--line:#e6e4dc;--cream:#f8f7f4;--green:#48674c;--gold:#a27939;--red:#9d3e35}*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.55 "DM Sans",Arial,sans-serif}header{background:#fff;border-bottom:1px solid var(--line);padding:18px max(16px,calc((100% - 880px)/2))}main{max-width:880px;margin:18px auto;padding:0 14px 48px}h1,h2,h3{font-family:Georgia,serif;font-weight:500}h1{font-size:26px;margin:2px 0}h2{font-size:21px;margin:4px 0 10px}h3{font-size:17px;margin:4px 0 6px}.kicker{font:11px/1.5 monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #20201408}.sub,.hint{color:var(--muted);font-size:14px}.field{display:grid;gap:6px;margin:12px 0}label{font-weight:600;font-size:14px}input,select,textarea{width:100%;border:1px solid #cbc9c0;border-radius:9px;padding:10px;font:inherit;background:white;color:inherit}textarea{min-height:80px}.btn{border:0;border-radius:9px;padding:11px 15px;min-height:44px;background:var(--green);color:white;font:inherit;cursor:pointer;margin:5px 5px 5px 0}.btn.secondary{background:#ebe8df;color:var(--ink)}.btn.small{min-height:36px;padding:7px 11px;font-size:14px}.btn.warn{background:#8d6b33}.btn.danger{background:var(--red)}.btn:disabled{opacity:.55;cursor:wait}.status{padding:10px 12px;border-radius:9px;background:#f1efe9;color:var(--muted);white-space:pre-wrap}.status.error{background:#f8eae7;color:var(--red)}.status.ok{background:#eaf2e9;color:var(--green)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f6f2;padding:12px;border-radius:9px;font:12px/1.5 monospace}.hide{display:none!important}dl{display:grid;grid-template-columns:minmax(150px,40%) 1fr;gap:4px 12px;margin:6px 0}dt{color:var(--muted)}dd{margin:0}.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:13px;font-weight:700;background:#ebe8df}.pill.g{background:#eaf2e9;color:var(--green)}.pill.y{background:#f6eedd;color:#8d6b33}.pill.r{background:#f8eae7;color:var(--red)}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:6px 5px;border-bottom:1px solid var(--line)}.sess{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#fcfbf8}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.row>.field{flex:1 1 130px;margin:6px 0}.seg{display:grid;grid-template-columns:1.6fr .7fr .7fr .7fr auto;gap:6px;align-items:center;margin:5px 0}.seg input,.seg select{padding:8px}.rep{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#f7f6f2;border-radius:9px;padding:8px;margin:6px 0}.rep input{width:78px;padding:7px}.tot{font-weight:700}.chk{display:flex;gap:9px;align-items:center;font-weight:600}.chk input{width:auto}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #a2793966;outline-offset:2px}@media(max-width:600px){.card{padding:13px}.seg{grid-template-columns:1fr 1fr 1fr}dl{grid-template-columns:1fr}}
+</style></head><body><header><div class="kicker">HAG OS · HAG RUN</div><h1>Revisão clínica da corrida</h1><div class="sub">Autorização individual, versionada e validada no servidor.</div></header><main>
+<section class="card"><div class="field"><label for="patientId">Paciente (identificador interno)</label><input id="patientId" autocomplete="off"><small class="hint">O servidor só mostra ou altera dados com vínculo médico ativo.</small></div><button id="load" class="btn">Carregar contexto autorizado</button><div id="status" class="status" role="status"></div></section>
+
+<section id="ctxCard" class="card hide"><div class="kicker">Situação</div><h2 id="situacao">-</h2>
+<h3>Avaliação enviada pelo paciente</h3><div id="avaliacao" class="sub">Nenhuma avaliação pendente.</div>
+<h3>Plano vigente</h3><div id="planoVigente" class="sub">Nenhum plano emitido.</div>
+<h3>Sessões registradas</h3><div id="historico" class="sub">Nenhuma sessão registrada.</div>
+<h3>Decisões anteriores</h3><div id="decisoes" class="sub">Nenhuma decisão registrada.</div>
+<details><summary class="sub">Dados completos recebidos do servidor</summary><pre id="raw"></pre></details></section>
+
+<section id="decCard" class="card hide"><div class="kicker">Nova decisão</div><h2>Decisão clínica</h2>
+<div class="field"><label for="decision">Decisão</label><select id="decision"><option value="released">Liberar corrida</option><option value="released_with_restrictions">Liberar com restrições</option><option value="review">Solicitar avaliação</option><option value="suspended">Suspender corrida</option></select></div>
+<div id="escopo"><label class="chk"><input type="checkbox" id="runAllowed" checked> Corrida permitida neste escopo</label>
+<p class="hint">Adaptação automática: <b>desligada</b>. Não há regra de progressão homologada; mudança de dose é sempre nova decisão sua.</p>
+<div class="field"><label for="instructions">Orientações e limites para o paciente</label><textarea id="instructions" maxlength="1000" placeholder="Obrigatório na liberação com restrições. Aparece para o paciente antes das sessões."></textarea></div></div>
+<div id="planBox"><h3>Plano da semana</h3><p class="hint">Duas ou três sessões por semana, em dias não consecutivos (diretriz aprovada). O formulário não sugere dose.</p>
+<div class="row"><div class="field"><label for="week">Semana</label><input id="week" type="number" min="1" max="52" inputmode="numeric"></div><div class="field"><label for="level">Nível funcional (provisório)</label><select id="level"><option>R0</option><option>R1</option><option>R2</option><option>R3</option><option>R4</option></select></div></div>
+<div id="sessoes"></div><button type="button" class="btn secondary small" id="addSess">+ Sessão</button> <button type="button" class="btn secondary small hide" id="usarVigente">Usar o plano vigente como base</button>
+<p class="tot" id="totalPlano"></p></div>
+<div class="field"><label for="reason">Justificativa clínica (registrada na auditoria)</label><textarea id="reason" minlength="3" maxlength="1000" required></textarea></div>
+<button class="btn" data-action="released">Liberar</button><button class="btn warn" data-action="released_with_restrictions">Liberar com restrições</button><button class="btn secondary" data-action="review">Solicitar avaliação</button><button class="btn danger" data-action="suspended">Suspender</button>
+<div id="decStatus" class="status hide" role="status"></div></section>
 </main><script src="hag_run_store.js"></script><script>
 'use strict';
 (function(){
-  var $=function(id){return document.getElementById(id)},store=null,patientId='',pending=new Map();
+  var $=function(id){return document.getElementById(id)},store=null,patientId='',pending=new Map(),ctx=null,seq=0;
   var hostOrigin=new URLSearchParams(location.search).get('hag_run_host_origin')||'';
   try{if(new URL(hostOrigin).origin!==hostOrigin)hostOrigin='';}catch(_){hostOrigin='';}
+  var DIAS=[['mon','Segunda'],['tue','Terça'],['wed','Quarta'],['thu','Quinta'],['fri','Sexta'],['sat','Sábado'],['sun','Domingo']];
+  var TIPOS=[['warmup_walk','Aquecimento caminhando'],['run','Corrida'],['walk','Caminhada de recuperação'],['cooldown_walk','Volta à calma caminhando']];
+  var DEC={released:['Corrida liberada','g'],released_with_restrictions:['Liberada com restrições','y'],review:['Em avaliação','y'],suspended:['Corrida suspensa','r']};
+  var ROT={maxContinuousMinutes:'Corrida contínua atual (min)',weeklyKm:'Volume semanal (km)',runningDaysPerWeek:'Dias de corrida por semana',longestRunKm:'Maior corrida recente (km)',ageYears:'Idade (anos)',paceSecondsPerKm:'Pace (s/km)',rpe:'Esforço percebido (0 a 10)',modality:'Modalidade'};
+  function h(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function br(s){s=String(s||'');return s?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'';}
+  function mmss(t){t=Math.round(+t||0);return Math.floor(t/60)+' min'+(t%60?' '+(t%60)+' s':'');}
   function status(message,kind){$('status').textContent=message;$('status').className='status '+(kind||'');}
-  function errorMessage(error){var message=String(error?.message||'Falha na operação.');if(message==='rpc_http_401'||message==='rpc_http_403')return 'Acesso não autorizado. Confirme sua sessão e o vínculo profissional com este paciente.';return message;}
+  function decStatus(message,kind){var e=$('decStatus');e.textContent=message;e.className='status '+(kind||'');}
+  var ERROS={rpc_http_401:'Sessão expirada. Entre de novo no HAG OS.',rpc_http_403:'Acesso não autorizado: confirme o vínculo médico com este paciente.',active_urgent_symptom_requires_resolution:'Há sintoma de urgência ativo na avaliação. A corrida não pode ser liberada antes da resolução.',running_not_in_authorized_scope:'Para liberar, marque "Corrida permitida neste escopo".',restricted_instructions_required:'Na liberação com restrições, escreva as orientações para o paciente.',authorized_plan_required:'Monte o plano antes de liberar.',invalid_plan_structure:'O plano tem etapa inválida. Confira tipo e duração de cada etapa.',adult_population_required:'O HAG RUN é só para adultos: a idade informada não permite liberar.',review_context_not_found:'Não há avaliação nem programa deste paciente para revisar.',invalid_review:'Escreva a justificativa (3 a 1000 caracteres).'};
+  function errorMessage(error){var m=String(error&&error.message||'Falha na operação.');var ks=Object.keys(ERROS).sort(function(a,b){return (a.indexOf('rpc_http')===0)-(b.indexOf('rpc_http')===0);});for(var i=0;i<ks.length;i++){if(m.indexOf(ks[i])>=0)return ERROS[ks[i]];}return m;}
   function hostRpc(name,body){
     return new Promise(function(resolve,reject){
       if(!hostOrigin||window.parent===window)return reject(new Error('HAG OS não conectado.'));
@@ -26,48 +57,147 @@
     store=HAGRunStore.createClinicianStore(config||{});
     if(!store.available){status(store.reason,'error');return false;}
     patientId=String(config.patientId||'');
-    if(patientId)$('patientId').value=patientId;
+    if(patientId){$('patientId').value=patientId;$('patientId').readOnly=true;}
     status('Canal autenticado do HAG OS conectado. O token permanece no host; o servidor valida o vínculo profissional.','ok');
+    if(patientId)carregar();
     return true;
   }
   window.addEventListener('message',function(event){
     if(event.source!==window.parent||event.origin!==hostOrigin)return;
-    if(event.data?.type==='HAG_RUN_CLINICIAN_SESSION_ERROR'){status(event.data.message||'Sessão profissional indisponível.','error');return;}
-    if(event.data?.type==='HAG_RUN_CLINICIAN_SESSION'){connect({rpcTransport:hostRpc,patientId:event.data.patientId||''});return;}
-    if(event.data?.type==='HAG_RUN_CLINICIAN_RPC_RESPONSE'){
-      var item=pending.get(event.data.requestId);if(!item)return;clearTimeout(item.timeout);pending.delete(event.data.requestId);
-      if(event.data.error)item.reject(new Error(event.data.error));else item.resolve(event.data.result);
+    var d=event.data||{};
+    if(d.type==='HAG_RUN_CLINICIAN_SESSION_ERROR'){status(d.message||'Sessão profissional indisponível.','error');return;}
+    if(d.type==='HAG_RUN_CLINICIAN_SESSION'){connect({rpcTransport:hostRpc,patientId:d.patientId||''});return;}
+    if(d.type==='HAG_RUN_CLINICIAN_RPC_RESPONSE'){
+      var item=pending.get(d.requestId);if(!item)return;clearTimeout(item.timeout);pending.delete(d.requestId);
+      if(d.error)item.reject(new Error(d.error));else item.resolve(d.result);
     }
   });
   function requestHostSession(){
     if(window.HAG_RUN_CLINICIAN_CONFIG){connect(window.HAG_RUN_CLINICIAN_CONFIG);return;}
     if(window.parent!==window&&hostOrigin){window.parent.postMessage({type:'HAG_RUN_REQUEST_CLINICIAN_SESSION'},hostOrigin);return;}
-    status('Abra este painel pelo contêiner autenticado do HAG OS para revisar pacientes.','error');
+    status('Abra este painel pelo HAG OS autenticado (HAG Treino › Corrida) para revisar pacientes.','error');
   }
-  $('load').addEventListener('click',async function(){
+
+  /* ---------- leitura do contexto ---------- */
+  function dl(obj,rot){var k=Object.keys(obj||{}).filter(function(x){var v=obj[x];return v!=null&&v!==''&&typeof v!=='object';});if(!k.length)return '';return '<dl>'+k.map(function(x){return '<dt>'+h(rot&&rot[x]||x)+'</dt><dd>'+h(obj[x])+'</dd>';}).join('')+'</dl>';}
+  function triPill(t){var s=String(t&&t.state||'');var c=/URG/.test(s)?'r':(s==='VERDE'?'g':'y');return s?'<span class="pill '+c+'">Triagem: '+h(s)+'</span>':'';}
+  function nomeDia(d){return (DIAS.find(function(x){return x[0]===d;})||[0,''])[1];}
+  function nomeTipo(t){return (TIPOS.find(function(x){return x[0]===t;})||[0,t])[1];}
+  function resumoPlano(p){if(!p||!Array.isArray(p.sessions))return '';return '<p>Semana '+h(p.week||'-')+' · '+h(p.classification&&p.classification.level||'-')+' · '+p.sessions.length+' sessão(ões)</p><ul>'+p.sessions.map(function(s){var tot=(s.segments||[]).reduce(function(a,g){return a+(+g.seconds||0);},0);return '<li><b>'+h(nomeDia(s.day))+'</b> '+h(s.title||'')+' · '+mmss(tot)+' · '+(s.segments||[]).map(function(g){return h(nomeTipo(g.type))+' '+mmss(g.seconds)+(g.rpeTarget!=null?' (RPE '+h(g.rpeTarget)+')':'');}).join(', ')+'</li>';}).join('')+'</ul>';}
+  function mostrar(r){
+    ctx=r;$('ctxCard').classList.remove('hide');$('decCard').classList.remove('hide');
+    var ult=(r.authorization_history||[])[0];
+    $('situacao').innerHTML=r.request?'<span class="pill y">Avaliação aguardando sua decisão</span>':(ult?'<span class="pill '+((DEC[ult.decision]||[0,''])[1])+'">'+h((DEC[ult.decision]||[ult.decision])[0])+'</span> <span class="sub">desde '+br(ult.created_at)+'</span>':'<span class="pill">Sem decisão</span>');
+    var rq=r.request,prof=(rq&&rq.profile)||(r.program&&r.program.profile)||{},inp=prof.inputs||{};
+    $('avaliacao').innerHTML=rq?(triPill(rq.triage)+' <span class="sub">enviada em '+br(rq.created_at)+'</span>'+(rq.triage&&rq.triage.emergency_active?'<p class="status error">Sintoma de urgência ativo: a corrida não pode ser liberada.</p>':'')+(prof.classification&&prof.classification.level?'<p>Nível funcional calculado (provisório, não autoriza nada): <b>'+h(prof.classification.level)+'</b></p>':'')+dl(inp,ROT)+(rq.triage&&rq.triage.answers&&typeof rq.triage.answers==='object'?'<h3>Respostas da triagem</h3>'+dl(rq.triage.answers):'')):'<span class="sub">Nenhuma avaliação pendente.</span>';
+    $('planoVigente').innerHTML=r.prescription&&r.prescription.plan?resumoPlano(r.prescription.plan)+'<p class="sub">Emitido em '+br(r.prescription.created_at)+'</p>':'<span class="sub">Nenhum plano emitido.</span>';
+    var hs=(r.history||[]).slice(0,30);
+    $('historico').innerHTML=hs.length?'<table><thead><tr><th>Data</th><th>Status</th><th>Duração</th><th>km</th><th>RPE</th><th>Dor</th><th>Recuperação</th></tr></thead><tbody>'+hs.map(function(e){return '<tr><td>'+br(e.recorded_at)+'</td><td>'+(e.completed?'concluída':'parcial')+'</td><td>'+mmss(e.duration_seconds)+'</td><td>'+h(e.distance_km==null?'-':e.distance_km)+'</td><td>'+h(e.rpe==null?'-':e.rpe)+'</td><td>'+(+e.pain>0?'<b>'+h(e.pain)+'</b>':h(e.pain==null?'-':e.pain))+'</td><td>'+h(e.recovery||'-')+'</td></tr>';}).join('')+'</tbody></table>':'<span class="sub">Nenhuma sessão registrada.</span>';
+    var ah=r.authorization_history||[];
+    $('decisoes').innerHTML=ah.length?'<ul>'+ah.slice(0,20).map(function(a){return '<li>'+br(a.created_at)+' · <b>'+h((DEC[a.decision]||[a.decision])[0])+'</b> · '+h(a.reason)+'</li>';}).join('')+'</ul>':'<span class="sub">Nenhuma decisão registrada.</span>';
+    $('raw').textContent=JSON.stringify(r,null,2);
+    $('usarVigente').classList.toggle('hide',!(r.prescription&&r.prescription.plan));
+    if(prof.classification&&/^R[0-4]$/.test(prof.classification.level||''))$('level').value=prof.classification.level;
+    if(!$('week').value)$('week').value=String((r.prescription&&r.prescription.plan&&+r.prescription.plan.week)||1);
+    if(!$('sessoes').children.length){novaSessao();novaSessao();}
+    ajustarDecisao();
+  }
+  async function carregar(){
     patientId=$('patientId').value.trim();
-    if(!patientId){status('Informe o identificador interno.','error');return;}
-    if(!store?.available){status('Abra pelo HAG OS autenticado para revisar pacientes.','error');return;}
+    if(!patientId){status('Informe o paciente.','error');return;}
+    if(!store||!store.available){status('Abra pelo HAG OS autenticado para revisar pacientes.','error');return;}
     try{
       status('Consultando o contexto autorizado pelo servidor…');
       var result=await store.context(patientId);
-      if(!result.ok)throw new Error('Não foi possível carregar o contexto.');
-      if(!result.request&&!result.program)throw new Error('Não há solicitação ou programa para este paciente.');
-      $('request').textContent=JSON.stringify({request:result.request,program:result.program,prescription:result.prescription,history:result.history,authorization_history:result.authorization_history},null,2);
-      $('requestCard').classList.remove('hide');
+      if(!result||!result.ok)throw new Error('Não foi possível carregar o contexto.');
+      if(!result.request&&!result.program){$('ctxCard').classList.add('hide');$('decCard').classList.add('hide');status('Este paciente ainda não enviou a avaliação de corrida. Envie a ele o link da corrida (HAG Treino › Corrida).','');return;}
+      mostrar(result);
       status(result.request?'Solicitação carregada. Revise os dados e registre uma decisão.':'Programa e histórico carregados. Você pode registrar revisão, ajuste ou suspensão.','ok');
-    }catch(err){$('requestCard').classList.add('hide');status(errorMessage(err),'error');}
+    }catch(err){$('ctxCard').classList.add('hide');$('decCard').classList.add('hide');status(errorMessage(err),'error');}
+  }
+  $('load').addEventListener('click',carregar);
+
+  /* ---------- montagem do plano ---------- */
+  function opts(lista,sel){return lista.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===sel?' selected':'')+'>'+o[1]+'</option>';}).join('');}
+  function segHtml(g){g=g||{};var s=+g.seconds||0;return '<div class="seg" data-seg><select data-f="type" aria-label="Tipo da etapa">'+opts(TIPOS,g.type||'run')+'</select><input data-f="min" type="number" min="0" max="600" inputmode="numeric" placeholder="min" aria-label="Minutos" value="'+(s?Math.floor(s/60):'')+'"><input data-f="sec" type="number" min="0" max="59" inputmode="numeric" placeholder="s" aria-label="Segundos" value="'+(s%60||'')+'"><input data-f="rpe" type="number" min="0" max="10" inputmode="numeric" placeholder="RPE" aria-label="RPE alvo" value="'+(g.rpeTarget==null?'':h(g.rpeTarget))+'"><button type="button" class="btn secondary small" data-act="delSeg" aria-label="Remover etapa">×</button></div>';}
+  function novaSessao(s){
+    s=s||{};var el=document.createElement('div');el.className='sess';el.dataset.sess='s'+(++seq);
+    el.innerHTML='<div class="row"><div class="field"><label>Dia</label><select data-f="day"><option value="">escolha</option>'+opts(DIAS,s.day||'')+'</select></div><div class="field" style="flex:2 1 200px"><label>Título</label><input data-f="title" maxlength="120" value="'+h(s.title||'')+'" placeholder="ex.: Sessão 1"></div><button type="button" class="btn secondary small" data-act="delSess">Remover sessão</button></div>'+
+      '<div class="field"><label>Objetivo (o paciente vê)</label><input data-f="objective" maxlength="240" value="'+h(s.objective||'')+'"></div>'+
+      '<div class="sub">Etapas: tipo · minutos · segundos · RPE alvo (0 a 10)</div><div data-segs>'+(s.segments||[]).map(segHtml).join('')+'</div>'+
+      '<button type="button" class="btn secondary small" data-act="addSeg">+ Etapa</button>'+
+      '<div class="rep">Bloco repetido: <input data-r="n" type="number" min="1" max="30" placeholder="vezes" aria-label="Repetições do bloco"> × corrida <input data-r="run" type="number" min="1" max="3600" placeholder="s" aria-label="Segundos de corrida"> RPE <input data-r="rpeRun" type="number" min="0" max="10" placeholder="RPE" aria-label="RPE alvo da corrida"> + caminhada <input data-r="walk" type="number" min="0" max="3600" placeholder="s" aria-label="Segundos de caminhada"> RPE <input data-r="rpeWalk" type="number" min="0" max="10" placeholder="RPE" aria-label="RPE alvo da caminhada"><button type="button" class="btn secondary small" data-act="addRep">Inserir</button></div>'+
+      '<p class="sub" data-tot></p>';
+    $('sessoes').appendChild(el);atualizarTotais();return el;
+  }
+  function lerSessoes(){
+    var erros=[];
+    var sess=[].map.call(document.querySelectorAll('[data-sess]'),function(el,i){
+      var q=function(f){return el.querySelector('[data-f="'+f+'"]').value.trim();};
+      var segs=[].map.call(el.querySelectorAll('[data-seg]'),function(sg,j){
+        var v=function(f){return sg.querySelector('[data-f="'+f+'"]').value.trim();};
+        var sec=(+v('min')||0)*60+(+v('sec')||0),rpe=v('rpe');
+        if(!(sec>=1&&sec<=86400))erros.push('Sessão '+(i+1)+', etapa '+(j+1)+': informe a duração.');
+        if(rpe===''||!(+rpe>=0&&+rpe<=10))erros.push('Sessão '+(i+1)+', etapa '+(j+1)+': informe o RPE alvo (0 a 10).');
+        var g={type:v('type'),seconds:sec};if(rpe!=='')g.rpeTarget=+rpe;return g;
+      });
+      if(!q('day'))erros.push('Sessão '+(i+1)+': escolha o dia.');
+      if(!segs.length)erros.push('Sessão '+(i+1)+': inclua ao menos uma etapa.');
+      var tot=segs.reduce(function(a,g){return a+g.seconds;},0);
+      return {id:'sessao-'+(i+1),day:q('day'),title:q('title')||('Sessão '+(i+1)),level:$('level').value,objective:q('objective'),modality:'road',durationSeconds:tot,durationMinutes:Math.round(tot/60),segments:segs};
+    });
+    if(sess.length<2||sess.length>3)erros.push('O plano precisa de 2 ou 3 sessões na semana (diretriz aprovada).');
+    var dias=sess.map(function(s){return DIAS.findIndex(function(d){return d[0]===s.day;});}).filter(function(x){return x>=0;}).sort(function(a,b){return a-b;});
+    if(new Set(dias).size!==dias.length)erros.push('Há duas sessões no mesmo dia.');
+    for(var k=1;k<dias.length;k++){if(dias[k]-dias[k-1]===1)erros.push('Sessões em dias consecutivos ('+DIAS[dias[k-1]][1]+' e '+DIAS[dias[k]][1]+'): a diretriz pede dias não consecutivos.');}
+    if(dias.length>=2&&dias[0]===0&&dias[dias.length-1]===6)erros.push('Domingo e segunda são consecutivos: a diretriz pede dias não consecutivos.');
+    var week=+$('week').value;if(!(week>=1&&week<=52))erros.push('Informe a semana do plano (1 a 52).');
+    return {erros:erros,plan:{engineVersion:'clinician-authored-v1',status:'ready',week:week,classification:{level:$('level').value,reviewReasons:[]},sessions:sess}};
+  }
+  function atualizarTotais(){
+    var total=0;[].forEach.call(document.querySelectorAll('[data-sess]'),function(el){var t=0;[].forEach.call(el.querySelectorAll('[data-seg]'),function(sg){t+=(+sg.querySelector('[data-f="min"]').value||0)*60+(+sg.querySelector('[data-f="sec"]').value||0);});el.querySelector('[data-tot]').textContent=t?'Duração da sessão: '+mmss(t):'';total+=t;});
+    $('totalPlano').textContent=total?'Tempo total na semana: '+mmss(total):'';
+  }
+  document.addEventListener('input',function(e){if(e.target.closest('[data-sess]'))atualizarTotais();});
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-act]');if(!b)return;var el=b.closest('[data-sess]');
+    if(b.dataset.act==='delSess'){el.remove();atualizarTotais();return;}
+    if(b.dataset.act==='addSeg'){el.querySelector('[data-segs]').insertAdjacentHTML('beforeend',segHtml());return;}
+    if(b.dataset.act==='delSeg'){b.closest('[data-seg]').remove();atualizarTotais();return;}
+    if(b.dataset.act==='addRep'){var rv=function(k){return el.querySelector('[data-r="'+k+'"]').value.trim();};var n=+rv('n'),r=+rv('run'),w=+rv('walk')||0,pr=rv('rpeRun'),pw=rv('rpeWalk');
+      var rpeOk=function(x){return x!==''&&+x>=0&&+x<=10;};
+      if(!(n>=1&&n<=30&&r>=1)||!rpeOk(pr)||(w&&!rpeOk(pw))){decStatus('Bloco repetido: informe quantas vezes, os segundos e o RPE alvo de corrida'+(w?' e de caminhada':'')+'.','error');return;}
+      var html='';for(var i=0;i<n;i++){html+=segHtml({type:'run',seconds:r,rpeTarget:+pr});if(w)html+=segHtml({type:'walk',seconds:w,rpeTarget:+pw});}
+      el.querySelector('[data-segs]').insertAdjacentHTML('beforeend',html);atualizarTotais();return;}
   });
+  $('addSess').addEventListener('click',function(){if(document.querySelectorAll('[data-sess]').length>=3){decStatus('No máximo 3 sessões por semana (diretriz aprovada).','error');return;}novaSessao();});
+  $('usarVigente').addEventListener('click',function(){var p=ctx&&ctx.prescription&&ctx.prescription.plan;if(!p)return;$('sessoes').innerHTML='';(p.sessions||[]).forEach(function(s){novaSessao(s);});if(p.week)$('week').value=String(p.week);if(p.classification&&p.classification.level)$('level').value=p.classification.level;});
+  function ajustarDecisao(){var d=$('decision').value,lib=d==='released'||d==='released_with_restrictions';$('planBox').classList.toggle('hide',!lib);$('escopo').classList.toggle('hide',!lib);}
+  $('decision').addEventListener('change',ajustarDecisao);
+
+  /* ---------- registrar a decisao ---------- */
   document.addEventListener('click',async function(event){
     var button=event.target.closest('[data-action]');if(!button)return;
-    if(!store?.available||!patientId){status('Carregue um paciente autorizado antes de registrar a decisão.','error');return;}
+    if(!store||!store.available||!patientId){decStatus('Carregue um paciente autorizado antes de registrar a decisão.','error');return;}
+    var decision=button.dataset.action,lib=decision==='released'||decision==='released_with_restrictions';
+    $('decision').value=decision;ajustarDecisao();
+    var instr=$('instructions').value.trim(),reason=$('reason').value.trim();
+    var scope={running_allowed:lib?$('runAllowed').checked:false,adaptation_allowed:false,scope_version:'1'};
+    if(lib&&instr)scope.patient_instructions=instr;
+    var plan=null;
+    if(decision==='released_with_restrictions'&&instr.length<3){decStatus('Na liberação com restrições, escreva as orientações para o paciente.','error');return;}
+    if(lib&&!$('runAllowed').checked){decStatus('Para liberar, marque "Corrida permitida neste escopo".','error');return;}
+    if(lib){var lido=lerSessoes();if(lido.erros.length){decStatus(lido.erros.join('\n'),'error');return;}plan=lido.plan;}
+    if(reason.length<3){decStatus('Escreva a justificativa clínica.','error');return;}
     try{
-      var decision=button.dataset.action,scope=JSON.parse($('scope').value),plan=['released','released_with_restrictions'].includes(decision)?JSON.parse($('plan').value):null,reason=$('reason').value.trim();
-      button.disabled=true;var result=await store.review(patientId,decision,scope,plan,reason);
-      if(!result.ok)throw new Error('Decisão não confirmada.');
-      status('Decisão registrada. Autorização '+result.authorization_id+'. Prescrição '+(result.prescription_id||'não emitida')+'.','ok');
-      $('requestCard').classList.add('hide');
-    }catch(err){status(errorMessage(err),'error');}finally{button.disabled=false;}
+      button.disabled=true;decStatus('Registrando…','');
+      var result=await store.review(patientId,decision,scope,plan,reason);
+      if(!result||!result.ok)throw new Error('Decisão não confirmada.');
+      decStatus('Decisão registrada. Autorização '+result.authorization_id+'. Prescrição '+(result.prescription_id||'não emitida')+'.','ok');
+      status('Decisão registrada. Autorização '+result.authorization_id+'.','ok');
+      $('reason').value='';
+      var r=await store.context(patientId);if(r&&r.ok)mostrar(r);
+    }catch(err){decStatus(errorMessage(err),'error');}finally{button.disabled=false;}
   });
   requestHostSession();
 })();

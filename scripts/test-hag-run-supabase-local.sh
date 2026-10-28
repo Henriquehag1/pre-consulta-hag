@@ -85,7 +85,13 @@ supabase db advisors --workdir "$TMP_ROOT" --local --type all --level warn --fai
 HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" node "$REPO_ROOT/tests/ui/hag_run_supabase_local.test.js"
 HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" node "$REPO_ROOT/tests/ui/hag_run_patient_supabase_e2e.test.js"
 "$PG_BIN/psql" "$DB_URL" -q -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_patient_hold.test.sql"
+# HAG_RUN_CLINICIAN_REGISTRY_v1: cadastro de medico e vinculo auditado (0003), depois dos testes da 0002.
+"$PG_BIN/psql" "$DB_URL" -q -v ON_ERROR_STOP=1 -f "$REPO_ROOT/supabase/migrations/202610280003_hag_run_clinician_registry.sql"
+"$PG_BIN/psql" "$DB_URL" -q -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_clinician_registry.test.sql"
+supabase db advisors --workdir "$TMP_ROOT" --local --type all --level warn --fail-on error
 HAG_OS_AUTH_JS="$REPO_ROOT/../HAG_Consultas/hag_auth.js"
+# Fora da pasta do iCloud, usa o hag_auth.js do proprio repositorio (mesmo arquivo publicado).
+[[ -f "$HAG_OS_AUTH_JS" ]] || HAG_OS_AUTH_JS="$REPO_ROOT/hag_auth.js"
 if [[ -f "$HAG_OS_AUTH_JS" ]]; then
   HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" \
     HAG_RUN_LOCAL_DB_URL="$DB_URL" HAG_RUN_LOCAL_PSQL="$PG_BIN/psql" \
@@ -93,4 +99,8 @@ if [[ -f "$HAG_OS_AUTH_JS" ]]; then
 else
   echo "HAG OS bridge E2E skipped: local HAG_Consultas/hag_auth.js is unavailable; synthetic host test remains enabled."
 fi
+# HAG_RUN_INTEGRACAO_v1: painel do Treino (aba Corrida) e app do Treino (card Corrida), ponta a ponta.
+HAG_RUN_LOCAL_API_URL="$API_URL" HAG_RUN_LOCAL_ANON_KEY="$ANON_KEY" \
+  HAG_RUN_LOCAL_DB_URL="$DB_URL" HAG_RUN_LOCAL_PSQL="$PG_BIN/psql" \
+  node "$REPO_ROOT/tests/ui/hag_run_treino_integracao_e2e.test.js"
 echo "HAG RUN local Supabase integration passed using synthetic-only records."

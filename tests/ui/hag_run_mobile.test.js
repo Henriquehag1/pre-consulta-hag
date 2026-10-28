@@ -148,7 +148,8 @@ async function main() {
     });
     await hostPage.goto('http://127.0.0.1:'+address.port+'/hag_os_bridge_fixture.html');
     const panel=hostPage.frameLocator('iframe[title="Painel médico HAG RUN"]');
-    await panel.getByText(/Canal autenticado do HAG OS conectado/).waitFor();
+    // HAG_RUN_MEDICO_FORM_v1: com paciente vindo do host, o painel conecta e carrega o contexto sozinho.
+    await panel.getByText('Solicitação carregada. Revise os dados e registre uma decisão.').waitFor();
     assert.equal(await panel.locator('#patientId').inputValue(),'synthetic-patient-a');
     const panelFrame=hostPage.frames().find(frame=>frame.url().includes('hag_run_medico.html'));
     const panelUrl=new URL(panelFrame.url());
@@ -157,21 +158,31 @@ async function main() {
     assert.equal(await panelFrame.evaluate(()=>window.HAG_RUN_CLINICIAN_CONFIG||null),null,'the iframe must not receive an access token config');
     assert.match(await hostPage.locator('iframe').getAttribute('sandbox'),/allow-scripts/);
     assert.doesNotMatch(await hostPage.locator('iframe').getAttribute('sandbox'),/allow-same-origin/);
-    await panel.getByRole('button',{name:'Carregar contexto autorizado'}).click();
-    await panel.getByText('Solicitação carregada. Revise os dados e registre uma decisão.').waitFor();
     assert.equal(clinicianRequests[0].url.endsWith('/hag_run_clinician_context'),true);
     assert.match(clinicianRequests[0].headers.authorization,/^Bearer header\.eyJyb2xlIjoiYXV0aGVudGljYXRlZCJ9\.signature$/);
     assert.deepEqual(clinicianRequests[0].body,{p_patient_id:'synthetic-patient-a'});
-    await panel.locator('#scope').fill(JSON.stringify({running_allowed:true,adaptation_allowed:false,patient_instructions:'Plano sintético revisado.'}));
-    await panel.locator('#plan').fill(JSON.stringify({week:1,sessions:[{id:'session-synthetic',segments:[{type:'run',seconds:60,rpeTarget:3}]}]}));
+    await panel.locator('#instructions').fill('Plano sintético revisado.');
+    const sess=panel.locator('[data-sess]');
+    assert.equal(await sess.count(),2,'o formulário abre com duas sessões vazias, sem dose sugerida');
+    assert.equal(await panel.locator('[data-seg]').count(),0,'nenhuma etapa pré-preenchida');
+    await sess.nth(0).locator('[data-f="day"]').selectOption('mon');
+    await sess.nth(1).locator('[data-f="day"]').selectOption('tue');
+    for(let i=0;i<2;i++){ await sess.nth(i).getByRole('button',{name:'+ Etapa'}).click(); const g=sess.nth(i).locator('[data-seg]').first(); await g.locator('[data-f="min"]').fill('1'); await g.locator('[data-f="rpe"]').fill('3'); }
     await panel.locator('#reason').fill('Autorização sintética para validar o bridge.');
     await panel.locator('button[data-action="released"]').click();
-    await panel.getByText(/Decisão registrada\. Autorização auth-synthetic/).waitFor();
+    await panel.getByText(/dias consecutivos/).waitFor();
+    assert.equal(clinicianRequests.length,1,'dias consecutivos são barrados antes de chamar o servidor');
+    await sess.nth(1).locator('[data-f="day"]').selectOption('wed');
+    await panel.locator('button[data-action="released"]').click();
+    await panel.getByText(/Decisão registrada\. Autorização auth-synthetic/).first().waitFor();
     assert.equal(clinicianRequests[1].url.endsWith('/hag_run_clinician_review'),true);
-    assert.deepEqual(clinicianRequests[1].body,{p_patient_id:'synthetic-patient-a',p_decision:'released',
-      p_scope:{running_allowed:true,adaptation_allowed:false,patient_instructions:'Plano sintético revisado.'},
-      p_plan:{week:1,sessions:[{id:'session-synthetic',segments:[{type:'run',seconds:60,rpeTarget:3}]}]},
-      p_reason:'Autorização sintética para validar o bridge.'});
+    const body=clinicianRequests[1].body;
+    assert.equal(body.p_patient_id,'synthetic-patient-a'); assert.equal(body.p_decision,'released');
+    assert.deepEqual(body.p_scope,{running_allowed:true,adaptation_allowed:false,scope_version:'1',patient_instructions:'Plano sintético revisado.'});
+    assert.equal(body.p_reason,'Autorização sintética para validar o bridge.');
+    assert.equal(body.p_plan.week,1); assert.equal(body.p_plan.sessions.length,2);
+    assert.deepEqual(body.p_plan.sessions.map(x=>x.day),['mon','wed']);
+    assert.deepEqual(body.p_plan.sessions[0].segments,[{type:'run',seconds:60,rpeTarget:3}]);
     await hostContext.close();
 
     const unauthContext=await browser.newContext();

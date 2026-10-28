@@ -43,4 +43,7 @@ ROWS="$("$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select count(*) from p
 [[ "$ROWS" == "1" ]] || { echo "Concurrent idempotency failed: expected 1 row, got $ROWS" >&2; exit 1; }
 grep -q '"duplicate": true' "$TMP_ROOT/concurrent-a.out" "$TMP_ROOT/concurrent-b.out"
 "$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_patient_hold.test.sql"
+# HAG_RUN_CLINICIAN_REGISTRY_v1: cadastro de medico e vinculo pelo proprio medico, depois da 0002.
+"$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/supabase/migrations/202610280003_hag_run_clinician_registry.sql" >/dev/null
+"$PG_BIN/psql" "$DB_URL" -v ON_ERROR_STOP=1 -f "$REPO_ROOT/tests/sql/hag_run_clinician_registry.test.sql"
 echo "PostgreSQL 17 integration checks passed, including two concurrent retries with one persisted row."

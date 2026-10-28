@@ -46,7 +46,8 @@ async function createSyntheticClinician() {
   }
   if (!/^[0-9a-f-]{36}$/i.test(payload.user.id)) throw new Error('Unexpected synthetic clinician UUID.');
   execFileSync(psql, [dbUrl, '-v', 'ON_ERROR_STOP=1', '-c',
-    `insert into public.hag_run_clinician_patient_access(clinician_user_id,patient_id) values ('${payload.user.id}','synthetic-patient-a');`],
+    // HAG_RUN_CLINICIAN_REGISTRY_v1: vinculo so vale para medico cadastrado pelo processo administrativo.
+    `select hag_run_private.register_clinician('${payload.user.id}','Médico sintético','CRM-TESTE','teste-e2e'); insert into public.hag_run_clinician_patient_access(clinician_user_id,patient_id) values ('${payload.user.id}','synthetic-patient-a');`],
   { stdio: 'ignore' });
   return {
     accessToken: payload.access_token,
@@ -103,22 +104,27 @@ async function main() {
     const address = server.address();
     await page.goto(`http://127.0.0.1:${address.port}/hag_run_hag_os_dev.html`);
     const panel = page.frameLocator('iframe[title="Painel médico HAG RUN"]');
-    await panel.getByText(/Canal autenticado do HAG OS conectado/).waitFor();
     assert.equal(await panel.locator('#patientId').inputValue(), 'synthetic-patient-a');
-    await panel.getByRole('button', { name: 'Carregar contexto autorizado' }).click();
     try {
       await panel.getByText(/Solicitação carregada\. Revise os dados e registre uma decisão\.|Programa e histórico carregados\./).waitFor({ timeout: 10000 });
     } catch (_) {
       throw new Error(`Clinician context did not load. Status: ${await panel.locator('#status').textContent()}; RPC: ${JSON.stringify(rpcResponses)}`);
     }
-    await panel.locator('#scope').fill(JSON.stringify({
-      running_allowed: true, adaptation_allowed: false,
-      patient_instructions: 'Plano de teste. Interrompa e solicite avaliação se houver sintoma.',
-    }));
-    await panel.locator('#plan').fill(JSON.stringify(localPlan));
+    // HAG_RUN_MEDICO_FORM_v1: plano montado no formulário (duas sessões, uma etapa de caminhada de 2 min).
+    await panel.locator('#instructions').fill('Plano de teste. Interrompa e solicite avaliação se houver sintoma.');
+    const sess = panel.locator('[data-sess]');
+    for (const [i, day] of [[0, 'mon'], [1, 'wed']]) {
+      await sess.nth(i).locator('[data-f="day"]').selectOption(day);
+      await sess.nth(i).locator('[data-f="title"]').fill('Sessão sintética HAG OS');
+      await sess.nth(i).getByRole('button', { name: '+ Etapa' }).click();
+      const seg = sess.nth(i).locator('[data-seg]').first();
+      await seg.locator('[data-f="type"]').selectOption('walk');
+      await seg.locator('[data-f="min"]').fill('2');
+      await seg.locator('[data-f="rpe"]').fill('2');
+    }
     await panel.locator('#reason').fill('Homologação técnica local com paciente e profissional sintéticos.');
     await panel.locator('button[data-action="released_with_restrictions"]').click();
-    await panel.getByText(/Decisão registrada\. Autorização/).waitFor();
+    await panel.getByText(/Decisão registrada\. Autorização/).first().waitFor();
     assert.equal(await page.locator('iframe').getAttribute('sandbox'), 'allow-scripts');
     const frame = page.frames().find(item => item.url().includes('hag_run_medico.html'));
     assert.ok(frame, 'clinical panel iframe was mounted');
@@ -137,7 +143,7 @@ async function main() {
     await patientPage.getByRole('heading', { name: 'Plano Rumo aos 5 km' }).waitFor();
     await patientPage.getByText('Plano de teste. Interrompa e solicite avaliação se houver sintoma.').waitFor();
     await patientPage.getByText(/Plano autorizado recuperado\. Histórico: 8 sessão\(ões\)\./).waitFor();
-    await patientPage.getByRole('button', { name: 'Iniciar esta sessão' }).click();
+    await patientPage.getByRole('button', { name: 'Iniciar esta sessão' }).first().click();
     await patientPage.getByText('Caminhe e recupere', { exact: true }).waitFor();
     await patientPage.evaluate(() => window.advanceHagTimer(120_000));
     await patientPage.getByRole('heading', { name: 'Sessão concluída' }).waitFor();
@@ -149,16 +155,13 @@ async function main() {
 
     await page.reload();
     const reopenedPanel = page.frameLocator('iframe[title="Painel médico HAG RUN"]');
-    await reopenedPanel.getByText(/Canal autenticado do HAG OS conectado/).waitFor();
-    await reopenedPanel.getByRole('button', { name: 'Carregar contexto autorizado' }).click();
     await reopenedPanel.getByText('Programa e histórico carregados. Você pode registrar revisão, ajuste ou suspensão.').waitFor();
-    assert.match(await reopenedPanel.locator('#request').textContent(), /hag-os-e2e-session/,
+    assert.match(await reopenedPanel.locator('#raw').textContent(), /sessao-1/,
       'the clinician context must show the persisted patient execution');
-    await reopenedPanel.locator('#scope').fill(JSON.stringify({ running_allowed: false, adaptation_allowed: false,
-      patient_instructions: 'Corrida suspensa para revisão profissional.' }));
+    assert.ok(await reopenedPanel.locator('#historico tbody tr').count() >= 1, 'history table lists the execution');
     await reopenedPanel.locator('#reason').fill('Suspensão sintética para validar revogação no fluxo local.');
     await reopenedPanel.locator('button[data-action="suspended"]').click();
-    await reopenedPanel.getByText(/Decisão registrada\. Autorização/).waitFor();
+    await reopenedPanel.getByText(/Decisão registrada\. Autorização/).first().waitFor();
     await patientPage.reload();
     await patientPage.getByRole('heading', { name: 'Corrida suspensa' }).waitFor();
     assert.equal(await patientPage.locator('[data-start]').count(), 0, 'suspension must remove executable sessions');

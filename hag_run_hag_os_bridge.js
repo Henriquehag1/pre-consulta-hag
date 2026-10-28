@@ -58,7 +58,12 @@
       });
       let result;
       try { result = await response.json(); } catch (_) { result = null; }
-      if (!response.ok) throw new Error(`rpc_http_${response.status}`);
+      // HAG_RUN_INTEGRACAO_v1: repassa o codigo de recusa do servidor (ex.: restricted_instructions_required)
+      // para o painel explicar o motivo. So o identificador curto, sem dados do paciente.
+      if (!response.ok) {
+        const code = typeof result?.message === 'string' && /^[a-z_]{3,80}$/.test(result.message) ? `:${result.message}` : '';
+        throw new Error(`rpc_http_${response.status}${code}`);
+      }
       return result;
     }
 

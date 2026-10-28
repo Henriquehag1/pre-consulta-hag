@@ -10,7 +10,7 @@
 </style>
 </head>
 <body>
-<header class="top"><div class="topin"><div class="brand">HAG TREINO · CORRIDA</div><h1>Rumo aos 5 km</h1><div class="sub">Plano ajustado à sua experiência, disponibilidade e resposta ao treino.</div></div></header>
+<header class="top"><div class="topin"><div class="brand"><a id="voltaTreino" href="treino_HAG.html" style="color:inherit;text-decoration:none">‹ TREINO</a> · HAG TREINO · CORRIDA</div><h1>Rumo aos 5 km</h1><div class="sub">Plano ajustado à sua experiência, disponibilidade e resposta ao treino.</div></div></header>
 <main>
   <section id="intake" class="card" aria-labelledby="intake-title">
     <div class="kicker">Avaliação inicial</div><h2 id="intake-title">Vamos entender seu ponto de partida</h2>
@@ -56,12 +56,13 @@
   <section id="log" hidden></section>
   <p id="saveStatus" class="status" role="status"></p><button id="followup" class="btn secondary" hidden>Revisar a semana</button>
 </main>
-<script src="hag_run_engine.js"></script><script src="hag_run_store.js"></script><script src="hag_run_policy.js"></script>
+<script src="hag_run_engine.js"></script><script src="hag_run_config.js"></script><script src="hag_run_store.js"></script><script src="hag_run_policy.js"></script>
 <script>
 'use strict';
 (function(){
   const $=id=>document.getElementById(id), dayChecks=[...document.querySelectorAll('#availableDays input')];
   const linkToken=new URLSearchParams(location.search).get('t');
+  {const vt=document.getElementById('voltaTreino');if(vt&&/^[a-f0-9]{24,64}$/i.test(linkToken||''))vt.href='treino_HAG.html?t='+encodeURIComponent(linkToken);} /* HAG_RUN_INTEGRACAO_v1 */
   const store=HAGRunStore.createRunStore({...window.HAG_RUN_CONFIG,token:linkToken});
   const state={program:{slug:'rumo_5k',title:'Rumo aos 5 km'},profile:null,prescription:null,session:null,clientEventId:null,segmentIndex:0,remaining:0,timer:null,paused:false,startedAt:0,segmentEndsAt:0,elapsedMs:0,completed:false,skipped:false,history:[],week:1,lastRecommendation:null};
   const now=()=>performance.now();
@@ -72,7 +73,7 @@
   function buildProfile(){const f=new FormData($('assessment')),distance=$('resultDistance').value,time=$('resultTime').value,date=$('resultDate').value;if([distance,time,date].some(Boolean)&&![distance,time,date].every(Boolean))throw new Error('Preencha distância, tempo e data do resultado recente, ou deixe os três campos vazios.');return {assessmentDate:new Date().toISOString().slice(0,10),ageYears:Number(f.get('ageYears')),experience:'self_reported',maxContinuousMinutes:Number(f.get('continuous')),runningDaysPerWeek:Number(f.get('days')),weeklyKm:Number(f.get('weekly')),longestRunKm:Number(f.get('longest')),habitualPaceSecondsPerKm:f.get('pace')?Number(f.get('pace')):null,paceRpe:f.get('paceRpe')?Number(f.get('paceRpe')):null,injuryHistory:'',recentInjury:$('injury').checked,activeInjury:$('injury').checked,currentPain:Number(f.get('painNow')),concerningSymptoms:$('symptoms').checked,availableDays:dayChecks.filter(x=>x.checked).map(x=>x.value),goal:f.get('goal'),modality:f.get('modality'),recentResults:distance?[{distanceKm:Number(distance),timeSeconds:Math.round(Number(time)*60),date}]:[]};}
   function renderPlan(result, authorization={}){state.prescription=result;const plan=$('plan');let html=`<div class="card"><div class="kicker">Sua avaliação · ${h(result.classification.level)}</div><h2>${result.status==='professional_review'?'Converse com a equipe antes de correr':'Plano Rumo aos 5 km'}</h2><p class="sub">${h(result.explanation||`Classificação ${result.classification.level}. A prescrição usa sua capacidade atual e os dias escolhidos.`)}</p>`;
     if(result.classification.reviewReasons.length)html+=`<div class="alert bad">${result.classification.reviewReasons.map(h).join('<br>')}<br>Não inicie a corrida até receber orientação profissional.</div>`;
-    if(result.status==='ready'){html+=`<p class="meta">Programa: Rumo aos 5 km · Prescrição individual ${h(result.engineVersion)} · Semana ${result.week}</p></div>`;if(authorization.decision==='released_with_restrictions')html+=`<div class="alert"><strong>Orientações e limites definidos pela equipe</strong><p>${h(authorization.scope?.patient_instructions||'Confirme as restrições com a equipe antes de iniciar.')}</p></div>`;html+=`<div class="card"><h3>Sessões desta semana</h3>`;
+    if(result.status==='ready'){html+=`<p class="meta">Programa: Rumo aos 5 km · Prescrição individual ${h(result.engineVersion)} · Semana ${result.week}</p></div>`;if((authorization.decision==='released_with_restrictions'||authorization.scope?.patient_instructions))html+=`<div class="alert"><strong>Orientações e limites definidos pela equipe</strong><p>${h(authorization.scope?.patient_instructions||'Confirme as restrições com a equipe antes de iniciar.')}</p></div>`;html+=`<div class="card"><h3>Sessões desta semana</h3>`;
       for(const [i,s] of result.sessions.entries()){html+=`<article class="session"><div class="kicker">${dayName(s.day)} · ${s.level}</div><h3>${h(s.title)}</h3><p class="sub">${h(s.objective)}</p><p class="meta">Duração prevista: ${s.durationMinutes} min</p>`;
         for(const x of s.segments){const labels={warmup_walk:'Aquecimento caminhando',run:'Corrida',walk:'Caminhada de recuperação',cooldown_walk:'Volta à calma caminhando'};const pace=x.pace?` · ${h(x.pace)}`:'';const speed=x.speedKmh?` · esteira ${x.speedKmh.toFixed(1)} km/h`:'';html+=`<div class="segment"><span>${labels[x.type]||h(x.type)}${pace}${speed}<br><small class="meta">Esforço percebido ${x.rpeTarget}/10</small></span><b>${Math.floor(x.seconds/60)}:${String(x.seconds%60).padStart(2,'0')}</b></div>`;}
         html+=`<button class="btn ${i?'secondary':''}" data-start="${i}">Iniciar esta sessão</button></article>`;}
