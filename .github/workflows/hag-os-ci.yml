@@ -19,7 +19,7 @@ jobs:
   verify:
     name: Testes e integridade
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -32,3 +32,10 @@ jobs:
           package-manager-cache: false
       - name: Sintaxe das paginas e scripts
         run: node .github/scripts/check-paginas.mjs
+      # HAG_COZINHA_TESTES_v1 (29/10/2026): bateria de navegador da Cozinha HAG, com banco simulado e receitas ficticias.
+      - name: Instalar Playwright
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Testes da Cozinha HAG
+        run: node tests/cozinha/teste_cozinha.mjs

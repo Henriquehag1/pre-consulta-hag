@@ -913,6 +913,18 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
           <div class="radio-row" onclick="toggleRadio(this,'r_estoque')"><div class="radio-dot"></div><span class="radio-label">Não uso medicação / suplemento</span></div>
         </div>
       </div>
+      <!-- HAG_COZINHA_USO_CHECKIN_v1 (29/10/2026): a Cozinha HAG só mede o que acontece dentro do app. Esta pergunta mostra
+           quem não recebeu o link e quem cozinhou sem marcar. Opcional; vai para checkins.cozinha_uso. -->
+      <div class="fdiv"></div>
+      <div class="field">
+        <label class="fl">Usou alguma receita da Cozinha HAG nesta semana?</label>
+        <div class="radio-group" id="r_cozinha">
+          <div class="radio-row" onclick="toggleRadio(this,'r_cozinha')"><div class="radio-dot"></div><span class="radio-label">Sim, fiz pelo menos uma</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_cozinha')"><div class="radio-dot"></div><span class="radio-label">Abri, mas não cheguei a fazer</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_cozinha')"><div class="radio-dot"></div><span class="radio-label">Ainda não abri</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_cozinha')"><div class="radio-dot"></div><span class="radio-label">Não recebi o link da Cozinha</span></div>
+        </div>
+      </div>
       <div class="fdiv"></div>
       <div class="field">
         <label class="fl">Quão difícil foi seguir o plano esta semana?</label>
@@ -1114,6 +1126,7 @@ function buildMsg(){
   if(fv('f_evento')!=='—') msg+='Proximos desafios: '+fv('f_evento')+nl;
   msg+=nl+'[ SUPORTE ]'+nl;
   msg+='Estoque: '+radio('r_estoque')+nl;
+  if(radio('r_cozinha')!=='—') msg+='Cozinha HAG: '+radio('r_cozinha')+nl;   /* HAG_COZINHA_USO_CHECKIN_v1 */
   msg+='Dificuldade do plano: '+sc5('s_dificuldade')+nl;
   msg+='Comprometimento prox. semana: '+sc5('s_compromisso')+nl;
   if(fv('f_mensagem')!=='—') msg+=nl+'Mensagem: '+fv('f_mensagem')+nl;
@@ -1259,6 +1272,7 @@ async function enviarCheckin(){
       resultado:_radioVal('r_resultado')/*HAG_CHECKIN_RADIO_v1*/,
       evento:fv('f_evento'),
       estoque:_radioVal('r_estoque')/*HAG_CHECKIN_RADIO_v1*/,
+      cozinha_uso:_radioVal('r_cozinha')||null/*HAG_COZINHA_USO_CHECKIN_v1*/,
       mensagem:fv('f_mensagem'),
       interpretacao:interpretacao||'',
       criado:new Date().toISOString(),
