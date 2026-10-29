@@ -245,13 +245,29 @@ a.zap{color:var(--gold2)}
     var passo = t.paciente + (t.arrumacaoSempre ? t.arrumacao : 0);
     var folgaAntes = t.arrumacaoSempre ? t.arrumacao : 0;
 
+    /* HAG_LIGHT_PINHEIROS_v1 (29/10/2026). Pedido do Dr. Henrique ao migrar a Livance
+       para o Plano Light (a partir de 10/11/2026): em Pinheiros, nos dias de semana, a
+       sala so existe de 12:00 a 14:00. Ele escolheu dois retornos, 12:15 (60 min, com a
+       sala abrindo as 12:00 pela arrumacao de primeira do dia) e 13:15 (45 min, ate as
+       14:00). Por isso a regra pode dizer 'encurtaFinal': o ULTIMO retorno da janela
+       pode terminar no fim dela, desde que fique com pelo menos esse tempo. Vale so para
+       retorno; diagnostica, implante e injetavel seguem a duracao cheia. Sem a chave na
+       regra, nada muda. O servidor (hag_reservar_horario) aplica a mesma regra. */
+    var encurta = (tipo === 'retorno' && regra.encurtaFinal > 0) ? +regra.encurtaFinal : 0;
+    var fimDe = function (h) {
+      var f = h + t.paciente;
+      if (f <= jFim) return f;
+      if (encurta && h < jFim && jFim - h >= encurta) return jFim;
+      return null;
+    };
+
     var cand = [];
 
     if (!ocup.length) {
       /* dia vazio: semente a partir do inicio da janela, no passo do tipo */
       for (var i = 0; i < semente; i++) {
         var h = jIni + i * passo;
-        if (h + t.paciente > jFim) break;
+        if (fimDe(h) == null) break; /* HAG_LIGHT_PINHEIROS_v1 */
         cand.push({ hora: paraHora(h), posicao: 'semente', primeiroDoDia: i === 0 });
       }
       if (!cand.length) vazio.motivo = 'janela curta demais para um ' + t.rotulo.toLowerCase();
@@ -274,7 +290,7 @@ a.zap{color:var(--gold2)}
       /* HAG_JANELA_FECHADA_v3: o encaixe antes do bloco tambem tem que CABER na
          janela. Faltava o teto aqui: bastava um marcado depois do fim da janela
          para o candidato nascer fora dela. */
-      if (antes >= jIni && antes + t.paciente <= jFim) {
+      if (antes >= jIni && fimDe(antes) != null) { /* HAG_LIGHT_PINHEIROS_v1 */
         /* EFEITO COLATERAL que precisa ser dito em voz alta. Ao entrar antes do
            bloco, este atendimento vira o primeiro do dia e o que era primeiro
            DEIXA DE SER. Na Livance isso muda o tipo do agendamento dele, que
@@ -297,7 +313,7 @@ a.zap{color:var(--gold2)}
       /* Encaixe DEPOIS do bloco: o paciente entra no fim do bloco mais a
          arrumacao do proprio tipo que esta entrando. */
       var depois = bFim + folgaAntes;
-      if (depois + t.paciente <= jFim) {
+      if (fimDe(depois) != null) { /* HAG_LIGHT_PINHEIROS_v1 */
         cand.push({ hora: paraHora(depois), posicao: 'depois', primeiroDoDia: false });
       }
 
@@ -306,13 +322,22 @@ a.zap{color:var(--gold2)}
 
     /* nunca ofertar horario que colida com algo ja marcado */
     cand = cand.filter(function (c) {
-      var ci = paraMin(c.hora), cf = ci + t.paciente;
+      var ci = paraMin(c.hora), cf = fimDe(ci); if (cf == null) cf = ci + t.paciente; /* HAG_LIGHT_PINHEIROS_v1 */
       return !ocup.some(function (o) { return ci < o.fim && cf > o.inicio; });
     });
 
     cand.forEach(function (c) {
-      c.fim = paraHora(paraMin(c.hora) + t.paciente);
+      var _ci = paraMin(c.hora), _cf = fimDe(_ci); if (_cf == null) _cf = _ci + t.paciente;
+      c.fim = paraHora(_cf);
       c.blocoSala = blocoDeSala(tipo, c.hora, c.primeiroDoDia);
+      /* HAG_LIGHT_PINHEIROS_v1: retorno encurtado, a sala termina com ele */
+      if (_cf - _ci < t.paciente) {
+        c.encurtado = _cf - _ci;
+        if (c.blocoSala && c.blocoSala.usaSala) {
+          c.blocoSala.fim = c.fim;
+          c.blocoSala.minutos = c.blocoSala.arrumacao + (_cf - _ci);
+        }
+      }
     });
 
     return { horarios: cand, motivo: cand.length ? null : (vazio.motivo || 'sem horário disponível'), dia: dia };
@@ -809,7 +834,7 @@ function tiraOMeuHorario(){
 
 function carregarAgenda(){
   Promise.all([
-    rest('agenda_regras?ativo=eq.true&select=dia_semana,local,modalidade,hora_inicio,hora_fim,limite,prioridade&order=prioridade'),
+    rest('agenda_regras?ativo=eq.true&select=dia_semana,local,modalidade,hora_inicio,hora_fim,limite,prioridade,encurta_final_min&order=prioridade'),
     rest('v_agenda_ocupacao?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,hora_inicio,hora_fim,tipo'),
     /* HAG_AGENDA_BLOQUEIO_v1: se a leitura falhar, segue sem bloqueio; o servidor recusa mesmo assim */
     rest('agenda_bloqueios?data=gte.'+JANELA.inicio+'&data=lte.'+JANELA.fim+'&select=data,local').catch(function(){ return []; }),
@@ -875,7 +900,7 @@ function diasOfertados(modalidade){
         else if(_ab){ if(_ab.ini<_jIni) _jIni=_ab.ini; if(_ab.fim>_jFim) _jFim=_ab.fim; }
         var _prio=(_ab && _ab.prio!=null) ? _ab.prio : rg.prioridade;
         var r=S.horariosOfertados(
-          {inicio:_jIni,fim:_jFim,limite:rg.limite},
+          {inicio:_jIni,fim:_jFim,limite:rg.limite,encurtaFinal:rg.encurta_final_min}, /* HAG_LIGHT_PINHEIROS_v1 */
           OCUP[iso]||[], tipo);
         var hs=r.horarios;
         /* HAG_REMARCA_SEM_BURACO_v2: o horário exato que ele já tem não entra na
