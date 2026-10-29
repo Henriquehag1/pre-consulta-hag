@@ -278,6 +278,7 @@ nav.tabs .n[hidden]{display:none}
   <span class="marca">HAG <span>COZINHA</span></span>
   <button type="button" class="redondo" id="tema" aria-label="Trocar tema"></button>
 </div></header>
+<style>/* HAG_COZINHA_SELOS_v1 */.alerg{margin:10px 0 0;font-size:13.5px;line-height:1.45}.alerg span{opacity:.72}.pills.tags{margin-top:8px}.pills.tags span{font-size:12px}</style>
 <script>window.HAG_INSTALAR={app:'cozinha',nome:'HAG Cozinha',icone:'icone-cozinha',antes:'#app'};</script>
 <script>
 /* HAG_INSTALAR_v1 (09/10/2026). Pedido do Dr. Henrique: ensinar o paciente a pôr a página na tela inicial do celular.
@@ -437,7 +438,9 @@ async function rpc(nome,args){
     if(!rv.ok) throw new Error('erro '+rv.status);
     return rv.json();
   }
-  if(VER){ if(nome==='hag_cozinha_evento') return {ok:true,ver:true}; if(nome==='hag_orientacoes_paciente') nome='hag_orientacoes_paciente_ver'; }   /* HAG_VER_COMO_PACIENTE_v1 */
+  if(VER){ if(nome==='hag_cozinha_evento') return {ok:true,ver:true}; if(nome==='hag_orientacoes_paciente') nome='hag_orientacoes_paciente_ver';
+    /* HAG_COZINHA_VER_SEM_USO_v1 (29/10/2026): pelo painel, o índice e a ficha vêm das cópias que NÃO gravam ultimo_uso */
+    if(nome==='hag_cozinha_colecao') nome='hag_cozinha_colecao_ver'; if(nome==='hag_cozinha_item') nome='hag_cozinha_item_ver'; }   /* HAG_VER_COMO_PACIENTE_v1 */
   var r=await fetch(SURL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
   if(!r.ok) throw new Error('erro '+r.status);
   return r.json();
@@ -517,12 +520,21 @@ var SITC={manha:'Café rápido',tarde:'Jantar rápido',domingo:'Domingo',apetite
   wrap:'Wrap',bowl:'Bowl e salada',proteina:'Proteína',freezer:'Freezer'};
 function sitNome(g){ if(SITC[g]) return SITC[g]; var s=(COL.meta.situacoes||[]).filter(function(x){return x.id===g})[0]; return s?s.nome:g; }
 
+/* HAG_COZINHA_SELOS_v1 (29/10/2026): selos calculados pelos ingredientes (calcula.py), fora do hash da receita.
+   Alergênicos da RDC 26/2015 mais glúten. Por versão: s.var[i] nulo = mesmos selos da base. */
+var ALERG={gluten:'glúten',leite:'leite',ovo:'ovo',peixe:'peixe',crustaceos:'crustáceos',amendoim:'amendoim',soja:'soja',castanhas:'castanhas'};
+function selosDe(s,vi){ s=s||{}; var v=(vi>=0&&s.var&&s.var[vi])?s.var[vi]:null; return {contem:(v?v.contem:s.contem)||[],rotulo:v?!!v.rotulo:!!s.rotulo}; }
+function tagsDe(s){ s=s||{}; var t=[]; if(s.facil) t.push('Fácil'); if(s.congela) t.push('Congela'); if(s.airfryer) t.push('Air fryer'); if(s.semfogo) t.push('Sem fogão'); return t; }
+function selHTML(s,vi){ if(!s||!s.contem) return ''; var a=selosDe(s,vi), t=tagsDe(s), h='';
+  if(t.length) h+='<div class="pills tags">'+t.map(function(x){ return '<span>'+esc(x)+'</span>'; }).join('')+'</div>';
+  h+='<p class="alerg"><b>Contém:</b> '+(a.contem.length?esc(a.contem.map(function(k){ return ALERG[k]||k; }).join(', ')):'nenhum dos alergênicos principais nos ingredientes')+'. <span>Calculado pelos ingredientes'+(a.rotulo?'; nos industrializados, confira o rótulo':'')+'.</span></p>';
+  return h; }
 function linhaHTML(x,r){
   var u=fotoDe(r), sv=st.salvas[r.id]?'<span class="sv">'+coracao(true,13)+'</span>':'';
   if(r.tipo==='guia') return '<button class="linha" data-abrir="'+r.id+'"><span class="gicon">'+IC.guia+'</span><span><span class="nm">'+esc(r.r.nome)+'</span>'+
     '<span class="mt"><b>Guia</b>'+sv+'</span>'+(x.motivo?'<span class="pq">'+esc(x.motivo)+'</span>':'')+'</span><span class="seta">'+IC.seta+'</span></button>';
   return '<button class="linha" data-abrir="'+r.id+'"><span class="th">'+(u?'<img alt="" loading="lazy" src="'+esc(u)+'" onerror="this.parentNode.textContent=\'HAG\'">':'HAG')+'</span>'+
-    '<span><span class="nm">'+esc(r.r.nome)+'</span><span class="mt"><b>'+r.r.tempo+' min</b> · '+fmt(r.r.ptn)+' g proteína'+sv+'</span>'+
+    '<span><span class="nm">'+esc(r.r.nome)+'</span><span class="mt"><b>'+r.r.tempo+' min</b> · '+fmt(r.r.ptn)+' g proteína'+(tagsDe(r.s).length?' · '+esc(tagsDe(r.s).slice(0,2).join(' · ')):'')+sv+'</span>'+
     (x.motivo?'<span class="pq">'+esc(x.motivo)+'</span>':'')+'</span><span class="seta">'+IC.seta+'</span></button>';
 }
 function oriHTML(){
@@ -606,6 +618,7 @@ function telaFicha(){
     (u?'<span class="ilus">IMAGEM ILUSTRATIVA</span>':'')+'</div>';
   h+='<article class="ficha"><div class="so-print small muted">Método HAG · Cozinha</div>';
   h+='<div><h1>'+esc(r.nome)+'</h1><div class="pills" style="margin-top:10px"><span>'+r.tempo+' min</span><span>'+fmt(n.kcal.v)+' kcal</span><span class="g">'+fmt(n.ptn.v)+' g proteína</span><span>'+esc(r.porcao)+'</span></div></div>';
+  h+=selHTML(F.selos||(it&&it.s),st.vari);   /* HAG_COZINHA_SELOS_v1 */
   if(r.aviso) h+='<div class="aviso">'+esc(r.aviso)+'</div>';
   if(r.var&&r.var.length){
     h+='<div class="abas" role="tablist" aria-label="Versões"><button role="tab" data-vari="-1" aria-selected="'+(st.vari<0)+'">Base</button>'+

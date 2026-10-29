@@ -103,11 +103,12 @@ function fotoDe(i){ return i.foto_url||(FOTOS[i.id]?'cozinha_fotos/p/'+i.id+'.jp
 async function carregarFotos(){ try{ var r=await fetch('cozinha_fotos/lista.json',{cache:'no-cache'}); if(!r.ok) return; var l=await r.json(); FOTOS={}; if(Array.isArray(l)) l.forEach(function(id){ if(/^[a-z0-9-]+$/.test(id)) FOTOS[id]=1; }); }catch(e){} }
 async function carregar(){
   await carregarFotos();
-  var r=await Promise.all([api('cozinha_itens?select=id,tipo,grupo,ordem,acesso,aprovado,resumo,foto_url,atualizado_em&order=ordem,id'),api('cozinha_colecao_meta?id=eq.1&select=dados'),api('patients?select=id,nome,status,interno&order=nome')]);
+  var r=await Promise.all([api('cozinha_itens?select=id,tipo,grupo,ordem,acesso,aprovado,resumo,foto_url,atualizado_em,selos&order=ordem,id'),api('cozinha_colecao_meta?id=eq.1&select=dados'),api('patients?select=id,nome,status,interno&order=nome')]);
   D.itens=r[0]||[]; D.meta=(r[1]&&r[1][0]&&r[1][0].dados)||null; D.pacientes=(r[2]||[]);
   try{ D.modelos=await api('treino_programas?modelo=eq.true&patient_id=is.null&select=id,nome,objetivo,nivel,sessoes_semana&order=nome')||[]; }catch(e){ D.modelos=[]; }
   await carregarSel();
   await carregarEv();
+  await carregarUso();   /* HAG_COZINHA_FUNIL_v1 */
 }
 // HAG_COZINHA_SO_LIBERADO_v1: o que está liberado para cada paciente (seleção ativa).
 async function carregarSel(){ D.sel=await api('cozinha_selecao?ativo=eq.true&select=patient_id,item_id,motivo,ordem,consulta_data,criado_em&order=patient_id,consulta_data.desc.nullslast,ordem')||[]; }
@@ -115,6 +116,43 @@ function selDe(pid){ return D.sel.filter(function(x){return x.patient_id===pid})
 // HAG_COZINHA_FIZ_v1: eventos da Cozinha nos últimos 30 dias (abriu, cozinhar, fiz).
 async function carregarEv(){ try{ var d=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
   D.ev=await api('cozinha_eventos?tipo=in.(fiz,abriu,cozinhar)&data=gte.'+d+'&select=patient_id,data,hora,tipo,chave,detalhe&order=hora.desc&limit=1000')||[]; }catch(e){ D.ev=[]; } }
+/* HAG_COZINHA_FUNIL_v1 (29/10/2026). Pedido do Dr. Henrique, depois da auditoria: ver onde o uso se perde.
+   Liberado -> abriu -> modo cozinhar -> "Fiz esta receita", desde 16/10/2026 (quando os eventos começaram), e a resposta
+   do check-in semanal "Usou alguma receita da Cozinha HAG?" (checkins.cozinha_uso), que mostra o que o app não vê. */
+var USO_DESDE='2026-10-16';
+async function carregarUso(){
+  try{ D.evTudo=await api('cozinha_eventos?tipo=in.(fiz,abriu,cozinhar)&data=gte.'+USO_DESDE+'&select=patient_id,data,tipo,chave&order=data.desc&limit=5000')||[]; }catch(e){ D.evTudo=[]; }
+  try{ var d=new Date(Date.now()-60*864e5).toISOString().slice(0,10);
+    D.ckUso=await api('checkins?cozinha_uso=not.is.null&data_envio=gte.'+d+'&select=patient_id,data_envio,cozinha_uso&order=data_envio.desc&limit=1000')||[]; }catch(e){ D.ckUso=[]; }
+}
+function cardUso(){
+  var nomes={}; D.pacientes.forEach(function(p){ nomes[p.id]=p; });
+  var pac=D.sel.map(function(x){return x.patient_id}).filter(function(v,i,a){ return a.indexOf(v)===i && !(nomes[v]&&nomes[v].interno); });
+  var ev=(D.evTudo||[]).filter(function(e){ return pac.indexOf(e.patient_id)>=0; });
+  function com(t){ return pac.filter(function(id){ return ev.some(function(e){ return e.patient_id===id&&e.tipo===t; }); }); }
+  var ab=com('abriu'), cz=com('cozinhar'), fz=com('fiz'), ck={};
+  (D.ckUso||[]).forEach(function(c){ if(!ck[c.patient_id]) ck[c.patient_id]=c; });
+  var resp=pac.filter(function(id){ return ck[id]; });
+  var etapa=function(n,t){ return '<div class="kpi"><b>'+n+'</b><span>'+t+'</span></div>'; };
+  var h='<div class="card"><h3>Uso da Cozinha</h3><p class="note">Pacientes com itens liberados (sem o perfil interno), desde 16/10/2026. A resposta do check-in semanal mostra o que o app não vê: quem não recebeu o link, quem cozinhou sem marcar.</p>'+
+    '<div class="kpis">'+etapa(pac.length,'liberados')+etapa(ab.length,'abriram receita')+etapa(cz.length,'modo cozinhar')+etapa(fz.length,'marcaram fiz')+etapa(resp.length,'responderam no check-in')+'</div>';
+  if(pac.length){
+    h+='<table style="width:100%;margin-top:10px;font-size:13.5px;border-collapse:collapse"><tr style="text-align:left"><th>Paciente</th><th>itens</th><th>abriu</th><th>cozinhar</th><th>fiz</th><th>check-in</th></tr>';
+    pac.map(function(id){ var e=ev.filter(function(x){return x.patient_id===id}), dias=function(t){ return e.filter(function(x){return x.tipo===t}).map(function(x){return x.data}).filter(function(v,i,a){return a.indexOf(v)===i}).length; };
+      return {id:id,n:selDe(id).length,a:dias('abriu'),c:e.filter(function(x){return x.tipo==='cozinhar'}).length,f:e.filter(function(x){return x.tipo==='fiz'}).length,ck:ck[id]}; })
+    .sort(function(x,y){ return (y.f-x.f)||(y.c-x.c)||(y.a-x.a)||(y.n-x.n); })
+    .forEach(function(r){ h+='<tr style="border-top:1px solid var(--line)"><td>'+esc((nomes[r.id]||{}).nome||r.id)+'</td><td>'+r.n+'</td><td>'+(r.a?r.a+(r.a===1?' dia':' dias'):'·')+'</td><td>'+(r.c||'·')+'</td><td>'+(r.f||'·')+'</td><td>'+(r.ck?esc(r.ck.cozinha_uso)+' <span class="note">('+esc(String(r.ck.data_envio).split('-').reverse().slice(0,2).join('/'))+')</span>':'·')+'</td></tr>'; });
+    h+='</table>';
+  }
+  return h+'</div>';
+}
+/* HAG_COZINHA_SELOS_v1: o que a receita contém (alergênicos pelos ingredientes) e os selos, para escolher o que liberar */
+var ALERG={gluten:'glúten',leite:'leite',ovo:'ovo',peixe:'peixe',crustaceos:'crustáceos',amendoim:'amendoim',soja:'soja',castanhas:'castanhas'};
+function selosTxt(i){ var s=i&&i.selos; if(!s||!s.contem) return ''; var t=[];
+  t.push(s.contem.length?'contém '+s.contem.map(function(k){return ALERG[k]||k}).join(', '):'sem alergênicos principais');
+  if(s.lactose) t.push('tem lactose'); if(s.congela) t.push('congela'); if(s.airfryer) t.push('air fryer'); if(s.facil) t.push('fácil');
+  if(s.base&&s.base.length) t.push('usa a base '+s.base.join(', '));
+  return ' · '+t.join(' · '); }
 var NOTA={gostei:'Gostei',ajustaria:'Ajustaria',nao:'Não deu certo'};
 function evDe(pid,id,tipo){ return (D.ev||[]).filter(function(e){ return e.patient_id===pid&&e.chave===id&&e.tipo===tipo; }); }
 function usoTxt(pid,id){ var a=evDe(pid,id,'abriu').length, f=evDe(pid,id,'fiz'), t='';
@@ -149,7 +187,7 @@ function cardPaciente(){
       var res=D.itens.filter(function(i){ return i.aprovado && ja.indexOf(i.id)<0 && semAcento((i.resumo||{}).nome+' '+((i.resumo||{}).resumo||'')+' '+i.id).indexOf(q)>=0; }).slice(0,15);
       if(!res.length) h+='<p class="note">Nada aprovado com essa busca.</p>';
       res.forEach(function(i){ var r=i.resumo||{};
-        h+='<div class="it"><div class="th">'+(fotoDe(i)?'<img alt="" src="'+esc(fotoDe(i))+'">':(i.tipo==='guia'?'guia':'foto'))+'</div><div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span><span class="mt">'+(i.tipo==='guia'?'guia':'receita')+'</span></div>'+
+        h+='<div class="it"><div class="th">'+(fotoDe(i)?'<img alt="" src="'+esc(fotoDe(i))+'">':(i.tipo==='guia'?'guia':'foto'))+'</div><div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span><span class="mt">'+(i.tipo==='guia'?'guia':'receita')+esc(selosTxt(i))+'</span></div>'+
            '<div class="ac"><button class="btn peq" data-a="liberar" data-v="'+esc(i.id)+'">Liberar</button></div></div>'; }); }
     h+='</div>';
   }
@@ -245,7 +283,7 @@ function render(){
     h+='<div class="grp"><h2>'+esc(nomeGrupo(S.tipo,g))+' <span class="note">('+l.length+')</span></h2>';
     l.forEach(function(i){ var r=i.resumo||{};
       h+='<div class="it '+(i.aprovado?'':'pend')+'"><div class="th">'+(fotoDe(i)?'<img alt="" src="'+esc(fotoDe(i))+'">':(i.tipo==='receita'?'foto':'guia'))+'</div>'+
-         '<div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span>'+(i.tipo==='receita'?'<span class="mt">'+esc(i.id)+' · '+r.tempo+' min · '+fmt(r.kcal)+' kcal · '+fmt(r.ptn)+' g proteína · '+r.nvar+' variações</span>':'')+
+         '<div class="tx"><span class="nm">'+esc(r.nome)+'</span><span class="rs">'+esc(r.resumo)+'</span>'+(i.tipo==='receita'?'<span class="mt">'+esc(i.id)+' · '+r.tempo+' min · '+fmt(r.kcal)+' kcal · '+fmt(r.ptn)+' g proteína · '+r.nvar+' variações'+esc(selosTxt(i))+'</span>':'')+
          '<span class="row"><span class="tag '+(i.aprovado?'ok':'pd')+'">'+(i.aprovado?'aprovado':'a aprovar')+'</span></span></div>'+
          '<div class="ac"><button class="btn peq sec" data-a="ver" data-v="'+i.id+'">'+(S.aberto===i.id?'Fechar':'Conferir')+'</button>'+
          '<button class="btn peq'+(i.aprovado?' sec':'')+'" data-a="aprovar" data-v="'+i.id+'">'+(i.aprovado?'Tirar do ar':'Aprovar')+'</button>'+
@@ -255,6 +293,7 @@ function render(){
   });
   h+='</div>';
 
+  h+=cardUso();   /* HAG_COZINHA_FUNIL_v1 */
   h+=cardFiz();
   h+=cardPaciente();
   if(S.confNovo) h+='<div class="erro">O link atual deste paciente deixa de funcionar na hora, na Cozinha e nas Orientações. Use quando o link foi para a pessoa errada ou parou de abrir. <span class="row" style="margin-top:6px"><button class="btn peq" data-a="linknovo">Confirmar: gerar link novo</button><button class="btn peq sec" data-a="cancelanovo">Cancelar</button></span></div>';
