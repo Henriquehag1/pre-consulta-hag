@@ -34,7 +34,8 @@ const META = { situacoes: [{ id: 'manha', nome: 'Acordei sem tempo', frase: '.' 
 const ITENS = { 'rec-a': { tipo: 'receita', grupo: 'manha', dados: REC_A, selos: SEL_A }, 'rec-b': { tipo: 'receita', grupo: 'tarde', dados: REC_B, selos: { contem: [] } },
   'guia-a': { tipo: 'guia', grupo: 'fora', dados: GUIA_A, selos: null }, 'rec-z': { tipo: 'receita', grupo: 'manha', dados: { ...REC_A, id: 'rec-z', nome: 'Não liberada' }, selos: null } };
 const TOK_A = 'TOK_A_valido_000000000000000000', TOK_REV = 'TOK_REVOGADO_00000000000000000';
-const LIB = { [TOK_A]: ['rec-a', 'rec-b', 'guia-a'] };
+const TOK_ORD = 'TOK_ORDEM_00000000000000000000';
+const LIB = { [TOK_A]: ['rec-a', 'rec-b', 'guia-a'], [TOK_ORD]: ['rec-b', 'rec-a'] };
 const resumo = id => { const d = ITENS[id].dados; return ITENS[id].tipo === 'receita' ? { nome: d.nome, resumo: d.resumo, tempo: d.tempo, kcal: d.n.kcal.v, ptn: d.n.ptn.v, nvar: d.var.length } : { nome: d.nome, resumo: d.resumo }; };
 
 let falhas = 0, total = 0;
@@ -156,6 +157,12 @@ const txt = async p => (await p.locator('#app').innerText());
   T('14. check-in: pergunta com 4 opções', n === 4, String(n));
   T('14. check-in: a escolha vira o valor salvo', v === 'Não recebi o link da Cozinha', v);
   T('14. check-in: zero erro de página', !st.erros.length, st.erros.join(' | ')); await ctx.close(); }
+
+// 15: filtros na ordem das situações do meta (HAG_COZINHA_ORDEM_DIFICULDADE_v1), não na ordem em que o Dr. liberou
+{ const { p, st, ctx } = await pagina('cozinha_HAG.html?t=' + TOK_ORD);
+  const ch = (await p.locator('.chip').allTextContents()).map(x => x.replace(/\d+$/, ''));
+  T('15. filtros seguem a ordem do meta (manhã antes de tarde), mesmo liberado ao contrário', ch.join('|') === 'Todas|Café em 10 min|Jantar rápido', ch.join('|'));
+  T('15. zero erro de página', !st.erros.length, st.erros.join(' | ')); await ctx.close(); }
 
 await browser.close(); srv.close();
 console.log(`\n${total - falhas} de ${total} passaram`);

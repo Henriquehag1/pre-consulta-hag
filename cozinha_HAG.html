@@ -515,9 +515,15 @@ function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u030
 function dataBR(d){ return d?d.split('-').reverse().slice(0,2).join('/'):''; }
 
 /* nomes curtos das situações, para os filtros */
-var SITC={manha:'Café rápido',tarde:'Jantar rápido',domingo:'Domingo',apetite:'Pouco apetite',doce:'Doce',treino:'Treino',mes:'Fim de mês',
-  visita:'Visitas',bolsa:'Lanche de bolsa',airfryer:'Air fryer',molhos:'Molhos',bebidas:'Bebidas',natal:'Natal',junina:'Festa junina',
-  wrap:'Wrap',bowl:'Bowl e salada',proteina:'Proteína',freezer:'Freezer'};
+/* HAG_COZINHA_ORDEM_DIFICULDADE_v1 (30/10/2026): nomes curtos novos, pedido do Dr. Henrique (versão longa no meta, para Stories). */
+var SITC={tarde:'Jantar rápido',visita:'Fim de semana',doce:'Doce',manha:'Café em 10 min',treino:'Treino',apetite:'Pouca fome',
+  proteina:'Proteína',bolsa:'Lanche',freezer:'Freezer',domingo:'Domingo',bowl:'Prato único',wrap:'Wraps',airfryer:'Air fryer',
+  molhos:'Molhos',bebidas:'Bebidas',mes:'Econômico',natal:'Natal',junina:'Junina'};
+/* Ordem dos filtros = ordem do meta (da maior para a menor dificuldade dos pacientes, pelos check-ins semanais).
+   Época: em novembro e dezembro o Natal vai para o começo; em junho, a festa junina. */
+function ordemSits(){ var l=((COL&&COL.meta&&COL.meta.situacoes)||[]).map(function(x){return x.id}), m=new Date().getMonth()+1, t=m>=11?'natal':(m===6?'junina':null);
+  if(t&&l.indexOf(t)>0){ l.splice(l.indexOf(t),1); l.unshift(t); } return l; }
+function porSit(a,b){ var O=ordemSits(), x=O.indexOf(a), y=O.indexOf(b); return (x<0?999:x)-(y<0?999:y); }
 function sitNome(g){ if(SITC[g]) return SITC[g]; var s=(COL.meta.situacoes||[]).filter(function(x){return x.id===g})[0]; return s?s.nome:g; }
 
 /* HAG_COZINHA_SELOS_v1 (29/10/2026): selos calculados pelos ingredientes (calcula.py), fora do hash da receita.
@@ -545,6 +551,8 @@ function oriHTML(){
 function telaInicio(tipo){
   // HAG_COZINHA_SO_LIBERADO_v1: só o que o Dr. Henrique liberou, na ordem dele, com o porquê.
   var PV=lib().filter(function(x){ return IDX[x.id].tipo===tipo; }), q=norm(st.q.trim());
+  /* HAG_COZINHA_ORDEM_DIFICULDADE_v1: na vitrine, a lista segue a ordem das situações; para o paciente, a ordem do Dr. */
+  if(VITRINE&&tipo==='receita') PV=PV.map(function(x,i){return [x,i]}).sort(function(a,b){ return porSit(IDX[a[0].id].grupo,IDX[b[0].id].grupo)||(a[1]-b[1]); }).map(function(z){return z[0]});
   var datas=lib().map(function(x){return x.consulta||''}).filter(Boolean).sort();
   var h='<div><div class="kick">Separadas para você</div><h1 class="tit">'+(tipo==='guia'?'Guias':'Para você')+'</h1>'+
     '<div class="sub">Escolhidas pelo Dr. Henrique'+(datas.length?' · consulta '+dataBR(datas[datas.length-1]):'')+'</div></div>';
@@ -557,6 +565,7 @@ function telaInicio(tipo){
   if(tipo==='receita'){
     var conta={}, ordem=[];
     PV.forEach(function(x){ var g=IDX[x.id].grupo; if(!conta[g]){ conta[g]=0; ordem.push(g); } conta[g]++; });
+    ordem.sort(porSit);   /* HAG_COZINHA_ORDEM_DIFICULDADE_v1 */
     var nsv=PV.filter(function(x){return st.salvas[x.id]}).length;
     if(st.filtro==='salvas'&&!nsv) st.filtro='todas';
     if(st.filtro!=='todas'&&st.filtro!=='salvas'&&!conta[st.filtro]) st.filtro='todas';
