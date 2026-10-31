@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- HAG_TRIAGEM_CHECKIN_v1 (31/10/2026) + HAG_TRIAGEM_SUGESTAO_v2: a IA recomenda a conduta
+     (dose, horario, liberar ou nao) entre [[colchetes duplos]]; o Dr. aceita, troca ou apaga.
+     POR QUE EXISTE: cada check-in novo passa pela Edge Function
+     hag-triagem-checkin, que classifica (urgente, responder, logistica,
+     sem_acao) e escreve o rascunho da resposta do Dr. no tom do canal do plano
+     (WhatsApp pessoal dele ou e-mail). O aviso chega so no iPhone do Dr. e o
+     toque abre esta pagina. Aqui ele le o check-in, completa as lacunas
+     [entre colchetes], que sao as decisoes clinicas que a IA nao toma, e envia
+     pelo WhatsApp ou pelo e-mail com um toque. O assunto administrativo vira
+     tarefa da Daniela so quando ele aperta o botao.
+     Leitura e edicao: so o login do Dr. (RLS de checkin_triagem).
+     Nada desta pagina guarda dado de paciente no codigo publicado. -->
+<script>
+window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+window.HAG_EXIGIR_LOGIN=true;
+</script>
+<script src="hag_auth.js?v=20261021-1353"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1B2745">
+<title>Triagem dos check-ins · HAG</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#1B2745;--gold:#C9A55E;--gold2:#9A7B3F;--line:#E4DECB;--ink:#1a1a1a;--ink2:#5a5a55;--ink3:#8a8578;--bg:#f4f4f0;
+      --verde:#2F6B4A;--verde-bg:#e3f0e8;--verm:#9C2B2B;--verm-bg:#f8e4e4;--amb:#8a5a12;--amb-bg:#f8eedb;--azul:#2563a8;--azul-bg:#e8f0fa;
+      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:Georgia,'Times New Roman',serif}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+.top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
+.top a{color:var(--gold);text-decoration:none;font-size:13px;white-space:nowrap}
+.top .ti{font-family:var(--fs);font-size:17px;flex:1}
+.wrap{max-width:760px;margin:0 auto;padding:12px 16px 90px}
+.fil{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.fil button{font:inherit;font-size:13px;padding:6px 12px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--ink2)}
+.fil button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.vazio{color:var(--ink3);padding:24px 4px;text-align:center}
+.msg{background:var(--verm-bg);color:var(--verm);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px}
+.item{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.item .cab{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;cursor:pointer}
+.item .cab .q{flex:1;min-width:0}
+.item .nome{font-weight:600}
+.item .mot{color:var(--ink2);font-size:14px;margin-top:2px}
+.item .meta{font-family:var(--fm);font-size:11px;color:var(--ink3);margin-top:4px}
+.item.feito{opacity:.6}
+.nv{font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;padding:3px 8px;border-radius:10px;white-space:nowrap;text-transform:uppercase}
+.nv.urgente{background:var(--verm-bg);color:var(--verm)}.nv.responder{background:var(--azul-bg);color:var(--azul)}
+.nv.logistica{background:var(--amb-bg);color:var(--amb)}.nv.sem_acao{background:#ecebe5;color:var(--ink2)}.nv.erro{background:var(--verm-bg);color:var(--verm)}
+.corpo{border-top:1px solid var(--line);padding:12px 14px 14px}
+h3{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2);margin:14px 0 6px}
+h3:first-child{margin-top:0}
+.resumo{font-size:14.5px}
+.decis{margin:6px 0 0 18px;font-size:14px;color:var(--ink2)}
+.ck{background:#faf9f5;border:1px solid #efeadb;border-radius:8px;padding:8px 10px;font-size:13.5px;white-space:pre-wrap;max-height:260px;overflow:auto}
+.ck b{color:var(--ink2);font-weight:600}
+.canal{font-size:13px;color:var(--ink2);margin-bottom:6px}
+.canal .aviso{color:var(--amb)}
+input.assunto,textarea{width:100%;font:inherit;font-size:15px;border:1px solid #d9d2bd;border-radius:8px;padding:9px 10px;background:#fff;color:var(--ink)}
+textarea{min-height:190px;resize:vertical;line-height:1.5}
+textarea.dani{min-height:110px}
+input.assunto{margin-bottom:6px}
+.lac{font-size:13px;margin-top:6px;color:var(--verm)}
+.lac.ok{color:var(--verde)}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.acoes button,.acoes a{font:inherit;font-size:14px;padding:9px 14px;border-radius:9px;border:1px solid #cdbf9c;background:#fff;color:var(--ink);text-decoration:none;cursor:pointer}
+.acoes .pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.acoes .wpp{background:#1f7a4d;border-color:#1f7a4d;color:#fff}
+.acoes [disabled]{opacity:.45;pointer-events:none}
+.mini{font-size:12px;color:var(--ink3);margin-top:8px}
+.decs{display:flex;flex-direction:column;gap:8px}
+.dec{background:#f7f5ee;border:1px solid #ebe4cf;border-radius:8px;padding:8px 10px}
+.dt{font-size:12.5px;color:var(--ink2);font-weight:600}
+.dr{font-size:14.5px;margin-top:2px}
+.dj{font-size:13px;color:var(--ink2);margin-top:3px}
+.cf{font-family:var(--fm);font-size:10px;font-weight:400;padding:1px 6px;border-radius:8px;margin-left:4px;background:#ecebe5}
+.cf.alta{background:var(--verde-bg);color:var(--verde)}.cf.baixa{background:var(--amb-bg);color:var(--amb)}
+.sgt{color:var(--ink2);margin-bottom:4px}
+.sg{display:flex;gap:8px;align-items:flex-start;background:var(--azul-bg);border-radius:8px;padding:6px 8px;margin-top:4px;color:var(--ink)}
+.sg span{flex:1;font-size:13.5px}
+.sg button{font:inherit;font-size:12.5px;padding:4px 10px;border-radius:7px;border:1px solid var(--azul);background:#fff;color:var(--azul)}
+.lacx{margin-top:6px}
+.ok{color:var(--verde)}
+</style>
+</head>
+<body>
+<div class="top"><a href="tarefas_HAG.html">‹ Tarefas</a><span class="ti">Triagem dos check-ins</span></div>
+<div class="wrap">
+  <div class="msg" id="msg" hidden></div>
+  <div class="fil" id="fil">
+    <button data-f="pendente" class="on">A responder</button>
+    <button data-f="todas">Últimos 30 dias</button>
+  </div>
+  <div id="lista"><div class="vazio">Carregando…</div></div>
+</div>
+<script>
+(function(){
+'use strict';
+var URL_ = window.SUPA_URL, KEY = window.SUPA_KEY;
+var F = 'pendente', L = [], aberto = null, CK = {};
+var ORD = { urgente:0, erro:1, responder:2, logistica:3, sem_acao:4 };
+var NV = { urgente:'Hoje', responder:'Responder', logistica:'Daniela', sem_acao:'Sem ação', erro:'Falhou' };
+var PLANO = { ciclo_essencial:'Ciclo Essencial', ciclo_reset:'Ciclo Reset', ciclo_transformar:'Ciclo Transforma', manutencao_intermediario:'Manutenção Plus',
+  manutencao_premium:'Manutenção Premium', smart_90:'Protocolo Smart 90', ciclo_manutencao:'Manutenção Base', smart_continuidade:'Protocolo Smart Continuidade' };
+
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function erro(t){ var m = document.getElementById('msg'); m.textContent = t || ''; m.hidden = !t; }
+function quando(iso){
+  var d = new Date(iso); if(isNaN(d)) return '';
+  var h = ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  var hoje = new Date(); var ont = new Date(Date.now()-86400000);
+  if(d.toDateString() === hoje.toDateString()) return 'hoje '+h;
+  if(d.toDateString() === ont.toDateString()) return 'ontem '+h;
+  return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+h;
+}
+function api(path, init){
+  init = init || {};
+  init.headers = Object.assign({ apikey:KEY, Authorization:'Bearer '+KEY, 'Content-Type':'application/json' }, init.headers || {});
+  return fetch(URL_ + '/rest/v1/' + path, init).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+(t?': '+t.slice(0,160):'')); });
+    return r.status === 204 ? null : r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+  });
+}
+function ordem(r){ var k = r.status === 'erro' ? 'erro' : r.nivel; return (k in ORD) ? ORD[k] : 9; }
+/* HAG_TRIAGEM_SUGESTAO_v2: [[texto]] e a conduta que a IA recomenda, ja escrita
+   para o paciente; so sai se o Dr. aceitar ou trocar. [texto] e dado que falta. */
+function sugestoes(t){ var out = [], re = /\[\[([\s\S]*?)\]\]/g, m; while((m = re.exec(String(t||'')))) out.push(m[1]); return out; }
+function lacunas(t){ return (String(t||'').replace(/\[\[[\s\S]*?\]\]/g, '').match(/\[[^\[\]]{2,}\]/g) || []); }
+function aceitarSugestao(id, idx){
+  var tx = document.getElementById('tx_' + id); if(!tx) return;
+  var n = -1;
+  tx.value = tx.value.replace(/\[\[([\s\S]*?)\]\]/g, function(all, dentro){ n++; return (idx === 'todas' || n === idx) ? dentro : all; });
+  atualizaLacunas(id);
+}
+
+function carregar(){
+  var d = new Date(Date.now() - 30*86400000).toISOString();
+  var q = 'checkin_triagem?select=*&order=criado_em.desc&limit=150&criado_em=gte.' + d;
+  if(F === 'pendente') q += '&status=in.(pendente,erro)';
+  return api(q).then(function(rows){
+    L = (rows || []).slice().sort(function(a,b){
+      if(F === 'pendente'){ var x = ordem(a) - ordem(b); if(x) return x; }
+      return String(b.criado_em).localeCompare(String(a.criado_em));
+    });
+    var ids = L.map(function(r){ return r.checkin_id; }).filter(function(id){ return !CK[id]; });
+    if(!ids.length) return;
+    return api('checkins?select=id,tipo,data_envio,semana,peso,colateral,obstaculo,acerto,mensagem,estoque,evento,respondido&id=in.(' + ids.map(encodeURIComponent).join(',') + ')')
+      .then(function(cs){ (cs||[]).forEach(function(c){ CK[c.id] = c; }); });
+  }).then(function(){
+    // o ?id do aviso abre o item uma vez so; depois quem manda e o toque
+    if(!window.__hagTriIdUsado){ window.__hagTriIdUsado = true; var pid = new URLSearchParams(location.search).get('id'); if(pid) aberto = pid; }
+    pinta();
+    if(aberto){ var el = document.getElementById('it_'+aberto); if(el) el.scrollIntoView({block:'start'}); }
+  }).catch(function(e){ erro('Não consegui ler a triagem: ' + e.message); document.getElementById('lista').innerHTML = ''; });
+}
+
+function blocoCheckin(c){
+  if(!c) return '<div class="ck">Check-in não encontrado.</div>';
+  var campos = [['Mensagem ao Dr.', c.mensagem], ['Sintoma ou efeito', c.colateral], ['Obstáculo', c.obstaculo], ['Deu certo', c.acerto],
+                ['Estoque', c.estoque], ['Evento', c.evento], ['Peso', c.peso]];
+  var h = campos.filter(function(x){ var v = String(x[1]==null?'':x[1]).trim(); return v && v !== '—' && v !== '-'; })
+    .map(function(x){ return '<b>' + esc(x[0]) + ':</b> ' + esc(x[1]); }).join('\n');
+  return '<div class="ck">' + (h || 'Sem campos de texto preenchidos.') + '</div>';
+}
+
+function pinta(){
+  var box = document.getElementById('lista');
+  if(!L.length){ box.innerHTML = '<div class="vazio">' + (F === 'pendente' ? 'Nenhum check-in esperando resposta.' : 'Nenhuma triagem nos últimos 30 dias.') + '</div>'; return; }
+  box.innerHTML = L.map(function(r){
+    var st = r.status === 'erro' ? 'erro' : r.nivel;
+    var feito = r.status === 'respondida' || r.status === 'dispensada';
+    var c = CK[r.checkin_id];
+    var h = '<div class="item' + (feito ? ' feito' : '') + '" id="it_' + r.id + '"><div class="cab" data-abre="' + r.id + '">'
+      + '<div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
+      + '<div class="mot">' + esc(r.motivo || '') + '</div>'
+      + '<div class="meta">' + quando(r.criado_em) + ' · ' + (r.canal === 'whatsapp' ? 'WhatsApp' : 'e-mail')
+      + (r.status === 'respondida' ? ' · <span class="ok">respondido</span>' : r.status === 'dispensada' ? ' · dispensado' : '') + '</div></div>'
+      + '<span class="nv ' + st + '">' + NV[st] + '</span></div>';
+    if(aberto === r.id) h += corpo(r, c);
+    return h + '</div>';
+  }).join('');
+  if(aberto) atualizaLacunas(aberto);
+}
+
+function corpo(r, c){
+  if(r.status === 'erro'){
+    return '<div class="corpo"><h3>Check-in</h3>' + blocoCheckin(c)
+      + '<div class="lac">A triagem automática falhou: ' + esc(r.erro || '') + '</div>'
+      + '<div class="acoes"><button class="pri" data-regera="' + r.id + '">Gerar a resposta agora</button>'
+      + '<button data-status="dispensada" data-id="' + r.id + '">Dispensar</button></div></div>';
+  }
+  var plano = PLANO[r.tipo_ciclo] || r.tipo_ciclo || 'plano não identificado';
+  var h = '<div class="corpo">';
+  h += '<h3>Resumo</h3><div class="resumo">' + esc(r.resumo || '') + '</div>';
+  var dec = Array.isArray(r.decisoes) ? r.decisoes : [];
+  if(dec.length) h += '<h3>Recomendação da IA · você decide</h3><div class="decs">' + dec.map(function(d){
+      if(typeof d !== 'object' || !d) return '<div class="dec"><div class="dr">' + esc(d) + '</div></div>';
+      var cf = String(d.confianca || '').toLowerCase();
+      return '<div class="dec"><div class="dt">' + esc(d.tema || 'Decisão') + (cf ? ' <span class="cf ' + esc(cf) + '">confiança ' + esc(cf.replace('media','média')) + '</span>' : '') + '</div>'
+        + '<div class="dr">' + esc(d.recomendacao || '') + '</div>'
+        + (d.justificativa ? '<div class="dj">' + esc(d.justificativa) + '</div>' : '')
+        + (d.alternativa ? '<div class="dj"><b>Alternativa:</b> ' + esc(d.alternativa) + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+  h += '<h3>O que o paciente escreveu' + (c && c.data_envio ? ' · ' + esc(c.data_envio) : '') + '</h3>' + blocoCheckin(c);
+  h += '<h3>Sua resposta</h3><div class="canal">' + plano + ' · ' + (r.canal === 'whatsapp' ? 'seu WhatsApp' : 'e-mail')
+    + (r.destino ? ' · ' + esc(r.destino) : ' · <span class="aviso">sem ' + (r.canal === 'whatsapp' ? 'WhatsApp' : 'e-mail') + ' no cadastro</span>')
+    + (r.canal_definido === false ? ' · <span class="aviso">o plano não define canal; foi para e-mail</span>' : '') + '</div>';
+  if(r.canal === 'email') h += '<input class="assunto" id="as_' + r.id + '" value="' + esc(r.assunto || '') + '" placeholder="Assunto">';
+  h += '<textarea id="tx_' + r.id + '">' + esc(r.mensagem || '') + '</textarea>';
+  h += '<div class="lac" id="lc_' + r.id + '"></div>';
+  h += '<div class="acoes">'
+    + (r.canal === 'whatsapp'
+        ? '<a class="wpp" id="go_' + r.id + '" data-envia="' + r.id + '" href="#">Abrir no WhatsApp</a>'
+        : '<a class="pri" id="go_' + r.id + '" data-envia="' + r.id + '" href="#">Abrir no e-mail</a>')
+    + '<button data-copia="tx_' + r.id + '">Copiar</button>'
+    + '<button data-salva="' + r.id + '">Salvar texto</button></div>';
+  if(r.mensagem_daniela){
+    h += '<h3>Para a Daniela</h3><textarea class="dani" id="dn_' + r.id + '">' + esc(r.mensagem_daniela) + '</textarea>'
+      + '<div class="acoes">' + (r.tarefa_daniela ? '<span class="mini ok">Tarefa criada para a Daniela.</span>'
+          : '<button data-dani="' + r.id + '">Mandar para a Daniela</button>')
+      + '<button data-copia="dn_' + r.id + '">Copiar</button></div>';
+  }
+  h += '<div class="acoes" style="margin-top:16px">'
+    + (r.status === 'pendente'
+        ? '<button class="pri" data-status="respondida" data-id="' + r.id + '">Marquei como respondido</button><button data-status="dispensada" data-id="' + r.id + '">Não precisa responder</button>'
+        : '<button data-status="pendente" data-id="' + r.id + '">Voltar para a lista</button>')
+    + '<button data-regera="' + r.id + '">Gerar de novo</button></div>';
+  h += '<div class="mini">Rascunho e recomendações da IA: a decisão e o envio são seus. ' + (r.custo_usd != null ? 'Custo US$ ' + Number(r.custo_usd).toFixed(3) + ', do crédito do Max.' : '') + '</div>';
+  return h + '</div>';
+}
+
+function atualizaLacunas(id){
+  var tx = document.getElementById('tx_' + id), lc = document.getElementById('lc_' + id), go = document.getElementById('go_' + id);
+  if(!tx || !lc) return;
+  var sg = sugestoes(tx.value), l = lacunas(tx.value), h = '';
+  if(sg.length){
+    h += '<div class="sgt">' + sg.length + (sg.length > 1 ? ' sugestões da IA esperando sua decisão' : ' sugestão da IA esperando sua decisão')
+      + '. Aceite, ou edite o texto e apague os colchetes.</div>'
+      + sg.map(function(x, i){ return '<div class="sg"><span>' + esc(x) + '</span><button data-aceita="' + id + '" data-i="' + i + '">Aceitar</button></div>'; }).join('')
+      + (sg.length > 1 ? '<div class="acoes" style="margin-top:6px"><button data-aceita="' + id + '" data-i="todas">Aceitar todas</button></div>' : '');
+  }
+  if(l.length) h += '<div class="lacx">' + l.length + (l.length > 1 ? ' dados para completar: ' : ' dado para completar: ') + esc(l.join('  ')) + '</div>';
+  if(sg.length || l.length){ lc.className = 'lac'; lc.innerHTML = h; if(go) go.setAttribute('disabled',''); }
+  else { lc.className = 'lac ok'; lc.textContent = 'Tudo decidido. Pronto para enviar.'; if(go) go.removeAttribute('disabled'); }
+}
+
+function registro(id){ return L.filter(function(x){ return x.id === id; })[0]; }
+function salvarTexto(id){
+  var r = registro(id), tx = document.getElementById('tx_' + id), as = document.getElementById('as_' + id), dn = document.getElementById('dn_' + id);
+  var patch = { mensagem: tx ? tx.value : r.mensagem, atualizado_em: new Date().toISOString() };
+  if(as) patch.assunto = as.value;
+  if(dn) patch.mensagem_daniela = dn.value;
+  return api('checkin_triagem?id=eq.' + id, { method:'PATCH', body: JSON.stringify(patch), headers:{ Prefer:'return=minimal' } })
+    .then(function(){ Object.assign(r, patch); });
+}
+function mudaStatus(id, st){
+  var r = registro(id);
+  var patch = { status: st, respondida_em: st === 'respondida' ? new Date().toISOString() : null };
+  return salvarTexto(id).catch(function(){}).then(function(){
+    return api('checkin_triagem?id=eq.' + id, { method:'PATCH', body: JSON.stringify(patch), headers:{ Prefer:'return=minimal' } });
+  }).then(function(){
+    // o mesmo carimbo que a pagina Respostas usa
+    if(st === 'respondida' || st === 'pendente'){
+      var p2 = st === 'respondida' ? { respondido:true, respondido_em:new Date().toISOString() } : { respondido:false, respondido_em:null };
+      return api('checkins?id=eq.' + encodeURIComponent(r.checkin_id), { method:'PATCH', body: JSON.stringify(p2), headers:{ Prefer:'return=minimal' } });
+    }
+  }).then(function(){ Object.assign(r, patch); aberto = null; return carregar(); });
+}
+function enviar(id){
+  var r = registro(id), tx = document.getElementById('tx_' + id);
+  var texto = tx ? tx.value : '';
+  if(lacunas(texto).length || sugestoes(texto).length){ atualizaLacunas(id); return; }
+  salvarTexto(id).catch(function(){});
+  if(r.canal === 'whatsapp'){
+    var url = 'https://wa.me/' + (r.destino || '') + '?text=' + encodeURIComponent(texto);
+    window.open(url, '_blank');
+  } else {
+    var as = document.getElementById('as_' + id);
+    location.href = 'mailto:' + encodeURIComponent(r.destino || '') + '?subject=' + encodeURIComponent(as ? as.value : '') + '&body=' + encodeURIComponent(texto);
+  }
+}
+function paraDaniela(id){
+  var r = registro(id), dn = document.getElementById('dn_' + id);
+  var agora = new Date().toISOString();
+  var tid = 'tri_' + r.checkin_id;
+  var tarefa = { id: tid, patient_id: r.patient_id, patient_nome: r.patient_nome, tipo: 'Check-in · logística', criado_por: 'triagem',
+    descricao: 'Assunto administrativo do check-in. Texto pronto abaixo.', obs: dn ? dn.value : r.mensagem_daniela,
+    status: 'pendente', prioridade: r.nivel === 'logistica' ? 'normal' : 'alta', criado_em: agora, atualizado_em: agora };
+  return api('tarefas', { method:'POST', body: JSON.stringify(tarefa), headers:{ Prefer:'return=minimal,resolution=ignore-duplicates' } })
+    .then(function(){ return api('checkin_triagem?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ tarefa_daniela: tid }), headers:{ Prefer:'return=minimal' } }); })
+    .then(function(){ r.tarefa_daniela = tid; pinta(); });
+}
+function regera(id){
+  var r = registro(id);
+  var b = document.querySelector('[data-regera="' + id + '"]'); if(b){ b.textContent = 'Gerando…'; b.setAttribute('disabled',''); }
+  return fetch(URL_ + '/functions/v1/hag-triagem-checkin', { method:'POST', headers:{ apikey:KEY, Authorization:'Bearer ' + KEY, 'Content-Type':'application/json' },
+    body: JSON.stringify({ checkin_id: r.checkin_id, forcar: true, sem_push: true }) })
+    .then(function(x){ return x.json().then(function(j){ if(!x.ok || !j.ok) throw new Error(j.erro || ('HTTP ' + x.status)); }); })
+    .then(function(){ return carregar(); });
+}
+
+document.addEventListener('click', function(e){
+  var t = e.target.closest ? e.target : null; if(!t) return;
+  var a;
+  if((a = t.closest('[data-abre]'))){ var id = a.getAttribute('data-abre'); aberto = (aberto === id) ? null : id; pinta(); return; }
+  if((a = t.closest('[data-aceita]'))){ var ii = a.getAttribute('data-i'); aceitarSugestao(a.getAttribute('data-aceita'), ii === 'todas' ? 'todas' : Number(ii)); return; }
+  if((a = t.closest('[data-envia]'))){ e.preventDefault(); enviar(a.getAttribute('data-envia')); return; }
+  if((a = t.closest('[data-copia]'))){
+    var el = document.getElementById(a.getAttribute('data-copia'));
+    if(el && navigator.clipboard) navigator.clipboard.writeText(el.value).then(function(){ a.textContent = 'Copiado'; setTimeout(function(){ a.textContent = 'Copiar'; }, 1500); });
+    return;
+  }
+  if((a = t.closest('[data-salva]'))){ salvarTexto(a.getAttribute('data-salva')).then(function(){ a.textContent = 'Salvo'; setTimeout(function(){ a.textContent = 'Salvar texto'; }, 1500); }).catch(function(x){ erro('Não salvou: ' + x.message); }); return; }
+  if((a = t.closest('[data-status]'))){ mudaStatus(a.getAttribute('data-id'), a.getAttribute('data-status')).catch(function(x){ erro('Não gravou: ' + x.message); }); return; }
+  if((a = t.closest('[data-dani]'))){ paraDaniela(a.getAttribute('data-dani')).catch(function(x){ erro('Não criou a tarefa: ' + x.message); }); return; }
+  if((a = t.closest('[data-regera]'))){ regera(a.getAttribute('data-regera')).catch(function(x){ erro('Não gerou: ' + x.message); carregar(); }); return; }
+  if((a = t.closest('#fil [data-f]'))){ F = a.getAttribute('data-f'); document.querySelectorAll('#fil button').forEach(function(x){ x.classList.toggle('on', x === a); }); aberto = null; carregar(); }
+});
+document.addEventListener('input', function(e){ var id = (e.target.id || '').replace(/^tx_/, ''); if(e.target.id && e.target.id.indexOf('tx_') === 0) atualizaLacunas(id); });
+
+function iniciar(){ erro(''); carregar(); }
+if(window.HAGAuth && window.HAGAuth.valid && window.HAGAuth.valid()) iniciar();
+else if(window.HAGAuth){ var r0 = window.HAGAuth.mount(iniciar); if(r0 && r0.then) r0.then(function(){}); }
+window.HAG_TRIAGEM = { carregar: carregar };
+})();
+</script>
+</body>
+</html>
