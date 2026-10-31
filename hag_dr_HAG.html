@@ -286,16 +286,43 @@ function pintaAtual(){
 var NV = { urgente:'Hoje', responder:'Responder', logistica:'Daniela', sem_acao:'Sem ação', erro:'Falhou' };
 var ORDNV = { urgente:0, erro:1, responder:2, logistica:3, sem_acao:4 };
 function contaCheckins(){
-  return api('checkin_triagem?select=id&status=in.(pendente,erro)').then(function(r){
-    var n = (r || []).length, b = document.getElementById('bdgCk'); b.textContent = n; b.hidden = !n;
+  return Promise.all([ api('checkin_triagem?select=id&status=in.(pendente,erro)'), api('wpp_clinico?select=rascunho_id&status=eq.pendente').catch(function(){ return []; }) ]).then(function(rr){
+    var n = (rr[0] || []).length + (rr[1] || []).length, b = document.getElementById('bdgCk'); b.textContent = n; b.hidden = !n;
   }).catch(function(){});
+}
+/* HAG_WPP_AGENTE_v1 (31/10/2026): mensagem do WhatsApp do consultorio com assunto clinico.
+   A Daniela recebe so a frase de encaminhamento; a leitura clinica e a sugestao de resposta
+   ficam em wpp_clinico (RLS: so o Dr.) e aparecem aqui, acima dos check-ins. */
+var WPPDR = {};
+function blocoWppDr(rows){
+  if(!rows || !rows.length) return '';
+  rows.forEach(function(r){ WPPDR[r.rascunho_id] = r; });
+  return '<h2>WhatsApp do consultório</h2>' + rows.map(function(r){
+    var k = r.nivel === 'urgente' ? 'urgente' : 'responder';
+    return '<div class="card row ck ' + k + '" data-wppdr="' + esc(r.rascunho_id) + '"><div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
+      + '<div class="sub">' + esc(r.resumo || '') + '</div><div class="meta">' + dm(r.criado_em) + ' · resposta pronta para WhatsApp</div></div><span class="tag ' + k + '">' + NV[k] + '</span></div>';
+  }).join('') + '<h2>Check-ins</h2>';
+}
+function abreWppDr(id){
+  var r = WPPDR[id]; if(!r) return;
+  var dec = (r.decisoes || []).map(function(d){ return '<li><b>' + esc(d.tema || '') + ':</b> ' + esc(d.recomendacao || '') + (d.justificativa ? ' <span class="meta">' + esc(d.justificativa) + '</span>' : '') + '</li>'; }).join('');
+  folha(r.patient_nome || 'Paciente', '<p>' + esc(r.resumo || '') + '</p>' + (dec ? '<h2>Decisões</h2><ul>' + dec + '</ul>' : '')
+    + '<h2>Sua resposta</h2><textarea id="wppTx" style="width:100%;min-height:200px;font:inherit;font-size:15px;border:1px solid var(--line,#ddd);border-radius:10px;padding:10px;background:transparent;color:inherit">' + esc(r.mensagem_dr || '') + '</textarea>'
+    + '<div class="meta" style="margin-top:6px">Troque ou apague o que estiver [[entre colchetes duplos]] e complete o que estiver [entre colchetes]. Assunto clínico sai do senhor, não da Daniela.</div>'
+    + '<div class="acoes" style="margin-top:10px">' + (r.telefone ? '<a href="#" data-wppenvia="' + esc(id) + '">Copiar e abrir no WhatsApp</a>' : '') + '<a href="#" data-wppst="' + esc(id) + '|respondida">Respondi</a><a href="#" data-wppst="' + esc(id) + '|dispensada">Dispensar</a></div>');
+}
+function wppStatus(id, st){
+  return api('wpp_clinico?rascunho_id=eq.' + id, { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ status: st, respondida_em: new Date().toISOString() }) })
+    .then(function(){ fechaFolha(); abaCheckins(); });
 }
 function abaCheckins(){
   W('<div class="vazio">Carregando…</div>');
-  return api('checkin_triagem?select=id,patient_nome,nivel,status,motivo,canal,criado_em&status=in.(pendente,erro)&order=criado_em.desc&limit=60').then(function(rows){
+  return Promise.all([ api('checkin_triagem?select=id,patient_nome,nivel,status,motivo,canal,criado_em&status=in.(pendente,erro)&order=criado_em.desc&limit=60'),
+                       api('wpp_clinico?select=rascunho_id,patient_nome,telefone,nivel,resumo,mensagem_dr,decisoes,criado_em&status=eq.pendente&order=criado_em.desc').catch(function(){ return []; }) ]).then(function(rr){
+    var rows = rr[0], wdr = rr[1] || [];
     rows = (rows || []).sort(function(a,b){ var ka = a.status === 'erro' ? 'erro' : a.nivel, kb = b.status === 'erro' ? 'erro' : b.nivel; return ((ka in ORDNV) ? ORDNV[ka] : 9) - ((kb in ORDNV) ? ORDNV[kb] : 9); });
     var nU = rows.filter(function(r){ return r.nivel === 'urgente'; }).length;
-    var h = (rows.length ? '<div class="resumo"><b>' + rows.length + (rows.length > 1 ? ' esperando resposta' : ' esperando resposta') + '</b>' + (nU ? ' · <span style="color:var(--verm);font-weight:600">' + nU + ' para hoje</span>' : '') + '</div>' : '')
+    var h = blocoWppDr(wdr) + (rows.length ? '<div class="resumo"><b>' + rows.length + (rows.length > 1 ? ' esperando resposta' : ' esperando resposta') + '</b>' + (nU ? ' · <span style="color:var(--verm);font-weight:600">' + nU + ' para hoje</span>' : '') + '</div>' : '')
       + (rows.length ? rows.map(function(r){
       var k = r.status === 'erro' ? 'erro' : r.nivel;
       return '<a class="card row ck ' + k + '" style="text-decoration:none;color:inherit" href="triagem_HAG.html?id=' + encodeURIComponent(r.id) + '&de=dr"><div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
@@ -515,6 +542,12 @@ document.addEventListener('click', function(e){
   if((a = t.closest('[data-det="entradas"]'))){ detalhe('entradas', a.getAttribute('data-mes'), 'Entrou na conta'); return; }
   if((a = t.closest('[data-det]'))){ detalhe(a.getAttribute('data-det'), a.getAttribute('data-mes'), a.getAttribute('data-tit')); return; }
   if((a = t.closest('[data-mesdin]'))){ mesDinheiro(a.getAttribute('data-mesdin')); return; }
+  if((a = t.closest('[data-wppdr]'))){ abreWppDr(a.getAttribute('data-wppdr')); return; }
+  if((a = t.closest('[data-wppenvia]'))){ e.preventDefault(); var wr = WPPDR[a.getAttribute('data-wppenvia')], wt = document.getElementById('wppTx').value;
+    if(/\[[^\]]*\]/.test(wt)){ a.textContent = 'Complete os colchetes antes'; return; }
+    try{ if(navigator.clipboard) navigator.clipboard.writeText(wt).catch(function(){}); }catch(x){}
+    window.open('https://wa.me/' + String(wr.telefone).replace(/\D/g,'') + '?text=' + encodeURIComponent(wt), '_blank'); return; }
+  if((a = t.closest('[data-wppst]'))){ e.preventDefault(); var ws = a.getAttribute('data-wppst').split('|'); wppStatus(ws[0], ws[1]); return; }
   if((a = t.closest('[data-pac]'))){ pacienteCiclo(a.getAttribute('data-pac'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-prop]'))){ propostaDet(a.getAttribute('data-prop'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-conv]'))){ var cv = a.getAttribute('data-conv').split('|'); detalhe('propostas', cv[0], a.getAttribute('data-nome'), cv[1]); return; }
