@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- HAG_DR_APP_v1 (31/10/2026) + HAG_DINHEIRO_DO_MES_v1 (vendido x entrou x a receber) + HAG_DR_DETALHE_v2: cada numero, renovacao, proposta e mes de conversao
+<!-- HAG_DR_APP_v1 (31/10/2026) + HAG_DR_VISUAL_v4 (layout novo) + HAG_DINHEIRO_DO_MES_v1 (vendido x entrou x a receber) + HAG_DR_DETALHE_v2: cada numero, renovacao, proposta e mes de conversao
      abre o que esta por tras (hag_dr_detalhe e hag_dr_paciente_ciclo, mesma regra das views).
      POR QUE EXISTE: o HAG OS so abria no Mac. O Dr. pediu no celular, como ja tem
      o Tarefas, o HAG Treino e o HAG Cozinha, quatro coisas: check-ins com resposta
@@ -29,79 +29,138 @@ window.HAG_EXIGIR_LOGIN=true;
 <link rel="apple-touch-icon" href="icone-dr-180.png">
 <title>HAG Dr</title>
 <style>
+/* HAG_DR_VISUAL_v4 (31/10/2026): pedido dele, "podemos melhorar o layout do HAG Dr". Cabecalho com o
+   nome da aba e a data, icones de verdade na barra, cartoes mais limpos (sombra leve, sem borda dura),
+   agenda em linha do tempo, check-ins com faixa de cor por nivel, resumo no topo de Vendas, Financeiro
+   com o "entrou na conta" em destaque e grafico vendido x entrou. Modo escuro acompanha o iPhone. */
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--navy:#1B2745;--gold:#C9A55E;--gold2:#9A7B3F;--line:#E4DECB;--ink:#1a1a1a;--ink2:#5a5a55;--ink3:#8a8578;--bg:#f4f4f0;
-      --verde:#2F6B4A;--verde-bg:#e3f0e8;--verm:#9C2B2B;--verm-bg:#f8e4e4;--amb:#8a5a12;--amb-bg:#f8eedb;--azul:#2563a8;--azul-bg:#e8f0fa;
-      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:Georgia,'Times New Roman',serif}
+:root{--navy:#1B2745;--navy2:#26365c;--gold:#C9A55E;--gold2:#9A7B3F;--gold-bg:#f6efe0;--line:#ebe6d8;--ink:#17181c;--ink2:#55565c;--ink3:#8c8d93;
+      --bg:#f3f2ee;--card:#ffffff;--sombra:0 1px 2px rgba(20,24,36,.05),0 6px 18px rgba(20,24,36,.06);
+      --verde:#2F6B4A;--verde-bg:#e4f1e9;--verm:#a3322f;--verm-bg:#f9e6e5;--amb:#8a5a12;--amb-bg:#f8eedb;--azul:#2563a8;--azul-bg:#e8f0fa;
+      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:'New York','Iowan Old Style',Georgia,serif;--r:16px}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0f1219;--card:#1a1f2b;--line:#2a3141;--ink:#eef0f4;--ink2:#b5bac6;--ink3:#8189a0;--gold-bg:#2b261b;--sombra:0 1px 2px rgba(0,0,0,.3);
+        --verde-bg:#1d3327;--verde:#7fcf9f;--verm-bg:#3a1f22;--verm:#f08d86;--amb-bg:#372b17;--amb:#e5b569;--azul-bg:#1b2a42;--azul:#8db8f0;--gold2:#d9b877}
+}
 html,body{background:var(--bg)}
-body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:var(--ink);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
-.top{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
-.top .ti{font-family:var(--fs);font-size:19px;flex:1}
-.top button{font:inherit;font-size:13px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 10px}
-.wrap{max-width:720px;margin:0 auto;padding:12px 16px calc(84px + env(safe-area-inset-bottom))}
-.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:6}
-.tabs button{flex:1;font:inherit;font-size:11.5px;background:none;border:0;padding:9px 2px 8px;color:var(--ink3);position:relative}
-.tabs button b{display:block;font-size:19px;line-height:1.1;font-weight:400}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;color:var(--ink);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+.top{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 20px 18px;position:relative;z-index:5}
+.top .eye{font-family:var(--fm);font-size:10px;letter-spacing:.22em;color:var(--gold)}
+.top .tl{display:flex;align-items:center;gap:10px;margin-top:2px}
+.top h1{font-family:var(--fs);font-weight:500;font-size:28px;letter-spacing:-.01em;flex:1}
+.top .dt{font-size:13px;color:rgba(255,255,255,.65);margin-top:1px}
+.top button{width:36px;height:36px;border-radius:18px;border:0;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center}
+.top button svg{width:18px;height:18px}
+.wrap{max-width:720px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:color-mix(in srgb,var(--card) 88%,transparent);-webkit-backdrop-filter:saturate(180%) blur(18px);backdrop-filter:saturate(180%) blur(18px);border-top:1px solid var(--line);padding:6px 4px calc(4px + env(safe-area-inset-bottom));z-index:6}
+.tabs button{flex:1;font:inherit;font-size:10.5px;letter-spacing:.01em;background:none;border:0;padding:4px 2px;color:var(--ink3);position:relative;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabs button svg{width:24px;height:24px}
 .tabs button.on{color:var(--navy);font-weight:600}
-.tabs .badge{position:absolute;top:4px;left:calc(50% + 6px);background:var(--verm);color:#fff;font-size:10px;border-radius:9px;padding:1px 5px;font-weight:600}
-h2{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2);margin:18px 0 8px}
+@media (prefers-color-scheme: dark){ .tabs button.on{color:var(--gold)} }
+.tabs .badge{position:absolute;top:0;left:calc(50% + 7px);background:var(--verm);color:#fff;font-size:10px;line-height:16px;min-width:16px;text-align:center;border-radius:8px;padding:0 4px;font-weight:600}
+h2{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold2);margin:24px 2px 10px;display:flex;align-items:center;gap:8px}
+h2::after{content:'';flex:1;height:1px;background:var(--line)}
 h2:first-child{margin-top:4px}
-.card{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
-.row{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;cursor:pointer}
+.card{background:var(--card);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:var(--sombra)}
+.row{display:flex;gap:12px;align-items:center;padding:14px 16px;cursor:pointer}
 .row .q{flex:1;min-width:0}
-.nome{font-weight:600}
-.sub{color:var(--ink2);font-size:13.5px;margin-top:1px}
-.meta{font-family:var(--fm);font-size:11px;color:var(--ink3);margin-top:3px}
-.hora{font-family:var(--fm);font-size:13px;color:var(--navy);min-width:44px;padding-top:1px}
-.tag{font-family:var(--fm);font-size:10px;letter-spacing:.04em;padding:3px 8px;border-radius:10px;white-space:nowrap;text-transform:uppercase;background:#ecebe5;color:var(--ink2)}
-.tag.fechamento,.tag.urgente,.tag.atrasada{background:var(--verm-bg);color:var(--verm)}
+.nome{font-weight:600;font-size:15.5px}
+.sub{color:var(--ink2);font-size:13.5px;margin-top:2px}
+.meta{font-size:12px;color:var(--ink3);margin-top:3px}
+.chev{color:var(--ink3);font-size:20px;line-height:1}
+.tag{font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;white-space:nowrap;background:var(--bg);color:var(--ink2)}
+.tag.fechamento,.tag.urgente,.tag.atrasada,.tag.erro{background:var(--verm-bg);color:var(--verm)}
 .tag.penultima,.tag.responder{background:var(--azul-bg);color:var(--azul)}
 .tag.logistica,.tag.vai_pensar{background:var(--amb-bg);color:var(--amb)}
 .tag.aceita{background:var(--verde-bg);color:var(--verde)}
-.corpo{border-top:1px solid var(--line);padding:12px 14px 14px}
-.md h2{font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold2);margin:12px 0 4px}
-.md p{margin:4px 0}.md ul{margin:4px 0 4px 18px}.md .cab{font-family:var(--fs);font-size:16px;margin-bottom:6px}
-.vazio{color:var(--ink3);padding:14px 4px;text-align:center}
-.msg{border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px;background:var(--azul-bg);color:var(--azul)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.pill{font-size:11.5px;padding:3px 9px;border-radius:20px;background:var(--bg);color:var(--ink2);display:inline-flex;align-items:center;gap:5px}
+.pill::before{content:'';width:6px;height:6px;border-radius:3px;background:var(--ink3)}
+.pill.ok::before{background:var(--verde)}.pill.ok{color:var(--verde);background:var(--verde-bg)}
+.pill.fe::before{background:var(--verm)}.pill.fe{color:var(--verm);background:var(--verm-bg)}
+.pill.ren::before{background:var(--azul)}.pill.ren{color:var(--azul);background:var(--azul-bg)}
+.corpo{border-top:1px solid var(--line);padding:14px 16px 16px}
+.md h2{margin:14px 0 6px}.md h2::after{display:none}
+.md p{margin:5px 0}.md ul{margin:5px 0 5px 18px}.md li{margin:3px 0}.md .cab{font-family:var(--fs);font-size:18px;margin-bottom:8px}
+.vazio{color:var(--ink3);padding:22px 8px;text-align:center}
+.vazio.card{padding:26px 16px}
+.msg{border-radius:12px;padding:11px 13px;margin:8px 0;font-size:14px;background:var(--azul-bg);color:var(--azul)}
 .msg.erro{background:var(--verm-bg);color:var(--verm)}
-.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.acoes button,.acoes a{font:inherit;font-size:14px;padding:8px 13px;border-radius:9px;border:1px solid #cdbf9c;background:#fff;color:var(--ink);text-decoration:none}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.acoes button,.acoes a{font:inherit;font-size:14px;font-weight:500;padding:9px 15px;border-radius:22px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
 .acoes .pri{background:var(--navy);border-color:var(--navy);color:#fff}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.kpi .v{font-family:var(--fs);font-size:21px;margin-top:2px}
-.kpi .l{font-size:12px;color:var(--ink2)}
-.kpi .c{font-size:11.5px;color:var(--ink3);margin-top:2px}
-.oculto .din{filter:blur(7px)}
-.dias{display:flex;gap:6px;margin:2px 0 8px;overflow-x:auto}
-.dias button{font:inherit;font-size:13px;padding:6px 12px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--ink2);white-space:nowrap}
-.dias button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--card);border-radius:var(--r);padding:13px 14px;box-shadow:var(--sombra)}
+.kpi .v{font-family:var(--fs);font-size:24px;margin-top:3px;letter-spacing:-.01em}
+.kpi .l{font-size:12.5px;color:var(--ink2);font-weight:500}
+.kpi .c{font-size:11.5px;color:var(--ink3);margin-top:4px;line-height:1.35}
+.oculto .din{filter:blur(8px)}
+.dias{display:flex;gap:8px;margin:0 -16px 14px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.dias::-webkit-scrollbar{display:none}
+.dias button{font:inherit;font-size:13.5px;padding:8px 14px;border-radius:22px;border:0;background:var(--card);color:var(--ink2);white-space:nowrap;box-shadow:var(--sombra);display:flex;gap:6px;align-items:center}
+.dias button i{font-style:normal;font-size:11px;background:var(--bg);border-radius:10px;padding:0 6px;color:var(--ink3)}
+.dias button.on{background:var(--navy);color:#fff}
+.dias button.on i{background:rgba(255,255,255,.18);color:#fff}
+.resumo{font-size:13.5px;color:var(--ink2);margin:0 2px 12px}
+.resumo b{color:var(--ink)}
+.ag .hora{min-width:54px;text-align:left;border-right:2px solid var(--gold);padding-right:10px;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+.ag .hora b{font-family:var(--fs);font-size:19px;font-weight:500;color:var(--ink)}
+.ag .hora span{font-size:11px;color:var(--ink3)}
+.ck{border-left:4px solid var(--ink3)}
+.ck.urgente,.ck.erro{border-left-color:var(--verm)}.ck.responder{border-left-color:var(--azul)}.ck.logistica{border-left-color:var(--amb)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}
+.stat{background:var(--card);border-radius:14px;padding:11px 10px;box-shadow:var(--sombra);text-align:center}
+.stat b{display:block;font-family:var(--fs);font-size:22px;font-weight:500}
+.stat span{font-size:11px;color:var(--ink3);line-height:1.2;display:block;margin-top:2px}
+.hero{background:linear-gradient(150deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;border-radius:20px;padding:18px 18px 16px;box-shadow:0 10px 30px rgba(27,39,69,.25);margin-bottom:10px;cursor:pointer}
+.hero .l{font-size:13px;color:rgba(255,255,255,.7)}
+.hero .v{font-family:var(--fs);font-size:36px;font-weight:500;color:var(--gold);margin:2px 0 12px;letter-spacing:-.01em}
+.hero .barra{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.12)}
+.hero .barra .p{background:var(--gold)}.hero .barra .c{background:#8fa6d6}
+.hero .leg{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.75);margin-top:8px;gap:8px}
+.hero .leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
+.hero .ate{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:8px}
+.nota{font-size:12.5px;color:var(--ink2);background:var(--gold-bg);border-radius:12px;padding:10px 12px;margin:2px 0 4px}
+.graf .gl{padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.graf .gl:last-child{border-bottom:0}
+.graf .gm{display:flex;justify-content:space-between;font-weight:600;font-size:14px;margin-bottom:6px}
+.graf .gb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin-top:3px}
+.graf .gb span{height:8px;border-radius:4px;min-width:3px}
+.graf .gb .vd{background:var(--gold)}.graf .gb .en{background:var(--navy)}
+@media (prefers-color-scheme: dark){ .graf .gb .en{background:#8fa6d6} }
+.graf .gb em{font-style:normal;min-width:76px;text-align:right;margin-left:auto}
+.leg2{display:flex;gap:14px;font-size:12px;color:var(--ink3);margin:0 4px 8px}
+.leg2 i{display:inline-block;width:10px;height:8px;border-radius:2px;margin-right:5px}
+.sw-en{background:var(--navy)}
+@media (prefers-color-scheme: dark){ .sw-en{background:#8fa6d6} .dias button.on{background:var(--gold);color:#1a1f2b} }
 .nego{padding:24px 8px;text-align:center;color:var(--ink2)}
 /* HAG_DR_DETALHE_v2: tudo que tem numero ou nome abre o que esta por tras */
 .kpi[data-det],.row[data-mesdin],.row[data-pac],.row[data-prop],.row[data-conv]{cursor:pointer}
-.kpi[data-det] .l::after,.row[data-mesdin] .nome::after,.row[data-pac] .nome::after,.row[data-prop] .nome::after,.row[data-conv] .nome::after{content:' ›';color:var(--ink3);font-weight:400}
-.veu{position:fixed;inset:0;background:rgba(20,24,36,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.kpi[data-det] .l::after{content:' ›';color:var(--ink3);font-weight:400}
+.veu{position:fixed;inset:0;background:rgba(10,14,24,.5);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .veu[hidden]{display:none}
-.folha{background:var(--bg);width:100%;max-width:720px;max-height:88vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
-.folha .fc{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
-.folha .fc b{flex:1;font-family:var(--fs);font-size:17px;font-weight:400}
-.folha .fc button{font:inherit;font-size:14px;border:0;background:none;color:var(--azul)}
-.folha .fb{overflow-y:auto;padding:10px 16px 18px;-webkit-overflow-scrolling:touch}
-.li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #ebe6d8}
+.folha{background:var(--bg);width:100%;max-width:720px;max-height:90vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 40px rgba(0,0,0,.2)}
+.folha::before{content:'';width:38px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 0}
+.folha .fc{display:flex;align-items:center;gap:10px;padding:10px 18px 12px;border-bottom:1px solid var(--line)}
+.folha .fc b{flex:1;font-family:var(--fs);font-size:20px;font-weight:500}
+.folha .fc button{font:inherit;font-size:15px;font-weight:500;border:0;background:none;color:var(--azul)}
+.folha .fb{overflow-y:auto;padding:12px 18px 22px;-webkit-overflow-scrolling:touch}
+.li{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line)}
 .li:last-child{border-bottom:0}
 .li .q{flex:1;min-width:0}
-.li .vl{font-family:var(--fm);font-size:13px;white-space:nowrap;text-align:right}
-.tot{display:flex;justify-content:space-between;font-weight:600;padding:8px 0 4px;border-top:2px solid var(--line);margin-top:4px}
+.li .vl{font-size:13.5px;font-weight:600;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.tot{display:flex;justify-content:space-between;font-weight:700;padding:10px 0 4px;border-top:2px solid var(--line);margin-top:4px}
+.folha .card{box-shadow:none;border:1px solid var(--line)}
 </style>
 </head>
 <body>
-<div class="top"><span class="ti">HAG Dr</span><button type="button" id="recarregar">Atualizar</button></div>
+<header class="top"><div class="eye">HAG DR · MÉTODO HAG</div><div class="tl"><h1 id="titAba">Agenda</h1><button type="button" id="recarregar" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></div><div class="dt" id="hojeDt"></div></header>
 <div class="wrap" id="wrap"><div class="vazio">Carregando…</div></div>
 <nav class="tabs" id="tabs">
-  <button data-aba="hoje" class="on"><b>◷</b>Agenda</button>
-  <button data-aba="checkins"><b>✉︎</b>Check-ins<span class="badge" id="bdgCk" hidden></span></button>
-  <button data-aba="vendas"><b>◎</b>Vendas</button>
-  <button data-aba="fin"><b>$</b>Financeiro</button>
+  <button data-aba="hoje" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Agenda</button>
+  <button data-aba="checkins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 20.5 12Z"/><path d="M8.5 11h7M8.5 14h4"/></svg>Check-ins<span class="badge" id="bdgCk" hidden></span></button>
+  <button data-aba="vendas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17.5 9.5 11l4 4 7-8"/><path d="M15.5 7h5v5"/></svg>Vendas</button>
+  <button data-aba="fin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16.5 14.5h1.5"/><path d="M6 6l9-2.5 1.5 2.5"/></svg>Financeiro</button>
 </nav>
 <div class="veu" id="veu" hidden><div class="folha"><div class="fc"><b id="fTit"></b><button type="button" id="fFecha">Fechar</button></div><div class="fb" id="fCorpo"></div></div></div>
 <script>
@@ -170,15 +229,20 @@ function abaHoje(){
   }).catch(falha);
 }
 function pintaHoje(dias, doDia){
-  var h = '<div class="dias">' + (dias.length ? dias.map(function(d){ return '<button data-dia="' + d + '"' + (d === DIA ? ' class="on"' : '') + '>' + diaRot(d) + '</button>'; }).join('') : '') + '</div>';
-  if(!doDia.length){ W(h + '<div class="vazio">Nenhuma consulta nos próximos 7 dias.</div>'); return; }
+  var cont = {}; AG.forEach(function(r){ cont[r.data_consulta] = (cont[r.data_consulta] || 0) + 1; });
+  var h = '<div class="dias">' + dias.map(function(d){ return '<button data-dia="' + d + '"' + (d === DIA ? ' class="on"' : '') + '>' + diaRot(d) + ' <i>' + cont[d] + '</i></button>'; }).join('') + '</div>';
+  if(!doDia.length){ W(h + '<div class="vazio card">Nenhuma consulta nos próximos 7 dias.</div>'); return; }
+  var nFe = doDia.filter(function(r){ return r.tipo_consulta === 'fechamento'; }).length;
+  var nBr = doDia.filter(function(r){ var b = BR[r.patient_id + '|' + r.data_consulta]; return b && b.conteudo_md; }).length;
+  h += '<div class="resumo"><b>' + doDia.length + (doDia.length > 1 ? ' consultas' : ' consulta') + '</b>' + (nFe ? ' · ' + nFe + (nFe > 1 ? ' fechamentos' : ' fechamento') : '') + ' · ' + nBr + ' de ' + doDia.length + ' com briefing</div>';
   h += doDia.map(function(r){
     var k = r.patient_id + '|' + r.data_consulta, b = BR[k], ab = ABERTO === k;
     var tipo = r.tipo_consulta || '';
-    var x = '<div class="card"><div class="row" data-abre="' + esc(k) + '"><div class="hora">' + esc((r.hora || '').slice(0,5)) + '</div><div class="q"><div class="nome">' + esc(r.patient_nome) + '</div>'
-      + '<div class="sub">' + esc(r.etapa || TIPO[tipo] || '') + ' · ' + esc(r.local || r.modalidade || '') + '</div>'
-      + '<div class="meta">' + (b && b.conteudo_md ? 'briefing pronto' : 'sem briefing ainda') + '</div></div>'
-      + (tipo === 'fechamento' ? '<span class="tag fechamento">Fechamento</span>' : '') + '</div>';
+    var local = r.local || r.modalidade || '';
+    var x = '<div class="card ag"><div class="row" data-abre="' + esc(k) + '"><div class="hora"><b>' + esc((r.hora || '').slice(0,5)) + '</b><span>' + esc(local) + '</span></div><div class="q"><div class="nome">' + esc(r.patient_nome) + '</div>'
+      + '<div class="sub">' + esc(r.etapa || TIPO[tipo] || '') + '</div>'
+      + '<div class="pills">' + (b && b.conteudo_md ? '<span class="pill ok">briefing pronto</span>' : '<span class="pill">sem briefing</span>')
+      + (tipo === 'fechamento' ? '<span class="pill fe">fechamento</span>' : '') + '</div></div><span class="chev">' + (ab ? '⌄' : '›') + '</span></div>';
     if(ab){
       x += '<div class="corpo">' + (MSG[k] ? '<div class="msg">' + MSG[k] + '</div>' : '')
         + (b && b.conteudo_md ? '<div class="md">' + md2html(b.conteudo_md) + '</div>' : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
@@ -230,11 +294,13 @@ function abaCheckins(){
   W('<div class="vazio">Carregando…</div>');
   return api('checkin_triagem?select=id,patient_nome,nivel,status,motivo,canal,criado_em&status=in.(pendente,erro)&order=criado_em.desc&limit=60').then(function(rows){
     rows = (rows || []).sort(function(a,b){ var ka = a.status === 'erro' ? 'erro' : a.nivel, kb = b.status === 'erro' ? 'erro' : b.nivel; return ((ka in ORDNV) ? ORDNV[ka] : 9) - ((kb in ORDNV) ? ORDNV[kb] : 9); });
-    var h = '<h2>A responder</h2>' + (rows.length ? rows.map(function(r){
+    var nU = rows.filter(function(r){ return r.nivel === 'urgente'; }).length;
+    var h = (rows.length ? '<div class="resumo"><b>' + rows.length + (rows.length > 1 ? ' esperando resposta' : ' esperando resposta') + '</b>' + (nU ? ' · <span style="color:var(--verm);font-weight:600">' + nU + ' para hoje</span>' : '') + '</div>' : '')
+      + (rows.length ? rows.map(function(r){
       var k = r.status === 'erro' ? 'erro' : r.nivel;
-      return '<a class="card row" style="text-decoration:none;color:inherit" href="triagem_HAG.html?id=' + encodeURIComponent(r.id) + '&de=dr"><div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
-        + '<div class="sub">' + esc(r.motivo || '') + '</div><div class="meta">' + dm(r.criado_em) + ' · ' + (r.canal === 'whatsapp' ? 'WhatsApp' : 'e-mail') + '</div></div><span class="tag ' + k + '">' + NV[k] + '</span></a>';
-    }).join('') : '<div class="vazio">Nenhum check-in esperando resposta.</div>')
+      return '<a class="card row ck ' + k + '" style="text-decoration:none;color:inherit" href="triagem_HAG.html?id=' + encodeURIComponent(r.id) + '&de=dr"><div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
+        + '<div class="sub">' + esc(r.motivo || '') + '</div><div class="meta">' + dm(r.criado_em) + ' · resposta pronta para ' + (r.canal === 'whatsapp' ? 'WhatsApp' : 'e-mail') + '</div></div><span class="tag ' + k + '">' + NV[k] + '</span></a>';
+    }).join('') : '<div class="vazio card">Tudo respondido. Nenhum check-in esperando você.</div>')
       + '<div class="acoes"><a href="triagem_HAG.html?de=dr">Ver todos dos últimos 30 dias</a></div>';
     W(h); contaCheckins();
   }).catch(falha);
@@ -251,18 +317,21 @@ function abaVendas(){
     function dataRef(r){ return r.momento === 'penultima' ? r.conversa_data : r.fechamento_data; }
     var prox = ren.filter(function(r){ var d = dataRef(r); return d && d <= lim; }).sort(function(a,b){ return String(dataRef(a)).localeCompare(String(dataRef(b))); });
     var depois = ren.length - prox.length;
-    var h = '<h2>Renovações · próximos 60 dias</h2>';
+    var f0 = fun.filter(function(f){ return String(f.mes).slice(0,7) === h0.slice(0,7); });
+    var pTot = f0.reduce(function(s, f){ return s + (+f.propostas || 0); }, 0), pAc = f0.reduce(function(s, f){ return s + (+f.aceitas || 0); }, 0);
+    var h = '<div class="stats"><div class="stat"><b>' + prox.length + '</b><span>renovações em 60 dias</span></div><div class="stat"><b>' + abertas.length + '</b><span>ficaram de pensar</span></div><div class="stat"><b>' + (pTot ? Math.round(100 * pAc / pTot) + '%' : '—') + '</b><span>conversão do mês</span></div></div>';
+    h += '<h2>Renovações · próximos 60 dias</h2>';
     h += prox.length ? prox.map(function(r){
       var d = dataRef(r), atras = d < h0 && !r.proposta_status;
       var rot = r.momento === 'penultima' ? 'Conversa de renovação' : 'Fechamento do ciclo';
       return '<div class="card row" data-pac="' + esc(r.patient_id) + '" data-nome="' + esc(r.patient_nome || '') + '"><div class="q"><div class="nome">' + esc(r.patient_nome || r.patient_id) + '</div><div class="sub">' + rot + ' · ' + esc(NOMEPLANO[r.tipo_ciclo] || r.tipo_ciclo || '') + '</div>'
         + '<div class="meta">' + diaRot(d) + (r.proposta_status ? ' · proposta ' + esc(STP[r.proposta_status] || r.proposta_status) : '') + '</div></div>'
         + '<span class="tag ' + (atras ? 'atrasada' : r.proposta_status === 'aceita' ? 'aceita' : r.momento) + '">' + (atras ? 'Passou' : r.proposta_status === 'aceita' ? 'Renovou' : r.momento === 'penultima' ? 'Penúltima' : 'Fechamento') + '</span></div>';
-    }).join('') : '<div class="vazio">Ninguém na penúltima consulta nem no fechamento nos próximos 60 dias.</div>';
+    }).join('') : '<div class="vazio card">Ninguém na penúltima consulta nem no fechamento nos próximos 60 dias.</div>';
     if(depois) h += '<div class="meta" style="margin:2px 4px 0">Mais ' + depois + ' para depois de 60 dias.</div>';
     h += '<h2>Ficaram de pensar</h2>' + (abertas.length ? abertas.map(function(p){
       return '<div class="card row" data-prop="' + esc(p.id) + '" data-nome="' + esc(p.patient_nome || '') + '"><div class="q"><div class="nome">' + esc(p.patient_nome || '') + '</div><div class="sub">' + esc(p.resumo || '') + '</div><div class="meta">' + dm(p.criado_em) + ' · <span class="din">' + brl(p.valor_pix) + '</span></div></div><span class="tag ' + p.status + '">' + esc(STP[p.status] || p.status) + '</span></div>';
-    }).join('') : '<div class="vazio">Nenhuma proposta esperando resposta.</div>');
+    }).join('') : '<div class="vazio card">Nenhuma proposta esperando resposta.</div>');
     var MOM = { entrada:'Entrada', renovacao:'Renovação', dia:'O dia' };
     h += '<h2>Conversão</h2>' + (fun.length ? '<div class="card" style="padding:4px 0">' + fun.map(function(f){
       var mm = String(f.mes).split('-');
@@ -292,19 +361,25 @@ function abaFin(){
     var nfAtras = nf.filter(function(x){ return x.prazo_status && x.prazo_status !== 'normal'; }).length;
     function kp(l, v, c, din, det, mes){ return '<div class="kpi"' + (det ? ' data-det="' + det + '" data-mes="' + esc(String(mes || a.mes || '').slice(0,10)) + '" data-tit="' + esc(l) + '"' : '') + '><div class="l">' + l + '</div><div class="v' + (din ? ' din' : '') + '">' + v + '</div>' + (c ? '<div class="c">' + c + '</div>' : '') + '</div>'; }
     var entrou = (+d0.entrou_pix || 0) + (+d0.entrou_cartao || 0), ar = d0.a_receber || {};
-    var h = '<div class="acoes" style="margin:0 0 6px;justify-content:flex-end"><button id="olho">' + (OCULTO ? 'Mostrar valores' : 'Esconder valores') + '</button></div>';
-    h += '<h2>Dinheiro de ' + mesRot(d0.mes) + '</h2><div class="kpis">'
-      + kp('Vendido no mês', brl(d0.vendido), 'o que os pacientes pagaram ou contrataram, pela data do pagamento (base da nota). Cartão parcelado conta inteiro no dia.', true, 'receita', d0.mes)
-      + kp('Entrou na conta', brl(entrou), '<span class="din">Pix ' + brl(d0.entrou_pix) + ' · cartão ' + brl(d0.entrou_cartao) + '</span><br>extrato até ' + dm(d0.extrato_ate), true, 'entradas', d0.mes)
-      + kp('A receber do cartão', brl(ar.valor_bruto), (ar.proximo_mes_bruto != null ? '<span class="din">' + brl(ar.proximo_mes_bruto) + '</span> em ' + mesRot(ar.proximo_mes) + ' · ' : '') + 'parcelas que a InfinitePay ainda vai depositar · visto em ' + dm(String(ar.capturado_em || '').slice(0,10)), true, 'areceber')
+    var h = '<div class="acoes" style="margin:-4px 0 10px;justify-content:flex-end"><button id="olho">' + (OCULTO ? 'Mostrar valores' : 'Esconder valores') + '</button></div>';
+    var pPix = entrou ? Math.round(100 * (+d0.entrou_pix || 0) / entrou) : 0;
+    h += '<div class="hero" data-det="entradas" data-mes="' + esc(String(d0.mes || '').slice(0,10)) + '"><div class="l">Entrou na conta em ' + mesRot(d0.mes) + ' ›</div><div class="v din">' + brl(entrou) + '</div>'
+      + '<div class="barra"><span class="p" style="width:' + pPix + '%"></span><span class="c" style="width:' + (100 - pPix) + '%"></span></div>'
+      + '<div class="leg"><span><i style="background:var(--gold)"></i>Pix <span class="din">' + brl(d0.entrou_pix) + '</span></span><span><i style="background:#8fa6d6"></i>Cartão <span class="din">' + brl(d0.entrou_cartao) + '</span></span></div>'
+      + '<div class="ate">Depósitos reais na conta InfinitePay · extrato até ' + dm(d0.extrato_ate) + '</div></div>';
+    h += '<div class="kpis">'
+      + kp('Vendido no mês', brl(d0.vendido), 'pago ou contratado pelos pacientes, pela data do pagamento (base da nota)', true, 'receita', d0.mes)
+      + kp('A receber do cartão', brl(ar.valor_bruto), (ar.proximo_mes_bruto != null ? '<span class="din">' + brl(ar.proximo_mes_bruto) + '</span> em ' + mesRot(ar.proximo_mes) + ' · ' : '') + 'visto em ' + dm(String(ar.capturado_em || '').slice(0,10)), true, 'areceber')
       + '</div>';
-    if(+d0.resgates) h += '<div class="meta" style="margin:6px 4px 0">Não somado: <span class="din">' + brl(d0.resgates) + '</span> de resgate do Rende Mais no mês. É o seu dinheiro voltando da aplicação, não é receita.</div>';
-    if(+d0.a_classificar) h += '<div class="meta" style="margin:4px 4px 0;color:var(--verm)">' + brl(d0.a_classificar) + ' entraram sem categoria; classifique na Conciliação do Mac.</div>';
-    h += '<h2>Vendido × entrou, mês a mês</h2><div class="card" style="padding:2px 0">'
-      + '<div class="row" style="cursor:default;padding-bottom:4px"><div class="q meta">mês</div><div class="meta" style="width:96px;text-align:right">vendido</div><div class="meta" style="width:96px;text-align:right">entrou</div></div>'
+    if(+d0.resgates) h += '<div class="nota" style="margin-top:10px">Não somado: <span class="din">' + brl(d0.resgates) + '</span> de resgate do Rende Mais no mês. É o seu dinheiro voltando da aplicação, não é receita.</div>';
+    if(+d0.a_classificar) h += '<div class="msg erro">' + brl(d0.a_classificar) + ' entraram sem categoria; classifique na Conciliação do Mac.</div>';
+    var mx = 1; hist.forEach(function(x){ mx = Math.max(mx, +x.vendido || 0, (+x.entrou_pix || 0) + (+x.entrou_cartao || 0)); });
+    h += '<h2>Vendido × entrou</h2><div class="leg2"><span><i style="background:var(--gold)"></i>vendido</span><span><i class="sw-en"></i>entrou na conta</span></div><div class="card graf">'
       + hist.map(function(x){ var e = (+x.entrou_pix || 0) + (+x.entrou_cartao || 0);
-          return '<div class="row" data-mesdin="' + esc(String(x.mes).slice(0,10)) + '"><div class="q nome">' + mesRot(x.mes) + '</div><div class="din" style="width:96px;text-align:right">' + brl(x.vendido) + '</div><div class="din" style="width:96px;text-align:right">' + brl(e) + '</div></div>'; }).join('')
-      + '</div><div class="meta" style="margin:6px 4px 0">O que se vende num mês costuma cair na conta nos meses seguintes: o cartão deposita parcela por parcela, e há pagamento feito antes e lançado depois. Por isso os dois números nunca batem no mesmo mês.</div>';
+          return '<div class="row gl" style="display:block" data-mesdin="' + esc(String(x.mes).slice(0,10)) + '"><div class="gm"><span>' + mesRot(x.mes) + '</span><span class="chev" style="font-size:16px">›</span></div>'
+            + '<div class="gb"><span class="vd" style="width:' + Math.round(62 * (+x.vendido || 0) / mx) + '%"></span><em class="din">' + brl(x.vendido) + '</em></div>'
+            + '<div class="gb"><span class="en" style="width:' + Math.round(62 * e / mx) + '%"></span><em class="din">' + brl(e) + '</em></div></div>'; }).join('')
+      + '</div><div class="meta" style="margin:8px 4px 0;line-height:1.4">O que se vende num mês costuma cair na conta nos meses seguintes: o cartão deposita parcela por parcela, e há pagamento feito antes e lançado depois. Por isso os dois números nunca batem no mesmo mês.</div>';
     h += '<h2>Pacientes e consultas · ' + mesRot(a.mes) + '</h2><div class="kpis">'
       + kp('Pacientes ativos', a.pacientes_ativos == null ? '—' : a.pacientes_ativos, (a.pagantes == null ? '' : a.pagantes + ' pagaram no mês'), false, 'ativos')
       + kp('Renovações', a.renovacoes == null ? '—' : a.renovacoes, a.taxa_renovacao == null ? '' : 'taxa ' + a.taxa_renovacao + '% (' + (a.renovados||0) + ' de ' + (a.ciclos_vencidos||0) + ' que venceram)', false, 'renovacoes')
@@ -401,6 +476,7 @@ function propostaDet(id, nome){
 /* ── navegação ─────────────────────────────────────────────────────── */
 function abrir(aba){
   ABA = aba; ABERTO = null;
+  document.getElementById('titAba').textContent = ({ hoje:'Agenda', checkins:'Check-ins', vendas:'Vendas', fin:'Financeiro' })[aba] || 'HAG Dr';
   document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-aba') === aba); });
   try{ sessionStorage.setItem('hagdr_aba', aba); }catch(e){}
   window.scrollTo(0, 0);
@@ -426,7 +502,10 @@ document.addEventListener('click', function(e){
 });
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible'){ contaCheckins(); } });
 
+function dataLonga(){ var d = new Date(); var S = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  var M = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']; return S[d.getDay()] + ', ' + d.getDate() + ' de ' + M[d.getMonth()]; }
 function iniciar(){
+  document.getElementById('hojeDt').textContent = dataLonga();
   var em = emailLogado();
   if(em && em !== DR){ W('<div class="nego">Este app é do Dr. Henrique. A equipe usa o app Tarefas.</div>'); document.getElementById('tabs').hidden = true; return; }
   try{ OCULTO = localStorage.getItem('hagdr_oculto') === '1'; }catch(e){}
