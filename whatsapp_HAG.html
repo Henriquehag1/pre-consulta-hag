@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- HAG_WPP_AGENTE_v1 (31/10/2026) · Respostas prontas do WhatsApp do consultorio
+     POR QUE EXISTE: pedido do Dr. Henrique, agentes no WhatsApp do consultorio,
+     pelo caminho do Mac (sem Meta e sem provedor). O leitor do Mac
+     (hag_wpp_agente.py) ve cada conversa com mensagem sem resposta; a Edge
+     Function hag-wpp-rascunho escreve o rascunho da Daniela. Aqui ela revisa,
+     completa o que estiver [entre colchetes] e toca em "Copiar e abrir no
+     WhatsApp". Quando ela responde pelo app, o rascunho se fecha sozinho.
+     Assunto clinico: a Daniela ve so a frase de encaminhamento; a analise fica
+     em wpp_clinico, que so o login do Dr. le (HAG Dr, aba Check-ins).
+     Leitura e edicao: logins do Dr. e da Daniela (RLS de wpp_rascunho). -->
+<script>
+window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+window.HAG_EXIGIR_LOGIN=true;
+</script>
+<script src="hag_auth.js?v=20261021-1353"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1B2745">
+<title>WhatsApp · respostas prontas · HAG</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#1B2745;--gold:#C9A55E;--gold2:#9A7B3F;--line:#E4DECB;--ink:#1a1a1a;--ink2:#5a5a55;--ink3:#8a8578;--bg:#f4f4f0;
+      --verde:#2F6B4A;--verde-bg:#e3f0e8;--verm:#9C2B2B;--verm-bg:#f8e4e4;--amb:#8a5a12;--amb-bg:#f8eedb;--azul:#2563a8;--azul-bg:#e8f0fa;
+      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:Georgia,'Times New Roman',serif}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+.top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
+.top a{color:var(--gold);text-decoration:none;font-size:13px;white-space:nowrap}
+.top .ti{font-family:var(--fs);font-size:17px;flex:1}
+.wrap{max-width:760px;margin:0 auto;padding:12px 16px 90px}
+.fil{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.fil button{font:inherit;font-size:13px;padding:6px 12px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--ink2)}
+.fil button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.vazio{color:var(--ink3);padding:24px 4px;text-align:center}
+.msg{background:var(--verm-bg);color:var(--verm);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px}
+.item{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.item .cab{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;cursor:pointer}
+.item .cab .q{flex:1;min-width:0}
+.item .nome{font-weight:600}
+.item .mot{color:var(--ink2);font-size:14px;margin-top:2px}
+.item .meta{font-family:var(--fm);font-size:11px;color:var(--ink3);margin-top:4px}
+.item.feito{opacity:.6}
+.nv{font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;padding:3px 8px;border-radius:10px;white-space:nowrap;text-transform:uppercase}
+.nv.urgente{background:var(--verm-bg);color:var(--verm)}.nv.responder{background:var(--azul-bg);color:var(--azul)}
+.nv.logistica{background:var(--amb-bg);color:var(--amb)}.nv.sem_acao{background:#ecebe5;color:var(--ink2)}.nv.erro{background:var(--verm-bg);color:var(--verm)}
+.corpo{border-top:1px solid var(--line);padding:12px 14px 14px}
+h3{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2);margin:14px 0 6px}
+h3:first-child{margin-top:0}
+.resumo{font-size:14.5px}
+.decis{margin:6px 0 0 18px;font-size:14px;color:var(--ink2)}
+.ck{background:#faf9f5;border:1px solid #efeadb;border-radius:8px;padding:8px 10px;font-size:13.5px;white-space:pre-wrap;max-height:260px;overflow:auto}
+.ck b{color:var(--ink2);font-weight:600}
+.canal{font-size:13px;color:var(--ink2);margin-bottom:6px}
+.canal .aviso{color:var(--amb)}
+input.assunto,textarea{width:100%;font:inherit;font-size:15px;border:1px solid #d9d2bd;border-radius:8px;padding:9px 10px;background:#fff;color:var(--ink)}
+textarea{min-height:190px;resize:vertical;line-height:1.5}
+textarea.dani{min-height:110px}
+input.assunto{margin-bottom:6px}
+.lac{font-size:13px;margin-top:6px;color:var(--verm)}
+.lac.ok{color:var(--verde)}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.acoes button,.acoes a{font:inherit;font-size:14px;padding:9px 14px;border-radius:9px;border:1px solid #cdbf9c;background:#fff;color:var(--ink);text-decoration:none;cursor:pointer}
+.acoes .pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.acoes .wpp{background:#1f7a4d;border-color:#1f7a4d;color:#fff}
+.acoes [disabled]{opacity:.45;pointer-events:none}
+.mini{font-size:12px;color:var(--ink3);margin-top:8px}
+.decs{display:flex;flex-direction:column;gap:8px}
+.dec{background:#f7f5ee;border:1px solid #ebe4cf;border-radius:8px;padding:8px 10px}
+.dt{font-size:12.5px;color:var(--ink2);font-weight:600}
+.dr{font-size:14.5px;margin-top:2px}
+.dj{font-size:13px;color:var(--ink2);margin-top:3px}
+.cf{font-family:var(--fm);font-size:10px;font-weight:400;padding:1px 6px;border-radius:8px;margin-left:4px;background:#ecebe5}
+.cf.alta{background:var(--verde-bg);color:var(--verde)}.cf.baixa{background:var(--amb-bg);color:var(--amb)}
+.sgt{color:var(--ink2);margin-bottom:4px}
+.sg{display:flex;gap:8px;align-items:flex-start;background:var(--azul-bg);border-radius:8px;padding:6px 8px;margin-top:4px;color:var(--ink)}
+.sg span{flex:1;font-size:13.5px}
+.sg button{font:inherit;font-size:12.5px;padding:4px 10px;border-radius:7px;border:1px solid var(--azul);background:#fff;color:var(--azul)}
+.lacx{margin-top:6px}
+.ok{color:var(--verde)}
+.nv.lead{background:var(--verde-bg);color:var(--verde)}.nv.comdr{background:#efe7f6;color:#6a3d8f}.nv.novo{background:#ecebe5;color:var(--ink2)}
+.conv{display:flex;flex-direction:column;gap:5px;max-height:280px;overflow:auto;background:#efeae0;border-radius:10px;padding:8px}
+.bl{max-width:86%;padding:6px 9px;border-radius:9px;font-size:13.5px;white-space:pre-wrap;word-wrap:break-word}
+.bl.c{background:#fff;align-self:flex-start}.bl.e{background:#dcf3d6;align-self:flex-end}
+.bl i{display:block;font-style:normal;font-family:var(--fm);font-size:10px;color:var(--ink3);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="top"><a href="tarefas_HAG.html">‹ Tarefas</a><span class="ti">WhatsApp · respostas prontas</span><a href="#" id="recarregar">Atualizar</a></div>
+<div class="wrap">
+  <div class="fil" id="fil"><button data-f="abertas" class="on">Para responder</button><button data-f="feitas">Resolvidas</button></div>
+  <div id="lista"><div class="vazio">Carregando…</div></div>
+</div>
+<script>
+(function(){
+'use strict';
+var URL_ = window.SUPA_URL, KEY = window.SUPA_KEY;
+var EQUIPE = ['drhenrique@clinicahag.com','jessicaballassa@icloud.com'];
+var FILTRO = 'abertas', DADOS = [], ABERTO = null, IDURL = null;
+var CAT = { lead_novo:'Lead novo', agendamento:'Agendamento', remarcacao:'Remarcação', administrativo:'Administrativo', pagamento:'Pagamento',
+  exames_receita:'Exames ou receita', clinico:'Com o Dr.', agradecimento:'Agradecimento', outro:'Mensagem' };
+
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function api(path, init){
+  init = init || {};
+  init.headers = Object.assign({ apikey:KEY, Authorization:'Bearer ' + KEY, 'Content-Type':'application/json' }, init.headers || {});
+  return fetch(URL_ + '/rest/v1/' + path, init).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + (t ? ': ' + t.slice(0,140) : '')); });
+    return r.status === 204 ? null : r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+  });
+}
+function emailLogado(){
+  try{ var tk = window.HAGAuth && window.HAGAuth.token && window.HAGAuth.token(); if(!tk) return '';
+    var p = JSON.parse(atob(tk.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); return String(p.email || '').toLowerCase(); }catch(e){ return ''; }
+}
+function hora(iso){ if(!iso) return ''; var d = new Date(iso), h = new Date();
+  var hm = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return d.toDateString() === h.toDateString() ? 'hoje ' + hm : String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + ' ' + hm; }
+function nomeDe(r){ return r.patient_nome || r.nome_contato || (r.telefone ? '+' + r.telefone : 'Contato'); }
+function lacunas(t){ return (String(t||'').match(/\[[^\]]*\]/g) || []); }
+function tag(r){
+  if(r.status === 'novo') return '<span class="nv novo">Preparando</span>';
+  if(r.status === 'erro') return '<span class="nv erro">Erro</span>';
+  if(r.urgente) return '<span class="nv urgente">Urgente</span>';
+  if(r.clinico) return '<span class="nv comdr">Com o Dr.</span>';
+  if(r.categoria === 'lead_novo' || r.tipo_contato === 'lead') return '<span class="nv lead">Lead</span>';
+  if(r.status === 'respondida') return '<span class="nv sem_acao">Respondida</span>';
+  if(r.status === 'dispensada' || r.status === 'sem_acao') return '<span class="nv sem_acao">' + (r.status === 'sem_acao' ? 'Sem resposta' : 'Dispensada') + '</span>';
+  return '<span class="nv responder">' + esc(CAT[r.categoria] || 'Responder') + '</span>';
+}
+function carregar(){
+  var q = FILTRO === 'abertas'
+    ? 'status=in.(novo,pendente,erro)&order=urgente.desc,ultima_entrada_em.asc'
+    : 'status=in.(respondida,dispensada,sem_acao)&criado_em=gte.' + encodeURIComponent(new Date(Date.now() - 7*864e5).toISOString()) + '&order=atualizado_em.desc.nullslast&limit=60';
+  return api('wpp_rascunho?select=id,chat,telefone,nome_contato,patient_nome,tipo_contato,conversa,ultima_entrada_em,categoria,urgente,clinico,resumo,mensagem,status,erro,respondida_por,atualizado_em&' + q)
+    .then(function(rows){ DADOS = rows || []; if(IDURL){ ABERTO = IDURL; IDURL = null; } pinta(); })
+    .catch(function(e){ document.getElementById('lista').innerHTML = '<div class="msg">Não consegui carregar: ' + esc(e.message) + '</div>'; });
+}
+function registro(id){ for(var i = 0; i < DADOS.length; i++) if(DADOS[i].id === id) return DADOS[i]; return null; }
+function pinta(){
+  var el = document.getElementById('lista');
+  if(!DADOS.length){ el.innerHTML = '<div class="vazio">' + (FILTRO === 'abertas' ? 'Nenhuma conversa esperando resposta.' : 'Nada resolvido nos últimos 7 dias.') + '</div>'; return; }
+  el.innerHTML = DADOS.map(function(r){
+    var aberto = ABERTO === r.id;
+    var h = '<div class="item' + (r.status === 'respondida' || r.status === 'dispensada' ? ' feito' : '') + '" id="it_' + r.id + '">'
+      + '<div class="cab" data-abre="' + r.id + '"><div class="q"><div class="nome">' + esc(nomeDe(r)) + '</div>'
+      + '<div class="mot">' + esc(r.status === 'novo' ? 'O rascunho está sendo preparado…' : (r.resumo || '')) + '</div>'
+      + '<div class="meta">' + ({paciente:'Paciente',lead:'Lead',contato:'Contato'}[r.tipo_contato] || '') + ' · última mensagem ' + hora(r.ultima_entrada_em) + '</div></div>' + tag(r) + '</div>';
+    if(aberto) h += corpo(r);
+    return h + '</div>';
+  }).join('');
+}
+function corpo(r){
+  var conv = (r.conversa || []).slice(-8).map(function(m){
+    return '<div class="bl ' + (m.de === 'consultorio' ? 'e' : 'c') + '">' + esc(m.texto) + '<i>' + hora(m.t) + '</i></div>'; }).join('');
+  var h = '<div class="corpo"><h3>Conversa</h3><div class="conv">' + conv + '</div>';
+  if(r.status === 'erro'){ h += '<div class="msg" style="margin-top:10px">Não consegui preparar: ' + esc(r.erro || '') + '</div>'; }
+  if(r.clinico) h += '<div class="mini" style="color:#6a3d8f">Assunto clínico: o Dr. Henrique recebeu a análise no app dele. Aqui vai só a mensagem de encaminhamento.</div>';
+  if(r.status === 'pendente' || r.status === 'erro'){
+    var lac = lacunas(r.mensagem);
+    h += '<h3>Resposta pronta</h3><textarea class="dani" id="tx_' + r.id + '">' + esc(r.mensagem || '') + '</textarea>'
+      + '<div class="lac' + (lac.length ? '' : ' ok') + '" id="lac_' + r.id + '">' + (lac.length ? 'Complete antes de enviar: ' + esc(lac.join(', ')) : 'Pronta para enviar.') + '</div>'
+      + '<div class="acoes">'
+      + (r.telefone ? '<button class="wpp" data-envia="' + r.id + '"' + (lac.length ? ' disabled' : '') + '>Copiar e abrir no WhatsApp</button>' : '<button class="wpp" data-copia="' + r.id + '"' + (lac.length ? ' disabled' : '') + '>Copiar texto</button>')
+      + '<button data-feito="' + r.id + '">Já respondi</button><button data-dispensa="' + r.id + '">Dispensar</button><button data-regera="' + r.id + '">Gerar de novo</button></div>'
+      + (r.telefone ? '' : '<div class="mini">Este contato não tem número visível no WhatsApp do Mac: cole a resposta na conversa pelo nome.</div>');
+  } else if(r.mensagem){
+    h += '<h3>Resposta sugerida</h3><div class="ck">' + esc(r.mensagem) + '</div>';
+  }
+  return h + '</div>';
+}
+function salvarTexto(id){ var r = registro(id), tx = document.getElementById('tx_' + id); if(!r || !tx || tx.value === r.mensagem) return Promise.resolve();
+  r.mensagem = tx.value; return api('wpp_rascunho?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ mensagem: tx.value, atualizado_em: new Date().toISOString() }), headers:{ Prefer:'return=minimal' } }); }
+function copiar(t){ try{ if(navigator.clipboard) return navigator.clipboard.writeText(t).catch(function(){}); }catch(e){} return Promise.resolve(); }
+function status(id, st){
+  var r = registro(id); if(!r) return;
+  return salvarTexto(id).then(function(){ return api('wpp_rascunho?id=eq.' + id, { method:'PATCH', headers:{ Prefer:'return=minimal' },
+    body: JSON.stringify({ status: st, respondida_por: st === 'respondida' ? 'pagina' : 'pagina_dispensou', respondida_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }) }); })
+    .then(function(){ DADOS = DADOS.filter(function(x){ return x.id !== id; }); ABERTO = null; pinta(); })
+    .catch(function(e){ alerta(e.message); });
+}
+function alerta(m){ var el = document.getElementById('lista'); el.insertAdjacentHTML('afterbegin', '<div class="msg">' + esc(m) + '</div>'); }
+function regera(id){
+  var b = document.querySelector('[data-regera="' + id + '"]'); if(b){ b.textContent = 'Gerando…'; b.setAttribute('disabled',''); }
+  var tk = window.HAGAuth && window.HAGAuth.token && window.HAGAuth.token();
+  return fetch(URL_ + '/functions/v1/hag-wpp-rascunho', { method:'POST', headers:{ apikey:KEY, Authorization:'Bearer ' + (tk || KEY), 'Content-Type':'application/json' },
+    body: JSON.stringify({ id: id, forcar: true, sem_push: true }) })
+    .then(function(x){ return x.json().then(function(j){ if(!x.ok || !j.ok) throw new Error(j.erro || ('HTTP ' + x.status)); }); })
+    .then(carregar).catch(function(e){ alerta('Não consegui gerar de novo: ' + e.message); if(b){ b.textContent = 'Gerar de novo'; b.removeAttribute('disabled'); } });
+}
+document.addEventListener('input', function(e){
+  var t = e.target; if(!t.id || t.id.indexOf('tx_') !== 0) return;
+  var id = t.id.slice(3), lac = lacunas(t.value), el = document.getElementById('lac_' + id);
+  if(el){ el.className = 'lac' + (lac.length ? '' : ' ok'); el.textContent = lac.length ? 'Complete antes de enviar: ' + lac.join(', ') : 'Pronta para enviar.'; }
+  var b = document.querySelector('[data-envia="' + id + '"],[data-copia="' + id + '"]'); if(b){ if(lac.length) b.setAttribute('disabled',''); else b.removeAttribute('disabled'); }
+});
+document.addEventListener('focusout', function(e){ var t = e.target; if(t.id && t.id.indexOf('tx_') === 0) salvarTexto(t.id.slice(3)).catch(function(){}); });
+document.addEventListener('click', function(e){
+  var t = e.target, a; if(!t.closest) return;
+  if((a = t.closest('#recarregar'))){ e.preventDefault(); carregar(); return; }
+  if((a = t.closest('#fil [data-f]'))){ FILTRO = a.getAttribute('data-f'); document.querySelectorAll('#fil button').forEach(function(b){ b.classList.toggle('on', b === a); }); ABERTO = null; carregar(); return; }
+  if((a = t.closest('[data-abre]'))){ var id = a.getAttribute('data-abre'); ABERTO = ABERTO === id ? null : id; pinta(); return; }
+  if((a = t.closest('[data-envia]'))){
+    var id1 = a.getAttribute('data-envia'), r = registro(id1), tx = document.getElementById('tx_' + id1);
+    var txt = tx ? tx.value : r.mensagem; if(lacunas(txt).length) return;
+    salvarTexto(id1).catch(function(){}); copiar(txt);
+    window.open('https://wa.me/' + String(r.telefone).replace(/\D/g,'') + '?text=' + encodeURIComponent(txt), '_blank');
+    return;
+  }
+  if((a = t.closest('[data-copia]'))){ var id2 = a.getAttribute('data-copia'), tx2 = document.getElementById('tx_' + id2); copiar(tx2 ? tx2.value : ''); a.textContent = 'Copiado'; return; }
+  if((a = t.closest('[data-feito]'))){ status(a.getAttribute('data-feito'), 'respondida'); return; }
+  if((a = t.closest('[data-dispensa]'))){ status(a.getAttribute('data-dispensa'), 'dispensada'); return; }
+  if((a = t.closest('[data-regera]'))){ regera(a.getAttribute('data-regera')); return; }
+});
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') carregar(); });
+function iniciar(){
+  var em = emailLogado();
+  if(em && EQUIPE.indexOf(em) < 0){ document.getElementById('lista').innerHTML = '<div class="vazio">Esta página é da equipe do consultório.</div>'; return; }
+  var m = location.search.match(/[?&]id=([0-9a-f-]{36})/); if(m) IDURL = m[1];
+  carregar();
+  setInterval(function(){ if(document.visibilityState === 'visible' && !document.activeElement.id) carregar(); }, 60000);
+}
+if(window.HAGAuth && window.HAGAuth.valid && window.HAGAuth.valid()) iniciar();
+else if(window.HAGAuth) window.HAGAuth.mount(iniciar);
+})();
+</script>
+</body>
+</html>

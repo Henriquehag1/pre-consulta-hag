@@ -37,7 +37,9 @@ self.addEventListener('notificationclick', function(event){
          aba do Tarefas, e o Dr. cairia na fila em vez da resposta pronta. No
          iPhone o app da tela de inicio e uma janela so: ela e levada ate a
          triagem. O aviso da fila continua exatamente como era. */
-      if (alvo.indexOf('triagem_HAG') >= 0){
+      /* HAG_WPP_AGENTE_v1 (31/10/2026): o aviso do WhatsApp leva a Daniela a
+         whatsapp_HAG.html?id=... e o Dr. a hag_dr_HAG.html; mesma regra da triagem. */
+      if (/triagem_HAG|whatsapp_HAG|hag_dr_HAG/.test(alvo)){
         for (var j = 0; j < lista.length; j++){
           if ('navigate' in lista[j]) return lista[j].navigate(alvo).then(function(c){ return c && c.focus ? c.focus() : c; });
         }
