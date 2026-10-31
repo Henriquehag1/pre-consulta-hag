@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- HAG_DR_APP_v1 (31/10/2026) + HAG_DR_DETALHE_v2: cada numero, renovacao, proposta e mes de conversao
+<!-- HAG_DR_APP_v1 (31/10/2026) + HAG_DINHEIRO_DO_MES_v1 (vendido x entrou x a receber) + HAG_DR_DETALHE_v2: cada numero, renovacao, proposta e mes de conversao
      abre o que esta por tras (hag_dr_detalhe e hag_dr_paciente_ciclo, mesma regra das views).
      POR QUE EXISTE: o HAG OS so abria no Mac. O Dr. pediu no celular, como ja tem
      o Tarefas, o HAG Treino e o HAG Cozinha, quatro coisas: check-ins com resposta
@@ -78,8 +78,8 @@ h2:first-child{margin-top:4px}
 .dias button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .nego{padding:24px 8px;text-align:center;color:var(--ink2)}
 /* HAG_DR_DETALHE_v2: tudo que tem numero ou nome abre o que esta por tras */
-.kpi[data-det],.row[data-pac],.row[data-prop],.row[data-conv]{cursor:pointer}
-.kpi[data-det] .l::after,.row[data-pac] .nome::after,.row[data-prop] .nome::after,.row[data-conv] .nome::after{content:' ›';color:var(--ink3);font-weight:400}
+.kpi[data-det],.row[data-mesdin],.row[data-pac],.row[data-prop],.row[data-conv]{cursor:pointer}
+.kpi[data-det] .l::after,.row[data-mesdin] .nome::after,.row[data-pac] .nome::after,.row[data-prop] .nome::after,.row[data-conv] .nome::after{content:' ›';color:var(--ink3);font-weight:400}
 .veu{position:fixed;inset:0;background:rgba(20,24,36,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .veu[hidden]{display:none}
 .folha{background:var(--bg);width:100%;max-width:720px;max-height:88vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
@@ -274,32 +274,65 @@ function abaVendas(){
 }
 
 /* ── FINANCEIRO: so leitura, sem tabela de precos ──────────────────── */
+/* HAG_DINHEIRO_DO_MES_v1 (31/10/2026): pergunta dele, "saber o que e receita lancada e o que
+   de fato entrou de dinheiro no mes". Tres numeros separados, cada um com a frase do que e:
+   VENDIDO (receitas pela data do pagamento, base da nota), ENTROU (deposito real no extrato:
+   Pix + repasse do cartao; resgate do Rende Mais nao conta) e A RECEBER (parcelas de cartao
+   que a InfinitePay ainda vai depositar). Fonte: hag_dr_dinheiro_mes. */
+var MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function mesRot(iso){ var p = String(iso||'').split('-'); return p.length > 1 ? MESES[+p[1]-1] + '/' + p[0].slice(2) : ''; }
+function mesAnt(iso, n){ var d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0,7) + '-01'; }
 function abaFin(){
   W('<div class="vazio">Carregando…</div>');
-  return Promise.all([ api('v_kpis_mensal?select=*&order=mes.desc&limit=2'), api('v_caixa_mensal?select=*&order=competencia.desc&limit=2'),
-                       api('v_nfse_pendentes?select=valor_bruto,prazo_status') ]).then(function(res){
-    var k = res[0] || [], cx = res[1] || [], nf = res[2] || [];
-    var a = k[0] || {}, b = k[1] || {}, c0 = cx[0] || {};
+  var m0 = hojeISO().slice(0,7) + '-01';
+  return Promise.all([ api('v_kpis_mensal?select=*&order=mes.desc&limit=1'), api('v_nfse_pendentes?select=valor_bruto,prazo_status'),
+                       rpc('hag_dr_dinheiro_mes', { p_mes: m0 }), rpc('hag_dr_dinheiro_mes', { p_mes: mesAnt(m0, 1) }), rpc('hag_dr_dinheiro_mes', { p_mes: mesAnt(m0, 2) }) ]).then(function(res){
+    var a = (res[0] || [])[0] || {}, nf = res[1] || [], d0 = res[2] || {}, hist = [res[2] || {}, res[3] || {}, res[4] || {}];
     var nfTot = nf.reduce(function(s, x){ return s + (+x.valor_bruto || 0); }, 0);
     var nfAtras = nf.filter(function(x){ return x.prazo_status && x.prazo_status !== 'normal'; }).length;
-    function kp(l, v, c, din, det){ return '<div class="kpi"' + (det ? ' data-det="' + det + '" data-mes="' + esc(String(a.mes || '').slice(0,10)) + '" data-tit="' + esc(l) + '"' : '') + '><div class="l">' + l + '</div><div class="v' + (din ? ' din' : '') + '">' + v + '</div>' + (c ? '<div class="c">' + c + '</div>' : '') + '</div>'; }
+    function kp(l, v, c, din, det, mes){ return '<div class="kpi"' + (det ? ' data-det="' + det + '" data-mes="' + esc(String(mes || a.mes || '').slice(0,10)) + '" data-tit="' + esc(l) + '"' : '') + '><div class="l">' + l + '</div><div class="v' + (din ? ' din' : '') + '">' + v + '</div>' + (c ? '<div class="c">' + c + '</div>' : '') + '</div>'; }
+    var entrou = (+d0.entrou_pix || 0) + (+d0.entrou_cartao || 0), ar = d0.a_receber || {};
     var h = '<div class="acoes" style="margin:0 0 6px;justify-content:flex-end"><button id="olho">' + (OCULTO ? 'Mostrar valores' : 'Esconder valores') + '</button></div>';
-    h += '<h2>' + (a.mes_txt ? a.mes_txt.split('-').reverse().join('/') : 'Mês atual') + '</h2><div class="kpis">'
-      + kp('Receita lançada', brl(a.receita), b.mes_txt ? 'mês anterior ' + '<span class="din">' + brl(b.receita) + '</span>' : '', true, 'receita')
+    h += '<h2>Dinheiro de ' + mesRot(d0.mes) + '</h2><div class="kpis">'
+      + kp('Vendido no mês', brl(d0.vendido), 'o que os pacientes pagaram ou contrataram, pela data do pagamento (base da nota). Cartão parcelado conta inteiro no dia.', true, 'receita', d0.mes)
+      + kp('Entrou na conta', brl(entrou), '<span class="din">Pix ' + brl(d0.entrou_pix) + ' · cartão ' + brl(d0.entrou_cartao) + '</span><br>extrato até ' + dm(d0.extrato_ate), true, 'entradas', d0.mes)
+      + kp('A receber do cartão', brl(ar.valor_bruto), (ar.proximo_mes_bruto != null ? '<span class="din">' + brl(ar.proximo_mes_bruto) + '</span> em ' + mesRot(ar.proximo_mes) + ' · ' : '') + 'parcelas que a InfinitePay ainda vai depositar · visto em ' + dm(String(ar.capturado_em || '').slice(0,10)), true, 'areceber')
+      + '</div>';
+    if(+d0.resgates) h += '<div class="meta" style="margin:6px 4px 0">Não somado: <span class="din">' + brl(d0.resgates) + '</span> de resgate do Rende Mais no mês. É o seu dinheiro voltando da aplicação, não é receita.</div>';
+    if(+d0.a_classificar) h += '<div class="meta" style="margin:4px 4px 0;color:var(--verm)">' + brl(d0.a_classificar) + ' entraram sem categoria; classifique na Conciliação do Mac.</div>';
+    h += '<h2>Vendido × entrou, mês a mês</h2><div class="card" style="padding:2px 0">'
+      + '<div class="row" style="cursor:default;padding-bottom:4px"><div class="q meta">mês</div><div class="meta" style="width:96px;text-align:right">vendido</div><div class="meta" style="width:96px;text-align:right">entrou</div></div>'
+      + hist.map(function(x){ var e = (+x.entrou_pix || 0) + (+x.entrou_cartao || 0);
+          return '<div class="row" data-mesdin="' + esc(String(x.mes).slice(0,10)) + '"><div class="q nome">' + mesRot(x.mes) + '</div><div class="din" style="width:96px;text-align:right">' + brl(x.vendido) + '</div><div class="din" style="width:96px;text-align:right">' + brl(e) + '</div></div>'; }).join('')
+      + '</div><div class="meta" style="margin:6px 4px 0">O que se vende num mês costuma cair na conta nos meses seguintes: o cartão deposita parcela por parcela, e há pagamento feito antes e lançado depois. Por isso os dois números nunca batem no mesmo mês.</div>';
+    h += '<h2>Pacientes e consultas · ' + mesRot(a.mes) + '</h2><div class="kpis">'
       + kp('Pacientes ativos', a.pacientes_ativos == null ? '—' : a.pacientes_ativos, (a.pagantes == null ? '' : a.pagantes + ' pagaram no mês'), false, 'ativos')
       + kp('Renovações', a.renovacoes == null ? '—' : a.renovacoes, a.taxa_renovacao == null ? '' : 'taxa ' + a.taxa_renovacao + '% (' + (a.renovados||0) + ' de ' + (a.ciclos_vencidos||0) + ' que venceram)', false, 'renovacoes')
       + kp('Consultas', a.consultas == null ? '—' : a.consultas, (a.faltas || 0) + ' faltas · ' + (a.pacientes_novos || 0) + ' pacientes novos', false, 'consultas')
-      + '</div>';
-    var mesCx = c0.competencia ? c0.competencia + '-01' : null;
-    h += '<h2>Banco (extrato importado) · ' + (c0.competencia ? c0.competencia.split('-').reverse().join('/') : '') + '</h2><div class="kpis">'
-      + kp('Entradas', brl(c0.receita_caixa), '', true, 'entradas')
-      + kp('Saídas', brl(Math.abs(+c0.despesa_caixa || 0)), (c0.pendentes_classificacao ? c0.pendentes_classificacao + ' sem categoria' : ''), true, 'saidas')
+      + kp('Saídas da conta', 'ver lista', 'despesas e impostos do extrato', false, 'saidas', d0.mes)
       + '</div>';
     h += '<h2>Notas fiscais</h2><div class="kpis">' + kp('NFSe pendentes', nf.length, '<span class="din">' + brl(nfTot) + '</span>' + (nfAtras ? ' · ' + nfAtras + ' fora do prazo' : ''), false, 'nfse') + '</div>';
     h += '<div class="meta" style="margin:10px 4px">Só leitura. Lançar, conciliar e emitir continuam no Financeiro do Mac.</div>';
-    window.__hagMesCx = mesCx;
     W(h); document.body.classList.toggle('oculto', OCULTO);
   }).catch(falha);
+}
+function areceberDet(){
+  rpc('hag_dr_dinheiro_mes', {}).then(function(d){
+    var ar = (d || {}).a_receber || {};
+    folha('A receber do cartão', '<div class="card" style="padding:10px 12px"><div class="nome din">' + brl(ar.valor_bruto) + '</div><div class="sub">até ' + dm(ar.ate) + '/' + String(ar.ate||'').slice(0,4) + (ar.proximo_mes_bruto != null ? ' · <span class="din">' + brl(ar.proximo_mes_bruto) + '</span> em ' + mesRot(ar.proximo_mes) : '') + '</div></div>'
+      + '<p class="sub" style="margin-top:10px">São as parcelas de vendas no cartão que a InfinitePay ainda vai depositar, como aparece em <b>Seus recebimentos › Lançamentos futuros</b>. Valor bruto, antes da taxa da maquininha.</p>'
+      + '<p class="sub" style="margin-top:8px">Foto tirada em ' + dm(String(ar.capturado_em||'').slice(0,10)) + '. Ela é atualizada junto com o extrato do mês.</p>');
+  }).catch(function(e){ folha('A receber do cartão', '<div class="msg erro">' + esc(e.message) + '</div>'); });
+}
+function mesDinheiro(mes){
+  folha('Dinheiro de ' + mesRot(mes), '<div class="vazio">Carregando…</div>');
+  Promise.all([ rpc('hag_dr_detalhe', { p_tipo:'receita', p_mes: mes }), rpc('hag_dr_detalhe', { p_tipo:'entradas', p_mes: mes }) ]).then(function(r){
+    var v = r[0] || [], e = r[1] || [];
+    function soma(l){ return l.reduce(function(s, x){ return s + (+x.valor || 0); }, 0); }
+    folha('Dinheiro de ' + mesRot(mes),
+      '<h2>Vendido (' + v.length + ')</h2>' + (v.length ? v.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.servico || '') + (x.forma ? ' · ' + esc(x.forma) : ''), brl(x.valor), true); }).join('') + '<div class="tot"><span>Total vendido</span><span class="din">' + brl(soma(v)) + '</span></div>' : '<div class="vazio">Nada.</div>')
+      + '<h2>Entrou na conta (' + e.length + ')</h2>' + (e.length ? e.map(function(x){ return li(esc(x.nome || ''), dm(x.data) + ' · ' + (x.categoria === 'receita_pix' ? 'Pix' : 'repasse do cartão'), brl(x.valor), true); }).join('') + '<div class="tot"><span>Total que entrou</span><span class="din">' + brl(soma(e)) + '</span></div>' : '<div class="vazio">Nada.</div>'));
+  }).catch(function(x){ folha('Dinheiro', '<div class="msg erro">' + esc(x.message) + '</div>'); });
 }
 
 /* ── DETALHE (HAG_DR_DETALHE_v2) ───────────────────────────────────── */
@@ -325,7 +358,7 @@ function detalhe(tipo, mes, tit, momento){
     if(tipo === 'receita') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.servico || '') + (x.forma ? ' · ' + esc(x.forma) : '') + (x.nfse === 'pendente' ? ' · NFSe pendente' : ''), brl(x.valor), true); }).join('');
     else if(tipo === 'ativos') h = d.map(function(x){ return li(esc(x.nome), plano(x.tipo_ciclo) + ' · ' + dm(x.inicio) + ' a ' + dm(x.fim)); }).join('');
     else if(tipo === 'consultas') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.consulta || '') + (x.local ? ' · ' + esc(x.local) : ''), '<span class="tag ' + (x.status === 'faltou' ? 'atrasada' : 'aceita') + '">' + esc(STRET[x.status] || x.status) + '</span>'); }).join('');
-    else if(tipo === 'entradas' || tipo === 'saidas') h = d.map(function(x){ return li(esc(x.nome || 'sem nome'), dm(x.data) + ' · ' + esc(String(x.categoria || '').replace(/_/g,' ')), brl(Math.abs(+x.valor)), true); }).join('');
+    else if(tipo === 'entradas' || tipo === 'saidas') h = d.map(function(x){ var cat = { receita_pix:'Pix', receita_maquininha:'repasse do cartão' }[x.categoria] || String(x.categoria || '').replace(/_/g,' '); return li(esc(x.nome || 'sem nome'), dm(x.data) + ' · ' + esc(cat), brl(Math.abs(+x.valor)), true); }).join('');
     else if(tipo === 'nfse') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.servico || '') + (x.prazo && x.prazo !== 'normal' ? ' · <b style="color:var(--verm)">fora do prazo</b>' : ''), brl(x.valor), true); }).join('');
     else if(tipo === 'propostas') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.resumo || '') + (x.motivo ? ' · ' + esc(x.motivo) : ''), '<span class="tag ' + esc(x.status) + '">' + esc(STP[x.status] || x.status) + '</span>'); }).join('');
     var comValor = ['receita','entradas','saidas','nfse'].indexOf(tipo) >= 0;
@@ -377,7 +410,10 @@ document.addEventListener('click', function(e){
   var t = e.target, a;
   if(!t.closest) return;
   if((a = t.closest('#fFecha')) || t.id === 'veu'){ fechaFolha(); return; }
-  if((a = t.closest('[data-det]'))){ var tp = a.getAttribute('data-det'); detalhe(tp, (tp === 'entradas' || tp === 'saidas') ? (window.__hagMesCx || a.getAttribute('data-mes')) : a.getAttribute('data-mes'), a.getAttribute('data-tit')); return; }
+  if((a = t.closest('[data-det="areceber"]'))){ areceberDet(); return; }
+  if((a = t.closest('[data-det="entradas"]'))){ detalhe('entradas', a.getAttribute('data-mes'), 'Entrou na conta'); return; }
+  if((a = t.closest('[data-det]'))){ detalhe(a.getAttribute('data-det'), a.getAttribute('data-mes'), a.getAttribute('data-tit')); return; }
+  if((a = t.closest('[data-mesdin]'))){ mesDinheiro(a.getAttribute('data-mesdin')); return; }
   if((a = t.closest('[data-pac]'))){ pacienteCiclo(a.getAttribute('data-pac'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-prop]'))){ propostaDet(a.getAttribute('data-prop'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-conv]'))){ var cv = a.getAttribute('data-conv').split('|'); detalhe('propostas', cv[0], a.getAttribute('data-nome'), cv[1]); return; }
