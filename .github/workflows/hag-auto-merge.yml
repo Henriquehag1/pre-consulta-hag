@@ -1,0 +1,59 @@
+# HAG_AUTO_MERGE_v1 (31/10/2026)
+# POR QUE: o Dr. Henrique autorizou (31/10, "autorizo o item 2") que os pedidos de
+# publicacao abertos pelo Claude entrem no ar sozinhos quando o teste passar, para
+# nao precisar autorizar cada merge. O check "Testes e integridade" (hag-os-ci.yml)
+# continua obrigatorio e e ele quem decide: este workflow so roda DEPOIS dele, e so
+# faz o merge quando ele termina com sucesso.
+#
+# TRAVAS (o repositorio e publico, entao qualquer um pode abrir PR):
+#   . so branch com nome claude/...;
+#   . so PR aberto a partir DESTE repositorio (fork nunca entra);
+#   . so PR aberto pela conta dona do repositorio;
+#   . o workflow nao faz checkout nem roda codigo do PR, so chama a API do GitHub.
+# Para desligar: apagar este arquivo, ou desativar o workflow em Actions.
+name: HAG auto-merge
+
+on:
+  workflow_run:
+    workflows: ["HAG OS CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  pages: write
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'claude/') &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Merge do PR aprovado pelo teste
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          DONO: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number,author,headRefOid,isCrossRepository \
+               --jq "map(select(.isCrossRepository == false and .author.login == \"$DONO\" and .headRefOid == \"$SHA\")) | .[0].number // empty")
+          if [ -z "$pr" ]; then
+            echo "Nenhum PR elegivel (branch $BRANCH, commit $SHA). Nada a fazer."
+            exit 0
+          fi
+          echo "Fazendo merge do PR #$pr ($BRANCH, commit testado $SHA)"
+          gh pr merge "$pr" -R "$REPO" --merge --delete-branch --match-head-commit "$SHA"
+      # O site e publicado pelo GitHub Pages a partir do main. Merge feito pelo
+      # GITHUB_TOKEN pode nao disparar a publicacao sozinho; pede explicitamente.
+      - name: Pedir a publicacao do site
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: gh api -X POST "repos/$REPO/pages/builds" || echo "Pedido de publicacao nao aceito; o Pages publica no proximo push."
