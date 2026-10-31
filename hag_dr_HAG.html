@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- HAG_DR_APP_v1 (31/10/2026)
+<!-- HAG_DR_APP_v1 (31/10/2026) + HAG_DR_DETALHE_v2: cada numero, renovacao, proposta e mes de conversao
+     abre o que esta por tras (hag_dr_detalhe e hag_dr_paciente_ciclo, mesma regra das views).
      POR QUE EXISTE: o HAG OS so abria no Mac. O Dr. pediu no celular, como ja tem
      o Tarefas, o HAG Treino e o HAG Cozinha, quatro coisas: check-ins com resposta
      pronta, agenda do dia com briefing, propostas e renovacoes, e resumo financeiro.
@@ -76,6 +77,21 @@ h2:first-child{margin-top:4px}
 .dias button{font:inherit;font-size:13px;padding:6px 12px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--ink2);white-space:nowrap}
 .dias button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .nego{padding:24px 8px;text-align:center;color:var(--ink2)}
+/* HAG_DR_DETALHE_v2: tudo que tem numero ou nome abre o que esta por tras */
+.kpi[data-det],.row[data-pac],.row[data-prop],.row[data-conv]{cursor:pointer}
+.kpi[data-det] .l::after,.row[data-pac] .nome::after,.row[data-prop] .nome::after,.row[data-conv] .nome::after{content:' ›';color:var(--ink3);font-weight:400}
+.veu{position:fixed;inset:0;background:rgba(20,24,36,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.veu[hidden]{display:none}
+.folha{background:var(--bg);width:100%;max-width:720px;max-height:88vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.folha .fc{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.folha .fc b{flex:1;font-family:var(--fs);font-size:17px;font-weight:400}
+.folha .fc button{font:inherit;font-size:14px;border:0;background:none;color:var(--azul)}
+.folha .fb{overflow-y:auto;padding:10px 16px 18px;-webkit-overflow-scrolling:touch}
+.li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #ebe6d8}
+.li:last-child{border-bottom:0}
+.li .q{flex:1;min-width:0}
+.li .vl{font-family:var(--fm);font-size:13px;white-space:nowrap;text-align:right}
+.tot{display:flex;justify-content:space-between;font-weight:600;padding:8px 0 4px;border-top:2px solid var(--line);margin-top:4px}
 </style>
 </head>
 <body>
@@ -87,6 +103,7 @@ h2:first-child{margin-top:4px}
   <button data-aba="vendas"><b>◎</b>Vendas</button>
   <button data-aba="fin"><b>$</b>Financeiro</button>
 </nav>
+<div class="veu" id="veu" hidden><div class="folha"><div class="fc"><b id="fTit"></b><button type="button" id="fFecha">Fechar</button></div><div class="fb" id="fCorpo"></div></div></div>
 <script>
 (function(){
 'use strict';
@@ -165,7 +182,7 @@ function pintaHoje(dias, doDia){
     if(ab){
       x += '<div class="corpo">' + (MSG[k] ? '<div class="msg">' + MSG[k] + '</div>' : '')
         + (b && b.conteudo_md ? '<div class="md">' + md2html(b.conteudo_md) + '</div>' : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
-        + '<div class="acoes">' + (b && b.conteudo_md ? '<button data-pedir="novo" data-k="' + esc(k) + '">Atualizar só o novo</button>' : '<button class="pri" data-pedir="completo" data-k="' + esc(k) + '">Pedir o briefing</button>') + '</div></div>';
+        + '<div class="acoes">' + (b && b.conteudo_md ? '<button data-pedir="novo" data-k="' + esc(k) + '">Atualizar só o novo</button>' : '<button class="pri" data-pedir="completo" data-k="' + esc(k) + '">Pedir o briefing</button>') + '<button data-pac="' + esc(r.patient_id) + '" data-nome="' + esc(r.patient_nome || '') + '">Ver o ciclo</button></div></div>';
     }
     return x + '</div>';
   }).join('');
@@ -238,18 +255,18 @@ function abaVendas(){
     h += prox.length ? prox.map(function(r){
       var d = dataRef(r), atras = d < h0 && !r.proposta_status;
       var rot = r.momento === 'penultima' ? 'Conversa de renovação' : 'Fechamento do ciclo';
-      return '<div class="card row"><div class="q"><div class="nome">' + esc(r.patient_nome || r.patient_id) + '</div><div class="sub">' + rot + ' · ' + esc(NOMEPLANO[r.tipo_ciclo] || r.tipo_ciclo || '') + '</div>'
+      return '<div class="card row" data-pac="' + esc(r.patient_id) + '" data-nome="' + esc(r.patient_nome || '') + '"><div class="q"><div class="nome">' + esc(r.patient_nome || r.patient_id) + '</div><div class="sub">' + rot + ' · ' + esc(NOMEPLANO[r.tipo_ciclo] || r.tipo_ciclo || '') + '</div>'
         + '<div class="meta">' + diaRot(d) + (r.proposta_status ? ' · proposta ' + esc(STP[r.proposta_status] || r.proposta_status) : '') + '</div></div>'
         + '<span class="tag ' + (atras ? 'atrasada' : r.proposta_status === 'aceita' ? 'aceita' : r.momento) + '">' + (atras ? 'Passou' : r.proposta_status === 'aceita' ? 'Renovou' : r.momento === 'penultima' ? 'Penúltima' : 'Fechamento') + '</span></div>';
     }).join('') : '<div class="vazio">Ninguém na penúltima consulta nem no fechamento nos próximos 60 dias.</div>';
     if(depois) h += '<div class="meta" style="margin:2px 4px 0">Mais ' + depois + ' para depois de 60 dias.</div>';
     h += '<h2>Ficaram de pensar</h2>' + (abertas.length ? abertas.map(function(p){
-      return '<div class="card row"><div class="q"><div class="nome">' + esc(p.patient_nome || '') + '</div><div class="sub">' + esc(p.resumo || '') + '</div><div class="meta">' + dm(p.criado_em) + ' · <span class="din">' + brl(p.valor_pix) + '</span></div></div><span class="tag ' + p.status + '">' + esc(STP[p.status] || p.status) + '</span></div>';
+      return '<div class="card row" data-prop="' + esc(p.id) + '" data-nome="' + esc(p.patient_nome || '') + '"><div class="q"><div class="nome">' + esc(p.patient_nome || '') + '</div><div class="sub">' + esc(p.resumo || '') + '</div><div class="meta">' + dm(p.criado_em) + ' · <span class="din">' + brl(p.valor_pix) + '</span></div></div><span class="tag ' + p.status + '">' + esc(STP[p.status] || p.status) + '</span></div>';
     }).join('') : '<div class="vazio">Nenhuma proposta esperando resposta.</div>');
     var MOM = { entrada:'Entrada', renovacao:'Renovação', dia:'O dia' };
     h += '<h2>Conversão</h2>' + (fun.length ? '<div class="card" style="padding:4px 0">' + fun.map(function(f){
       var mm = String(f.mes).split('-');
-      return '<div class="row" style="cursor:default"><div class="q"><div class="nome">' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '</div><div class="sub">' + f.aceitas + ' de ' + f.propostas + ' aceitas · ' + f.vai_pensar + ' pensando</div></div>'
+      return '<div class="row" data-conv="' + esc(String(f.mes).slice(0,10)) + '|' + esc(f.momento) + '" data-nome="Propostas ' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '"><div class="q"><div class="nome">' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '</div><div class="sub">' + f.aceitas + ' de ' + f.propostas + ' aceitas · ' + f.vai_pensar + ' pensando</div></div>'
         + '<div style="text-align:right"><div class="nome">' + (f.conversao_pct == null ? '—' : f.conversao_pct + '%') + '</div><div class="meta din">' + brl(f.valor_aceito) + '</div></div></div>';
     }).join('') + '</div>' : '<div class="vazio">As propostas aparecem aqui quando o resultado da conversa é registrado no Mac.</div>');
     W(h);
@@ -265,22 +282,87 @@ function abaFin(){
     var a = k[0] || {}, b = k[1] || {}, c0 = cx[0] || {};
     var nfTot = nf.reduce(function(s, x){ return s + (+x.valor_bruto || 0); }, 0);
     var nfAtras = nf.filter(function(x){ return x.prazo_status && x.prazo_status !== 'normal'; }).length;
-    function kp(l, v, c, din){ return '<div class="kpi"><div class="l">' + l + '</div><div class="v' + (din ? ' din' : '') + '">' + v + '</div>' + (c ? '<div class="c">' + c + '</div>' : '') + '</div>'; }
+    function kp(l, v, c, din, det){ return '<div class="kpi"' + (det ? ' data-det="' + det + '" data-mes="' + esc(String(a.mes || '').slice(0,10)) + '" data-tit="' + esc(l) + '"' : '') + '><div class="l">' + l + '</div><div class="v' + (din ? ' din' : '') + '">' + v + '</div>' + (c ? '<div class="c">' + c + '</div>' : '') + '</div>'; }
     var h = '<div class="acoes" style="margin:0 0 6px;justify-content:flex-end"><button id="olho">' + (OCULTO ? 'Mostrar valores' : 'Esconder valores') + '</button></div>';
     h += '<h2>' + (a.mes_txt ? a.mes_txt.split('-').reverse().join('/') : 'Mês atual') + '</h2><div class="kpis">'
-      + kp('Receita lançada', brl(a.receita), b.mes_txt ? 'mês anterior ' + '<span class="din">' + brl(b.receita) + '</span>' : '', true)
-      + kp('Pacientes ativos', a.pacientes_ativos == null ? '—' : a.pacientes_ativos, (a.pagantes == null ? '' : a.pagantes + ' pagaram no mês'))
-      + kp('Renovações', a.renovacoes == null ? '—' : a.renovacoes, a.taxa_renovacao == null ? '' : 'taxa ' + a.taxa_renovacao + '% (' + (a.renovados||0) + ' de ' + (a.ciclos_vencidos||0) + ' que venceram)')
-      + kp('Consultas', a.consultas == null ? '—' : a.consultas, (a.faltas || 0) + ' faltas · ' + (a.pacientes_novos || 0) + ' pacientes novos')
+      + kp('Receita lançada', brl(a.receita), b.mes_txt ? 'mês anterior ' + '<span class="din">' + brl(b.receita) + '</span>' : '', true, 'receita')
+      + kp('Pacientes ativos', a.pacientes_ativos == null ? '—' : a.pacientes_ativos, (a.pagantes == null ? '' : a.pagantes + ' pagaram no mês'), false, 'ativos')
+      + kp('Renovações', a.renovacoes == null ? '—' : a.renovacoes, a.taxa_renovacao == null ? '' : 'taxa ' + a.taxa_renovacao + '% (' + (a.renovados||0) + ' de ' + (a.ciclos_vencidos||0) + ' que venceram)', false, 'renovacoes')
+      + kp('Consultas', a.consultas == null ? '—' : a.consultas, (a.faltas || 0) + ' faltas · ' + (a.pacientes_novos || 0) + ' pacientes novos', false, 'consultas')
       + '</div>';
+    var mesCx = c0.competencia ? c0.competencia + '-01' : null;
     h += '<h2>Banco (extrato importado) · ' + (c0.competencia ? c0.competencia.split('-').reverse().join('/') : '') + '</h2><div class="kpis">'
-      + kp('Entradas', brl(c0.receita_caixa), '', true)
-      + kp('Saídas', brl(Math.abs(+c0.despesa_caixa || 0)), (c0.pendentes_classificacao ? c0.pendentes_classificacao + ' sem categoria' : ''), true)
+      + kp('Entradas', brl(c0.receita_caixa), '', true, 'entradas')
+      + kp('Saídas', brl(Math.abs(+c0.despesa_caixa || 0)), (c0.pendentes_classificacao ? c0.pendentes_classificacao + ' sem categoria' : ''), true, 'saidas')
       + '</div>';
-    h += '<h2>Notas fiscais</h2><div class="kpis">' + kp('NFSe pendentes', nf.length, '<span class="din">' + brl(nfTot) + '</span>' + (nfAtras ? ' · ' + nfAtras + ' fora do prazo' : '')) + '</div>';
+    h += '<h2>Notas fiscais</h2><div class="kpis">' + kp('NFSe pendentes', nf.length, '<span class="din">' + brl(nfTot) + '</span>' + (nfAtras ? ' · ' + nfAtras + ' fora do prazo' : ''), false, 'nfse') + '</div>';
     h += '<div class="meta" style="margin:10px 4px">Só leitura. Lançar, conciliar e emitir continuam no Financeiro do Mac.</div>';
+    window.__hagMesCx = mesCx;
     W(h); document.body.classList.toggle('oculto', OCULTO);
   }).catch(falha);
+}
+
+/* ── DETALHE (HAG_DR_DETALHE_v2) ───────────────────────────────────── */
+var STRET = { realizada:'realizada', faltou:'faltou', cancelada:'cancelada', agendada:'agendada', pendente:'a marcar', confirmada:'confirmada' };
+var CAT = { m1:'Consulta', m2c:'Plano', m3:'Injetável', m4:'Implante', plano:'Plano', injetavel:'Injetável', implante:'Implante', consulta:'Consulta' };
+function folha(tit, html){ document.getElementById('fTit').textContent = tit; document.getElementById('fCorpo').innerHTML = html; document.getElementById('veu').hidden = false; document.getElementById('fCorpo').scrollTop = 0; }
+function fechaFolha(){ document.getElementById('veu').hidden = true; }
+function li(nome, sub, vl, din){ return '<div class="li"><div class="q"><div class="nome" style="font-weight:500">' + nome + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>' + (vl != null ? '<div class="vl' + (din ? ' din' : '') + '">' + vl + '</div>' : '') + '</div>'; }
+function plano(t){ return esc(NOMEPLANO[t] || t || ''); }
+function detalhe(tipo, mes, tit, momento){
+  folha(tit, '<div class="vazio">Carregando…</div>');
+  return rpc('hag_dr_detalhe', { p_tipo: tipo, p_mes: mes || null, p_momento: momento || null }).then(function(d){
+    var h = '', soma = 0;
+    if(tipo === 'renovacoes'){
+      var ini = d.iniciadas || [], ven = d.venceram || [];
+      h += '<h2>Ciclos renovados que começaram no mês (' + ini.length + ')</h2>' + (ini.length ? ini.map(function(x){ return li(esc(x.nome), plano(x.tipo_ciclo) + ' · começou ' + dm(x.inicio)); }).join('') : '<div class="vazio">Nenhum.</div>');
+      h += '<h2>Ciclos que venceram no mês (' + ven.length + ')</h2>' + (ven.length ? ven.map(function(x){ return li(esc(x.nome), plano(x.tipo_ciclo) + ' · venceu ' + dm(x.fim), x.renovou ? '<span class="tag aceita">renovou</span>' : '<span class="tag atrasada">não renovou</span>'); }).join('') : '<div class="vazio">Nenhum.</div>');
+      folha(tit, h); return;
+    }
+    d = d || [];
+    if(!d.length){ folha(tit, '<div class="vazio">Nada neste período.</div>'); return; }
+    d.forEach(function(x){ soma += +x.valor || 0; });
+    if(tipo === 'receita') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.servico || '') + (x.forma ? ' · ' + esc(x.forma) : '') + (x.nfse === 'pendente' ? ' · NFSe pendente' : ''), brl(x.valor), true); }).join('');
+    else if(tipo === 'ativos') h = d.map(function(x){ return li(esc(x.nome), plano(x.tipo_ciclo) + ' · ' + dm(x.inicio) + ' a ' + dm(x.fim)); }).join('');
+    else if(tipo === 'consultas') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.consulta || '') + (x.local ? ' · ' + esc(x.local) : ''), '<span class="tag ' + (x.status === 'faltou' ? 'atrasada' : 'aceita') + '">' + esc(STRET[x.status] || x.status) + '</span>'); }).join('');
+    else if(tipo === 'entradas' || tipo === 'saidas') h = d.map(function(x){ return li(esc(x.nome || 'sem nome'), dm(x.data) + ' · ' + esc(String(x.categoria || '').replace(/_/g,' ')), brl(Math.abs(+x.valor)), true); }).join('');
+    else if(tipo === 'nfse') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.servico || '') + (x.prazo && x.prazo !== 'normal' ? ' · <b style="color:var(--verm)">fora do prazo</b>' : ''), brl(x.valor), true); }).join('');
+    else if(tipo === 'propostas') h = d.map(function(x){ return li(esc(x.nome), dm(x.data) + ' · ' + esc(x.resumo || '') + (x.motivo ? ' · ' + esc(x.motivo) : ''), '<span class="tag ' + esc(x.status) + '">' + esc(STP[x.status] || x.status) + '</span>'); }).join('');
+    var comValor = ['receita','entradas','saidas','nfse'].indexOf(tipo) >= 0;
+    folha(tit, h + (comValor ? '<div class="tot"><span>' + d.length + ' lançamentos</span><span class="din">' + brl(Math.abs(soma)) + '</span></div>' : '<div class="meta" style="margin-top:8px">' + d.length + ' no total</div>'));
+  }).catch(function(e){ folha(tit, '<div class="msg erro">Não consegui abrir: ' + esc(e.message) + '</div>'); });
+}
+function itensHtml(itens){
+  return (Array.isArray(itens) ? itens : []).map(function(i){ return li(esc(i.nome || ''), esc(CAT[i.cat] || i.cat || ''), (i.pix != null ? 'Pix ' + brl(i.pix) : '') + (i.cartao != null ? '<br>cartão ' + brl(i.cartao) : ''), true); }).join('');
+}
+function pacienteCiclo(pid, nome){
+  folha(nome || 'Paciente', '<div class="vazio">Carregando…</div>');
+  return rpc('hag_dr_paciente_ciclo', { p_patient_id: pid }).then(function(d){
+    d = d || {}; var c = d.ciclo, h = '';
+    h += c ? '<div class="card" style="padding:10px 12px"><div class="nome">' + plano(c.tipo_ciclo) + '</div><div class="sub">de ' + dm(c.inicio) + ' a ' + dm(c.fim) + '</div></div>' : '<div class="vazio">Sem ciclo ativo.</div>';
+    var cs = d.consultas || [];
+    if(cs.length) h += '<h2>Consultas do ciclo</h2>' + cs.map(function(x){
+      var st = x.status || 'pendente', cls = st === 'realizada' ? 'aceita' : st === 'faltou' || st === 'cancelada' ? 'atrasada' : x.fechamento ? 'fechamento' : '';
+      return li(esc(x.nome || ''), (x.data ? diaRot(String(x.data).slice(0,10)) : 'sem data') + (x.local ? ' · ' + esc(x.local) : '') + (x.fechamento ? ' · fechamento' : ''), '<span class="tag ' + cls + '">' + esc(STRET[st] || st) + '</span>');
+    }).join('');
+    var p = d.proposta;
+    h += '<h2>Última proposta</h2>' + (p ? '<div class="card" style="padding:10px 12px"><div class="nome">' + esc(p.resumo || '') + ' <span class="tag ' + esc(p.status) + '">' + esc(STP[p.status] || p.status) + '</span></div><div class="sub">' + dm(p.data) + (p.pagamento ? ' · ' + esc(p.pagamento) : '') + (p.motivo ? ' · ' + esc(p.motivo) : '') + '</div>' + itensHtml(p.itens)
+         + '<div class="tot"><span>Total</span><span class="din">' + brl(p.valor_cobrado != null ? p.valor_cobrado : p.valor_pix) + '</span></div></div>' : '<div class="vazio">Nenhuma proposta registrada ainda.</div>');
+    var k = d.checkin, t = d.triagem;
+    h += '<h2>Último check-in</h2>' + (k ? li(dm(k.data) + ' · ' + esc(k.tipo || ''), (k.peso ? 'peso ' + esc(k.peso) : '') + (t && t.motivo ? (k.peso ? ' · ' : '') + esc(t.motivo) : ''), t && t.status === 'pendente' ? '<a class="tag responder" style="text-decoration:none" href="triagem_HAG.html?id=' + encodeURIComponent(t.id) + '&de=dr">responder ›</a>' : null) : '<div class="vazio">Sem check-in.</div>');
+    folha(nome || 'Paciente', h);
+  }).catch(function(e){ folha(nome || 'Paciente', '<div class="msg erro">Não consegui abrir: ' + esc(e.message) + '</div>'); });
+}
+function propostaDet(id, nome){
+  folha(nome || 'Proposta', '<div class="vazio">Carregando…</div>');
+  return api('propostas?select=*&id=eq.' + encodeURIComponent(id)).then(function(r){
+    var p = (r || [])[0]; if(!p){ folha(nome, '<div class="vazio">Proposta não encontrada.</div>'); return; }
+    var MOMP = { entrada:'entrada', renovacao:'renovação', dia:'no dia' };
+    folha(nome || p.patient_nome, '<div class="card" style="padding:10px 12px"><div class="nome">' + esc(p.resumo || '') + '</div><div class="sub">' + dm(p.criado_em) + ' · ' + esc(MOMP[p.momento] || p.momento || '') + ' · ' + esc(STP[p.status] || p.status) + '</div>'
+      + itensHtml(p.itens) + '<div class="tot"><span>Total no Pix</span><span class="din">' + brl(p.valor_pix) + '</span></div>' + (p.valor_cartao != null ? '<div class="li"><div class="q">Total no cartão</div><div class="vl din">' + brl(p.valor_cartao) + '</div></div>' : '') + '</div>'
+      + (p.observacoes ? '<div class="msg">' + esc(p.observacoes) + '</div>' : '')
+      + '<div class="meta" style="margin-top:8px">O desfecho (aceitou ou não seguiu) é registrado no Mac, na tela Propostas.</div>');
+  }).catch(function(e){ folha(nome, '<div class="msg erro">Não consegui abrir: ' + esc(e.message) + '</div>'); });
 }
 
 /* ── navegação ─────────────────────────────────────────────────────── */
@@ -294,6 +376,11 @@ function abrir(aba){
 document.addEventListener('click', function(e){
   var t = e.target, a;
   if(!t.closest) return;
+  if((a = t.closest('#fFecha')) || t.id === 'veu'){ fechaFolha(); return; }
+  if((a = t.closest('[data-det]'))){ var tp = a.getAttribute('data-det'); detalhe(tp, (tp === 'entradas' || tp === 'saidas') ? (window.__hagMesCx || a.getAttribute('data-mes')) : a.getAttribute('data-mes'), a.getAttribute('data-tit')); return; }
+  if((a = t.closest('[data-pac]'))){ pacienteCiclo(a.getAttribute('data-pac'), a.getAttribute('data-nome')); return; }
+  if((a = t.closest('[data-prop]'))){ propostaDet(a.getAttribute('data-prop'), a.getAttribute('data-nome')); return; }
+  if((a = t.closest('[data-conv]'))){ var cv = a.getAttribute('data-conv').split('|'); detalhe('propostas', cv[0], a.getAttribute('data-nome'), cv[1]); return; }
   if((a = t.closest('#tabs [data-aba]'))){ abrir(a.getAttribute('data-aba')); return; }
   if((a = t.closest('#recarregar'))){ abrir(ABA); contaCheckins(); return; }
   if((a = t.closest('[data-dia]'))){ DIA = a.getAttribute('data-dia'); ABERTO = null; abaHoje(); return; }
