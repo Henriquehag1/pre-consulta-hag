@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- HAG_DR_APP_v1 (31/10/2026)
+     POR QUE EXISTE: o HAG OS so abria no Mac. O Dr. pediu no celular, como ja tem
+     o Tarefas, o HAG Treino e o HAG Cozinha, quatro coisas: check-ins com resposta
+     pronta, agenda do dia com briefing, propostas e renovacoes, e resumo financeiro.
+     O HAG OS do Mac NAO vem para ca (o repositorio e publico e aquele codigo tem
+     precos e logica clinica). Esta pagina e leve: so le o banco com o login do Dr.
+     (RLS), e nao carrega tabela de preco nem dado de paciente no codigo.
+     Fontes: hag_agenda_briefing + briefings (e pedido em briefing_pedidos, que o
+     Mac processa em 1 minuto), checkin_triagem, hag_dr_renovacoes +
+     v_propostas_funil + propostas, v_kpis_mensal + v_caixa_mensal + v_nfse_pendentes.
+     So o login do Dr. passa da porta: a Daniela tem login, mas este app e dele. -->
+<script>
+window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';
+window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
+window.HAG_EXIGIR_LOGIN=true;
+</script>
+<script src="hag_auth.js?v=20261021-1353"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HAG Dr">
+<meta name="theme-color" content="#1B2745">
+<link rel="manifest" href="manifest-dr.json">
+<link rel="apple-touch-icon" href="icone-dr-180.png">
+<title>HAG Dr</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#1B2745;--gold:#C9A55E;--gold2:#9A7B3F;--line:#E4DECB;--ink:#1a1a1a;--ink2:#5a5a55;--ink3:#8a8578;--bg:#f4f4f0;
+      --verde:#2F6B4A;--verde-bg:#e3f0e8;--verm:#9C2B2B;--verm-bg:#f8e4e4;--amb:#8a5a12;--amb-bg:#f8eedb;--azul:#2563a8;--azul-bg:#e8f0fa;
+      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:Georgia,'Times New Roman',serif}
+html,body{background:var(--bg)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:var(--ink);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+.top{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
+.top .ti{font-family:var(--fs);font-size:19px;flex:1}
+.top button{font:inherit;font-size:13px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 10px}
+.wrap{max-width:720px;margin:0 auto;padding:12px 16px calc(84px + env(safe-area-inset-bottom))}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:6}
+.tabs button{flex:1;font:inherit;font-size:11.5px;background:none;border:0;padding:9px 2px 8px;color:var(--ink3);position:relative}
+.tabs button b{display:block;font-size:19px;line-height:1.1;font-weight:400}
+.tabs button.on{color:var(--navy);font-weight:600}
+.tabs .badge{position:absolute;top:4px;left:calc(50% + 6px);background:var(--verm);color:#fff;font-size:10px;border-radius:9px;padding:1px 5px;font-weight:600}
+h2{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2);margin:18px 0 8px}
+h2:first-child{margin-top:4px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+.row{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;cursor:pointer}
+.row .q{flex:1;min-width:0}
+.nome{font-weight:600}
+.sub{color:var(--ink2);font-size:13.5px;margin-top:1px}
+.meta{font-family:var(--fm);font-size:11px;color:var(--ink3);margin-top:3px}
+.hora{font-family:var(--fm);font-size:13px;color:var(--navy);min-width:44px;padding-top:1px}
+.tag{font-family:var(--fm);font-size:10px;letter-spacing:.04em;padding:3px 8px;border-radius:10px;white-space:nowrap;text-transform:uppercase;background:#ecebe5;color:var(--ink2)}
+.tag.fechamento,.tag.urgente,.tag.atrasada{background:var(--verm-bg);color:var(--verm)}
+.tag.penultima,.tag.responder{background:var(--azul-bg);color:var(--azul)}
+.tag.logistica,.tag.vai_pensar{background:var(--amb-bg);color:var(--amb)}
+.tag.aceita{background:var(--verde-bg);color:var(--verde)}
+.corpo{border-top:1px solid var(--line);padding:12px 14px 14px}
+.md h2{font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold2);margin:12px 0 4px}
+.md p{margin:4px 0}.md ul{margin:4px 0 4px 18px}.md .cab{font-family:var(--fs);font-size:16px;margin-bottom:6px}
+.vazio{color:var(--ink3);padding:14px 4px;text-align:center}
+.msg{border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px;background:var(--azul-bg);color:var(--azul)}
+.msg.erro{background:var(--verm-bg);color:var(--verm)}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.acoes button,.acoes a{font:inherit;font-size:14px;padding:8px 13px;border-radius:9px;border:1px solid #cdbf9c;background:#fff;color:var(--ink);text-decoration:none}
+.acoes .pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi .v{font-family:var(--fs);font-size:21px;margin-top:2px}
+.kpi .l{font-size:12px;color:var(--ink2)}
+.kpi .c{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.oculto .din{filter:blur(7px)}
+.dias{display:flex;gap:6px;margin:2px 0 8px;overflow-x:auto}
+.dias button{font:inherit;font-size:13px;padding:6px 12px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--ink2);white-space:nowrap}
+.dias button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.nego{padding:24px 8px;text-align:center;color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="top"><span class="ti">HAG Dr</span><button type="button" id="recarregar">Atualizar</button></div>
+<div class="wrap" id="wrap"><div class="vazio">Carregando…</div></div>
+<nav class="tabs" id="tabs">
+  <button data-aba="hoje" class="on"><b>◷</b>Agenda</button>
+  <button data-aba="checkins"><b>✉︎</b>Check-ins<span class="badge" id="bdgCk" hidden></span></button>
+  <button data-aba="vendas"><b>◎</b>Vendas</button>
+  <button data-aba="fin"><b>$</b>Financeiro</button>
+</nav>
+<script>
+(function(){
+'use strict';
+var URL_ = window.SUPA_URL, KEY = window.SUPA_KEY, DR = 'drhenrique@clinicahag.com';
+var ABA = 'hoje', DIA = null, AG = [], BR = {}, ABERTO = null, OCULTO = false, MSG = {};
+var NOMEPLANO = { ciclo_essencial:'Ciclo Essencial', ciclo_reset:'Ciclo Reset', ciclo_transformar:'Ciclo Transforma', manutencao_intermediario:'Manutenção Plus',
+  manutencao_premium:'Manutenção Premium', smart_90:'Protocolo Smart 90', ciclo_manutencao:'Manutenção Base', smart_continuidade:'Protocolo Smart Continuidade',
+  particular_bimestrais:'Consultas particulares' };
+var TIPO = { fechamento:'Fechamento', retorno:'Retorno', diagnostica:'Diagnóstica', procedimento:'Procedimento' };
+
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function hojeISO(off){ var d = new Date(Date.now() + (off||0)*86400000); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function dm(iso){ var m = String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] : ''; }
+var SEM = ['dom','seg','ter','qua','qui','sex','sáb'];
+function diaRot(iso){ if(iso === hojeISO()) return 'Hoje'; if(iso === hojeISO(1)) return 'Amanhã'; var d = new Date(iso + 'T12:00:00'); return SEM[d.getDay()] + ' ' + dm(iso); }
+function brl(n){ return n == null || isNaN(+n) ? '—' : 'R$ ' + Math.round(+n).toLocaleString('pt-BR'); }
+function api(path, init){
+  init = init || {};
+  init.headers = Object.assign({ apikey:KEY, Authorization:'Bearer ' + KEY, 'Content-Type':'application/json' }, init.headers || {});
+  return fetch(URL_ + '/rest/v1/' + path, init).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + (t ? ': ' + t.slice(0,140) : '')); });
+    return r.status === 204 ? null : r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+  });
+}
+function rpc(nome, corpo){ return api('rpc/' + nome, { method:'POST', body: JSON.stringify(corpo || {}) }); }
+function emailLogado(){
+  try{ var tk = window.HAGAuth && window.HAGAuth.token && window.HAGAuth.token(); if(!tk) return '';
+    var p = JSON.parse(atob(tk.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); return String(p.email || '').toLowerCase(); }catch(e){ return ''; }
+}
+function md2html(md){
+  var linhas = String(md||'').split(/\r?\n/), out = [], emUl = false, cab = [], iniciou = false;
+  function fechaUl(){ if(emUl){ out.push('</ul>'); emUl = false; } }
+  function inl(t){ return esc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'); }
+  for(var i = 0; i < linhas.length; i++){
+    var L = linhas[i].trim();
+    if(!iniciou && /^#\s+/.test(L)){ cab.push(inl(L.replace(/^#\s+/,''))); continue; }
+    if(!iniciou && /^([-*_])\1{2,}$/.test(L)) continue;
+    if(!iniciou && L && L.indexOf('#') !== 0){ cab.push(inl(L)); continue; }
+    if(/^#{2,3}\s/.test(L)) iniciou = true;
+    if(!L){ fechaUl(); continue; }
+    if(/^([-*_])\1{2,}$/.test(L)){ fechaUl(); continue; }
+    var h = L.match(/^#{1,3}\s*(.+)$/);
+    if(h){ fechaUl(); out.push('<h2>' + inl(h[1]) + '</h2>'); continue; }
+    if(/^[-*•]\s+/.test(L)){ if(!emUl){ out.push('<ul>'); emUl = true; } out.push('<li>' + inl(L.replace(/^[-*•]\s+/,'')) + '</li>'); continue; }
+    fechaUl(); out.push('<p>' + inl(L) + '</p>');
+  }
+  fechaUl();
+  return (cab.length ? '<div class="cab">' + cab.join('<br>') + '</div>' : '') + out.join('');
+}
+function W(h){ document.getElementById('wrap').innerHTML = h; }
+function falha(e){ W('<div class="msg erro">Não consegui ler: ' + esc(e && e.message || e) + '</div>'); }
+
+/* ── AGENDA + BRIEFING ─────────────────────────────────────────────── */
+function abaHoje(){
+  W('<div class="vazio">Carregando a agenda…</div>');
+  return rpc('hag_agenda_briefing', { p_de: hojeISO(), p_ate: hojeISO(7) }).then(function(rows){
+    AG = (rows || []).slice().sort(function(a,b){ return (a.data_consulta + (a.hora||'')).localeCompare(b.data_consulta + (b.hora||'')); });
+    var dias = []; AG.forEach(function(r){ if(dias.indexOf(r.data_consulta) < 0) dias.push(r.data_consulta); });
+    if(!DIA || dias.indexOf(DIA) < 0) DIA = dias[0] || hojeISO();
+    var doDia = AG.filter(function(r){ return r.data_consulta === DIA; });
+    var ids = doDia.map(function(r){ return r.patient_id; });
+    return (ids.length ? api('briefings?select=patient_id,data_consulta,conteudo_md,gerado_em,regenerado_em,erro&data_consulta=eq.' + DIA + '&patient_id=in.(' + ids.map(encodeURIComponent).join(',') + ')') : Promise.resolve([]))
+      .then(function(bs){ BR = {}; (bs||[]).forEach(function(b){ BR[b.patient_id + '|' + b.data_consulta] = b; }); pintaHoje(dias, doDia); });
+  }).catch(falha);
+}
+function pintaHoje(dias, doDia){
+  var h = '<div class="dias">' + (dias.length ? dias.map(function(d){ return '<button data-dia="' + d + '"' + (d === DIA ? ' class="on"' : '') + '>' + diaRot(d) + '</button>'; }).join('') : '') + '</div>';
+  if(!doDia.length){ W(h + '<div class="vazio">Nenhuma consulta nos próximos 7 dias.</div>'); return; }
+  h += doDia.map(function(r){
+    var k = r.patient_id + '|' + r.data_consulta, b = BR[k], ab = ABERTO === k;
+    var tipo = r.tipo_consulta || '';
+    var x = '<div class="card"><div class="row" data-abre="' + esc(k) + '"><div class="hora">' + esc((r.hora || '').slice(0,5)) + '</div><div class="q"><div class="nome">' + esc(r.patient_nome) + '</div>'
+      + '<div class="sub">' + esc(r.etapa || TIPO[tipo] || '') + ' · ' + esc(r.local || r.modalidade || '') + '</div>'
+      + '<div class="meta">' + (b && b.conteudo_md ? 'briefing pronto' : 'sem briefing ainda') + '</div></div>'
+      + (tipo === 'fechamento' ? '<span class="tag fechamento">Fechamento</span>' : '') + '</div>';
+    if(ab){
+      x += '<div class="corpo">' + (MSG[k] ? '<div class="msg">' + MSG[k] + '</div>' : '')
+        + (b && b.conteudo_md ? '<div class="md">' + md2html(b.conteudo_md) + '</div>' : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
+        + '<div class="acoes">' + (b && b.conteudo_md ? '<button data-pedir="novo" data-k="' + esc(k) + '">Atualizar só o novo</button>' : '<button class="pri" data-pedir="completo" data-k="' + esc(k) + '">Pedir o briefing</button>') + '</div></div>';
+    }
+    return x + '</div>';
+  }).join('');
+  W(h);
+}
+function pedirBriefing(k, tipo){
+  var p = k.split('|'), pid = p[0], data = p[1];
+  MSG[k] = 'Pedido enviado. O Mac começa em até 1 minuto; ele precisa estar ligado.'; pintaAtual();
+  return api('briefing_pedidos', { method:'POST', headers:{ Prefer:'return=representation' }, body: JSON.stringify({ patient_id: pid, data_consulta: data, tipo: tipo }) })
+    .then(function(rows){
+      var ped = (rows || [])[0]; if(!ped || !ped.id) throw new Error('o pedido não voltou do banco');
+      var t0 = Date.now();
+      return new Promise(function(fim){
+        (function olha(){
+          if(Date.now() - t0 > 6*60000){ MSG[k] = 'Ainda não terminou. O pedido continua na fila; toque em Atualizar daqui a pouco.'; pintaAtual(); return fim(); }
+          setTimeout(function(){
+            api('briefing_pedidos?select=status,resumo,erro&id=eq.' + encodeURIComponent(ped.id)).then(function(r){
+              var st = (r || [])[0] || {};
+              if(st.status === 'feito'){ MSG[k] = 'Briefing atualizado. ' + esc(st.resumo || ''); abaHoje().then(fim); return; }
+              if(st.status === 'erro'){ MSG[k] = 'Não atualizou: ' + esc(st.erro || ''); pintaAtual(); return fim(); }
+              if(st.status === 'processando'){ MSG[k] = 'O Mac está gerando o briefing…'; pintaAtual(); }
+              else if(Date.now() - t0 > 90000){ MSG[k] = 'O Mac ainda não pegou o pedido. Ele precisa estar ligado e acordado; o pedido fica na fila.'; pintaAtual(); }
+              olha();
+            }).catch(olha);
+          }, 4000);
+        })();
+      });
+    }).catch(function(e){ MSG[k] = 'Não foi possível pedir: ' + esc(e.message); pintaAtual(); });
+}
+function pintaAtual(){
+  if(ABA !== 'hoje') return;
+  var dias = []; AG.forEach(function(r){ if(dias.indexOf(r.data_consulta) < 0) dias.push(r.data_consulta); });
+  pintaHoje(dias, AG.filter(function(r){ return r.data_consulta === DIA; }));
+}
+
+/* ── CHECK-INS ─────────────────────────────────────────────────────── */
+var NV = { urgente:'Hoje', responder:'Responder', logistica:'Daniela', sem_acao:'Sem ação', erro:'Falhou' };
+var ORDNV = { urgente:0, erro:1, responder:2, logistica:3, sem_acao:4 };
+function contaCheckins(){
+  return api('checkin_triagem?select=id&status=in.(pendente,erro)').then(function(r){
+    var n = (r || []).length, b = document.getElementById('bdgCk'); b.textContent = n; b.hidden = !n;
+  }).catch(function(){});
+}
+function abaCheckins(){
+  W('<div class="vazio">Carregando…</div>');
+  return api('checkin_triagem?select=id,patient_nome,nivel,status,motivo,canal,criado_em&status=in.(pendente,erro)&order=criado_em.desc&limit=60').then(function(rows){
+    rows = (rows || []).sort(function(a,b){ var ka = a.status === 'erro' ? 'erro' : a.nivel, kb = b.status === 'erro' ? 'erro' : b.nivel; return ((ka in ORDNV) ? ORDNV[ka] : 9) - ((kb in ORDNV) ? ORDNV[kb] : 9); });
+    var h = '<h2>A responder</h2>' + (rows.length ? rows.map(function(r){
+      var k = r.status === 'erro' ? 'erro' : r.nivel;
+      return '<a class="card row" style="text-decoration:none;color:inherit" href="triagem_HAG.html?id=' + encodeURIComponent(r.id) + '&de=dr"><div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
+        + '<div class="sub">' + esc(r.motivo || '') + '</div><div class="meta">' + dm(r.criado_em) + ' · ' + (r.canal === 'whatsapp' ? 'WhatsApp' : 'e-mail') + '</div></div><span class="tag ' + k + '">' + NV[k] + '</span></a>';
+    }).join('') : '<div class="vazio">Nenhum check-in esperando resposta.</div>')
+      + '<div class="acoes"><a href="triagem_HAG.html?de=dr">Ver todos dos últimos 30 dias</a></div>';
+    W(h); contaCheckins();
+  }).catch(falha);
+}
+
+/* ── VENDAS: renovacoes e propostas ────────────────────────────────── */
+var STP = { aceita:'aceita', vai_pensar:'vai pensar', recusada:'não seguiu', apresentada:'sem resposta' };
+function abaVendas(){
+  W('<div class="vazio">Carregando…</div>');
+  var h0 = hojeISO(), lim = hojeISO(60);
+  return Promise.all([ rpc('hag_dr_renovacoes'), api('propostas?select=id,patient_nome,status,resumo,valor_pix,criado_em&status=in.(apresentada,vai_pensar)&order=criado_em.desc&limit=30'),
+                       api('v_propostas_funil?select=*&order=mes.desc&limit=6') ]).then(function(res){
+    var ren = res[0] || [], abertas = res[1] || [], fun = res[2] || [];
+    function dataRef(r){ return r.momento === 'penultima' ? r.conversa_data : r.fechamento_data; }
+    var prox = ren.filter(function(r){ var d = dataRef(r); return d && d <= lim; }).sort(function(a,b){ return String(dataRef(a)).localeCompare(String(dataRef(b))); });
+    var depois = ren.length - prox.length;
+    var h = '<h2>Renovações · próximos 60 dias</h2>';
+    h += prox.length ? prox.map(function(r){
+      var d = dataRef(r), atras = d < h0 && !r.proposta_status;
+      var rot = r.momento === 'penultima' ? 'Conversa de renovação' : 'Fechamento do ciclo';
+      return '<div class="card row"><div class="q"><div class="nome">' + esc(r.patient_nome || r.patient_id) + '</div><div class="sub">' + rot + ' · ' + esc(NOMEPLANO[r.tipo_ciclo] || r.tipo_ciclo || '') + '</div>'
+        + '<div class="meta">' + diaRot(d) + (r.proposta_status ? ' · proposta ' + esc(STP[r.proposta_status] || r.proposta_status) : '') + '</div></div>'
+        + '<span class="tag ' + (atras ? 'atrasada' : r.proposta_status === 'aceita' ? 'aceita' : r.momento) + '">' + (atras ? 'Passou' : r.proposta_status === 'aceita' ? 'Renovou' : r.momento === 'penultima' ? 'Penúltima' : 'Fechamento') + '</span></div>';
+    }).join('') : '<div class="vazio">Ninguém na penúltima consulta nem no fechamento nos próximos 60 dias.</div>';
+    if(depois) h += '<div class="meta" style="margin:2px 4px 0">Mais ' + depois + ' para depois de 60 dias.</div>';
+    h += '<h2>Ficaram de pensar</h2>' + (abertas.length ? abertas.map(function(p){
+      return '<div class="card row"><div class="q"><div class="nome">' + esc(p.patient_nome || '') + '</div><div class="sub">' + esc(p.resumo || '') + '</div><div class="meta">' + dm(p.criado_em) + ' · <span class="din">' + brl(p.valor_pix) + '</span></div></div><span class="tag ' + p.status + '">' + esc(STP[p.status] || p.status) + '</span></div>';
+    }).join('') : '<div class="vazio">Nenhuma proposta esperando resposta.</div>');
+    var MOM = { entrada:'Entrada', renovacao:'Renovação', dia:'O dia' };
+    h += '<h2>Conversão</h2>' + (fun.length ? '<div class="card" style="padding:4px 0">' + fun.map(function(f){
+      var mm = String(f.mes).split('-');
+      return '<div class="row" style="cursor:default"><div class="q"><div class="nome">' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '</div><div class="sub">' + f.aceitas + ' de ' + f.propostas + ' aceitas · ' + f.vai_pensar + ' pensando</div></div>'
+        + '<div style="text-align:right"><div class="nome">' + (f.conversao_pct == null ? '—' : f.conversao_pct + '%') + '</div><div class="meta din">' + brl(f.valor_aceito) + '</div></div></div>';
+    }).join('') + '</div>' : '<div class="vazio">As propostas aparecem aqui quando o resultado da conversa é registrado no Mac.</div>');
+    W(h);
+  }).catch(falha);
+}
+
+/* ── FINANCEIRO: so leitura, sem tabela de precos ──────────────────── */
+function abaFin(){
+  W('<div class="vazio">Carregando…</div>');
+  return Promise.all([ api('v_kpis_mensal?select=*&order=mes.desc&limit=2'), api('v_caixa_mensal?select=*&order=competencia.desc&limit=2'),
+                       api('v_nfse_pendentes?select=valor_bruto,prazo_status') ]).then(function(res){
+    var k = res[0] || [], cx = res[1] || [], nf = res[2] || [];
+    var a = k[0] || {}, b = k[1] || {}, c0 = cx[0] || {};
+    var nfTot = nf.reduce(function(s, x){ return s + (+x.valor_bruto || 0); }, 0);
+    var nfAtras = nf.filter(function(x){ return x.prazo_status && x.prazo_status !== 'normal'; }).length;
+    function kp(l, v, c, din){ return '<div class="kpi"><div class="l">' + l + '</div><div class="v' + (din ? ' din' : '') + '">' + v + '</div>' + (c ? '<div class="c">' + c + '</div>' : '') + '</div>'; }
+    var h = '<div class="acoes" style="margin:0 0 6px;justify-content:flex-end"><button id="olho">' + (OCULTO ? 'Mostrar valores' : 'Esconder valores') + '</button></div>';
+    h += '<h2>' + (a.mes_txt ? a.mes_txt.split('-').reverse().join('/') : 'Mês atual') + '</h2><div class="kpis">'
+      + kp('Receita lançada', brl(a.receita), b.mes_txt ? 'mês anterior ' + '<span class="din">' + brl(b.receita) + '</span>' : '', true)
+      + kp('Pacientes ativos', a.pacientes_ativos == null ? '—' : a.pacientes_ativos, (a.pagantes == null ? '' : a.pagantes + ' pagaram no mês'))
+      + kp('Renovações', a.renovacoes == null ? '—' : a.renovacoes, a.taxa_renovacao == null ? '' : 'taxa ' + a.taxa_renovacao + '% (' + (a.renovados||0) + ' de ' + (a.ciclos_vencidos||0) + ' que venceram)')
+      + kp('Consultas', a.consultas == null ? '—' : a.consultas, (a.faltas || 0) + ' faltas · ' + (a.pacientes_novos || 0) + ' pacientes novos')
+      + '</div>';
+    h += '<h2>Banco (extrato importado) · ' + (c0.competencia ? c0.competencia.split('-').reverse().join('/') : '') + '</h2><div class="kpis">'
+      + kp('Entradas', brl(c0.receita_caixa), '', true)
+      + kp('Saídas', brl(Math.abs(+c0.despesa_caixa || 0)), (c0.pendentes_classificacao ? c0.pendentes_classificacao + ' sem categoria' : ''), true)
+      + '</div>';
+    h += '<h2>Notas fiscais</h2><div class="kpis">' + kp('NFSe pendentes', nf.length, '<span class="din">' + brl(nfTot) + '</span>' + (nfAtras ? ' · ' + nfAtras + ' fora do prazo' : '')) + '</div>';
+    h += '<div class="meta" style="margin:10px 4px">Só leitura. Lançar, conciliar e emitir continuam no Financeiro do Mac.</div>';
+    W(h); document.body.classList.toggle('oculto', OCULTO);
+  }).catch(falha);
+}
+
+/* ── navegação ─────────────────────────────────────────────────────── */
+function abrir(aba){
+  ABA = aba; ABERTO = null;
+  document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-aba') === aba); });
+  try{ sessionStorage.setItem('hagdr_aba', aba); }catch(e){}
+  window.scrollTo(0, 0);
+  return ({ hoje:abaHoje, checkins:abaCheckins, vendas:abaVendas, fin:abaFin })[aba]();
+}
+document.addEventListener('click', function(e){
+  var t = e.target, a;
+  if(!t.closest) return;
+  if((a = t.closest('#tabs [data-aba]'))){ abrir(a.getAttribute('data-aba')); return; }
+  if((a = t.closest('#recarregar'))){ abrir(ABA); contaCheckins(); return; }
+  if((a = t.closest('[data-dia]'))){ DIA = a.getAttribute('data-dia'); ABERTO = null; abaHoje(); return; }
+  if((a = t.closest('[data-pedir]'))){ pedirBriefing(a.getAttribute('data-k'), a.getAttribute('data-pedir')); return; }
+  if((a = t.closest('[data-abre]'))){ var k = a.getAttribute('data-abre'); ABERTO = ABERTO === k ? null : k; pintaAtual(); return; }
+  if((a = t.closest('#olho'))){ OCULTO = !OCULTO; try{ localStorage.setItem('hagdr_oculto', OCULTO ? '1' : ''); }catch(x){} abaFin(); return; }
+});
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible'){ contaCheckins(); } });
+
+function iniciar(){
+  var em = emailLogado();
+  if(em && em !== DR){ W('<div class="nego">Este app é do Dr. Henrique. A equipe usa o app Tarefas.</div>'); document.getElementById('tabs').hidden = true; return; }
+  try{ OCULTO = localStorage.getItem('hagdr_oculto') === '1'; }catch(e){}
+  document.body.classList.toggle('oculto', OCULTO);
+  var ini = 'hoje'; try{ ini = sessionStorage.getItem('hagdr_aba') || 'hoje'; }catch(e){}
+  if(/[?&]aba=(\w+)/.test(location.search)) ini = RegExp.$1;
+  abrir(ini); contaCheckins();
+}
+if(window.HAGAuth && window.HAGAuth.valid && window.HAGAuth.valid()) iniciar();
+else if(window.HAGAuth) window.HAGAuth.mount(iniciar);
+window.HAG_DR = { abrir: abrir };
+})();
+</script>
+</body>
+</html>

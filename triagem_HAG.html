@@ -86,7 +86,7 @@ input.assunto{margin-bottom:6px}
 </style>
 </head>
 <body>
-<div class="top"><a href="tarefas_HAG.html">‹ Tarefas</a><span class="ti">Triagem dos check-ins</span></div>
+<div class="top"><a href="tarefas_HAG.html" id="voltar">‹ Tarefas</a><span class="ti">Triagem dos check-ins</span></div>
 <div class="wrap">
   <div class="msg" id="msg" hidden></div>
   <div class="fil" id="fil">
@@ -320,6 +320,8 @@ document.addEventListener('click', function(e){
 });
 document.addEventListener('input', function(e){ var id = (e.target.id || '').replace(/^tx_/, ''); if(e.target.id && e.target.id.indexOf('tx_') === 0) atualizaLacunas(id); });
 
+/* HAG_DR_APP_v1: aberta pelo app HAG Dr (?de=dr), o voltar leva de volta a ele, nao ao Tarefas */
+(function(){ if(/[?&]de=dr\b/.test(location.search)){ var v = document.getElementById('voltar'); if(v){ v.href = 'hag_dr_HAG.html?aba=checkins'; v.textContent = '‹ HAG Dr'; } } })();
 function iniciar(){ erro(''); carregar(); }
 if(window.HAGAuth && window.HAGAuth.valid && window.HAGAuth.valid()) iniciar();
 else if(window.HAGAuth){ var r0 = window.HAGAuth.mount(iniciar); if(r0 && r0.then) r0.then(function(){}); }
