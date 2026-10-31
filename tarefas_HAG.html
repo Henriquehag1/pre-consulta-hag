@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261021-1353"></script>
+<script src="hag_auth.js?v=20261031-1714"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -830,6 +830,10 @@ body {
     </div>
     <!-- HAG_MENSAGENS_TAREFAS_v1 -->
     <button id="btnMensagens" onclick="verMensagens()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4ac; Mensagens</button>
+    <!-- HAG_WPP_BOTAO_TAREFAS_v1 (31/10/2026): abre as respostas prontas do WhatsApp do
+         consultorio (whatsapp_HAG.html). O numero no botao e quantas conversas esperam
+         resposta; com alguma esperando, o botao fica verde. -->
+    <button id="btnWpp" onclick="location.href='whatsapp_HAG.html'" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f4f2; WhatsApp<span id="wppConta" hidden style="margin-left:6px;background:#1f7a4d;color:#fff;border-radius:10px;padding:1px 7px;font-size:.72rem"></span></button>
     <!-- HAG_CADASTRO_LIVANCE_v1 -->
     <button id="btnCadastro" onclick="verCadastro()" style="border:1px solid #e5e2da;background:#fff;border-radius:12px;padding:0 16px;height:44px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;color:#4a4436;white-space:nowrap">&#x1f5c2;&#xfe0f; Cadastro</button>
     <!-- HAG_QUADRO_AGENDA_v1 -->
@@ -4764,7 +4768,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261021-1353';
+  var VERSAO = '20261031-1714';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
@@ -4837,6 +4841,27 @@ render=function(){
   window.HAG_VERSAO = VERSAO;
   /* gancho de verificacao, usado nos testes e util para conferir na mao */
   window.HAG_VERIFICAR_ATUALIZACAO = function(){ conferir(true); };
+})();
+</script>
+<script>
+/* HAG_WPP_BOTAO_TAREFAS_v1 (31/10/2026): conta as conversas do WhatsApp esperando resposta
+   (wpp_rascunho, status novo ou pendente). Falha aqui nunca atrapalha o Tarefas: o botao
+   continua abrindo a pagina, so sem o numero. */
+(function(){
+  function conta(){
+    try{
+      if(typeof db === 'undefined') return;
+      db.from('wpp_rascunho').select('id', { count:'exact', head:true }).in('status', ['novo','pendente']).then(function(r){
+        var n = (r && !r.error && r.count) || 0, el = document.getElementById('wppConta'), b = document.getElementById('btnWpp');
+        if(!el || !b) return;
+        el.textContent = n; el.hidden = !n;
+        b.style.borderColor = n ? '#1f7a4d' : '#e5e2da'; b.style.color = n ? '#1f7a4d' : '#4a4436';
+      }, function(){});
+    }catch(e){}
+  }
+  setTimeout(conta, 2500);
+  setInterval(function(){ if(document.visibilityState === 'visible') conta(); }, 60000);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') conta(); });
 })();
 </script>
 </body>
