@@ -312,8 +312,9 @@ function abaVendas(){
   W('<div class="vazio">Carregando…</div>');
   var h0 = hojeISO(), lim = hojeISO(60);
   return Promise.all([ rpc('hag_dr_renovacoes'), api('propostas?select=id,patient_nome,status,resumo,valor_pix,criado_em&status=in.(apresentada,vai_pensar)&order=criado_em.desc&limit=30'),
-                       api('v_propostas_funil?select=*&order=mes.desc&limit=6') ]).then(function(res){
-    var ren = res[0] || [], abertas = res[1] || [], fun = res[2] || [];
+                       api('v_propostas_funil?select=*&order=mes.desc&limit=6'),
+                       rpc('hag_dr_site_resumo', { p_dias: 30 }).catch(function(){ return null; }) ]).then(function(res){
+    var ren = res[0] || [], abertas = res[1] || [], fun = res[2] || [], site = res[3];
     function dataRef(r){ return r.momento === 'penultima' ? r.conversa_data : r.fechamento_data; }
     var prox = ren.filter(function(r){ var d = dataRef(r); return d && d <= lim; }).sort(function(a,b){ return String(dataRef(a)).localeCompare(String(dataRef(b))); });
     var depois = ren.length - prox.length;
@@ -338,8 +339,32 @@ function abaVendas(){
       return '<div class="row" data-conv="' + esc(String(f.mes).slice(0,10)) + '|' + esc(f.momento) + '" data-nome="Propostas ' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '"><div class="q"><div class="nome">' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '</div><div class="sub">' + f.aceitas + ' de ' + f.propostas + ' aceitas · ' + f.vai_pensar + ' pensando</div></div>'
         + '<div style="text-align:right"><div class="nome">' + (f.conversao_pct == null ? '—' : f.conversao_pct + '%') + '</div><div class="meta din">' + brl(f.valor_aceito) + '</div></div></div>';
     }).join('') + '</div>' : '<div class="vazio">As propostas aparecem aqui quando o resultado da conversa é registrado no Mac.</div>');
+    h += blocoSite(site);
     W(h);
   }).catch(falha);
+}
+
+/* HAG_SITE_MEDICAO_v1 (31/10/2026): o clinicahag.com passou a mandar para o HAG OS, sem
+   cookie e sem dado pessoal, cada visita e cada clique no WhatsApp (hag-medida.js e Edge
+   Function hag-site-visita). Aqui ficam os ultimos 30 dias: quantas pessoas, de onde vieram,
+   quais paginas e quantas chamaram a equipe. Fonte: hag_dr_site_resumo. Falha aqui nunca
+   derruba a aba Vendas. */
+function blocoSite(d){
+  var h = '<h2>Site · últimos 30 dias</h2>';
+  if(!d || !d.desde) return h + '<div class="vazio card">A medição do clinicahag.com começa a contar na primeira visita depois da publicação.</div>';
+  var tx = d.sessoes ? Math.round(100 * (d.sessoes_whatsapp || 0) / d.sessoes) + '%' : '—';
+  h += '<div class="stats"><div class="stat"><b>' + (d.sessoes || 0) + '</b><span>pessoas no site</span></div><div class="stat"><b>' + (d.whatsapp || 0) + '</b><span>cliques no WhatsApp</span></div><div class="stat"><b>' + tx + '</b><span>chamaram a equipe</span></div></div>';
+  function linhas(lista, nome){
+    return '<div class="card" style="padding:4px 0">' + lista.map(function(o){
+      return '<div class="row"><div class="q"><div class="nome">' + esc(nome(o)) + '</div></div><div style="text-align:right"><div class="nome">' + (o.visitas || 0) + '</div><div class="meta">' + (o.whatsapp || 0) + ' no WhatsApp</div></div></div>';
+    }).join('') + '</div>';
+  }
+  var ORIG = { direto:'Direto ou app', interno:'Dentro do site', google:'Google', instagram:'Instagram', facebook:'Facebook', chatgpt:'ChatGPT', perplexity:'Perplexity' };
+  if((d.origens || []).length) h += '<div class="meta" style="margin:10px 4px 6px">De onde vieram</div>' + linhas(d.origens, function(o){ return ORIG[o.origem] || o.origem; });
+  if((d.paginas || []).length) h += '<div class="meta" style="margin:10px 4px 6px">Páginas mais vistas</div>' + linhas(d.paginas.slice(0, 6), function(o){ return o.pagina === '/' ? 'Início' : String(o.pagina).replace(/^\//, ''); });
+  var dsp = d.dispositivos || {}, tot = (dsp.celular || 0) + (dsp.tablet || 0) + (dsp.computador || 0);
+  if(tot) h += '<div class="meta" style="margin:8px 4px 0">' + Math.round(100 * (dsp.celular || 0) / tot) + '% pelo celular · ' + Math.round(100 * (dsp.computador || 0) / tot) + '% pelo computador</div>';
+  return h;
 }
 
 /* ── FINANCEIRO: so leitura, sem tabela de precos ──────────────────── */
