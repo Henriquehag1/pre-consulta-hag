@@ -32,6 +32,18 @@ self.addEventListener('notificationclick', function(event){
   var alvo = (event.notification.data && event.notification.data.url) || 'tarefas_HAG.html';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(lista){
+      /* HAG_TRIAGEM_CHECKIN_v1 (31/10/2026): o aviso da triagem dos check-ins
+         aponta para triagem_HAG.html?id=... Antes, qualquer toque so focava a
+         aba do Tarefas, e o Dr. cairia na fila em vez da resposta pronta. No
+         iPhone o app da tela de inicio e uma janela so: ela e levada ate a
+         triagem. O aviso da fila continua exatamente como era. */
+      if (alvo.indexOf('triagem_HAG') >= 0){
+        for (var j = 0; j < lista.length; j++){
+          if ('navigate' in lista[j]) return lista[j].navigate(alvo).then(function(c){ return c && c.focus ? c.focus() : c; });
+        }
+        if (self.clients.openWindow) return self.clients.openWindow(alvo);
+        return;
+      }
       for (var i = 0; i < lista.length; i++){
         /* foca uma aba ja aberta em qualquer uma das duas, a nova e a antiga */
         var u = lista[i].url || '';
