@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- HAG_DR_APP_v1 (31/10/2026) + HAG_DR_VISUAL_v4 (layout novo) + HAG_DINHEIRO_DO_MES_v1 (vendido x entrou x a receber) + HAG_DR_DETALHE_v2: cada numero, renovacao, proposta e mes de conversao
+<!-- HAG_DR_V3 (03/11/2026): pendencias, NFS-e pelo celular, pedido a Daniela, busca de paciente, contas a pagar,
+     avisos neste app, procedimentos da semana, leads, prontuarios a assinar, fechar um dia, gravacao pelo iPhone,
+     evolucao ditada e estado do sistema (war room de 02/11; doc claude/hag-dr-v3-03-11-2026.md).
+     HAG_DR_APP_v1 (31/10/2026) + HAG_DR_VISUAL_v4 (layout novo) + HAG_DINHEIRO_DO_MES_v1 (vendido x entrou x a receber) + HAG_DR_DETALHE_v2: cada numero, renovacao, proposta e mes de conversao
      abre o que esta por tras (hag_dr_detalhe e hag_dr_paciente_ciclo, mesma regra das views).
      POR QUE EXISTE: o HAG OS so abria no Mac. O Dr. pediu no celular, como ja tem
      o Tarefas, o HAG Treino e o HAG Cozinha, quatro coisas: check-ins com resposta
@@ -151,16 +154,32 @@ h2:first-child{margin-top:4px}
 .li .vl{font-size:13.5px;font-weight:600;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
 .tot{display:flex;justify-content:space-between;font-weight:700;padding:10px 0 4px;border-top:2px solid var(--line);margin-top:4px}
 .folha .card{box-shadow:none;border:1px solid var(--line)}
+/* HAG_DR_V3 */
+.pendok{font-size:13px;color:var(--verde);background:var(--verde-bg);border-radius:12px;padding:9px 12px;margin:0 0 12px}
+.campo{margin:12px 0}.campo label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px;font-weight:500}
+.campo input[type=date],.campo input[type=text],.campo select,.campo textarea,.bq{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);-webkit-appearance:none}
+.campo textarea{min-height:110px;resize:vertical}
+.campo input[type=checkbox]{width:18px;height:18px;vertical-align:-3px;margin-right:6px}
+.escolhe{width:100%;text-align:left;font:inherit;font-size:16px;padding:10px 12px;border:1px dashed var(--gold);border-radius:12px;background:var(--gold-bg);color:var(--ink)}
+.bq{margin-bottom:8px}
+.li.chk{cursor:pointer}.li.chk input{width:20px;height:20px;margin-top:2px}
+.acoes button[disabled]{opacity:.45}
+.acoes .rec{background:var(--verm);border-color:var(--verm)}
+.relogio{font-family:var(--fs);font-size:46px;text-align:center;margin:18px 0 2px;font-variant-numeric:tabular-nums}
+.row .ic{font-size:20px;width:28px;text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--navy);color:#fff;padding:10px 16px;border-radius:22px;font-size:14px;z-index:40;max-width:92vw;box-shadow:var(--sombra)}
+.toast.erro{background:var(--verm)}
 </style>
 </head>
 <body>
-<header class="top"><div class="eye">HAG DR · MÉTODO HAG</div><div class="tl"><h1 id="titAba">Agenda</h1><button type="button" id="recarregar" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></div><div class="dt" id="hojeDt"></div></header>
+<header class="top"><div class="eye">HAG DR · MÉTODO HAG</div><div class="tl"><h1 id="titAba">Agenda</h1><button type="button" id="buscar" aria-label="Buscar paciente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button><button type="button" id="recarregar" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></div><div class="dt" id="hojeDt"></div></header>
 <div class="wrap" id="wrap"><div class="vazio">Carregando…</div></div>
 <nav class="tabs" id="tabs">
   <button data-aba="hoje" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Agenda</button>
   <button data-aba="checkins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 20.5 12Z"/><path d="M8.5 11h7M8.5 14h4"/></svg>Check-ins<span class="badge" id="bdgCk" hidden></span></button>
   <button data-aba="vendas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17.5 9.5 11l4 4 7-8"/><path d="M15.5 7h5v5"/></svg>Vendas</button>
   <button data-aba="fin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16.5 14.5h1.5"/><path d="M6 6l9-2.5 1.5 2.5"/></svg>Financeiro</button>
+  <button data-aba="mais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.5" cy="12" r="1.4"/></svg>Mais<span class="badge" id="bdgMais" hidden></span></button>
 </nav>
 <div class="veu" id="veu" hidden><div class="folha"><div class="fc"><b id="fTit"></b><button type="button" id="fFecha">Fechar</button></div><div class="fb" id="fCorpo"></div></div></div>
 <script>
@@ -218,6 +237,7 @@ function falha(e){ W('<div class="msg erro">Não consegui ler: ' + esc(e && e.me
 /* ── AGENDA + BRIEFING ─────────────────────────────────────────────── */
 function abaHoje(){
   W('<div class="vazio">Carregando a agenda…</div>');
+  carregaPend().then(function(){ pintaAtual(); badgePend(); }); carregaProc().then(function(){ pintaAtual(); });   /* HAG_DR_V3 */
   return rpc('hag_agenda_briefing', { p_de: hojeISO(), p_ate: hojeISO(7) }).then(function(rows){
     AG = (rows || []).slice().sort(function(a,b){ return (a.data_consulta + (a.hora||'')).localeCompare(b.data_consulta + (b.hora||'')); });
     var dias = []; AG.forEach(function(r){ if(dias.indexOf(r.data_consulta) < 0) dias.push(r.data_consulta); });
@@ -230,8 +250,8 @@ function abaHoje(){
 }
 function pintaHoje(dias, doDia){
   var cont = {}; AG.forEach(function(r){ cont[r.data_consulta] = (cont[r.data_consulta] || 0) + 1; });
-  var h = '<div class="dias">' + dias.map(function(d){ return '<button data-dia="' + d + '"' + (d === DIA ? ' class="on"' : '') + '>' + diaRot(d) + ' <i>' + cont[d] + '</i></button>'; }).join('') + '</div>';
-  if(!doDia.length){ W(h + '<div class="vazio card">Nenhuma consulta nos próximos 7 dias.</div>'); return; }
+  var h = blocoPend() + '<div class="dias">' + dias.map(function(d){ return '<button data-dia="' + d + '"' + (d === DIA ? ' class="on"' : '') + '>' + diaRot(d) + ' <i>' + cont[d] + '</i></button>'; }).join('') + '</div>';
+  if(!doDia.length){ W(h + '<div class="vazio card">Nenhuma consulta nos próximos 7 dias.</div>' + blocoProc()); return; }
   var nFe = doDia.filter(function(r){ return r.tipo_consulta === 'fechamento'; }).length;
   var nBr = doDia.filter(function(r){ var b = BR[r.patient_id + '|' + r.data_consulta]; return b && b.conteudo_md; }).length;
   h += '<div class="resumo"><b>' + doDia.length + (doDia.length > 1 ? ' consultas' : ' consulta') + '</b>' + (nFe ? ' · ' + nFe + (nFe > 1 ? ' fechamentos' : ' fechamento') : '') + ' · ' + nBr + ' de ' + doDia.length + ' com briefing</div>';
@@ -250,7 +270,7 @@ function pintaHoje(dias, doDia){
     }
     return x + '</div>';
   }).join('');
-  W(h);
+  W(h + blocoProc());
 }
 function pedirBriefing(k, tipo){
   var p = k.split('|'), pid = p[0], data = p[1];
@@ -340,7 +360,8 @@ function abaVendas(){
   var h0 = hojeISO(), lim = hojeISO(60);
   return Promise.all([ rpc('hag_dr_renovacoes'), api('propostas?select=id,patient_nome,status,resumo,valor_pix,criado_em&status=in.(apresentada,vai_pensar)&order=criado_em.desc&limit=30'),
                        api('v_propostas_funil?select=*&order=mes.desc&limit=6'),
-                       rpc('hag_dr_site_resumo', { p_dias: 30 }).catch(function(){ return null; }) ]).then(function(res){
+                       rpc('hag_dr_site_resumo', { p_dias: 30 }).catch(function(){ return null; }),
+                       api('mkt_lead?select=origem,status,primeiro_contato_em&primeiro_contato_em=gte.' + hojeISO(-30)).catch(function(){ return []; }) ]).then(function(res){
     var ren = res[0] || [], abertas = res[1] || [], fun = res[2] || [], site = res[3];
     function dataRef(r){ return r.momento === 'penultima' ? r.conversa_data : r.fechamento_data; }
     var prox = ren.filter(function(r){ var d = dataRef(r); return d && d <= lim; }).sort(function(a,b){ return String(dataRef(a)).localeCompare(String(dataRef(b))); });
@@ -366,6 +387,7 @@ function abaVendas(){
       return '<div class="row" data-conv="' + esc(String(f.mes).slice(0,10)) + '|' + esc(f.momento) + '" data-nome="Propostas ' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '"><div class="q"><div class="nome">' + mm[1] + '/' + mm[0] + ' · ' + esc(MOM[f.momento] || f.momento) + '</div><div class="sub">' + f.aceitas + ' de ' + f.propostas + ' aceitas · ' + f.vai_pensar + ' pensando</div></div>'
         + '<div style="text-align:right"><div class="nome">' + (f.conversao_pct == null ? '—' : f.conversao_pct + '%') + '</div><div class="meta din">' + brl(f.valor_aceito) + '</div></div></div>';
     }).join('') + '</div>' : '<div class="vazio">As propostas aparecem aqui quando o resultado da conversa é registrado no Mac.</div>');
+    h += blocoLeads(res[4]);   /* HAG_DR_V3 */
     h += blocoSite(site);
     W(h);
   }).catch(falha);
@@ -407,7 +429,8 @@ function abaFin(){
   W('<div class="vazio">Carregando…</div>');
   var m0 = hojeISO().slice(0,7) + '-01';
   return Promise.all([ api('v_kpis_mensal?select=*&order=mes.desc&limit=1'), api('v_nfse_pendentes?select=valor_bruto,prazo_status'),
-                       rpc('hag_dr_dinheiro_mes', { p_mes: m0 }), rpc('hag_dr_dinheiro_mes', { p_mes: mesAnt(m0, 1) }), rpc('hag_dr_dinheiro_mes', { p_mes: mesAnt(m0, 2) }) ]).then(function(res){
+                       rpc('hag_dr_dinheiro_mes', { p_mes: m0 }), rpc('hag_dr_dinheiro_mes', { p_mes: mesAnt(m0, 1) }), rpc('hag_dr_dinheiro_mes', { p_mes: mesAnt(m0, 2) }),
+                       api('despesas?select=id,fornecedor,descricao,valor,data_vencimento,status&status=in.(pendente,atrasado)&order=data_vencimento.asc.nullslast').catch(function(){ return []; }) ]).then(function(res){
     var a = (res[0] || [])[0] || {}, nf = res[1] || [], d0 = res[2] || {}, hist = [res[2] || {}, res[3] || {}, res[4] || {}];
     var nfTot = nf.reduce(function(s, x){ return s + (+x.valor_bruto || 0); }, 0);
     var nfAtras = nf.filter(function(x){ return x.prazo_status && x.prazo_status !== 'normal'; }).length;
@@ -439,7 +462,9 @@ function abaFin(){
       + kp('Saídas da conta', 'ver lista', 'despesas e impostos do extrato', false, 'saidas', d0.mes)
       + '</div>';
     h += '<h2>Notas fiscais</h2><div class="kpis">' + kp('NFSe pendentes', nf.length, '<span class="din">' + brl(nfTot) + '</span>' + (nfAtras ? ' · ' + nfAtras + ' fora do prazo' : ''), false, 'nfse') + '</div>';
-    h += '<div class="meta" style="margin:10px 4px">Só leitura. Lançar, conciliar e emitir continuam no Financeiro do Mac.</div>';
+    h += '<div class="acoes"><button class="pri" data-nfs>Pedir notas à Malgo</button></div>';   /* HAG_DR_V3 */
+    (res[5] || []).forEach(function(d){ CONTAS[d.id] = d; }); h += blocoContas(res[5]);
+    h += '<div class="meta" style="margin:10px 4px">Lançar e conciliar continuam no Financeiro do Mac. Aqui dá para pedir as notas e marcar conta paga.</div>';
     W(h); document.body.classList.toggle('oculto', OCULTO);
   }).catch(falha);
 }
@@ -510,7 +535,9 @@ function pacienteCiclo(pid, nome){
          + '<div class="tot"><span>Total</span><span class="din">' + brl(p.valor_cobrado != null ? p.valor_cobrado : p.valor_pix) + '</span></div></div>' : '<div class="vazio">Nenhuma proposta registrada ainda.</div>');
     var k = d.checkin, t = d.triagem;
     h += '<h2>Último check-in</h2>' + (k ? li(dm(k.data) + ' · ' + esc(k.tipo || ''), (k.peso ? 'peso ' + esc(k.peso) : '') + (t && t.motivo ? (k.peso ? ' · ' : '') + esc(t.motivo) : ''), t && t.status === 'pendente' ? '<a class="tag responder" style="text-decoration:none" href="triagem_HAG.html?id=' + encodeURIComponent(t.id) + '&de=dr">responder ›</a>' : null) : '<div class="vazio">Sem check-in.</div>');
-    folha(nome || 'Paciente', h);
+    /* HAG_DR_V3: receitas a renovar, tratamentos terminando, injetaveis, suspensas e as acoes */
+    folha(nome || 'Paciente', h + '<div class="vazio" id="pxCarr">Carregando receitas e tratamentos…</div>' + acoesPaciente(pid, nome));
+    return extrasPaciente(pid).catch(function(){ return ''; }).then(function(x){ var c = document.getElementById('pxCarr'); if(c) c.outerHTML = x; });
   }).catch(function(e){ folha(nome || 'Paciente', '<div class="msg erro">Não consegui abrir: ' + esc(e.message) + '</div>'); });
 }
 function propostaDet(id, nome){
@@ -525,19 +552,563 @@ function propostaDet(id, nome){
   }).catch(function(e){ folha(nome, '<div class="msg erro">Não consegui abrir: ' + esc(e.message) + '</div>'); });
 }
 
+/* ══ HAG_DR_V3 (03/11/2026) ═════════════════════════════════════════════
+   War room de 02/11, pedido dele: "faça exatamente tudo". O app deixa de so
+   mostrar e passa a agir: pendencias que o sistema ve sozinho, NFS-e pelo
+   celular, pedido para a Daniela, busca de paciente, contas a pagar, avisos
+   neste app, procedimentos da semana, leads, prontuarios a assinar, fechar um
+   dia, gravacao pelo iPhone, evolucao ditada e estado do sistema.
+   Doc: claude/hag-dr-v3-03-11-2026.md. Banco: hag_dr_v3.sql. */
+var PEND = null, PROC = null, PACS = null;
+var NIVCOR = { alta:'urgente', media:'logistica', baixa:'' };
+function token(){ try{ return (window.HAGAuth && window.HAGAuth.token && window.HAGAuth.token()) || ''; }catch(e){ return ''; } }
+function fn(nome, corpo){
+  return fetch(URL_ + '/functions/v1/' + nome, { method:'POST', headers:{ 'Content-Type':'application/json', apikey:KEY, Authorization:'Bearer ' + (token() || KEY) }, body: JSON.stringify(corpo || {}) })
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok || j.ok === false) throw new Error(j.erro || ('HTTP ' + r.status)); return j; }); });
+}
+function agoraISO(){ return new Date().toISOString(); }
+function aviso(t, erro){ var d = document.createElement('div'); d.className = 'toast' + (erro ? ' erro' : ''); d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3800); }
+
+/* ── 1. PENDENCIAS (hag_dr_pendencias) ─────────────────────────────── */
+function carregaPend(){ return rpc('hag_dr_pendencias').then(function(p){ PEND = Array.isArray(p) ? p : []; return PEND; }).catch(function(){ PEND = PEND || []; return PEND; }); }
+function blocoPend(){
+  if(!PEND) return '';
+  if(!PEND.length) return '<div class="pendok">Nada pendente que o sistema consiga ver. ✓</div>';
+  var ord = { alta:0, media:1, baixa:2 };
+  var l = PEND.slice().sort(function(a,b){ return (ord[a.nivel]||3) - (ord[b.nivel]||3); });
+  var vis = l.filter(function(p){ return p.nivel !== 'baixa'; }).slice(0, 4);
+  var nA = l.filter(function(p){ return p.nivel === 'alta'; }).length;
+  var h = '<h2>Pendências' + (nA ? ' · <span style="color:var(--verm)">' + nA + ' pedem atenção</span>' : '') + '</h2>';
+  h += (vis.length ? vis : l.slice(0, 2)).map(function(p, i){ return pendRow(p, l.indexOf(p)); }).join('');
+  if(l.length > vis.length) h += '<div class="acoes" style="margin:-2px 0 6px"><button data-pendtodas>Ver todas (' + l.length + ')</button></div>';
+  return h;
+}
+function pendRow(p, i){
+  return '<div class="card row ck ' + (NIVCOR[p.nivel] || '') + '" data-pend="' + i + '"><div class="q"><div class="nome">' + esc(p.titulo) + '</div><div class="sub">' + esc(p.sub || '') + (p.valor != null ? ' · <span class="din">' + brl(p.valor) + '</span>' : '') + '</div></div><span class="chev">›</span></div>';
+}
+function pendTodas(){
+  var ord = { alta:0, media:1, baixa:2 };
+  var l = (PEND || []).slice().sort(function(a,b){ return (ord[a.nivel]||3) - (ord[b.nivel]||3); });
+  folha('Pendências', l.length ? l.map(function(p){ return pendRow(p, PEND.indexOf(p)); }).join('') : '<div class="vazio">Nada pendente.</div>');
+}
+function abrePend(i){
+  var p = (PEND || [])[i]; if(!p) return;
+  var a = p.acao;
+  if(a === 'checkins'){ fechaFolha(); abrir('checkins'); return; }
+  if(a === 'nfse'){ pedidoNfse(); return; }
+  if(a === 'contas'){ contasPagar(); return; }
+  if(a === 'prontuarios'){ prontuarios(); return; }
+  if(a === 'estado'){ estadoSistema(); return; }
+  if(a === 'agenda_amanha'){ fechaFolha(); DIA = hojeISO(1); abrir('hoje'); return; }
+  if(a === 'fin'){ fechaFolha(); abrir('fin'); return; }
+  var it = p.itens || [];
+  var corpo = '<p class="sub" style="margin-bottom:8px">' + esc(p.sub || '') + '</p>';
+  if(a === 'vendas_sem_receita'){
+    corpo += it.map(function(x){ return li(dm(x.data) + ' · ' + (x.metodo === 'pix' ? 'Pix' : 'cartão ' + (x.parcelas > 1 ? x.parcelas + 'x' : 'à vista')), esc(x.comprador || 'sem nome do comprador') + (x.liquido != null ? ' · líquido <span class="din">' + brl(x.liquido) + '</span>' : ''), brl(x.valor), true); }).join('')
+      + '<div class="msg">Diga de quem foi cada venda e o que foi vendido: a receita entra no HAG OS e a nota pode ser pedida. Use "Mandar para a Daniela" ou lance no Financeiro do Mac.</div>'
+      + '<div class="acoes"><button class="pri" data-dani-pend="' + i + '">Pedir à Daniela para identificar</button></div>';
+  } else {
+    corpo += it.map(function(x){ return li(esc(x.nome || x.fornecedor || ''), dm(x.data || x.vencimento), x.valor != null ? brl(x.valor) : null, true); }).join('') || '<div class="vazio">Sem detalhe.</div>';
+  }
+  folha(p.titulo, corpo);
+}
+
+/* ── 8. PROCEDIMENTOS DA SEMANA (v_protocolos_status + tarefas) ──────── */
+function carregaProc(){
+  var h0 = hojeISO(), h7 = hojeISO(7);
+  return Promise.all([
+    api('v_protocolos_status?select=protocolo_id,patient_id,paciente_nome,tipo,substancia,dose,aplicacoes_restantes,proxima_aplicacao,ultima_aplicacao,total_aplicacoes,aplicacoes_realizadas,status&status=eq.ativo&order=proxima_aplicacao.asc.nullslast'),
+    api('tarefas?select=id,patient_id,patient_nome,tipo_evento,agendado_data,agendado_hora,local,status&tipo=eq.agendamento&tipo_evento=in.(injetavel,implante,procedimento)&agendado_data=gte.' + h0 + '&agendado_data=lte.' + h7 + '&status=neq.cancelada&order=agendado_data.asc')
+  ]).then(function(r){ PROC = { prot: r[0] || [], ag: r[1] || [] }; return PROC; }).catch(function(){ PROC = { prot: [], ag: [] }; return PROC; });
+}
+function blocoProc(){
+  if(!PROC) return '';
+  var h0 = hojeISO(), h7 = hojeISO(7);
+  var semana = PROC.prot.filter(function(p){ return p.proxima_aplicacao && p.proxima_aplicacao >= h0 && p.proxima_aplicacao <= h7; });
+  var acabando = PROC.prot.filter(function(p){ return p.aplicacoes_restantes != null && +p.aplicacoes_restantes <= 1; });
+  var EV = { injetavel:'Aplicação', implante:'Implante', procedimento:'Procedimento' };
+  if(!semana.length && !PROC.ag.length && !acabando.length) return '';
+  var h = '<h2>Injetáveis e implantes · 7 dias</h2>';
+  h += PROC.ag.map(function(t){ return '<div class="card row" data-pac="' + esc(t.patient_id || '') + '" data-nome="' + esc(t.patient_nome || '') + '"><div class="q"><div class="nome">' + esc(t.patient_nome || '') + '</div><div class="sub">' + (EV[t.tipo_evento] || t.tipo_evento) + ' · ' + diaRot(t.agendado_data) + (t.agendado_hora ? ' às ' + esc(String(t.agendado_hora).slice(0,5)) : '') + (t.local ? ' · ' + esc(t.local) : '') + '</div></div><span class="tag">agendado</span></div>'; }).join('');
+  h += semana.filter(function(p){ return !PROC.ag.some(function(t){ return t.patient_id === p.patient_id; }); }).map(function(p){
+    return '<div class="card row" data-pac="' + esc(p.patient_id) + '" data-nome="' + esc(p.paciente_nome || '') + '"><div class="q"><div class="nome">' + esc(p.paciente_nome || '') + '</div><div class="sub">' + esc(p.substancia || p.tipo || '') + (p.dose ? ' · ' + esc(p.dose) : '') + ' · próxima ' + diaRot(p.proxima_aplicacao) + '</div><div class="meta">' + (p.aplicacoes_realizadas || 0) + ' de ' + (p.total_aplicacoes || '?') + ' feitas</div></div><span class="tag logistica">a marcar</span></div>';
+  }).join('');
+  if(acabando.length) h += '<div class="nota">Acabando (1 aplicação ou menos): ' + acabando.map(function(p){ return esc(p.paciente_nome) + ' (' + esc(p.substancia || p.tipo || '') + ')'; }).join(', ') + '. Hora de falar da renovação e de comprar o material.</div>';
+  return h;
+}
+
+/* ── 9. LEADS (mkt_lead) ─────────────────────────────────────────────── */
+function blocoLeads(l){
+  var h = '<h2>Leads · últimos 30 dias</h2>';
+  l = l || [];
+  if(!l.length) return h + '<div class="vazio card">Nenhum contato novo registrado em 30 dias. Os leads entram pelo agente do WhatsApp e pela Daniela.</div>';
+  var ORIG = { instagram:'Instagram', tiktok:'TikTok', google:'Google', site:'Site', indicacao:'Indicação', paciente_antigo:'Paciente antigo', evento:'Evento', outro:'Outro', desconhecido:'Não sabe' };
+  var por = {}; l.forEach(function(x){ var o = x.origem || 'desconhecido'; por[o] = por[o] || { n:0, ag:0, pac:0 }; por[o].n++; if(['agendado','compareceu','paciente'].indexOf(x.status) >= 0) por[o].ag++; if(x.status === 'paciente') por[o].pac++; });
+  var nAg = l.filter(function(x){ return ['agendado','compareceu','paciente'].indexOf(x.status) >= 0; }).length, nPac = l.filter(function(x){ return x.status === 'paciente'; }).length;
+  h += '<div class="stats"><div class="stat"><b>' + l.length + '</b><span>contatos novos</span></div><div class="stat"><b>' + nAg + '</b><span>marcaram consulta</span></div><div class="stat"><b>' + nPac + '</b><span>viraram paciente</span></div></div>';
+  h += '<div class="card" style="padding:4px 0">' + Object.keys(por).sort(function(a,b){ return por[b].n - por[a].n; }).map(function(o){
+    return '<div class="row"><div class="q"><div class="nome">' + esc(ORIG[o] || o) + '</div></div><div style="text-align:right"><div class="nome">' + por[o].n + '</div><div class="meta">' + por[o].ag + ' marcaram · ' + por[o].pac + ' pacientes</div></div></div>';
+  }).join('') + '</div>';
+  return h;
+}
+
+/* ── 5. CONTAS A PAGAR (despesas pendentes) ──────────────────────────── */
+function blocoContas(l){
+  var h = '<h2>Contas a pagar</h2>';
+  l = l || [];
+  if(!l.length) return h + '<div class="vazio card">Nenhuma conta do consultório em aberto.</div>';
+  var h0 = hojeISO();
+  return h + l.map(function(d){
+    var venc = d.data_vencimento && d.data_vencimento < h0;
+    return '<div class="card row ck ' + (venc ? 'urgente' : (d.data_vencimento && d.data_vencimento <= hojeISO(7) ? 'logistica' : '')) + '" data-conta="' + esc(d.id) + '"><div class="q"><div class="nome">' + esc(d.fornecedor || '') + '</div><div class="sub">' + esc(d.descricao || '') + '</div><div class="meta">' + (d.data_vencimento ? (venc ? 'venceu ' : 'vence ') + diaRot(d.data_vencimento) : 'sem vencimento') + '</div></div><div class="vl din" style="font-weight:600">' + brl(d.valor) + '</div></div>';
+  }).join('');
+}
+var CONTAS = {};
+function contasPagar(){
+  folha('Contas a pagar', '<div class="vazio">Carregando…</div>');
+  api('despesas?select=id,fornecedor,descricao,valor,data_vencimento,status&status=in.(pendente,atrasado)&order=data_vencimento.asc.nullslast').then(function(l){
+    (l||[]).forEach(function(d){ CONTAS[d.id] = d; });
+    folha('Contas a pagar', blocoContas(l).replace('<h2>Contas a pagar</h2>', '') + '<div class="meta" style="margin-top:8px">Toque numa conta para marcar como paga.</div>');
+  }).catch(function(e){ folha('Contas a pagar', '<div class="msg erro">' + esc(e.message) + '</div>'); });
+}
+function contaDet(id){
+  var d = CONTAS[id]; if(!d) return;
+  folha(d.fornecedor || 'Conta', '<div class="card" style="padding:12px"><div class="nome din">' + brl(d.valor) + '</div><div class="sub">' + esc(d.descricao || '') + '</div><div class="meta">vencimento ' + dm(d.data_vencimento) + '</div></div>'
+    + '<div class="campo"><label>Pago em</label><input type="date" id="cpData" value="' + hojeISO() + '"></div>'
+    + '<div class="campo"><label>Pela conta</label><select id="cpConta"><option value="infinitepay_pj">InfinitePay PJ</option><option value="cartao_credito">Cartão de crédito</option><option value="outra_conta_pj">Outra conta PJ</option><option value="santander_pf">Santander PF</option><option value="outra_conta_pf">Outra conta PF</option></select></div>'
+    + '<div class="acoes"><button class="pri" data-contapaga="' + esc(id) + '">Marcar como paga</button></div>'
+    + '<div class="meta" style="margin-top:8px">Pagamento com conta pessoal vira pauta de reembolso com a Malgo.</div>');
+}
+function contaPaga(id){
+  var dt = document.getElementById('cpData').value, ct = document.getElementById('cpConta').value;
+  if(!dt){ aviso('Escolha a data do pagamento', true); return; }
+  api('despesas?id=eq.' + encodeURIComponent(id), { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ status:'pago', data_pagamento: dt, conta_pagadora: ct, updated_at: agoraISO() }) })
+    .then(function(){ aviso('Conta marcada como paga'); fechaFolha(); carregaPend(); if(ABA === 'fin') abaFin(); })
+    .catch(function(e){ aviso('Não gravou: ' + e.message, true); });
+}
+
+/* ── 2. NFS-e PELO CELULAR ───────────────────────────────────────────── */
+/* O texto e o mesmo do "Gerar pedido para o contador" do Financeiro do Mac
+   (_construirTextoPedido), sem travessao. CPF e endereco so sao lidos na hora
+   de montar o e-mail, nunca ficam na tela. */
+var NFS = [], NFSSEL = {};
+function fmtCPF(c){ var d = String(c || '').replace(/\D/g,''); return d.length === 11 ? d.slice(0,3) + '.' + d.slice(3,6) + '.' + d.slice(6,9) + '-' + d.slice(9) : (c || ''); }
+function docFmt(doc){ var d = String(doc || '').replace(/\D/g,''); return d.length === 14 ? d.slice(0,2) + '.' + d.slice(2,5) + '.' + d.slice(5,8) + '/' + d.slice(8,12) + '-' + d.slice(12) : fmtCPF(doc); }
+function moeda(v){ return (Number(v) || 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); }
+function pedidoNfse(){
+  folha('Pedir notas à Malgo', '<div class="vazio">Carregando…</div>');
+  var ult = new Date(); ult = new Date(ult.getFullYear(), ult.getMonth() + 1, 0);
+  var lim = ult.getFullYear() + '-' + String(ult.getMonth() + 1).padStart(2,'0') + '-' + String(ult.getDate()).padStart(2,'0');
+  api('v_nfse_pendentes?select=id,patient_nome,servico_nome,valor_bruto,data_pagamento,prazo_status,dados_completos&data_pagamento=lte.' + lim + '&order=data_pagamento.asc').then(function(l){
+    NFS = l || []; NFSSEL = {}; NFS.forEach(function(n){ if(n.data_pagamento <= hojeISO()) NFSSEL[n.id] = true; });
+    pintaNfse();
+  }).catch(function(e){ folha('Pedir notas à Malgo', '<div class="msg erro">' + esc(e.message) + '</div>'); });
+}
+function pintaNfse(){
+  if(!NFS.length){ folha('Pedir notas à Malgo', '<div class="vazio">Nenhuma nota pendente até o fim do mês.</div>'); return; }
+  var sel = NFS.filter(function(n){ return NFSSEL[n.id]; }), tot = sel.reduce(function(s, n){ return s + (+n.valor_bruto || 0); }, 0);
+  folha('Pedir notas à Malgo', '<p class="sub">Marcadas: as já pagas. As do resto do mês ficam desmarcadas.</p>'
+    + NFS.map(function(n){ return '<label class="li chk"><input type="checkbox" data-nfsid="' + esc(n.id) + '"' + (NFSSEL[n.id] ? ' checked' : '') + '><div class="q"><div class="nome" style="font-weight:500">' + esc(n.patient_nome) + '</div><div class="sub">' + dm(n.data_pagamento) + ' · ' + esc(n.servico_nome || '') + (n.prazo_status && n.prazo_status !== 'normal' ? ' · <b style="color:var(--verm)">fora do prazo</b>' : '') + (n.dados_completos === false ? ' · <b style="color:var(--amb)">cadastro incompleto</b>' : '') + '</div></div><div class="vl din">' + brl(n.valor_bruto) + '</div></label>'; }).join('')
+    + '<div class="tot"><span>' + sel.length + ' notas</span><span class="din">' + brl(tot) + '</span></div>'
+    + '<div class="acoes"><button class="pri" data-nfsmail' + (sel.length ? '' : ' disabled') + '>Montar o e-mail</button><button data-nfsmarca' + (sel.length ? '' : ' disabled') + '>Marcar como pedidas</button></div>'
+    + '<div class="meta" style="margin-top:8px">"Montar o e-mail" abre o Mail com o pedido pronto; escolha a Malgo como destinatário e envie. Depois toque em "Marcar como pedidas".</div>');
+}
+function textoPedido(l){
+  var hoje = new Date().toLocaleDateString('pt-BR'), eq = [];
+  l.forEach(function(n, i){ if(n.equiparacao_hospitalar) eq.push('Item ' + String(i + 1).padStart(2,'0')); });
+  var L = ['Olá, tudo bem?', '', 'Encaminho as solicitações para emissão das notas fiscais médicas, conforme dados detalhados abaixo em cada solicitação.', ''];
+  if(eq.length){ L.push('Peço atenção especial às descrições dos serviços: ' + (eq.length === 1 ? 'a nota referente ao ' + eq[0] : 'as notas referentes aos ' + eq.join(', ')) + ' ' + (eq.length === 1 ? 'refere-se a procedimento médico terapêutico' : 'referem-se a procedimentos médicos terapêuticos') + ' com possibilidade de enquadramento em equiparação hospitalar. Fico à disposição caso entendam necessário algum ajuste ou validação adicional.'); L.push(''); }
+  L.push('Solicitação de notas fiscais, ' + hoje);
+  L.push('Total: ' + l.length + (l.length === 1 ? ' nota' : ' notas') + ' | Valor total: ' + moeda(l.reduce(function(s, n){ return s + Number(n.valor_bruto); }, 0)));
+  L.push('');
+  l.forEach(function(n, i){
+    var outro = n.tomador_tipo === 'pj_outro' || n.tomador_tipo === 'responsavel';
+    L.push('Item ' + String(i + 1).padStart(2,'0')); L.push('SOLICITAÇÃO DE EMISSÃO DE NOTA FISCAL'); L.push(''); L.push('Dados do Tomador (Cliente):');
+    if(outro){
+      L.push('Nome ou Razão Social: ' + (n.tomador_nome || '___'));
+      L.push((String(n.tomador_documento || '').replace(/\D/g,'').length === 14 ? 'CNPJ' : 'CPF') + ': ' + (docFmt(n.tomador_documento) || '___'));
+      if(n.tomador_ie) L.push('Inscrição Estadual: ' + n.tomador_ie);
+      if(n.tomador_im) L.push('Inscrição Municipal: ' + n.tomador_im);
+    } else {
+      L.push('Nome ou Razão Social: ' + (n.patient_nome || '___'));
+      L.push('CPF: ' + (fmtCPF(n.patient_cpf) || '___'));
+    }
+    L.push('Endereço completo com CEP: ' + (n.endereco_completo_str || '___'));
+    L.push('E-mail para envio da nota: ' + (n.email_destinatario || '___'));
+    L.push(''); L.push('Dados do Serviço:');
+    L.push('Descrição detalhada do procedimento: ' + n.descricao_nfse);
+    L.push('Local da prestação do serviço, cidade e estado: São Paulo, SP');
+    L.push('Valor total ou unitário do serviço: ' + moeda(n.valor_bruto));
+    var ob = [];
+    if(outro && n.patient_nome) ob.push('Atendimento referente ao paciente ' + n.patient_nome + (n.patient_cpf ? ', CPF ' + fmtCPF(n.patient_cpf) : '') + '.');
+    if(n.nfse_observacao) ob.push(n.nfse_observacao);
+    if(n.equiparacao_hospitalar) ob.push('Atenção: procedimento com possibilidade de enquadramento em equiparação hospitalar.');
+    L.push('Observações adicionais, se houver: ' + (ob.join(' ') || 'Não há.'));
+    L.push(''); L.push('───────────────────────────────────────────'); L.push('');
+  });
+  return L.join('\n');
+}
+function nfsMail(){
+  var ids = Object.keys(NFSSEL).filter(function(k){ return NFSSEL[k]; }); if(!ids.length) return;
+  api('v_nfse_pendentes?select=*&id=in.(' + ids.map(encodeURIComponent).join(',') + ')&order=data_pagamento.asc').then(function(l){
+    var txt = textoPedido(l || []), subj = 'Solicitação de NFSe, ' + new Date().toLocaleDateString('pt-BR') + ', ' + (l || []).length + ' notas';
+    try{ if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(function(){}); }catch(e){}
+    var url = 'mailto:?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(txt);
+    if(typeof window.HAG_DR_ABRE === 'function') window.HAG_DR_ABRE(url); else location.href = url;   /* gancho do teste */
+  }).catch(function(e){ aviso('Não consegui montar: ' + e.message, true); });
+}
+function nfsMarca(){
+  var ids = Object.keys(NFSSEL).filter(function(k){ return NFSSEL[k]; }); if(!ids.length) return;
+  api('receitas?id=in.(' + ids.map(encodeURIComponent).join(',') + ')', { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ nfse_status:'solicitada', nfse_solicitada_em: agoraISO() }) })
+    .then(function(){ aviso(ids.length + (ids.length > 1 ? ' notas marcadas como pedidas' : ' nota marcada como pedida')); fechaFolha(); carregaPend(); if(ABA === 'fin') abaFin(); })
+    .catch(function(e){ aviso('Não gravou: ' + e.message, true); });
+}
+
+/* ── 4. BUSCA DE PACIENTE ────────────────────────────────────────────── */
+function carregaPacs(){
+  if(PACS) return Promise.resolve(PACS);
+  return api('patients?select=id,nome,plano,status,proxima&or=(interno.is.null,interno.eq.false)&order=nome.asc&limit=1000').then(function(l){ PACS = l || []; return PACS; });
+}
+function semAcento(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function busca(alvo){
+  folha(alvo === 'escolher' ? 'Escolher paciente' : 'Buscar paciente', '<input type="search" id="bq" class="bq" placeholder="Nome do paciente" autocomplete="off" data-alvo="' + (alvo || '') + '"><div id="bres"><div class="vazio">Digite pelo menos 2 letras.</div></div>');
+  setTimeout(function(){ var i = document.getElementById('bq'); if(i) i.focus(); }, 60);
+  carregaPacs().catch(function(e){ document.getElementById('bres').innerHTML = '<div class="msg erro">' + esc(e.message) + '</div>'; });
+}
+function buscaDigita(q, alvo){
+  var r = document.getElementById('bres'); if(!r) return;
+  q = semAcento(q).trim();
+  if(q.length < 2){ r.innerHTML = '<div class="vazio">Digite pelo menos 2 letras.</div>'; return; }
+  var l = (PACS || []).filter(function(p){ return semAcento(p.nome).indexOf(q) >= 0; }).slice(0, 25);
+  r.innerHTML = l.length ? l.map(function(p){ return '<div class="li" ' + (alvo === 'escolher' ? 'data-escolhe' : 'data-pac') + '="' + esc(p.id) + '" data-nome="' + esc(p.nome) + '" style="cursor:pointer"><div class="q"><div class="nome" style="font-weight:500">' + esc(p.nome) + '</div><div class="sub">' + esc(NOMEPLANO[p.plano] || p.plano || '') + (p.proxima ? ' · próxima ' + esc(p.proxima) : '') + '</div></div><span class="chev">›</span></div>'; }).join('') : '<div class="vazio">Ninguém com esse nome.</div>';
+}
+var ESCOLHIDO = null, ESCOLHE_CB = null;
+function escolherPaciente(cb){ ESCOLHE_CB = cb; busca('escolher'); }
+/* Bloco extra do cartao do paciente: receitas a renovar, tratamentos com prazo,
+   medicacao suspensa e injetaveis. Falha aqui nao derruba o cartao. */
+function extrasPaciente(pid){
+  var h30 = hojeISO(30);
+  return Promise.all([
+    api('hag_receitas_para_renovar?select=validade,dias_para_vencer,observacoes&patient_id=eq.' + encodeURIComponent(pid) + '&order=validade.asc').catch(function(){ return []; }),
+    api('hag_tratamentos_com_prazo?select=item,termina_em,dias_vencido,suspenso,revisto_depois&patient_id=eq.' + encodeURIComponent(pid) + '&order=termina_em.asc').catch(function(){ return []; }),
+    api('hag_medicacoes_suspensas?select=medicamento_rotulo,motivo,suspenso_em,voltou_a_ser_prescrito&patient_id=eq.' + encodeURIComponent(pid) + '&order=suspenso_em.desc').catch(function(){ return []; }),
+    api('v_protocolos_status?select=substancia,tipo,dose,aplicacoes_realizadas,total_aplicacoes,proxima_aplicacao,status&patient_id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; })
+  ]).then(function(r){
+    var h = '', rec = r[0] || [], tr = (r[1] || []).filter(function(t){ return !t.suspenso && !t.revisto_depois && t.termina_em && t.termina_em <= h30; }), su = (r[2] || []).filter(function(s){ return !s.voltou_a_ser_prescrito; }), pr = (r[3] || []).filter(function(p){ return p.status === 'ativo'; });
+    if(rec.length) h += '<h2>Receitas a renovar</h2>' + rec.map(function(x){ return li('Vence ' + dm(x.validade), esc(x.observacoes || ''), x.dias_para_vencer != null ? (x.dias_para_vencer < 0 ? 'venceu' : x.dias_para_vencer + ' dias') : null); }).join('');
+    if(tr.length) h += '<h2>Tratamentos terminando</h2>' + tr.map(function(x){ return li(esc(x.item || ''), 'termina ' + dm(x.termina_em), x.dias_vencido > 0 ? '<span class="tag atrasada">acabou</span>' : null); }).join('');
+    if(pr.length) h += '<h2>Injetáveis e implantes</h2>' + pr.map(function(x){ return li(esc(x.substancia || x.tipo || ''), (x.dose ? esc(x.dose) + ' · ' : '') + (x.aplicacoes_realizadas || 0) + ' de ' + (x.total_aplicacoes || '?') + (x.proxima_aplicacao ? ' · próxima ' + dm(x.proxima_aplicacao) : '')); }).join('');
+    if(su.length) h += '<h2>Medicações suspensas</h2>' + su.map(function(x){ return li(esc(x.medicamento_rotulo || ''), dm(x.suspenso_em) + (x.motivo ? ' · ' + esc(x.motivo) : '')); }).join('');
+    return h;
+  });
+}
+function acoesPaciente(pid, nome){
+  return '<div class="acoes" style="margin-top:14px"><button data-dani-pac="' + esc(pid) + '" data-nome="' + esc(nome || '') + '">Pedir à Daniela</button><button data-dita-pac="' + esc(pid) + '" data-nome="' + esc(nome || '') + '">Ditar evolução</button><button data-grava-pac="' + esc(pid) + '" data-nome="' + esc(nome || '') + '">Gravar consulta</button></div>';
+}
+
+/* ── 3. MANDAR PARA A DANIELA (tarefas, tipo "Pedido do Dr.") ────────── */
+/* Vira tarefa no app dela e avisa o celular dela (hag-push, HAG_DR_V3_PEDIDO).
+   Regra da casa: assunto administrativo, financeiro ou de agenda sai dela. */
+function pedidoDaniela(pid, nome, texto){
+  ESCOLHIDO = pid ? { id: pid, nome: nome } : null;
+  folha('Pedir à Daniela', '<div class="campo"><label>Paciente (opcional)</label><button type="button" class="escolhe" data-escolher="dani">' + (ESCOLHIDO ? esc(ESCOLHIDO.nome) : 'Escolher paciente') + '</button></div>'
+    + '<div class="campo"><label>O que ela precisa fazer</label><textarea id="dTx" rows="5" placeholder="Ex.: remarcar o retorno para a semana que vem; mandar o link do pagamento; cancelar a sala de sábado">' + esc(texto || '') + '</textarea></div>'
+    + '<div class="campo"><label><input type="checkbox" id="dUrg"> Urgente</label></div>'
+    + '<div class="acoes"><button class="pri" data-dani-envia>Mandar</button></div>'
+    + '<div class="meta" style="margin-top:8px">Vira uma tarefa no app dela, com aviso no celular. Assunto clínico não vai para a Daniela.</div>');
+}
+function pedidoDanielaEnvia(){
+  var tx = (document.getElementById('dTx').value || '').trim(), urg = document.getElementById('dUrg').checked;
+  if(tx.length < 3){ aviso('Escreva o pedido', true); return; }
+  var agora = agoraISO();
+  var t = { id: 't_' + Date.now(), patient_id: ESCOLHIDO ? ESCOLHIDO.id : null, patient_nome: ESCOLHIDO ? ESCOLHIDO.nome : 'Consultório', tipo: 'Pedido do Dr.', descricao: 'Pedido do Dr.', obs: tx.slice(0, 900), prioridade: urg ? 'alta' : 'normal', status: 'pendente', criado_por: 'medico', criado_em: agora, atualizado_em: agora };
+  api('tarefas', { method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(t) })
+    .then(function(){ aviso('Pedido enviado para a Daniela'); fechaFolha(); })
+    .catch(function(e){ aviso('Não enviou: ' + e.message, true); });
+}
+
+/* ── 13. EVOLUCAO DITADA (hag_dr_notas) ──────────────────────────────── */
+function ditar(pid, nome){
+  ESCOLHIDO = pid ? { id: pid, nome: nome } : null;
+  folha('Ditar evolução', '<div class="campo"><label>Paciente</label><button type="button" class="escolhe" data-escolher="dita">' + (ESCOLHIDO ? esc(ESCOLHIDO.nome) : 'Escolher paciente') + '</button></div>'
+    + '<div class="campo"><label>Vai para</label><select id="nDest"><option value="plano">Plano</option><option value="subjetivo">Subjetivo</option><option value="avaliacao">Avaliação</option></select></div>'
+    + '<div class="campo"><label>Texto (toque no microfone do teclado para ditar)</label><textarea id="nTx" rows="8" placeholder="Fale ou escreva a evolução"></textarea></div>'
+    + '<div class="acoes"><button class="pri" data-nota-salva>Guardar</button></div>'
+    + '<div class="meta" style="margin-top:8px">Fica guardado para a próxima consulta deste paciente no motor do Mac, que mostra a nota para você inserir no campo. Nada entra sozinho no prontuário.</div>'
+    + '<div id="nLista"></div>');
+  if(ESCOLHIDO) notasLista(ESCOLHIDO.id);
+}
+function notasLista(pid){
+  api('hag_dr_notas?select=id,texto,destino,criado_em&patient_id=eq.' + encodeURIComponent(pid) + '&usado_em=is.null&descartado_em=is.null&order=criado_em.desc').then(function(l){
+    var el = document.getElementById('nLista'); if(!el) return;
+    el.innerHTML = (l || []).length ? '<h2>Esperando a consulta</h2>' + l.map(function(n){ return li(dm(n.criado_em) + ' · ' + esc(n.destino), esc(n.texto).slice(0, 220)); }).join('') : '';
+  }).catch(function(){});
+}
+function notaSalva(){
+  if(!ESCOLHIDO){ aviso('Escolha o paciente', true); return; }
+  var tx = (document.getElementById('nTx').value || '').trim();
+  if(!tx){ aviso('Nada para guardar', true); return; }
+  api('hag_dr_notas', { method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ patient_id: ESCOLHIDO.id, patient_nome: ESCOLHIDO.nome, texto: tx.slice(0, 8000), destino: document.getElementById('nDest').value }) })
+    .then(function(){ aviso('Guardado para a consulta de ' + ESCOLHIDO.nome.split(' ')[0]); document.getElementById('nTx').value = ''; notasLista(ESCOLHIDO.id); })
+    .catch(function(e){ aviso('Não guardou: ' + e.message, true); });
+}
+
+/* ── 12. GRAVAR CONSULTA PELO IPHONE ─────────────────────────────────── */
+/* O audio NAO vai para o banco nem para servidor nenhum: o iPhone grava, e o
+   arquivo e salvo pelo "Salvar em Arquivos" do iPhone na pasta
+   HAG_Consultas/_gravacoes_iphone do iCloud. O Mac (hag_mac_pedidos.py) tira o
+   arquivo do iCloud, transcreve no whisper local pelo servico da Escuta e deixa
+   a gravacao pronta no motor do paciente, para "Parar e preencher". */
+var REC = null;
+function gravar(pid, nome){
+  ESCOLHIDO = pid ? { id: pid, nome: nome } : (ESCOLHIDO || null);
+  if(REC && REC.mr && REC.mr.state !== 'inactive'){ pintaGrav(); return; }
+  REC = { blob: null, ini: 0, dur: 0, ok: false };
+  pintaGrav();
+}
+function pintaGrav(){
+  var ativo = REC && REC.mr && REC.mr.state === 'recording', pausado = REC && REC.mr && REC.mr.state === 'paused';
+  var h = '<div class="campo"><label>Paciente</label><button type="button" class="escolhe" data-escolher="grava"' + (ativo || pausado ? ' disabled' : '') + '>' + (ESCOLHIDO ? esc(ESCOLHIDO.nome) : 'Escolher paciente') + '</button></div>';
+  if(!ativo && !pausado && !(REC && REC.blob)){
+    h += '<div class="msg">Peça a autorização: "Posso gravar a consulta para o meu registro? O áudio não fica guardado; uso só para escrever o prontuário."</div>'
+      + '<div class="campo"><label><input type="checkbox" id="gAut"' + (REC && REC.ok ? ' checked' : '') + '> O paciente autorizou a gravação</label></div>'
+      + '<div class="acoes"><button class="pri rec" data-grav-ini>● Começar a gravar</button></div>'
+      + '<div class="meta" style="margin-top:8px">Deixe o app aberto e a tela ligada durante a consulta. Se o iPhone travar a tela, a gravação para.</div>';
+  } else if(ativo || pausado){
+    h += '<div class="relogio" id="gRel">' + mmss(tempoGrav()) + '</div><div class="meta" style="text-align:center">' + (ativo ? 'Gravando' : 'Pausado') + '</div>'
+      + '<div class="acoes" style="justify-content:center"><button data-grav-pausa>' + (ativo ? 'Pausar' : 'Continuar') + '</button><button class="pri" data-grav-fim>Parar</button></div>';
+  } else {
+    h += '<div class="msg">Gravação pronta: ' + mmss(REC.dur) + '. Salve no iCloud para o Mac transcrever.</div>'
+      + '<div class="acoes"><button class="pri" data-grav-salva>Salvar no iCloud</button><button data-grav-descarta>Descartar</button></div>'
+      + '<div class="meta" style="margin-top:8px">Na janela que abre, toque em <b>Salvar em Arquivos</b> e escolha <b>iCloud Drive › Profissional › HAG_Consultas › _gravacoes_iphone</b> (o iPhone lembra a pasta). Em até 2 minutos o Mac transcreve e a gravação aparece no motor deste paciente, pronta para "Parar e preencher".</div>';
+  }
+  folha('Gravar consulta', h);
+}
+function mmss(s){ s = Math.max(0, Math.round(s || 0)); var m = Math.floor(s / 60), x = s % 60; return m + ':' + (x < 10 ? '0' : '') + x; }
+function tempoGrav(){ return REC ? REC.dur + (REC.ini ? (Date.now() - REC.ini) / 1000 : 0) : 0; }
+function gravIni(){
+  if(!ESCOLHIDO){ aviso('Escolha o paciente', true); return; }
+  if(!document.getElementById('gAut').checked){ aviso('Só grava com a autorização do paciente', true); return; }
+  if(!navigator.mediaDevices || !window.MediaRecorder){ aviso('Este aparelho não grava pelo navegador', true); return; }
+  REC.ok = true;
+  navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: false, noiseSuppression: true } }).then(function(st){
+    var tipo = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].filter(function(t){ return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0] || '';
+    var mr = new MediaRecorder(st, tipo ? { mimeType: tipo, audioBitsPerSecond: 48000 } : undefined);
+    REC.mr = mr; REC.st = st; REC.partes = []; REC.tipo = mr.mimeType || tipo || 'audio/mp4'; REC.inicio = new Date(); REC.ini = Date.now(); REC.dur = 0;
+    mr.ondataavailable = function(e){ if(e.data && e.data.size) REC.partes.push(e.data); };
+    mr.onstop = function(){ REC.blob = new Blob(REC.partes, { type: REC.tipo }); try{ REC.st.getTracks().forEach(function(t){ t.stop(); }); }catch(x){} soltaTela(); pintaGrav(); };
+    mr.start(10000);
+    prendeTela();
+    REC.timer = setInterval(function(){ var r = document.getElementById('gRel'); if(r) r.textContent = mmss(tempoGrav()); }, 1000);
+    pintaGrav();
+  }).catch(function(e){ aviso('Microfone não liberado: ' + e.message, true); });
+}
+function gravPausa(){
+  if(!REC || !REC.mr) return;
+  if(REC.mr.state === 'recording'){ REC.mr.pause(); REC.dur += (Date.now() - REC.ini) / 1000; REC.ini = 0; }
+  else if(REC.mr.state === 'paused'){ REC.mr.resume(); REC.ini = Date.now(); }
+  pintaGrav();
+}
+function gravFim(){
+  if(!REC || !REC.mr) return;
+  if(REC.ini){ REC.dur += (Date.now() - REC.ini) / 1000; REC.ini = 0; }
+  clearInterval(REC.timer);
+  REC.mr.stop();
+}
+function nomeArquivo(){
+  var d = REC.inicio || new Date(), p = function(n){ return String(n).padStart(2, '0'); };
+  var ext = /webm/.test(REC.tipo) ? 'webm' : 'm4a';
+  return 'HAGREC_' + ESCOLHIDO.id + '_' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + '_aut_' + Math.round(REC.dur) + 's.' + ext;
+}
+function gravSalva(){
+  if(!REC || !REC.blob || !ESCOLHIDO) return;
+  var f = new File([REC.blob], nomeArquivo(), { type: REC.tipo });
+  if(navigator.canShare && navigator.canShare({ files: [f] })){
+    navigator.share({ files: [f], title: 'Gravação da consulta' }).then(function(){ aviso('Salvo. O Mac transcreve em até 2 minutos.'); REC = null; fechaFolha(); })
+      .catch(function(e){ if(e && e.name === 'AbortError') return; aviso('Não salvou: ' + e.message, true); });
+  } else {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+    aviso('Baixado. Mova o arquivo para a pasta _gravacoes_iphone do HAG_Consultas.');
+  }
+}
+var TRAVA = null;
+function prendeTela(){ try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(function(t){ TRAVA = t; }).catch(function(){}); }catch(e){} }
+function soltaTela(){ try{ if(TRAVA) TRAVA.release(); }catch(e){} TRAVA = null; }
+
+/* ── 10. PRONTUARIOS A ASSINAR ───────────────────────────────────────── */
+function prontuarios(){
+  folha('Prontuários a assinar', '<div class="vazio">Carregando…</div>');
+  var de = hojeISO(-45);
+  Promise.all([ api('consultas?select=id,patient_id,patient_nome,data_consulta,etapa&assinado_em=is.null&data_consulta=gte.' + de + '&order=data_consulta.asc&limit=80'),
+                api('mac_pedidos?select=status,pedido_em,concluido_em,resumo,erro&tipo=eq.assinar_prontuarios&order=id.desc&limit=1').catch(function(){ return []; }) ]).then(function(r){
+    var l = (r[0] || []).filter(function(c){ return /^\d{4}-\d{2}-\d{2}/.test(c.data_consulta || '') && String(c.data_consulta).slice(0,10) <= hojeISO(); }), u = (r[1] || [])[0];
+    var h = '<p class="sub">' + l.length + (l.length === 1 ? ' consulta' : ' consultas') + ' dos últimos 45 dias sem assinatura no banco.</p>'
+      + l.map(function(c){ return li(esc(c.patient_nome || ''), diaRot(String(c.data_consulta).slice(0,10)) + (c.etapa ? ' · ' + esc(c.etapa) : '')); }).join('');
+    if(u) h += '<div class="msg' + (u.status === 'erro' ? ' erro' : '') + '">Último pedido ao Mac (' + dm(u.pedido_em) + '): ' + esc(u.status === 'feito' ? (u.resumo || 'feito') : u.status === 'erro' ? (u.erro || 'erro') : 'na fila, o Mac pega em até 1 minuto') + '</div>';
+    h += '<div class="acoes"><button class="pri" data-prep-mac' + (l.length ? '' : ' disabled') + '>Preparar no Mac</button></div>'
+      + '<div class="meta" style="margin-top:8px">O Mac copia os PDFs para a pasta "Prontuarios para assinar" da Mesa, com o quadro da assinatura pronto. Ao chegar no Mac: libere o VIDaaS no celular e dê dois cliques em "Assinar prontuários". A assinatura em si continua sendo sua, com o e-CPF.</div>';
+    folha('Prontuários a assinar', h);
+  }).catch(function(e){ folha('Prontuários a assinar', '<div class="msg erro">' + esc(e.message) + '</div>'); });
+}
+function prepMac(){
+  api('mac_pedidos', { method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ tipo:'assinar_prontuarios', params:{ janela_dias: 45 } }) })
+    .then(function(){ aviso('Pedido enviado. O Mac prepara em até 1 minuto, se estiver ligado.'); prontuarios(); })
+    .catch(function(e){ aviso('Não enviou: ' + e.message, true); });
+}
+
+/* ── 11. FECHAR UM DIA DA AGENDA ─────────────────────────────────────── */
+function fecharDia(){
+  folha('Fechar um dia', '<div class="campo"><label>Dia</label><input type="date" id="fdData" min="' + hojeISO() + '"></div>'
+    + '<div class="campo"><label>Onde</label><select id="fdLocal"><option value="">Todos os locais</option><option value="tatuape">Tatuapé</option><option value="pinheiros">Pinheiros</option><option value="online">Online</option></select></div>'
+    + '<div class="campo"><label>Motivo (fica para a equipe)</label><input type="text" id="fdMot" value="Dr. Henrique indisponível"></div>'
+    + '<div id="fdConf"></div><div class="acoes"><button data-fd-confere>Conferir o dia</button></div>'
+    + '<div class="meta" style="margin-top:8px">A página de agendamento deixa de oferecer o dia. A Daniela recebe um pedido para cancelar a sala na Livance e remarcar quem já estava marcado.</div>');
+}
+function fdConfere(){
+  var d = document.getElementById('fdData').value; if(!d){ aviso('Escolha o dia', true); return; }
+  var loc = document.getElementById('fdLocal').value;
+  Promise.all([ rpc('hag_agenda_briefing', { p_de: d, p_ate: d }).catch(function(){ return []; }),
+                api('agenda_bloqueios?select=id,local,motivo&data=eq.' + d) ]).then(function(r){
+    var ag = (r[0] || []).filter(function(a){ return !loc || semAcento(a.local || a.modalidade).indexOf(loc) >= 0; }), bl = r[1] || [];
+    var h = bl.length ? '<div class="msg">Este dia já está fechado' + (bl[0].local ? ' em ' + esc(bl[0].local) : '') + ': ' + esc(bl[0].motivo || '') + '</div>' : '';
+    h += ag.length ? '<div class="msg erro">' + ag.length + (ag.length > 1 ? ' consultas marcadas' : ' consulta marcada') + ' neste dia: ' + ag.map(function(a){ return esc(a.patient_nome) + ' ' + esc((a.hora || '').slice(0,5)); }).join(', ') + '. A Daniela vai remarcar.</div>' : '<div class="msg">Nenhuma consulta marcada neste dia.</div>';
+    h += '<div class="acoes"><button class="pri" data-fd-fecha="' + d + '">Fechar ' + diaRot(d) + '</button></div>';
+    document.getElementById('fdConf').innerHTML = h;
+    window._FDAG = ag;
+  }).catch(function(e){ aviso(e.message, true); });
+}
+function fdFecha(d){
+  var loc = document.getElementById('fdLocal').value || null, mot = (document.getElementById('fdMot').value || 'Dr. Henrique indisponível').trim();
+  var ag = window._FDAG || [], agora = agoraISO();
+  var LOCN = { tatuape:'Tatuapé', pinheiros:'Pinheiros', online:'online' };
+  var txt = 'Fechei o dia ' + d.split('-').reverse().join('/') + (loc ? ' em ' + LOCN[loc] : '') + ' (' + mot + '). '
+    + (loc === 'online' ? '' : 'Cancele a sala na Livance, se houver reserva. ') + (ag.length ? 'Remarque: ' + ag.map(function(a){ return a.patient_nome + ' ' + (a.hora || '').slice(0,5); }).join(', ') + '.' : 'Não havia consulta marcada.');
+  api('agenda_bloqueios', { method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ data: d, local: loc, motivo: mot, criado_por: 'hag_dr' }) })
+    .then(function(){ return api('tarefas', { method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ id:'t_' + Date.now(), patient_id:null, patient_nome:'Consultório', tipo:'Pedido do Dr.', descricao:'Pedido do Dr.', obs: txt.slice(0, 900), prioridade: ag.length ? 'alta' : 'normal', status:'pendente', criado_por:'medico', criado_em: agora, atualizado_em: agora }) }); })
+    .then(function(){ aviso('Dia fechado e Daniela avisada'); fechaFolha(); })
+    .catch(function(e){ aviso('Não fechou: ' + e.message, true); });
+}
+
+/* ── 6. AVISOS NESTE APP ─────────────────────────────────────────────── */
+var VAPID = 'BE5Sl8gN_vm7fqCK261RE4eZF0FBmIx0-AseQQxoCEY5U8TkkldzjtewOnj8RwTZ_SnRX7OOCZV5xhBpjSb2R7k';
+function b64u8(b){ var p = '='.repeat((4 - b.length % 4) % 4), s = atob((b + p).replace(/-/g,'+').replace(/_/g,'/')), a = new Uint8Array(s.length); for(var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+function pushSuporta(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
+function pushEstado(){
+  if(!pushSuporta()) return Promise.resolve('sem');
+  return navigator.serviceWorker.getRegistration().then(function(r){ return r ? r.pushManager.getSubscription() : null; }).then(function(s){ return s && Notification.permission === 'granted' ? 'ligado' : 'desligado'; }).catch(function(){ return 'desligado'; });
+}
+function ligarAvisos(){
+  if(!pushSuporta()){ aviso('Este navegador não recebe aviso com o app fechado', true); return; }
+  var ios = /iPhone|iPad/.test(navigator.userAgent), inst = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if(ios && !inst){ aviso('Abra o HAG Dr pelo ícone da tela de início e ligue aqui.', true); return; }
+  var em = emailLogado(); if(em !== DR){ aviso('Entre com o seu e-mail antes', true); return; }
+  Notification.requestPermission().then(function(p){
+    if(p !== 'granted') throw new Error('permissão não concedida');
+    return navigator.serviceWorker.register('sw.js').then(function(){ return navigator.serviceWorker.ready; });
+  }).then(function(reg){ return reg.pushManager.getSubscription().then(function(s){ return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u8(VAPID) }); }); })
+    .then(function(sub){
+      var j = sub.toJSON();
+      return api('push_assinaturas?on_conflict=endpoint', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ endpoint: j.endpoint, p256dh: (j.keys || {}).p256dh || '', auth: (j.keys || {}).auth || '', quem: DR, aparelho: (navigator.userAgent || '').slice(0, 180), app: 'hagdr', atualizado_em: agoraISO() }) })
+        .then(function(){ return fn('hag-dr-push', { teste: true, endpoint: j.endpoint }).catch(function(){}); });
+    })
+    .then(function(){ aviso('Avisos ligados no HAG Dr. Os avisos clínicos passam a chegar aqui, e não mais no Tarefas.'); if(ABA === 'mais') abaMais(); })
+    .catch(function(e){ aviso('Não liguei: ' + (e && e.message || e), true); });
+}
+
+/* ── 14. ESTADO DO SISTEMA ───────────────────────────────────────────── */
+function estadoSistema(){
+  folha('Estado do sistema', '<div class="vazio">Carregando…</div>');
+  rpc('hag_dr_estado').then(function(e){
+    e = e || {}; var s = e.saude || {}, ag = s.agentes || [];
+    var cor = { verde:'ok', amarelo:'logistica', vermelho:'urgente' };
+    var atras = +s.coletor_atrasado_min || 0;
+    var h = '<div class="card" style="padding:12px"><div class="nome">' + (atras > 45 ? '💻 O Mac não dá sinal há ' + Math.round(atras) + ' min' : '💻 Mac ligado e dando sinal') + '</div><div class="sub">Coleta de ' + (s.coletado_em ? dm(s.coletado_em) + ' ' + String(new Date(s.coletado_em).toTimeString()).slice(0,5) : '—') + ' · ' + (s.verde || 0) + ' de ' + (s.total || 0) + ' rotinas em dia</div></div>';
+    var prob = ag.filter(function(a){ return a.cor !== 'verde'; });
+    if(prob.length) h += '<h2>Rotinas com atenção</h2>' + prob.map(function(a){ return li(esc(a.descricao || a.agente), esc(String(a.motivo || '') + (a.erro ? ': ' + a.erro : '')).slice(0, 220), '<span class="tag ' + (cor[a.cor] || '') + '">' + esc(a.cor) + '</span>'); }).join('');
+    h += '<h2>Dados</h2>' + li('Extrato da InfinitePay', 'até ' + dm(e.extrato_ate) + (e.extrato_importado_em ? ' · importado ' + dm(e.extrato_importado_em) : ''))
+      + li('Vendas da InfinitePay', e.vendas_ate ? 'até ' + dm(e.vendas_ate) + ' · importadas ' + dm(e.vendas_importadas_em) : 'ainda não importadas')
+      + li('Último briefing', e.briefing_ultimo ? dm(e.briefing_ultimo) + ' ' + String(new Date(e.briefing_ultimo).toTimeString()).slice(0,5) : '—');
+    var av = e.avisos || [];
+    h += '<h2>Avisos no seu iPhone</h2>' + (av.length ? av.map(function(a){ return li(a.app === 'hagdr' ? 'HAG Dr' : 'Tarefas', 'ligado desde ' + dm(a.desde)); }).join('') : '<div class="vazio">Nenhum aparelho seu recebe avisos.</div>');
+    var pm = e.pedidos_mac || [];
+    if(pm.length) h += '<h2>Pedidos ao Mac</h2>' + pm.map(function(p){ return li(esc(p.tipo === 'assinar_prontuarios' ? 'Preparar assinatura' : p.tipo === 'gravacao_iphone' ? 'Gravação do iPhone' : p.tipo), dm(p.pedido_em) + ' · ' + esc(p.status === 'erro' ? (p.erro || 'erro') : (p.resumo || p.status))); }).join('');
+    folha('Estado do sistema', h);
+  }).catch(function(x){ folha('Estado do sistema', '<div class="msg erro">' + esc(x.message) + '</div>'); });
+}
+
+/* ── ABA MAIS ────────────────────────────────────────────────────────── */
+function abaMais(){
+  W('<div class="vazio">Carregando…</div>');
+  return Promise.all([ pushEstado(), api('mac_pedidos?select=tipo,status,resumo,erro,concluido_em&tipo=eq.gravacao_iphone&order=id.desc&limit=3').catch(function(){ return []; }) ]).then(function(r){
+    var pe = r[0], gr = r[1] || [];
+    function item(attr, ic, t, s){ return '<div class="card row" ' + attr + '><div class="ic">' + ic + '</div><div class="q"><div class="nome">' + t + '</div><div class="sub">' + s + '</div></div><span class="chev">›</span></div>'; }
+    var h = '<h2>Paciente</h2>'
+      + item('data-busca', '🔎', 'Buscar paciente', 'Ciclo, receitas, tratamentos e injetáveis')
+      + item('data-grava', '🎙️', 'Gravar consulta', 'Pelo iPhone, para o Mac transcrever')
+      + item('data-dita', '✍️', 'Ditar evolução', 'Fica guardada para a próxima consulta')
+      + '<h2>Equipe e agenda</h2>'
+      + item('data-dani', '📌', 'Pedir à Daniela', 'Vira tarefa no app dela, com aviso')
+      + item('data-fechadia', '🚫', 'Fechar um dia', 'Tira o dia da agenda e avisa a Daniela')
+      + item('data-pront', '🖋️', 'Prontuários a assinar', 'Prepara a assinatura no Mac')
+      + '<h2>Financeiro</h2>'
+      + item('data-nfs', '🧾', 'Pedir notas à Malgo', 'Monta o e-mail com as notas pendentes')
+      + item('data-contas', '💳', 'Contas a pagar', 'Marcar o que já foi pago')
+      + '<h2>Sistema</h2>'
+      + item('data-estado', '🩺', 'Estado do sistema', 'Mac, rotinas, extrato e avisos')
+      + (pe === 'ligado' ? item('data-avisos', '🔔', 'Avisos ligados neste app', 'O resumo do dia chega às 7h') : item('data-avisos', '🔕', 'Ligar avisos neste app', pe === 'sem' ? 'Este navegador não recebe aviso' : 'Check-ins, WhatsApp clínico e o resumo das 7h'));
+    if(gr.length) h += '<h2>Gravações do iPhone</h2>' + gr.map(function(g){ return '<div class="card" style="padding:12px 14px"><div class="nome" style="font-weight:500">' + esc(g.status === 'erro' ? 'Não importou' : 'Pronta no motor') + '</div><div class="sub">' + esc(g.status === 'erro' ? (g.erro || '') : (g.resumo || '')) + '</div></div>'; }).join('');
+    W(h);
+  });
+}
+
 /* ── navegação ─────────────────────────────────────────────────────── */
 function abrir(aba){
   ABA = aba; ABERTO = null;
-  document.getElementById('titAba').textContent = ({ hoje:'Agenda', checkins:'Check-ins', vendas:'Vendas', fin:'Financeiro' })[aba] || 'HAG Dr';
+  document.getElementById('titAba').textContent = ({ hoje:'Agenda', checkins:'Check-ins', vendas:'Vendas', fin:'Financeiro', mais:'Mais' })[aba] || 'HAG Dr';
   document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-aba') === aba); });
   try{ sessionStorage.setItem('hagdr_aba', aba); }catch(e){}
   window.scrollTo(0, 0);
-  return ({ hoje:abaHoje, checkins:abaCheckins, vendas:abaVendas, fin:abaFin })[aba]();
+  return (({ hoje:abaHoje, checkins:abaCheckins, vendas:abaVendas, fin:abaFin, mais:abaMais })[aba] || abaHoje)();
 }
 document.addEventListener('click', function(e){
   var t = e.target, a;
   if(!t.closest) return;
   if((a = t.closest('#fFecha')) || t.id === 'veu'){ fechaFolha(); return; }
+  /* HAG_DR_V3 */
+  if((a = t.closest('[data-pendtodas]'))){ pendTodas(); return; }
+  if((a = t.closest('[data-pend]'))){ abrePend(+a.getAttribute('data-pend')); return; }
+  if((a = t.closest('[data-dani-pend]'))){ var pp = (PEND || [])[+a.getAttribute('data-dani-pend')] || {}; pedidoDaniela(null, null, 'Identificar e lançar no HAG OS: ' + (pp.itens || []).map(function(x){ return dm(x.data) + ' ' + (x.metodo === 'pix' ? 'Pix' : 'cartão ' + (x.parcelas || 1) + 'x') + ' R$ ' + x.valor + (x.comprador ? ' (' + x.comprador + ')' : ''); }).join('; ') + '.'); return; }
+  if((a = t.closest('#buscar'))){ busca(); return; }
+  if((a = t.closest('[data-busca]'))){ busca(); return; }
+  if((a = t.closest('[data-escolhe]'))){ ESCOLHIDO = { id: a.getAttribute('data-escolhe'), nome: a.getAttribute('data-nome') }; if(ESCOLHE_CB) ESCOLHE_CB(); return; }
+  if((a = t.closest('[data-escolher]'))){ var qual = a.getAttribute('data-escolher'), dtx = document.getElementById('dTx'), ntx = document.getElementById('nTx'), vd = dtx ? dtx.value : '', vn = ntx ? ntx.value : '';
+    escolherPaciente(function(){ if(qual === 'dani') pedidoDaniela(ESCOLHIDO.id, ESCOLHIDO.nome, vd); else if(qual === 'dita'){ ditar(ESCOLHIDO.id, ESCOLHIDO.nome); var n2 = document.getElementById('nTx'); if(n2) n2.value = vn; } else gravar(ESCOLHIDO.id, ESCOLHIDO.nome); }); return; }
+  if((a = t.closest('[data-dani]'))){ pedidoDaniela(); return; }
+  if((a = t.closest('[data-dani-pac]'))){ pedidoDaniela(a.getAttribute('data-dani-pac'), a.getAttribute('data-nome')); return; }
+  if((a = t.closest('[data-dani-envia]'))){ pedidoDanielaEnvia(); return; }
+  if((a = t.closest('[data-dita]'))){ ditar(); return; }
+  if((a = t.closest('[data-dita-pac]'))){ ditar(a.getAttribute('data-dita-pac'), a.getAttribute('data-nome')); return; }
+  if((a = t.closest('[data-nota-salva]'))){ notaSalva(); return; }
+  if((a = t.closest('[data-grava]'))){ gravar(); return; }
+  if((a = t.closest('[data-grava-pac]'))){ gravar(a.getAttribute('data-grava-pac'), a.getAttribute('data-nome')); return; }
+  if((a = t.closest('[data-grav-ini]'))){ gravIni(); return; }
+  if((a = t.closest('[data-grav-pausa]'))){ gravPausa(); return; }
+  if((a = t.closest('[data-grav-fim]'))){ gravFim(); return; }
+  if((a = t.closest('[data-grav-salva]'))){ gravSalva(); return; }
+  if((a = t.closest('[data-grav-descarta]'))){ if(confirm('Descartar esta gravação?')){ REC = null; fechaFolha(); } return; }
+  if((a = t.closest('[data-pront]'))){ prontuarios(); return; }
+  if((a = t.closest('[data-prep-mac]'))){ prepMac(); return; }
+  if((a = t.closest('[data-fechadia]'))){ fecharDia(); return; }
+  if((a = t.closest('[data-fd-confere]'))){ fdConfere(); return; }
+  if((a = t.closest('[data-fd-fecha]'))){ fdFecha(a.getAttribute('data-fd-fecha')); return; }
+  if((a = t.closest('[data-nfs]'))){ pedidoNfse(); return; }
+  if((a = t.closest('[data-nfsmail]'))){ nfsMail(); return; }
+  if((a = t.closest('[data-nfsmarca]'))){ nfsMarca(); return; }
+  if((a = t.closest('[data-contas]'))){ contasPagar(); return; }
+  if((a = t.closest('[data-conta]'))){ contaDet(a.getAttribute('data-conta')); return; }
+  if((a = t.closest('[data-contapaga]'))){ contaPaga(a.getAttribute('data-contapaga')); return; }
+  if((a = t.closest('[data-estado]'))){ estadoSistema(); return; }
+  if((a = t.closest('[data-avisos]'))){ ligarAvisos(); return; }
   if((a = t.closest('[data-det="areceber"]'))){ areceberDet(); return; }
   if((a = t.closest('[data-det="entradas"]'))){ detalhe('entradas', a.getAttribute('data-mes'), 'Entrou na conta'); return; }
   if((a = t.closest('[data-det]'))){ detalhe(a.getAttribute('data-det'), a.getAttribute('data-mes'), a.getAttribute('data-tit')); return; }
@@ -559,6 +1130,10 @@ document.addEventListener('click', function(e){
   if((a = t.closest('#olho'))){ OCULTO = !OCULTO; try{ localStorage.setItem('hagdr_oculto', OCULTO ? '1' : ''); }catch(x){} abaFin(); return; }
 });
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible'){ contaCheckins(); } });
+/* HAG_DR_V3 */
+document.addEventListener('input', function(e){ var t = e.target; if(t && t.id === 'bq') buscaDigita(t.value, t.getAttribute('data-alvo')); });
+document.addEventListener('change', function(e){ var t = e.target; if(t && t.hasAttribute && t.hasAttribute('data-nfsid')){ NFSSEL[t.getAttribute('data-nfsid')] = t.checked; pintaNfse(); } });
+function badgePend(){ var b = document.getElementById('bdgMais'); if(!b) return; var n = (PEND || []).filter(function(p){ return p.nivel === 'alta'; }).length; b.textContent = n; b.hidden = !n; }
 
 function dataLonga(){ var d = new Date(); var S = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
   var M = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']; return S[d.getDay()] + ', ' + d.getDate() + ' de ' + M[d.getMonth()]; }
@@ -570,7 +1145,7 @@ function iniciar(){
   document.body.classList.toggle('oculto', OCULTO);
   var ini = 'hoje'; try{ ini = sessionStorage.getItem('hagdr_aba') || 'hoje'; }catch(e){}
   if(/[?&]aba=(\w+)/.test(location.search)) ini = RegExp.$1;
-  abrir(ini); contaCheckins();
+  abrir(ini); contaCheckins(); carregaPend().then(badgePend);   /* HAG_DR_V3 */
 }
 if(window.HAGAuth && window.HAGAuth.valid && window.HAGAuth.valid()) iniciar();
 else if(window.HAGAuth) window.HAGAuth.mount(iniciar);
