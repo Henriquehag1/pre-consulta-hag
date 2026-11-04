@@ -306,9 +306,53 @@ function pintaAtual(){
 var NV = { urgente:'Hoje', responder:'Responder', logistica:'Daniela', sem_acao:'Sem ação', erro:'Falhou' };
 var ORDNV = { urgente:0, erro:1, responder:2, logistica:3, sem_acao:4 };
 function contaCheckins(){
-  return Promise.all([ api('checkin_triagem?select=id&status=in.(pendente,erro)'), api('wpp_clinico?select=rascunho_id&status=eq.pendente').catch(function(){ return []; }) ]).then(function(rr){
-    var n = (rr[0] || []).length + (rr[1] || []).length, b = document.getElementById('bdgCk'); b.textContent = n; b.hidden = !n;
+  return Promise.all([ api('checkin_triagem?select=id&status=in.(pendente,erro)'), api('wpp_clinico?select=rascunho_id&status=eq.pendente').catch(function(){ return []; }), api('dr_mensagens?select=id&status=eq.pendente').catch(function(){ return []; }) ]).then(function(rr){
+    var n = (rr[0] || []).length + (rr[1] || []).length + (rr[2] || []).length, b = document.getElementById('bdgCk'); b.textContent = n; b.hidden = !n;
   }).catch(function(){});
+}
+/* HAG_DR_MENSAGENS_v1 (04/11/2026): e-mail de paciente e WhatsApp PESSOAL do Dr. viram acao aqui.
+   POR QUE: o e-mail do Bruno (02/11, intestino preso depois da medicacao) entrou em
+   mensagens_paciente e nunca apareceu para o Dr. A tabela dr_mensagens tem RLS so do Dr.;
+   a Edge Function hag-dr-mensagem escreve resumo, decisoes e sugestao de resposta. */
+var DRMSG = {};
+function blocoDrMsg(rows){
+  if(!rows || !rows.length) return '';
+  rows.forEach(function(r){ DRMSG[r.id] = r; });
+  return '<h2>Mensagens para você</h2>' + rows.map(function(r){
+    var k = r.nivel === 'urgente' ? 'urgente' : 'responder', em = r.origem === 'email';
+    return '<div class="card row ck ' + k + '" data-drmsg="' + esc(r.id) + '"><div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
+      + '<div class="sub">' + esc(r.resumo || '') + '</div><div class="meta">' + dm(r.ultima_entrada_em || r.criado_em) + ' · ' + (em ? 'e-mail' : 'WhatsApp pessoal') + ' · resposta pronta</div></div><span class="tag ' + k + '">' + NV[k] + '</span></div>';
+  }).join('');
+}
+function abreDrMsg(id){
+  var r = DRMSG[id]; if(!r) return;
+  var em = r.origem === 'email';
+  var ult = (r.conversa || []).filter(function(c){ return c.de === 'paciente'; }).pop();
+  var dec = (r.decisoes || []).map(function(d){ return '<li><b>' + esc(d.tema || '') + ':</b> ' + esc(d.recomendacao || '') + (d.alternativa ? ' <span class="meta">Alternativa: ' + esc(d.alternativa) + '</span>' : '') + (d.justificativa ? ' <span class="meta">' + esc(d.justificativa) + '</span>' : '') + '</li>'; }).join('');
+  folha(r.patient_nome || 'Paciente', '<p class="meta">' + (em ? 'E-mail' : 'WhatsApp pessoal') + (r.assunto ? ' · ' + esc(r.assunto) : '') + '</p><p>' + esc(r.resumo || '') + '</p>'
+    + (ult ? '<details style="margin:8px 0"><summary class="meta">Ver a mensagem do paciente</summary><div style="white-space:pre-wrap;font-size:14px;margin-top:6px">' + esc(String(ult.texto || '').slice(0, 3000)) + '</div></details>' : '')
+    + (dec ? '<h2>Decisões</h2><ul>' + dec + '</ul>' : '')
+    + '<h2>Sua resposta</h2><textarea id="drTx" style="width:100%;min-height:220px;font:inherit;font-size:15px;border:1px solid var(--line,#ddd);border-radius:10px;padding:10px;background:transparent;color:inherit">' + esc(r.mensagem_dr || '') + '</textarea>'
+    + '<div class="meta" style="margin-top:6px">Troque ou apague o que estiver [[entre colchetes duplos]] e complete o que estiver [entre colchetes]. Assunto administrativo vai para a Daniela.</div>'
+    + '<div class="acoes" style="margin-top:10px">' + (r.contato ? '<a href="#" data-drenvia="' + esc(id) + '">' + (em ? 'Copiar e responder por e-mail' : 'Copiar e abrir no WhatsApp') + '</a>' : '') + '<a href="#" data-drst="' + esc(id) + '|respondida">Respondi</a><a href="#" data-drst="' + esc(id) + '|dispensada">Dispensar</a></div>');
+}
+function drMsgEnvia(a){
+  var r = DRMSG[a.getAttribute('data-drenvia')], t = document.getElementById('drTx').value;
+  if(!r) return;
+  if(/\[[^\]]*\]/.test(t)){ a.textContent = 'Complete os colchetes antes'; return; }
+  try{ if(navigator.clipboard) navigator.clipboard.writeText(t).catch(function(){}); }catch(x){}
+  if(r.origem === 'email'){
+    var as = r.assunto || 'Seu acompanhamento';
+    if(!/^re:/i.test(as)) as = 'Re: ' + as;
+    location.href = 'mailto:' + encodeURIComponent(r.contato).replace(/%40/g, '@') + '?subject=' + encodeURIComponent(as) + '&body=' + encodeURIComponent(t);
+  } else {
+    window.open('https://wa.me/' + String(r.contato).replace(/\D/g,'') + '?text=' + encodeURIComponent(t), '_blank');
+  }
+}
+function drMsgStatus(id, st){
+  var agora = new Date().toISOString();
+  return api('dr_mensagens?id=eq.' + id, { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ status: st, respondida_em: agora, respondida_por: 'pagina', atualizado_em: agora }) })
+    .then(function(){ fechaFolha(); abaCheckins(); contaCheckins(); });
 }
 /* HAG_WPP_AGENTE_v1 (31/10/2026): mensagem do WhatsApp do consultorio com assunto clinico.
    A Daniela recebe so a frase de encaminhamento; a leitura clinica e a sugestao de resposta
@@ -338,11 +382,12 @@ function wppStatus(id, st){
 function abaCheckins(){
   W('<div class="vazio">Carregando…</div>');
   return Promise.all([ api('checkin_triagem?select=id,patient_nome,nivel,status,motivo,canal,criado_em&status=in.(pendente,erro)&order=criado_em.desc&limit=60'),
-                       api('wpp_clinico?select=rascunho_id,patient_nome,telefone,nivel,resumo,mensagem_dr,decisoes,criado_em&status=eq.pendente&order=criado_em.desc').catch(function(){ return []; }) ]).then(function(rr){
-    var rows = rr[0], wdr = rr[1] || [];
+                       api('wpp_clinico?select=rascunho_id,patient_nome,telefone,nivel,resumo,mensagem_dr,decisoes,criado_em&status=eq.pendente&order=criado_em.desc').catch(function(){ return []; }),
+                       api('dr_mensagens?select=id,origem,patient_nome,contato,assunto,conversa,ultima_entrada_em,nivel,resumo,decisoes,mensagem_dr,criado_em&status=eq.pendente&order=criado_em.desc&limit=40').catch(function(){ return []; }) ]).then(function(rr){
+    var rows = rr[0], wdr = rr[1] || [], hdm = blocoDrMsg(rr[2] || []), hwp = blocoWppDr(wdr);
     rows = (rows || []).sort(function(a,b){ var ka = a.status === 'erro' ? 'erro' : a.nivel, kb = b.status === 'erro' ? 'erro' : b.nivel; return ((ka in ORDNV) ? ORDNV[ka] : 9) - ((kb in ORDNV) ? ORDNV[kb] : 9); });
     var nU = rows.filter(function(r){ return r.nivel === 'urgente'; }).length;
-    var h = blocoWppDr(wdr) + (rows.length ? '<div class="resumo"><b>' + rows.length + (rows.length > 1 ? ' esperando resposta' : ' esperando resposta') + '</b>' + (nU ? ' · <span style="color:var(--verm);font-weight:600">' + nU + ' para hoje</span>' : '') + '</div>' : '')
+    var h = hdm + (hdm && !hwp ? '<h2>Check-ins</h2>' : '') + hwp + (rows.length ? '<div class="resumo"><b>' + rows.length + (rows.length > 1 ? ' esperando resposta' : ' esperando resposta') + '</b>' + (nU ? ' · <span style="color:var(--verm);font-weight:600">' + nU + ' para hoje</span>' : '') + '</div>' : '')
       + (rows.length ? rows.map(function(r){
       var k = r.status === 'erro' ? 'erro' : r.nivel;
       return '<a class="card row ck ' + k + '" style="text-decoration:none;color:inherit" href="triagem_HAG.html?id=' + encodeURIComponent(r.id) + '&de=dr"><div class="q"><div class="nome">' + esc(r.patient_nome || 'Paciente') + '</div>'
@@ -1113,6 +1158,9 @@ document.addEventListener('click', function(e){
   if((a = t.closest('[data-det="entradas"]'))){ detalhe('entradas', a.getAttribute('data-mes'), 'Entrou na conta'); return; }
   if((a = t.closest('[data-det]'))){ detalhe(a.getAttribute('data-det'), a.getAttribute('data-mes'), a.getAttribute('data-tit')); return; }
   if((a = t.closest('[data-mesdin]'))){ mesDinheiro(a.getAttribute('data-mesdin')); return; }
+  if((a = t.closest('[data-drmsg]'))){ abreDrMsg(a.getAttribute('data-drmsg')); return; }
+  if((a = t.closest('[data-drenvia]'))){ e.preventDefault(); drMsgEnvia(a); return; }
+  if((a = t.closest('[data-drst]'))){ e.preventDefault(); var ds = a.getAttribute('data-drst').split('|'); drMsgStatus(ds[0], ds[1]); return; }
   if((a = t.closest('[data-wppdr]'))){ abreWppDr(a.getAttribute('data-wppdr')); return; }
   if((a = t.closest('[data-wppenvia]'))){ e.preventDefault(); var wr = WPPDR[a.getAttribute('data-wppenvia')], wt = document.getElementById('wppTx').value;
     if(/\[[^\]]*\]/.test(wt)){ a.textContent = 'Complete os colchetes antes'; return; }
