@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261031-1726"></script>
+<script src="hag_auth.js?v=20261104-1010"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -333,6 +333,17 @@ body {
   box-shadow: var(--shadow-sm);
 }
 .task-card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+/* HAG_VIGENCIA_PLANO_v1 */
+.hag-vig{margin:8px 0 2px;padding:9px 11px;border-radius:12px;background:#f6f4ee;border:1px solid #ebe6d8;font-size:12px;color:#3a3a35;max-width:420px}
+.hag-vig-sem{color:#6b6b63;font-style:italic;padding:7px 11px}
+.hag-vig-top{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.hag-vig-rot{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#A8822F}
+.hag-vig-nome{font-weight:700;color:#1B2745;font-size:12.5px}
+.hag-vig-datas{display:flex;justify-content:space-between;gap:10px;color:#4a4a44}
+.hag-vig-barra{height:6px;border-radius:6px;background:#e4dfd1;margin:6px 0 5px;overflow:hidden}
+.hag-vig-barra i{display:block;height:100%;border-radius:6px;background:var(--vig-cor,#1B2745)}
+.hag-vig-pe{display:flex;flex-wrap:wrap;gap:4px 12px;color:#5b5b55}
+.hag-vig-dias{font-weight:700;color:var(--vig-cor,#1B2745)}
 /* HAG_RESUMO_CARTAO_v1 */
 .task-card { cursor: pointer; }
 .task-card .tc-actions, .task-card .tc-actions * { cursor: default; }
@@ -2627,7 +2638,8 @@ function _buscaPacientesHtml(q){
     var agend=(_fila||[]).filter(function(t){ return t.patient_id===p.id && t.status==='concluida' && t.agendado_data; })
                           .sort(function(a,b){ return String(b.agendado_data).localeCompare(String(a.agendado_data)); })[0];
     var linhas=[];
-    if(p.plano) linhas.push(p.plano);
+    /* HAG_VIGENCIA_PLANO_v1: com ciclo ativo, o nome do plano vem do bloco abaixo */
+    if(p.plano && !_vigDe(p.id)) linhas.push(p.plano);
     if(p.consulta) linhas.push('etapa '+p.consulta);
     if(p.status && p.status!=='ativo') linhas.push(p.status);
 
@@ -2661,6 +2673,7 @@ function _buscaPacientesHtml(q){
         +'<div class="tc-info">'
           +'<div class="tc-name">'+p.nome+'</div>'
           +'<div class="tc-desc">'+(linhas.join(' · ')||'—')+'</div>'
+          +_vigBloco(p.id) /* HAG_VIGENCIA_PLANO_v1 */
           +sit+prox
         +'</div>'
       +'</div>'
@@ -2878,6 +2891,7 @@ function _resumoFila(t){
   return '<h5>Resumo</h5>'
     + '<p class="frase">'+frase+'</p>'
     + '<dl>'
+      + _resLinha('Plano', _vigTexto(t.patient_id)) /* HAG_VIGENCIA_PLANO_v1 */
       + _resLinha('Tipo', _resEsc(ev))
       + _resLinha('Janela', t.janela_data ? (_resDataBR(t.janela_data)+' · '+_resEsc(_resDias(t.janela_data))) : 'a combinar')
       + _resLinha('Local', t.local ? _resEsc(_filaLocalLabel(t.local)) : '<i>ainda não definido</i>')
@@ -2919,6 +2933,7 @@ function _resumoTarefa(t){
     + '<p class="frase"><b>'+_resEsc(t.tipo||'Tarefa')+'</b> de '+_resEsc(nome)+', '+_resEsc(rot[t.status]||t.status)+'.'
       + (t.prioridade==='urgente'?' Está marcada como <b>urgente</b>.':'')+'</p>'
     + '<dl>'
+      + _resLinha('Plano', _vigTexto(t.patient_id)) /* HAG_VIGENCIA_PLANO_v1 */
       + _resLinha('O que é', t.descricao?_resEsc(t.descricao):null)
       + _resLinha('Observação', t.obs?_resEsc(t.obs):null)
       + _resLinha('Prazo', t.janela_data ? (_resDataBR(t.janela_data)+' · '+_resEsc(_resDias(t.janela_data))) : null)
@@ -4420,7 +4435,120 @@ async function loadPatients(){
   /* HAG_CADASTRO_LIVANCE_v1: os campos de cadastro entram aqui porque a ficha
      da Daniela le do mesmo _patients que a busca ja usa, sem segunda consulta. */
   const{data}=await db.from('patients').select('id,nome,plano,consulta,status,proxima,whatsapp,cpf,rg,data_nascimento,email,sexo,cep,endereco_cep,endereco,endereco_rua,endereco_numero,endereco_complemento,endereco_bairro,endereco_cidade,endereco_uf').order('nome');
+  await _vigCarregar(); /* HAG_VIGENCIA_PLANO_v1 */
   return data||[];
+}
+/* ============================================================================
+   HAG_VIGENCIA_PLANO_v1 (04/11/2026)
+   POR QUE: a Daniela relatou que, quando precisa ver rapido algo do paciente,
+   sente falta da vigencia do plano: quando comecou e ate que dia vai. A data
+   vive em ciclos (inicio, fim_previsto) e o Tarefas nunca mostrava.
+   O que entra: no cartao da busca, o bloco "Plano" com inicio, fim, barra do
+   tempo corrido, dias que faltam e consultas feitas; no resumo de toque de
+   qualquer cartao (fila e tarefa), a mesma informacao em uma linha.
+   Regras:
+   . fonte e o ciclo ATIVO (um por paciente, conferido no banco em 04/11);
+     o nome do plano sai do ciclo, porque e ele que manda na agenda;
+   . conta so consulta de controle, sem cortesia e sem cancelada, igual ao
+     cartao do link do paciente (HAG_PLANO_NO_LINK_v1); questionario nao conta;
+   . vigencia que ja terminou aparece como terminada, com o que ainda falta
+     fazer, sem conclusao: o que fazer e decisao do consultorio;
+   . so dado administrativo (datas e contagem), nada clinico;
+   . falha na carga nao derruba a tela: a busca segue sem o bloco.
+   ========================================================================== */
+const VIG_NOMES={
+  ciclo_reset:'Ciclo Reset', ciclo_transformar:'Ciclo Transforma', ciclo_essencial:'Ciclo Essencial',
+  smart_90:'Protocolo Smart 90', smart_continuidade:'Protocolo Smart Continuidade',
+  manutencao_premium:'Manutenção Premium', manutencao_plus:'Manutenção Plus', manutencao_base:'Manutenção Base',
+  ciclo_manutencao:'Ciclo Manutenção', vitalidade_antigo:'Vitalidade (plano antigo)',
+  particular_bimestrais:'Acompanhamento particular', protocolo_avulso:'Protocolo avulso',
+  aguardando_diagnostica:'Aguardando a consulta diagnóstica'
+};
+async function _vigCarregar(){
+  try{
+    var rc=await db.from('ciclos').select('id,patient_id,tipo_ciclo,inicio,fim_previsto').eq('status','ativo');
+    if(rc.error) throw rc.error;
+    var cic=rc.data||[], mapa={};
+    var ids=cic.map(function(c){return c.id;});
+    var ret=[];
+    if(ids.length){
+      var rr=await db.from('retornos').select('ciclo_id,status,especie,cortesia_de_ciclo_id').in('ciclo_id',ids);
+      if(rr.error) throw rr.error;
+      ret=rr.data||[];
+    }
+    cic.forEach(function(c){
+      var atual=mapa[c.patient_id];
+      /* um ativo por paciente hoje; se um dia vierem dois, fica o de inicio mais recente */
+      if(atual && String(atual.inicio||'')>String(c.inicio||'')) return;
+      var rs=ret.filter(function(r){ return r.ciclo_id===c.id && r.especie==='controle' && !r.cortesia_de_ciclo_id && r.status!=='cancelada'; });
+      mapa[c.patient_id]={
+        tipo:c.tipo_ciclo, nome:VIG_NOMES[c.tipo_ciclo]||String(c.tipo_ciclo||'').replace(/_/g,' '),
+        inicio:c.inicio, fim:c.fim_previsto,
+        total:rs.length,
+        feitas:rs.filter(function(r){return r.status==='realizada';}).length,
+        marcadas:rs.filter(function(r){return r.status==='agendada';}).length,
+        cortesias:ret.filter(function(r){return r.ciclo_id===c.id && r.cortesia_de_ciclo_id && r.status!=='cancelada';}).length
+      };
+    });
+    window.__hagVig=mapa;
+  }catch(e){
+    console.warn('HAG_VIGENCIA_PLANO_v1: vigencia nao carregou', e && (e.message||e));
+  }
+}
+function _vigDe(pid){ var m=window.__hagVig||{}; return pid?m[pid]:null; }
+function _vigBR(iso){ if(!iso) return ''; var p=String(iso).slice(0,10).split('-'); return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):''; }
+/* estado: quanto do periodo correu, quantos dias faltam, e a cor */
+function _vigEstado(v){
+  var hoje=_filaHoje();
+  var dias=_filaDiasEntre(hoje, v.fim);
+  var tot=_filaDiasEntre(v.inicio, v.fim), corr=_filaDiasEntre(v.inicio, hoje);
+  var pct=(tot>0 && corr!==null)?Math.max(0,Math.min(100,Math.round(corr*100/tot))):0;
+  var futuro=(v.inicio && String(v.inicio).slice(0,10)>hoje);
+  var cor, txt;
+  if(futuro){ cor='#3F5C8A'; txt='começa em '+_vigBR(v.inicio); pct=0; }
+  else if(dias===null){ cor='#6b6b63'; txt='sem data de término'; }
+  else if(dias<0){ cor='#B03A2E'; txt='terminou há '+Math.abs(dias)+(Math.abs(dias)===1?' dia':' dias'); }
+  else if(dias===0){ cor='#B03A2E'; txt='termina hoje'; }
+  else if(dias<=30){ cor='#A8822F'; txt='faltam '+dias+(dias===1?' dia':' dias'); }
+  else { cor='#1B2745'; txt='faltam '+dias+' dias'; }
+  return {dias:dias, pct:pct, cor:cor, txt:txt};
+}
+function _vigConsultas(v){
+  if(!v.total) return '';
+  var falta=v.total-v.feitas;
+  return v.feitas+' de '+v.total+' consultas feitas'
+    +(v.marcadas?(' · '+v.marcadas+' marcada'+(v.marcadas>1?'s':'')):'')
+    +(falta>0 && v.fim && String(v.fim).slice(0,10)<_filaHoje()?(' · '+falta+' ainda a fazer'):'');
+}
+/* linha unica, para o resumo de toque */
+function _vigTexto(pid){
+  var v=_vigDe(pid);
+  if(!v) return (window.__hagVig?'<i>sem plano ativo no sistema</i>':null);
+  if(v.tipo==='aguardando_diagnostica') return 'aguardando a consulta diagnóstica';
+  var e=_vigEstado(v), c=_vigConsultas(v);
+  return '<b>'+_resEsc(v.nome)+'</b> · '+_vigBR(v.inicio)+' a '+(v.fim?_vigBR(v.fim):'?')
+    +' · <span style="color:'+e.cor+';font-weight:700">'+_resEsc(e.txt)+'</span>'
+    +(c?('<br>'+_resEsc(c)):'');
+}
+/* bloco do cartao da busca */
+function _vigBloco(pid){
+  var v=_vigDe(pid);
+  if(!v){
+    return window.__hagVig ? '<div class="hag-vig hag-vig-sem">Sem plano ativo no sistema</div>' : '';
+  }
+  if(v.tipo==='aguardando_diagnostica'){
+    return '<div class="hag-vig hag-vig-sem">Aguardando a consulta diagnóstica · o plano começa depois dela</div>';
+  }
+  var e=_vigEstado(v), c=_vigConsultas(v);
+  return '<div class="hag-vig" style="--vig-cor:'+e.cor+'">'
+    +'<div class="hag-vig-top"><span class="hag-vig-rot">Plano</span><span class="hag-vig-nome">'+_resEsc(v.nome)+'</span></div>'
+    +'<div class="hag-vig-datas"><span>Início <b>'+_vigBR(v.inicio)+'</b></span><span>Até <b>'+(v.fim?_vigBR(v.fim):'—')+'</b></span></div>'
+    +'<div class="hag-vig-barra"><i style="width:'+e.pct+'%"></i></div>'
+    +'<div class="hag-vig-pe"><span class="hag-vig-dias">'+_resEsc(e.txt)+'</span>'
+      +(c?'<span>'+_resEsc(c)+'</span>':'')
+      +(v.cortesias?'<span>+ '+v.cortesias+' cortesia'+(v.cortesias>1?'s':'')+' do ciclo anterior</span>':'')
+    +'</div>'
+  +'</div>';
 }
 /* HAG_FILA_JULIA_v1 */
 let _fila=[];
@@ -4899,7 +5027,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261031-1726';
+  var VERSAO = '20261104-1010';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
