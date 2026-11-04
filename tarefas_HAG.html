@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261104-1010"></script>
+<script src="hag_auth.js?v=20261104-1016"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -4542,7 +4542,7 @@ function _vigBloco(pid){
   var e=_vigEstado(v), c=_vigConsultas(v);
   return '<div class="hag-vig" style="--vig-cor:'+e.cor+'">'
     +'<div class="hag-vig-top"><span class="hag-vig-rot">Plano</span><span class="hag-vig-nome">'+_resEsc(v.nome)+'</span></div>'
-    +'<div class="hag-vig-datas"><span>Início <b>'+_vigBR(v.inicio)+'</b></span><span>Até <b>'+(v.fim?_vigBR(v.fim):'—')+'</b></span></div>'
+    +'<div class="hag-vig-datas"><span>Início <b>'+_vigBR(v.inicio)+'</b></span><span>Até <b>'+(v.fim?_vigBR(v.fim):'sem data')+'</b></span></div>'
     +'<div class="hag-vig-barra"><i style="width:'+e.pct+'%"></i></div>'
     +'<div class="hag-vig-pe"><span class="hag-vig-dias">'+_resEsc(e.txt)+'</span>'
       +(c?'<span>'+_resEsc(c)+'</span>':'')
@@ -5027,7 +5027,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261104-1010';
+  var VERSAO = '20261104-1016';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
