@@ -646,8 +646,8 @@ function blocoComoChegar(local, ehOnline){
     +'target="_blank" rel="noopener" href="'+mapa+'">Abrir no mapa</a>'
     +'<p style="font-size:13.5px;color:var(--ink4);margin:12px 0 0">Chegue cerca de 10 minutos antes, '
     +'para a recepção. Se tiver exames para entregar, envie em PDF pelo WhatsApp: a equipe anexa no '
-    +'sistema do Dr. Henrique para que ele tenha os resultados durante a sua consulta. Qualquer '
-    +'imprevisto, é só avisar a equipe pelo WhatsApp.</p></div>';
+    +'sistema do Dr. Henrique para que ele tenha os resultados durante a sua consulta. Se surgir um '
+    +'imprevisto, avise pelo WhatsApp o quanto antes: remarcação com menos de 72 horas tem taxa de reserva de agenda.</p></div>'; /* HAG_COMBINADOS_v1: "e so avisar" soava como remarcacao livre */
 }
 var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -1138,6 +1138,12 @@ function telaEscolha(nota){
                 +'melhor se encaixam na sua agenda.')
     +'</div></div>');
   if(nota) h+='<div class="aviso">'+nota+'</div>';
+  /* HAG_COMBINADOS_v1 (05/11/2026): nos tres casos de novembro foi a ULTIMA consulta que escorregou para
+     depois do fim do ciclo. Quando nao sobra nenhuma depois desta, a tela diz que e o fechamento e ate quando. */
+  if(prazoAtivo() && PRAZO.restantes===0 && PRAZO.limite){
+    h+='<div class="aviso">Esta é a <b>consulta de fechamento</b> do seu ciclo. Ela acontece até <b>'+_dm(PRAZO.limite)+'</b>, '
+      +'e por isso as datas abaixo vão só até esse dia.</div>';
+  }
   if(alargou) h+='<div class="aviso">'+(TIPOCON==='diagnostica' ? 'Não sobrou horário livre nessas datas, então abrimos os dias seguintes.' : 'Não sobrou horário livre exatamente na semana do dia indicado, então abrimos os dias seguintes.')+'</div>';  /* HAG_TEXTO_DIAGNOSTICA_v1 */
   /* HAG_LINK_INJETAVEL_v1: dizer QUAL aplicação é esta. O paciente conta as dele,
      e "8ª de 8" é o que ele reconhece; "Procedimento injetável" não é. */
@@ -1317,7 +1323,9 @@ function telaSucesso(ag){
        endereço. REGRA QUE FICA: quando um caminho novo substitui um antigo, os textos
        que ensinavam o antigo fazem parte da mesma mudança, não de um acerto depois. */
     +'Você vai receber a confirmação e os lembretes pelo WhatsApp. Se precisar mudar o dia '
-    +'ou o horário, é só abrir este mesmo link outra vez.</p></div>'
+    +'ou o horário, é só abrir este mesmo link outra vez.</p>'
+    /* HAG_COMBINADOS_v1 (05/11/2026): a regra com valor aparece na hora em que o horario e reservado. */
+    +'<p style="font-size:13.5px;color:var(--ink4);margin:10px 0 0">Remarcação com 72 horas ou mais de antecedência é sem custo; com menos de 72 horas, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você.</p></div>'
     + blocoComoChegar(ag.local, ehOn)
     + blocoCalendario(ag, ehOn));
 }
@@ -1341,7 +1349,8 @@ function telaJaAgendado(){
     +'<div class="conf-linha"><span>Horário</span><b>'+hhmm(a.inicio)+'</b></div>'
     +'<div class="conf-linha"><span>Onde</span><b>'+(ehOn2?'Online':LOCAIS[a.local]||'')+'</b></div>'
     +'<p style="font-size:14px;color:var(--ink3);margin:14px 0 0">Está reservado no seu nome. '
-    +'Você vai receber a confirmação e os lembretes pelo WhatsApp.</p></div>'
+    +'Você vai receber a confirmação e os lembretes pelo WhatsApp.</p>'
+    +'<p style="font-size:13.5px;color:var(--ink4);margin:10px 0 0">Remarcação com 72 horas ou mais de antecedência é sem custo; com menos de 72 horas, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você.</p></div>' /* HAG_COMBINADOS_v1 */
     + blocoComoChegar(a.local, ehOn2)
     + blocoCalendario(a, ehOn2)
     /* HAG_REMARCA_PACIENTE_v1: a remarcação entra por aqui, no mesmo link. Não
@@ -1369,12 +1378,12 @@ function telaForaDoPrazo(r){
   el('<div class="cartao"><div class="destaque">'
       +(limite
         ? 'Esta '+_palDe(a)+' já foi remarcada uma vez por aqui. A partir daqui quem organiza a troca com você é a equipe.'
-        : 'O seu contrato prevê que a remarcação seja pedida com 72 horas de antecedência, e faltam cerca de '
+        : 'Os combinados do acompanhamento preveem que a remarcação seja pedida com 72 horas de antecedência, e faltam cerca de '
           +horas+' horas para a sua '+_palDe(a)+' de '+quando+'.')
       +'</div>'
       +(limite ? ''
         : '<p style="font-size:13.5px;color:var(--ink3);margin:12px 0 0">Fora desse prazo pode incidir a taxa de '
-          +'reserva de agenda prevista no seu contrato, porque o horário fica bloqueado. Situações imprevisíveis e '
+          +'reserva de agenda prevista nos combinados do acompanhamento, porque o horário fica bloqueado. Situações imprevisíveis e '
           +'comprovadas são analisadas sem penalidade, e quem decide isso é o Dr. Henrique.</p>')
       +'<p style="font-size:13.5px;color:var(--ink4);margin:10px 0 0">A sua '+_palDe(a)+' de '+quando+' continua reservada. '
       +'Você não perde a vaga por ter pedido.</p>'

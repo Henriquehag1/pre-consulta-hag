@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261104-1037"></script>
+<script src="hag_auth.js?v=20261105-2223"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -1469,7 +1469,13 @@ var DAN_TPL=[
   {id:'consultorio_remarca',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcou pelo link",sub:"Ele remarca pelo próprio link, sem custo",texto:"[nome], tudo bem?\n\nPrecisamos reorganizar a agenda do dia [data], e a sua consulta desse dia vai precisar mudar de data. Não há custo nenhum, e essa mudança não conta como uma remarcação sua.\n\nÉ só abrir o seu link, tocar em \"Preciso remarcar\" e escolher o novo dia entre os horários disponíveis na agenda do Dr. Henrique. O seu horário atual fica guardado até você confirmar o novo:\n\n[link]\n\nObrigada pela compreensão, e qualquer dificuldade me chama por aqui."},
   {id:'consultorio_remarca_cancelado',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcado pela Daniela",sub:"Depois de desmarcar no painel, com o link",texto:"[nome], tudo bem?\n\nPrecisamos reorganizar a agenda do dia [data], e a sua consulta desse dia vai precisar mudar de data, sem custo nenhum.\n\nPara escolher o novo dia, é só abrir o link abaixo, com os horários disponíveis na agenda do Dr. Henrique:\n\n[link]\n\nObrigada pela compreensão, e qualquer dificuldade me chama por aqui."},
   {id:'desmarcou_no_prazo',cat:'remarcacao',nome:"Desmarcou no prazo (72 h ou mais)",sub:"Sem custo, link para a nova data",texto:"[nome], tudo certo, recebi o seu aviso e já liberei o horário. Como ele veio dentro do prazo, não há custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo. Ele mostra os dias que o Dr. Henrique tem abertos para esta etapa do seu acompanhamento:\n\n[link]"},
-  {id:'desmarcou_fora_prazo',cat:'remarcacao',nome:"Desmarcou fora do prazo · as 3 opções",sub:"Menos de 72 h: o paciente escolhe o caminho",texto:"[nome], recebi o seu aviso, obrigada por me avisar.\n\nComo a desmarcação veio com menos de 72 horas, o contrato prevê a taxa de reserva de agenda, porque o horário ficou reservado para você e não pôde ser oferecido a outro paciente. Para esses casos o consultório oferece três caminhos, e você escolhe o que fizer mais sentido:\n\n1. Se o motivo foi de saúde, me envie o comprovante médico (atestado ou declaração) e a nova data sai sem custo.\n2. Usar esta consulta como uma das consultas do seu plano, sem cobrança. Nesse caso a próxima consulta do plano é antecipada, e você já escolhe a data entre os horários disponíveis na agenda do Dr. Henrique.\n3. Pagar a taxa de reserva de agenda, de R$ 350, e remarcar esta mesma consulta.\n\nMe responde com o número da opção, que eu organizo o restante."},
+  {id:'desmarcou_fora_prazo',cat:'remarcacao',nome:"Desmarcou fora do prazo · as 3 opções",sub:"Menos de 72 h: o paciente escolhe o caminho · só para quem tem o selo Combinados informados",texto:"[nome], recebi o seu aviso, obrigada por me avisar.\n\nComo a desmarcação veio com menos de 72 horas, as diretrizes do acompanhamento preveem a taxa de reserva de agenda, porque o horário ficou reservado para você e não pôde ser oferecido a outro paciente. Para esses casos o consultório oferece três caminhos, e você escolhe o que fizer mais sentido:\n\n1. Se o motivo foi de saúde, me envie o comprovante médico (atestado ou declaração) e a nova data sai sem custo.\n2. Usar esta consulta como uma das consultas do seu plano, sem cobrança. Nesse caso a próxima consulta do plano é antecipada, e você já escolhe a data entre os horários disponíveis na agenda do Dr. Henrique.\n3. Pagar a taxa de reserva de agenda, de R$ 350, e remarcar esta mesma consulta.\n\nMe responde com o número da opção, que eu organizo o restante."},
+  /* HAG_COMBINADOS_v1 (05/11/2026): casos Paula, Rodrigo e Cristiane. Nenhum dos pacientes ativos tinha os
+     combinados por escrito, com valor. Os modelos que comecam com 'combinados' marcam o selo na ficha
+     (patients.combinados_informados_em) quando a Daniela abre o WhatsApp por eles. Sem selo, nao se cobra taxa. */
+  {id:'combinados',cat:'administrativo',nome:'Combinados do acompanhamento · plano em andamento',sub:'Enviar uma vez a cada paciente ativo · marca o selo na ficha',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nEstou enviando a todos os pacientes em acompanhamento os combinados do consultório por escrito, para ficar tudo claro:\n\n1. O seu plano segue até [fim]. As consultas acontecem dentro desse período, e ele não se estende por remarcações ou ausências.\n2. A consulta de fechamento é marcada na consulta anterior e acontece até a data-limite informada na marcação, logo após o fim do plano.\n3. Remarcação com 72 horas ou mais de antecedência é sem custo. Com menos de 72 horas, ou falta sem aviso, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você. Motivo de saúde comprovado não tem custo.\n\nQualquer dúvida, estou por aqui.'},
+  {id:'combinados_fechamento',cat:'administrativo',nome:'Combinados do acompanhamento · fechamento já marcado',sub:'Plano no fim ou vencido, com a consulta de fechamento na agenda · marca o selo na ficha',texto:'[nome], tudo bem? Aqui é a Daniela, do consultório do Dr. Henrique.\n\nEstou enviando a todos os pacientes em acompanhamento os combinados do consultório por escrito, para ficar tudo claro:\n\n1. O seu plano vai até [fim], e a sua consulta de fechamento está marcada para [data]. Ela encerra este ciclo, e é nela que o Dr. Henrique revisa com você os resultados e os próximos passos.\n2. Remarcação com 72 horas ou mais de antecedência é sem custo. Com menos de 72 horas, ou falta sem aviso, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você. Motivo de saúde comprovado não tem custo.\n\nQualquer dúvida, estou por aqui.'},
+  {id:'combinados_desmarcou',cat:'remarcacao',nome:'Desmarcou fora do prazo · combinados ainda não enviados',sub:'Menos de 72 h, SEM o selo Combinados informados: sem taxa desta vez, e a regra segue por escrito · marca o selo',texto:'[nome], recebi o seu aviso, obrigada por me avisar. Desta vez a remarcação sai sem custo.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]\n\nAproveito para te passar por escrito os combinados do consultório, que valem daqui em diante: remarcação com 72 horas ou mais de antecedência é sem custo; com menos de 72 horas, ou falta sem aviso, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você. Motivo de saúde comprovado não tem custo.'},
   {id:'desmarcou_comprovante',cat:'remarcacao',nome:"Comprovante recebido · nova data",sub:"Sem custo, com o link",texto:"[nome], recebi o comprovante, obrigada. Fica registrado, sem custo nenhum.\n\nPara escolher a nova data, é só abrir o link abaixo:\n\n[link]\n\nEspero que você já esteja melhor."},
   {id:'desmarcou_usar_plano',cat:'remarcacao',nome:"Escolheu contar a consulta no plano",sub:"Sem cobrança, segue para a próxima etapa",texto:"[nome], combinado. A consulta desmarcada fica registrada como uma das consultas do seu plano, sem cobrança.\n\nO seu acompanhamento segue para a próxima etapa, e eu te aviso por aqui quando as datas dela abrirem."},
   {id:'desmarcou_usar_plano_antecipa',cat:'remarcacao',nome:"Contou no plano · próxima antecipada",sub:"Sem cobrança, link das duas próximas semanas",texto:"[nome], combinado. A consulta desmarcada fica registrada como uma das consultas do seu plano, sem cobrança, e a próxima foi antecipada para você.\n\nÉ só escolher a data pelo link abaixo, entre os horários disponíveis na agenda do Dr. Henrique:\n\n[link]"},
@@ -1608,6 +1614,8 @@ function _msgTexto(t){
   if(d) txt=txt.split('[data]').join(d);
   var lk=_msgLinkAgendar();
   if(lk) txt=txt.split('[link]').join(_linkDestaque(lk)); /* HAG_LINK_DESTAQUE_v1 */
+  var _v=_msgPacId ? _vigDe(_msgPacId) : null; /* HAG_COMBINADOS_v1: [fim] = fim do plano ativo */
+  if(_v && _v.fim) txt=txt.split('[fim]').join(_vigBR(_v.fim));
   return txt;
 }
 /* o que ainda falta, e COMO resolver cada coisa. Dizer que falta sem dizer
@@ -1621,6 +1629,9 @@ function _msgPendencias(txt){
   if(txt.indexOf('[link]')>=0) f.push({tag:'[link]', como: _msgPacId
       ? 'não consegui emitir o link deste paciente agora, use o botão Enviar link na fila'
       : 'escolha o paciente no campo do topo, o link é individual e sai do cadastro dele'});
+  if(txt.indexOf('[fim]')>=0) f.push({tag:'[fim]', como: _msgPacId
+      ? 'este paciente não tem plano ativo com data de término no sistema, confira com o Dr. Henrique antes de enviar'
+      : 'escolha o paciente no campo do topo, a data sai do plano dele'}); /* HAG_COMBINADOS_v1 */
   /* HAG_MSG_POS_DIAG_SILENCIO_v1: etiquetas que só a Daniela sabe (valor combinado, plano indicado, prazo da reserva). */
   ['[valor]','[plano]','[prazo]'].forEach(function(tg){
     if(txt.indexOf(tg)>=0) f.push({tag:tg, como:'escreva à mão: use Copiar e complete no WhatsApp'});
@@ -1712,6 +1723,25 @@ function whatsMsg(id){
   window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(txt),'_blank');
   toast('WhatsApp aberto','ok');
   if(t.modo) _diagMarcarJanela(p.id, t.modo);
+  if(/^combinados/.test(t.id)) _combMarcar(p); /* HAG_COMBINADOS_v1 */
+}
+/* HAG_COMBINADOS_v1 (05/11/2026): o selo diz se a regra com valor ja chegou por escrito. Marca so quando o
+   WhatsApp abre pelo modelo (copiar nao prova envio). Falha aqui nunca bloqueia a mensagem. */
+async function _combMarcar(p){
+  var hoje=_filaHoje();
+  try{
+    var r=await db.from('patients').update({combinados_informados_em:hoje}).eq('id',p.id);
+    if(r && r.error) throw r.error;
+    p.combinados_informados_em=hoje;
+    toast('Combinados marcados como informados na ficha de '+String(p.nome||'').split(' ')[0],'ok');
+  }catch(e){ console.warn('HAG_COMBINADOS_v1: selo nao gravou', e && (e.message||e)); }
+}
+function _combSelo(pid){
+  var p=(_patients||[]).find(function(x){return x.id===pid;});
+  if(!p || !('combinados_informados_em' in p)) return '';
+  return p.combinados_informados_em
+    ? '<span>Combinados informados em '+_vigBR(p.combinados_informados_em)+'</span>'
+    : '<span style="color:#B03A2E;font-weight:700">Combinados ainda não enviados · sem taxa até enviar</span>';
 }
 /* ═══ HAG_MSG_ANEXO_v1 (04/09/2026) ═══════════════════════════════════════
    POR QUE: a carta de encerramento so existia no Mac do Dr. O painel abre os
@@ -4434,7 +4464,7 @@ async function loadTasks(){
 async function loadPatients(){
   /* HAG_CADASTRO_LIVANCE_v1: os campos de cadastro entram aqui porque a ficha
      da Daniela le do mesmo _patients que a busca ja usa, sem segunda consulta. */
-  const{data}=await db.from('patients').select('id,nome,plano,consulta,status,proxima,whatsapp,cpf,rg,data_nascimento,email,sexo,cep,endereco_cep,endereco,endereco_rua,endereco_numero,endereco_complemento,endereco_bairro,endereco_cidade,endereco_uf').order('nome');
+  const{data}=await db.from('patients').select('id,nome,plano,consulta,status,proxima,whatsapp,cpf,rg,data_nascimento,email,sexo,cep,endereco_cep,endereco,endereco_rua,endereco_numero,endereco_complemento,endereco_bairro,endereco_cidade,endereco_uf,combinados_informados_em').order('nome'); /* HAG_COMBINADOS_v1 */
   await _vigCarregar(); /* HAG_VIGENCIA_PLANO_v1 */
   return data||[];
 }
@@ -4548,6 +4578,7 @@ function _vigBloco(pid){
     +'<div class="hag-vig-pe"><span class="hag-vig-dias">'+_resEsc(e.txt)+'</span>'
       +(c?'<span>'+_resEsc(c)+'</span>':'')
       +(v.cortesias?'<span>+ '+v.cortesias+' cortesia'+(v.cortesias>1?'s':'')+' do ciclo anterior</span>':'')
+      +_combSelo(pid) /* HAG_COMBINADOS_v1 */
     +'</div>'
   +'</div>';
 }
@@ -5028,7 +5059,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261104-1037';
+  var VERSAO = '20261105-2223';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
