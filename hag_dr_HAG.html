@@ -24,6 +24,8 @@ window.HAG_EXIGIR_LOGIN=true;
 <script src="hag_auth.js?v=20261021-1353"></script>
 <!-- HAG_DR_BRIEFING_CARDS_v1 (06/11/2026): o mesmo renderizador de cartoes do briefing do Mac (copia identica do HAG_Consultas). -->
 <script src="hag_briefing_cards.js?v=20261106-1"></script>
+<!-- HAG_DR_PILARES_v1 (06/11/2026): os 4 pilares do paciente, o mesmo modulo da pagina de briefings do Mac (copia identica do HAG_Consultas). -->
+<script src="hag_pilares_painel.js?v=20261106-1"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -86,7 +88,12 @@ h2:first-child{margin-top:4px}
 .pill.ren::before{background:var(--azul)}.pill.ren{color:var(--azul);background:var(--azul-bg)}
 .corpo{border-top:1px solid var(--line);padding:14px 16px 16px}
 /* HAG_DR_BRIEFING_CARDS_v1: no celular o briefing em cartoes usa quase a largura toda do cartao da consulta */
-@media (max-width:560px){.corpo{padding:10px 8px 14px}.corpo .acoes{padding:0 6px}.corpo>.msg{margin:4px 4px 8px}}
+/* HAG_DR_PILARES_v1: seletor Briefing | 4 pilares dentro da consulta aberta */
+.cabas{display:flex;gap:4px;background:var(--bg);border-radius:12px;padding:3px;margin:0 0 12px}
+.cabas button{flex:1;font:inherit;font-size:13.5px;padding:8px 10px;border:0;border-radius:9px;background:transparent;color:var(--ink2)}
+.cabas button.on{background:var(--navy);color:#fff;font-weight:600}
+@media (prefers-color-scheme: dark){ .cabas button.on{background:var(--gold);color:#1a1f2b} }
+@media (max-width:560px){.corpo .cabas{margin:0 4px 12px}.corpo{padding:10px 8px 14px}.corpo .acoes{padding:0 6px}.corpo>.msg{margin:4px 4px 8px}}
 .md h2{margin:14px 0 6px}.md h2::after{display:none}
 .md p{margin:5px 0}.md ul{margin:5px 0 5px 18px}.md li{margin:3px 0}.md .cab{font-family:var(--fs);font-size:18px;margin-bottom:8px}
 .vazio{color:var(--ink3);padding:22px 8px;text-align:center}
@@ -191,6 +198,7 @@ h2:first-child{margin-top:4px}
 'use strict';
 var URL_ = window.SUPA_URL, KEY = window.SUPA_KEY, DR = 'drhenrique@clinicahag.com';
 var ABA = 'hoje', DIA = null, AG = [], BR = {}, ABERTO = null, OCULTO = false, MSG = {};
+var CABA = {}, PIL = {}, PIL_PEDINDO = {};   /* HAG_DR_PILARES_v1: aba aberta em cada consulta (briefing ou 4 pilares) e o painel ja buscado */
 var NOMEPLANO = { ciclo_essencial:'Ciclo Essencial', ciclo_reset:'Ciclo Reset', ciclo_transformar:'Ciclo Transforma', manutencao_intermediario:'Manutenção Plus',
   manutencao_premium:'Manutenção Premium', smart_90:'Protocolo Smart 90', ciclo_manutencao:'Manutenção Base', smart_continuidade:'Protocolo Smart Continuidade',
   particular_bimestrais:'Consultas particulares' };
@@ -243,12 +251,29 @@ function briefingHtml(md){
   try{ if(window.HAGBriefingCards){ window.HAGBriefingCards.injetar(); h = window.HAGBriefingCards.render(md); } }catch(e){ h = null; }
   return h ? '<div class="brf-cards brf-auto">' + h + '</div>' : '<div class="md">' + md2html(md) + '</div>';
 }
+/* HAG_DR_PILARES_v1 (06/11/2026): pedido do Dr. ("sim, faça", depois de ver o briefing em cartoes no celular).
+   Dentro da consulta aberta na Agenda, duas abas: Briefing e 4 pilares. Os pilares vem da RPC hag_painel_pilares
+   (sem IA, so com login) e sao desenhados pelo hag_pilares_painel.js, o mesmo da pagina de briefings do Mac.
+   So busca quando o Dr. abre a aba, e guarda ate a agenda recarregar. */
+function pilBusca(pid){
+  if(!window.HAGPilares){ PIL[pid] = { ok:false, motivo:'O módulo dos 4 pilares não carregou. Feche e abra o HAG Dr de novo.' }; return; }
+  PIL_PEDINDO[pid] = true; window.HAGPilares.injetar();
+  window.HAGPilares.carregar(URL_, KEY, pid).then(function(r){ PIL[pid] = r; PIL_PEDINDO[pid] = false; pintaAtual(); });
+}
+function pilaresHtml(pid){
+  if(!PIL[pid] && !PIL_PEDINDO[pid]) pilBusca(pid);
+  var pc = PIL[pid];
+  if(!pc) return '<div class="vazio">Carregando os 4 pilares…</div>';
+  if(!pc.ok) return '<div class="msg erro">' + esc(pc.motivo) + '</div>';
+  try{ return window.HAGPilares.render(pc.dados, { escuro: true }); }catch(e){ return '<div class="msg erro">Não consegui desenhar os pilares: ' + esc(e && e.message || e) + '</div>'; }
+}
 function W(h){ document.getElementById('wrap').innerHTML = h; }
 function falha(e){ W('<div class="msg erro">Não consegui ler: ' + esc(e && e.message || e) + '</div>'); }
 
 /* ── AGENDA + BRIEFING ─────────────────────────────────────────────── */
 function abaHoje(){
   W('<div class="vazio">Carregando a agenda…</div>');
+  PIL = {}; PIL_PEDINDO = {};   /* HAG_DR_PILARES_v1: agenda recarregada, pilares buscados de novo quando abrir */
   carregaPend().then(function(){ pintaAtual(); badgePend(); }); carregaProc().then(function(){ pintaAtual(); });   /* HAG_DR_V3 */
   return rpc('hag_agenda_briefing', { p_de: hojeISO(), p_ate: hojeISO(7) }).then(function(rows){
     AG = (rows || []).slice().sort(function(a,b){ return (a.data_consulta + (a.hora||'')).localeCompare(b.data_consulta + (b.hora||'')); });
@@ -276,8 +301,11 @@ function pintaHoje(dias, doDia){
       + '<div class="pills">' + (b && b.conteudo_md ? '<span class="pill ok">briefing pronto</span>' : '<span class="pill">sem briefing</span>')
       + (tipo === 'fechamento' ? '<span class="pill fe">fechamento</span>' : '') + '</div></div><span class="chev">' + (ab ? '⌄' : '›') + '</span></div>';
     if(ab){
+      var caba = CABA[k] || 'brf';   /* HAG_DR_PILARES_v1 */
       x += '<div class="corpo">' + (MSG[k] ? '<div class="msg">' + MSG[k] + '</div>' : '')
-        + (b && b.conteudo_md ? briefingHtml(b.conteudo_md) : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
+        + '<div class="cabas"><button data-caba="brf" data-k="' + esc(k) + '"' + (caba === 'brf' ? ' class="on"' : '') + '>Briefing</button>'
+        + '<button data-caba="pil" data-k="' + esc(k) + '"' + (caba === 'pil' ? ' class="on"' : '') + '>4 pilares</button></div>'
+        + (caba === 'pil' ? pilaresHtml(r.patient_id) : b && b.conteudo_md ? briefingHtml(b.conteudo_md) : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
         + '<div class="acoes">' + (b && b.conteudo_md ? '<button data-pedir="novo" data-k="' + esc(k) + '">Atualizar só o novo</button>' : '<button class="pri" data-pedir="completo" data-k="' + esc(k) + '">Pedir o briefing</button>') + '<button data-pac="' + esc(r.patient_id) + '" data-nome="' + esc(r.patient_nome || '') + '">Ver o ciclo</button></div></div>';
     }
     return x + '</div>';
@@ -1186,6 +1214,7 @@ document.addEventListener('click', function(e){
   if((a = t.closest('#recarregar'))){ abrir(ABA); contaCheckins(); return; }
   if((a = t.closest('[data-dia]'))){ DIA = a.getAttribute('data-dia'); ABERTO = null; abaHoje(); return; }
   if((a = t.closest('[data-pedir]'))){ pedirBriefing(a.getAttribute('data-k'), a.getAttribute('data-pedir')); return; }
+  if((a = t.closest('[data-caba]'))){ CABA[a.getAttribute('data-k')] = a.getAttribute('data-caba'); pintaAtual(); return; }   /* HAG_DR_PILARES_v1 */
   if((a = t.closest('[data-abre]'))){ var k = a.getAttribute('data-abre'); ABERTO = ABERTO === k ? null : k; pintaAtual(); return; }
   if((a = t.closest('#olho'))){ OCULTO = !OCULTO; try{ localStorage.setItem('hagdr_oculto', OCULTO ? '1' : ''); }catch(x){} abaFin(); return; }
 });
