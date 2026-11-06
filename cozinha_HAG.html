@@ -75,6 +75,10 @@ h2{font-family:var(--disp);font-weight:700;font-size:30px;line-height:1.05;text-
 .chip{flex:none;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:700;white-space:nowrap;color:var(--ink)}
 .chip i{font-style:normal;opacity:.7;font-weight:600;margin-left:4px}
 .chip[aria-pressed="true"]{background:var(--btn);border-color:var(--btn);color:var(--onbtn)}
+/* HAG_COZINHA_FILTRO_FIXO_v1 (06/11/2026), pedido do Dr.: ao tocar num filtro (Todas, Natal, Jantar rápido...) a tela
+   parecia voltar do início: a faixa de filtros era redesenhada e rolava de volta para "Todas", e o escolhido sumia.
+   Agora a faixa fica presa no alto ao rolar, guarda a posição, e o filtro escolhido continua visível; só a lista muda. */
+.chips{position:sticky;top:var(--topH,56px);z-index:4;background:var(--bg);padding-top:8px;padding-bottom:8px}
 .busca input{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:0 14px;font-size:16px}
 
 /* lista do início */
@@ -863,10 +867,26 @@ $('#barra').addEventListener('click',function(e){ var t=e.target.closest('button
     if(i>=0){ st.lista.splice(i,1); toast('Tirada da lista'); } else { st.lista.push({id:r.id,vari:st.vari,porc:st.porc,rende:r.rende,nome:r.nome,vnome:st.vari>=0?v.nome:'',ing:ingDe(r,st.vari).map(function(x){return {k:x.k,nome:x.nome,g:x.g,sec:x.sec}})}); toast('Na lista de compras'); }
     salvar(); render(); }
 });
+/* HAG_COZINHA_FILTRO_FIXO_v1: troca o filtro mantendo a faixa no lugar. Guarda a rolagem lateral da faixa, redesenha,
+   devolve a rolagem, centraliza o chip escolhido e, se a pessoa estava mais abaixo na lista, sobe só até o começo da
+   lista nova (a faixa fica visível logo abaixo do cabeçalho), em vez de voltar ao topo da página. */
+function filtrar(f){
+  var ch=app.querySelector('.chips'), sl=ch?ch.scrollLeft:0;
+  st.filtro=f; render();
+  var c2=app.querySelector('.chips'); if(!c2) return;
+  c2.scrollLeft=sl;
+  var b=c2.querySelector('[aria-pressed="true"]');
+  if(b){ var alvo=b.offsetLeft-(c2.clientWidth-b.offsetWidth)/2; try{ c2.scrollTo({left:Math.max(0,alvo),behavior:'smooth'}); }catch(er){ c2.scrollLeft=Math.max(0,alvo); } }
+  var hd=document.querySelector('header.top'), th=hd?hd.offsetHeight:0;
+  var y=c2.getBoundingClientRect().top+window.scrollY-th;   /* onde a faixa fica quando gruda */
+  if(window.scrollY>y) window.scrollTo(0,y);
+}
+function medirTopo(){ var hd=document.querySelector('header.top'); if(hd) document.documentElement.style.setProperty('--topH', hd.offsetHeight+'px'); }
+medirTopo(); window.addEventListener('resize', medirTopo);
 app.addEventListener('click',function(e){
   var t=e.target.closest('button'); if(!t) return;
   if(t.id==='tentar'){ st.erro=null; render(); carregar(); return; }
-  if(t.dataset.filtro){ st.filtro=t.dataset.filtro; render(); return; }
+  if(t.dataset.filtro){ filtrar(t.dataset.filtro); return; }   /* HAG_COZINHA_FILTRO_FIXO_v1 */
   if(t.dataset.abrir){ abrir(t.dataset.abrir); return; }
   if(t.id==='voltar'){ fechar(); return; }
   if(t.id==='numeros'){ st.tab='sobre'; render(); window.scrollTo(0,0); return; }
