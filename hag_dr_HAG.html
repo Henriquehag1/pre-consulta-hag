@@ -22,6 +22,8 @@ window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';
 window.HAG_EXIGIR_LOGIN=true;
 </script>
 <script src="hag_auth.js?v=20261021-1353"></script>
+<!-- HAG_DR_BRIEFING_CARDS_v1 (06/11/2026): o mesmo renderizador de cartoes do briefing do Mac (copia identica do HAG_Consultas). -->
+<script src="hag_briefing_cards.js?v=20261106-1"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -83,6 +85,8 @@ h2:first-child{margin-top:4px}
 .pill.fe::before{background:var(--verm)}.pill.fe{color:var(--verm);background:var(--verm-bg)}
 .pill.ren::before{background:var(--azul)}.pill.ren{color:var(--azul);background:var(--azul-bg)}
 .corpo{border-top:1px solid var(--line);padding:14px 16px 16px}
+/* HAG_DR_BRIEFING_CARDS_v1: no celular o briefing em cartoes usa quase a largura toda do cartao da consulta */
+@media (max-width:560px){.corpo{padding:10px 8px 14px}.corpo .acoes{padding:0 6px}.corpo>.msg{margin:4px 4px 8px}}
 .md h2{margin:14px 0 6px}.md h2::after{display:none}
 .md p{margin:5px 0}.md ul{margin:5px 0 5px 18px}.md li{margin:3px 0}.md .cab{font-family:var(--fs);font-size:18px;margin-bottom:8px}
 .vazio{color:var(--ink3);padding:22px 8px;text-align:center}
@@ -231,6 +235,14 @@ function md2html(md){
   fechaUl();
   return (cab.length ? '<div class="cab">' + cab.join('<br>') + '</div>' : '') + out.join('');
 }
+/* HAG_DR_BRIEFING_CARDS_v1 (06/11/2026): pedido do Dr. com print do celular ("poderia melhorar tambem como ve no celular").
+   O briefing aparecia como texto corrido. Agora sai em cartoes (alerta, roteiro, perguntas de marcar, exames, medicacoes com prazo),
+   no tema escuro do aparelho (classe brf-auto). Se o renderizador nao carregar ou o formato nao bater, volta ao md2html antigo. */
+function briefingHtml(md){
+  var h = null;
+  try{ if(window.HAGBriefingCards){ window.HAGBriefingCards.injetar(); h = window.HAGBriefingCards.render(md); } }catch(e){ h = null; }
+  return h ? '<div class="brf-cards brf-auto">' + h + '</div>' : '<div class="md">' + md2html(md) + '</div>';
+}
 function W(h){ document.getElementById('wrap').innerHTML = h; }
 function falha(e){ W('<div class="msg erro">Não consegui ler: ' + esc(e && e.message || e) + '</div>'); }
 
@@ -265,7 +277,7 @@ function pintaHoje(dias, doDia){
       + (tipo === 'fechamento' ? '<span class="pill fe">fechamento</span>' : '') + '</div></div><span class="chev">' + (ab ? '⌄' : '›') + '</span></div>';
     if(ab){
       x += '<div class="corpo">' + (MSG[k] ? '<div class="msg">' + MSG[k] + '</div>' : '')
-        + (b && b.conteudo_md ? '<div class="md">' + md2html(b.conteudo_md) + '</div>' : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
+        + (b && b.conteudo_md ? briefingHtml(b.conteudo_md) : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
         + '<div class="acoes">' + (b && b.conteudo_md ? '<button data-pedir="novo" data-k="' + esc(k) + '">Atualizar só o novo</button>' : '<button class="pri" data-pedir="completo" data-k="' + esc(k) + '">Pedir o briefing</button>') + '<button data-pac="' + esc(r.patient_id) + '" data-nome="' + esc(r.patient_nome || '') + '">Ver o ciclo</button></div></div>';
     }
     return x + '</div>';
