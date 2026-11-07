@@ -26,6 +26,16 @@
    - Container de ate 520 px: tabelas rolam de lado em vez de estourar, letra e
      alvos de toque um pouco maiores.
 
+   v2.2 (07/11/2026, HAG_PILARES_IA_v1). Pedido do Dr.: "em cada pilar ter a interpretacao
+   de IA do caso completo ... o que pode ser feito e o que e mais recomendado" e, em renovacao
+   (penultima e fechamento), "qual o produto mais indicado". A analise e gerada no Mac
+   (hag_pilares_ia.py, credito do Max) na vespera e pelo botao daqui, e fica em public.pilares_ia
+   (leitura so com login). Este modulo so a desenha: nada de criterio clinico escrito aqui.
+   - carregarTudo(url, chave, pid, data): painel + analise de IA juntos.
+   - render(dados, {pid, data, escuro}) desenha a analise em cada pilar e o cartao de renovacao.
+   - config({url, chave, redesenhar}): o botao "Gerar/Atualizar analise" pede ao Mac pela fila
+     briefing_pedidos (tipo pilares_ia), acompanha e chama redesenhar() a cada passo.
+
    USO:
      HAGPilares.injetar();                       // uma vez
      HAGPilares.carregar(url, chave, pid)        // Promise -> {ok, dados|motivo}
@@ -56,6 +66,86 @@
     .catch(function(e){ return {ok:false, motivo:'Falha ao buscar o painel: '+((e&&e.message)||e)+'. Confira a conexão.'}; });
   }
 
+  /* ── HAG_PILARES_IA_v1: analise de IA guardada por paciente, e o pedido ao Mac ── */
+  var IAS={}, IAEST={}, CFG={};
+  function hdr(chave){ return {'apikey':chave,'Authorization':'Bearer '+chave,'Content-Type':'application/json'}; }
+  function carregarIA(url, chave, pid, dia){
+    var q='/rest/v1/pilares_ia?select=*&patient_id=eq.'+encodeURIComponent(pid)+(dia?'&data_consulta=lte.'+encodeURIComponent(dia):'')+'&order=data_consulta.desc&limit=1';
+    return fetch(url+q,{headers:hdr(chave)}).then(function(r){ return r.ok?r.json():[]; })
+      .then(function(a){ IAS[pid]=(a&&a[0])||null; return IAS[pid]; })
+      .catch(function(){ IAS[pid]=IAS[pid]||null; return IAS[pid]; });
+  }
+  function carregarTudo(url, chave, pid, dia){
+    return Promise.all([carregar(url, chave, pid), carregarIA(url, chave, pid, dia)]).then(function(x){ return x[0]; });
+  }
+  function config(c){ CFG=c||{}; }
+  function redesenha(){ try{ if(CFG.redesenhar) CFG.redesenhar(); }catch(e){} }
+  function pedirIA(pid, dia){
+    if(!CFG.url||!CFG.chave){ IAEST[pid]={erro:'Página sem configuração para pedir a análise.'}; redesenha(); return; }
+    if(IAEST[pid]&&IAEST[pid].ocupado) return;
+    IAEST[pid]={ocupado:true, msg:'Pedido enviado. O Mac começa em até 1 minuto; ele precisa estar ligado.'}; redesenha();
+    fetch(CFG.url+'/rest/v1/briefing_pedidos',{method:'POST',headers:Object.assign(hdr(CFG.chave),{Prefer:'return=representation'}),
+      body:JSON.stringify({patient_id:pid, data_consulta:dia, tipo:'pilares_ia'})})
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' '+t.slice(0,120)); }); return r.json(); })
+    .then(function(a){
+      var id=a&&a[0]&&a[0].id; if(!id) throw new Error('o pedido não voltou do banco');
+      var t0=Date.now();
+      (function olha(){
+        if(Date.now()-t0>7*60000){ IAEST[pid]={erro:'Ainda não terminou. O pedido segue na fila; abra de novo daqui a pouco.'}; redesenha(); return; }
+        setTimeout(function(){
+          fetch(CFG.url+'/rest/v1/briefing_pedidos?select=status,resumo,erro&id=eq.'+id,{headers:hdr(CFG.chave)})
+          .then(function(r){ return r.json(); }).then(function(x){
+            var st=(x&&x[0])||{};
+            if(st.status==='feito'){ carregarIA(CFG.url, CFG.chave, pid, dia).then(function(){ IAEST[pid]=null; redesenha(); }); return; }
+            if(st.status==='erro'){ IAEST[pid]={erro:'Não gerou: '+(st.erro||'erro sem detalhe')}; redesenha(); return; }
+            IAEST[pid]={ocupado:true, msg: st.status==='processando' ? 'A IA está lendo o caso completo (cerca de 1 minuto)…'
+              : (Date.now()-t0>90000 ? 'O Mac ainda não pegou o pedido. Ele precisa estar ligado e acordado.' : IAEST[pid].msg)};
+            redesenha(); olha();
+          }).catch(olha);
+        },4000);
+      })();
+    })
+    .catch(function(e){ IAEST[pid]={erro:'Não foi possível pedir: '+((e&&e.message)||e)}; redesenha(); });
+  }
+  function hora(iso){ var d=new Date(iso); return isNaN(d)?'':(('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+'h'+('0'+d.getMinutes()).slice(-2)); }
+  function blocoIA(x){
+    if(!x||!x.leitura) return '';
+    var ops=(x.opcoes||[]), mr=String(x.mais_recomendado||'');
+    var h='<div class="pil-ia"><div class="pil-ia-t">✦ Leitura da IA</div><div class="pil-ia-l">'+esc(x.leitura)+'</div>';
+    if(mr) h+='<div class="pil-ia-mr"><em>Mais recomendado</em><b>'+esc(mr)+'</b>'+(x.por_que?'<span>'+esc(x.por_que)+'</span>':'')+'</div>';
+    var outras=ops.filter(function(o){ return String(o.o_que||'')!==mr; });
+    if(outras.length) h+='<details class="pil-ia-op"><summary>Outras opções ('+outras.length+')</summary>'+outras.map(function(o){
+      return '<div class="pil-ia-o"><b>'+esc(o.o_que)+'</b>'+(o.quando?'<span>'+esc(o.quando)+'</span>':'')+'</div>'; }).join('')+'</details>';
+    if(x.vigiar) h+='<div class="pil-ia-v">Vigiar: '+esc(x.vigiar)+'</div>';
+    return h+'</div>';
+  }
+  var ROT_MOMENTO={fechamento:'fechamento do ciclo', penultima:'conversa de renovação'};
+  function topoIA(op){
+    var pid=op&&op.pid; if(!pid) return '';
+    var ia=IAS[pid], est=IAEST[pid], c=ia&&ia.conteudo, h='';
+    var botao='<button type="button" class="pil-ia-bt" data-pil-ia="'+esc(pid)+'" data-pil-dia="'+esc(op.data||'')+'"'+(est&&est.ocupado?' disabled':'')+'>'
+      +(est&&est.ocupado?'Gerando…':(c?'Atualizar análise':'Gerar análise de IA'))+'</button>';
+    h+='<div class="pil-ia-cab"><div><b>✦ Análise de IA do caso</b><span>'
+      +(c?('gerada '+hora(ia.gerado_em)+(ia.data_consulta&&op.data&&ia.data_consulta!==op.data?' para a consulta de '+data(ia.data_consulta):'')+'. Sugestão; a conduta é sua.')
+         :'Ainda não gerada para este paciente. Leva cerca de 1 minuto, com o crédito do plano.')
+      +'</span></div>'+botao+'</div>';
+    if(est&&est.msg) h+='<div class="pil-ia-msg">'+esc(est.msg)+'</div>';
+    if(est&&est.erro) h+='<div class="pil-ia-msg erro">'+esc(est.erro)+'</div>';
+    else if(ia&&ia.erro&&!(est&&est.ocupado)) h+='<div class="pil-ia-msg erro">A última tentativa falhou: '+esc(ia.erro)+'</div>';
+    if(c&&c.leitura_geral) h+='<div class="pil-ia-geral">'+esc(c.leitura_geral)+'</div>';
+    var r=c&&c.renovacao;
+    if(r&&r.produto){
+      h+='<div class="pil-renov"><div class="pil-renov-t">Renovação'+(ia.momento&&ROT_MOMENTO[ia.momento]?' · '+ROT_MOMENTO[ia.momento]:'')+'</div>'
+        +'<div class="pil-renov-p"><em>Produto mais indicado</em><b>'+esc(r.produto)+'</b>'+(r.alternativa?'<span>alternativa: '+esc(r.alternativa)+'</span>':'')+'</div>'
+        +(r.aviso?'<div class="pil-ia-msg erro">'+esc(r.aviso)+'</div>':'')
+        +(r.por_que?'<div class="pil-renov-q">'+esc(r.por_que)+'</div>':'')
+        +((r.complementos||[]).length?'<div class="pil-renov-c">'+r.complementos.map(function(x){ return '<span>+ '+esc(x)+'</span>'; }).join('')+'</div>':'')
+        +((r.pontos_para_conversa||[]).length?'<div class="pil-renov-f"><em>Para a conversa</em>'+r.pontos_para_conversa.map(function(x){ return '<div>“'+esc(x)+'”</div>'; }).join('')+'</div>':'')
+        +'</div>';
+    }
+    return '<div class="pil-iax">'+h+'</div>';
+  }
+
   /* HAG_PILARES_PAINEL_v2 (06/11/2026), pedido do Dr. com print: a nota do catalogo do CBD ocupava meia tela e
      empurrava o resto. Dose e momento viram selos; nota e efeitos ficam em 2 linhas, e um toque abre o texto inteiro. */
   function recolhe(cls, txt){
@@ -77,9 +167,11 @@
 
   function render(d, op){
     var cx='pil-x'+(op&&op.escuro?' pil-auto':'');
+    var iac=(op&&op.pid&&IAS[op.pid]&&IAS[op.pid].conteudo&&IAS[op.pid].conteudo.pilares)||{};   /* HAG_PILARES_IA_v1 */
     if(!d) return '<div class="'+cx+'"><div class="pil-mut">Sem dados.</div></div>';
     var it=d.itens||{}, topo='', esq='', pil='';
     var uc=d.ultima_consulta;
+    topo+=topoIA(op);   /* HAG_PILARES_IA_v1: analise geral e renovacao no topo */
     topo+='<div class="pil-meta">'+(uc?('Conduta da última consulta, <b>'+data(uc.data)+'</b>'+(uc.etapa?' ('+esc(uc.etapa)+')':'')+'.'):'Paciente sem consulta registrada.')
       +' Montado só com os dados do sistema, sem IA.</div>';
     /* avisos de contraindicacao e atencao primeiro; mesma mensagem para itens irmaos vira um aviso so */
@@ -121,9 +213,10 @@
     [['dieta','Dieta'],['suplemento','Suplemento'],['medicacao','Medicação'],['exercicio','Exercício']].forEach(function(pp){
       var k=pp[0], lista=(k==='dieta')?String(it.dieta||'').split(/\s\+\s|;/).map(function(x){return x.trim();}).filter(Boolean).map(function(x){return {nome:x};}):((it[k])||[]);
       var ks=conh.filter(function(c){return c.pilar===k;});
-      var vazio=!lista.length && k!=='dieta' && !reg.some(function(r){return r.nivel==='indicacao'&&r.pilar===k;}) && !(cam[k]||[]).length;
+      var vazio=!lista.length && k!=='dieta' && !(iac[k]&&iac[k].leitura) && !reg.some(function(r){return r.nivel==='indicacao'&&r.pilar===k;}) && !(cam[k]||[]).length;
       if(vazio){ colB+='<div class="pil-card pil-'+k+' curto"><h4>'+pp[1]+'<span>nada prescrito na última consulta</span></h4></div>'; return; }
       var h='<div class="pil-card pil-'+k+'"><h4>'+pp[1]+'<span>'+(lista.length?(lista.length+(lista.length===1?' item':' itens')):'nada prescrito')+'</span></h4><div class="pil-in">';
+      h+=blocoIA(iac[k]);   /* HAG_PILARES_IA_v1: a leitura da IA abre o pilar, antes do que esta prescrito */
       if(k==='dieta'){
         var pl=it.dieta_plano||{}, ptn=num(pl.ptn), partes=[];
         if(num(pl.kcal)) partes.push('<b>'+fmt(num(pl.kcal),0)+' kcal</b>');
@@ -224,6 +317,38 @@
     +'.pil-x .pil-c{display:block}'
     +'.pil-x .pil-g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:0 12px;align-items:start}'
   +'}',
+  /* HAG_PILARES_IA_v1: analise de IA */
+  '.pil-x .pil-iax{margin:0 0 10px}',
+  '.pil-x .pil-ia-cab{display:flex;align-items:center;gap:10px;justify-content:space-between;border:1px solid #D9C9A3;background:#FBF6EA;border-radius:12px;padding:9px 12px}',
+  '.pil-x .pil-ia-cab b{display:block;font-size:13px;color:#1B2745}',
+  '.pil-x .pil-ia-cab span{display:block;font-size:11.4px;color:#6E6A60;line-height:1.4}',
+  '.pil-x .pil-ia-bt{flex:none;font:inherit;font-size:12.4px;font-weight:600;border:0;border-radius:9px;padding:8px 12px;background:#1B2745;color:#fff;cursor:pointer}',
+  '.pil-x .pil-ia-bt[disabled]{opacity:.55;cursor:default}',
+  '.pil-x .pil-ia-msg{font-size:12px;color:#2563a8;background:#e8f0fa;border-radius:9px;padding:7px 10px;margin:6px 0 0}',
+  '.pil-x .pil-ia-msg.erro{color:#8A3414;background:#FDF0EA}',
+  '.pil-x .pil-ia-geral{font-size:13px;line-height:1.5;color:#2B2A26;margin:8px 2px 0}',
+  '.pil-x .pil-renov{border:1.5px solid #C9A55E;border-radius:12px;padding:10px 12px;margin:10px 0 0;background:#fff}',
+  '.pil-x .pil-renov-t{font-family:'+FM+';font-size:9.8px;letter-spacing:.16em;text-transform:uppercase;color:#9A7B3F;margin:0 0 6px}',
+  '.pil-x .pil-renov-p em,.pil-x .pil-renov-f em,.pil-x .pil-ia-mr em{display:block;font-style:normal;font-family:'+FM+';font-size:9.2px;letter-spacing:.1em;text-transform:uppercase;color:#98917F}',
+  '.pil-x .pil-renov-p b{display:block;font-size:17px;color:#1B2745;line-height:1.3}',
+  '.pil-x .pil-renov-p span{font-size:12px;color:#6E6A60}',
+  '.pil-x .pil-renov-q{font-size:12.8px;line-height:1.5;margin:6px 0 0;color:#3F3B33}',
+  '.pil-x .pil-renov-c{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 0}',
+  '.pil-x .pil-renov-c span{font-size:11.6px;border-radius:20px;padding:2px 9px;background:#F7F0DF;color:#7A5A22}',
+  '.pil-x .pil-renov-f{margin:8px 0 0;border-top:1px solid #F0EDE4;padding-top:7px}',
+  '.pil-x .pil-renov-f div{font-size:12.8px;line-height:1.45;color:#3F3B33;margin:3px 0}',
+  '.pil-x .pil-ia{background:#F6F8FC;border:1px solid #D6E0F0;border-radius:10px;padding:8px 10px;margin:0 0 8px}',
+  '.pil-x .pil-ia-t{font-family:'+FM+';font-size:9.4px;letter-spacing:.14em;text-transform:uppercase;color:#4A6797;margin:0 0 4px}',
+  '.pil-x .pil-ia-l{font-size:12.8px;line-height:1.45;color:#2B2A26}',
+  '.pil-x .pil-ia-mr{margin:7px 0 0;border-left:3px solid #2F6B48;padding:2px 0 2px 8px}',
+  '.pil-x .pil-ia-mr b{display:block;font-size:13.2px;color:#1E4D33}',
+  '.pil-x .pil-ia-mr span{display:block;font-size:12px;color:#4A463E;line-height:1.4}',
+  '.pil-x .pil-ia-op{margin:6px 0 0}',
+  '.pil-x .pil-ia-op summary{cursor:pointer;font-family:'+FM+';font-size:9.8px;letter-spacing:.12em;text-transform:uppercase;color:#4A6797;padding:3px 0}',
+  '.pil-x .pil-ia-o{padding:4px 0;border-top:1px solid #E3E9F3;font-size:12.4px;line-height:1.4}',
+  '.pil-x .pil-ia-o b{display:block;color:#1B2745}',
+  '.pil-x .pil-ia-o span{color:#55565c}',
+  '.pil-x .pil-ia-v{font-size:11.8px;color:#7A4A1E;margin:6px 0 0}',
   /* HAG_PILARES_PAINEL_v2_1: CELULAR (container de ate 520 px) */
   '@container pil (max-width: 520px){'
     +'.pil-x{font-size:13.8px}'
@@ -240,6 +365,13 @@
     +'.pil-x .pil-tab td .pil-mut{display:block;font-size:10.5px;line-height:1.2}'
     +'.pil-x .pil-tab td,.pil-x .pil-tab th{padding-left:4px;padding-right:4px}'
     +'.pil-x .pil-card>h4{gap:4px 10px;flex-wrap:wrap}'
+    +'.pil-x .pil-ia-cab{flex-direction:column;align-items:stretch}'
+    +'.pil-x .pil-ia-bt{padding:10px 12px;font-size:13.4px}'
+    +'.pil-x .pil-ia-l,.pil-x .pil-ia-geral{font-size:13.6px}'
+    +'.pil-x .pil-ia-mr b{font-size:14px}'
+    +'.pil-x .pil-ia-mr span,.pil-x .pil-ia-o{font-size:13px}'
+    +'.pil-x .pil-ia-op summary{padding:7px 0;font-size:10.4px}'
+    +'.pil-x .pil-renov-q,.pil-x .pil-renov-f div{font-size:13.6px}'
   +'}',
   /* HAG_PILARES_PAINEL_v2_1: TEMA ESCURO OPCIONAL (classe pil-auto), cores do HAG Dr.
      Vem com !important e seletor mais forte porque a regra clara acima tambem usa !important. */
@@ -276,12 +408,45 @@
     +'.pil-x.pil-auto .pil-cam .tag.atencao{background:#372B17;color:#E5B569}'
     +'.pil-x.pil-auto .pil-rod{border-top-color:#2E3647}'
     +'.pil-x.pil-auto code{background:#2A3141 !important;color:#C3C8D2 !important}'
+    /* HAG_PILARES_IA_v1 no escuro */
+    +'.pil-x.pil-auto .pil-ia-cab{background:#2B261B;border-color:#5A4A2A}'
+    +'.pil-x.pil-auto .pil-ia-cab b{color:#F1F3F7}'
+    +'.pil-x.pil-auto .pil-ia-cab span{color:#9AA1B2}'
+    +'.pil-x.pil-auto .pil-ia-bt{background:#C9A55E;color:#14161C}'
+    +'.pil-x.pil-auto .pil-ia-msg{background:#1B2A42;color:#8DB8F0}'
+    +'.pil-x.pil-auto .pil-ia-msg.erro{background:#3A1F22;color:#F3A08F}'
+    +'.pil-x.pil-auto .pil-ia-geral{color:#D5D9E2}'
+    +'.pil-x.pil-auto .pil-renov{background:#202634;border-color:#C9A55E}'
+    +'.pil-x.pil-auto .pil-renov-t{color:#D9B877}'
+    +'.pil-x.pil-auto .pil-renov-p b{color:#F2CF95}'
+    +'.pil-x.pil-auto .pil-renov-p span,.pil-x.pil-auto .pil-renov-p em,.pil-x.pil-auto .pil-renov-f em,.pil-x.pil-auto .pil-ia-mr em{color:#8D95A8}'
+    +'.pil-x.pil-auto .pil-renov-q,.pil-x.pil-auto .pil-renov-f div{color:#D5D9E2}'
+    +'.pil-x.pil-auto .pil-renov-c span{background:#2F2A1E;color:#E9C98A}'
+    +'.pil-x.pil-auto .pil-renov-f{border-top-color:#2E3647}'
+    +'.pil-x.pil-auto .pil-ia{background:#1B2335;border-color:#2F4266}'
+    +'.pil-x.pil-auto .pil-ia-t,.pil-x.pil-auto .pil-ia-op summary{color:#8DB8F0}'
+    +'.pil-x.pil-auto .pil-ia-l{color:#E3E6EC}'
+    +'.pil-x.pil-auto .pil-ia-mr{border-left-color:#7FCF9F}'
+    +'.pil-x.pil-auto .pil-ia-mr b{color:#A6E2BD}'
+    +'.pil-x.pil-auto .pil-ia-mr span,.pil-x.pil-auto .pil-ia-o span{color:#B5BAC6}'
+    +'.pil-x.pil-auto .pil-ia-o{border-top-color:#2E3647}'
+    +'.pil-x.pil-auto .pil-ia-o b{color:#F1F3F7}'
+    +'.pil-x.pil-auto .pil-ia-v{color:#E9C083}'
   +'}'
   ].join('\n');
   var injetado=false;
+  var cliqueLigado=false;
   function injetar(){
+    if(!cliqueLigado){ cliqueLigado=true;
+      try{ document.addEventListener('click', function(e){
+        var b=e.target&&e.target.closest&&e.target.closest('[data-pil-ia]'); if(!b) return;
+        /* data-pil-dia, e nao data-dia: o HAG Dr ja usa [data-dia] para trocar o dia da agenda e fechava o cartao */
+        e.preventDefault(); e.stopPropagation(); pedirIA(b.getAttribute('data-pil-ia'), b.getAttribute('data-pil-dia')||null);
+      }); }catch(e){}
+    }
     if(injetado) return;
     try{ var st=document.createElement('style'); st.id='hag-pilares-css'; st.textContent=CSS; (document.head||document.documentElement).appendChild(st); injetado=true; }catch(e){}
   }
-  raiz.HAGPilares={ render:render, carregar:carregar, injetar:injetar, css:CSS, versao:'v2.1' };
+  raiz.HAGPilares={ render:render, carregar:carregar, carregarTudo:carregarTudo, carregarIA:carregarIA, config:config, pedirIA:pedirIA,
+                    injetar:injetar, css:CSS, versao:'v2.2' };
 })(typeof self!=='undefined'?self:this);

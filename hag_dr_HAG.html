@@ -25,7 +25,7 @@ window.HAG_EXIGIR_LOGIN=true;
 <!-- HAG_DR_BRIEFING_CARDS_v1 (06/11/2026): o mesmo renderizador de cartoes do briefing do Mac (copia identica do HAG_Consultas). -->
 <script src="hag_briefing_cards.js?v=20261106-1"></script>
 <!-- HAG_DR_PILARES_v1 (06/11/2026): os 4 pilares do paciente, o mesmo modulo da pagina de briefings do Mac (copia identica do HAG_Consultas). -->
-<script src="hag_pilares_painel.js?v=20261106-1"></script>
+<script src="hag_pilares_painel.js?v=20261107-1"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -255,17 +255,19 @@ function briefingHtml(md){
    Dentro da consulta aberta na Agenda, duas abas: Briefing e 4 pilares. Os pilares vem da RPC hag_painel_pilares
    (sem IA, so com login) e sao desenhados pelo hag_pilares_painel.js, o mesmo da pagina de briefings do Mac.
    So busca quando o Dr. abre a aba, e guarda ate a agenda recarregar. */
-function pilBusca(pid){
+function pilBusca(pid, dia){
   if(!window.HAGPilares){ PIL[pid] = { ok:false, motivo:'O módulo dos 4 pilares não carregou. Feche e abra o HAG Dr de novo.' }; return; }
   PIL_PEDINDO[pid] = true; window.HAGPilares.injetar();
-  window.HAGPilares.carregar(URL_, KEY, pid).then(function(r){ PIL[pid] = r; PIL_PEDINDO[pid] = false; pintaAtual(); });
+  /* HAG_PILARES_IA_v1 (07/11/2026): painel e analise de IA do caso juntos; o botao "Atualizar analise" pede ao Mac e redesenha */
+  window.HAGPilares.config({ url: URL_, chave: KEY, redesenhar: pintaAtual });
+  window.HAGPilares.carregarTudo(URL_, KEY, pid, dia).then(function(r){ PIL[pid] = r; PIL_PEDINDO[pid] = false; pintaAtual(); });
 }
-function pilaresHtml(pid){
-  if(!PIL[pid] && !PIL_PEDINDO[pid]) pilBusca(pid);
+function pilaresHtml(pid, dia){
+  if(!PIL[pid] && !PIL_PEDINDO[pid]) pilBusca(pid, dia);
   var pc = PIL[pid];
   if(!pc) return '<div class="vazio">Carregando os 4 pilares…</div>';
   if(!pc.ok) return '<div class="msg erro">' + esc(pc.motivo) + '</div>';
-  try{ return window.HAGPilares.render(pc.dados, { escuro: true }); }catch(e){ return '<div class="msg erro">Não consegui desenhar os pilares: ' + esc(e && e.message || e) + '</div>'; }
+  try{ return window.HAGPilares.render(pc.dados, { escuro: true, pid: pid, data: dia }); }catch(e){ return '<div class="msg erro">Não consegui desenhar os pilares: ' + esc(e && e.message || e) + '</div>'; }
 }
 function W(h){ document.getElementById('wrap').innerHTML = h; }
 function falha(e){ W('<div class="msg erro">Não consegui ler: ' + esc(e && e.message || e) + '</div>'); }
@@ -305,7 +307,7 @@ function pintaHoje(dias, doDia){
       x += '<div class="corpo">' + (MSG[k] ? '<div class="msg">' + MSG[k] + '</div>' : '')
         + '<div class="cabas"><button data-caba="brf" data-k="' + esc(k) + '"' + (caba === 'brf' ? ' class="on"' : '') + '>Briefing</button>'
         + '<button data-caba="pil" data-k="' + esc(k) + '"' + (caba === 'pil' ? ' class="on"' : '') + '>4 pilares</button></div>'
-        + (caba === 'pil' ? pilaresHtml(r.patient_id) : b && b.conteudo_md ? briefingHtml(b.conteudo_md) : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
+        + (caba === 'pil' ? pilaresHtml(r.patient_id, r.data_consulta) : b && b.conteudo_md ? briefingHtml(b.conteudo_md) : '<div class="vazio">O briefing desta consulta ainda não foi gerado. O Mac gera sozinho na véspera; você pode pedir agora.</div>')
         + '<div class="acoes">' + (b && b.conteudo_md ? '<button data-pedir="novo" data-k="' + esc(k) + '">Atualizar só o novo</button>' : '<button class="pri" data-pedir="completo" data-k="' + esc(k) + '">Pedir o briefing</button>') + '<button data-pac="' + esc(r.patient_id) + '" data-nome="' + esc(r.patient_nome || '') + '">Ver o ciclo</button></div></div>';
     }
     return x + '</div>';
