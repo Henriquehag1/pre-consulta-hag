@@ -156,8 +156,18 @@
     var m=t.match(/^Pedido\s+(\S+)\s+sem resultado\s*\((\d+)d\):?\s*(.*)$/i);
     if(!m) return '<div class="brf-ped">'+inl(t)+'</div>';
     var dias=+m[2];
+    /* HAG_BRIEFING_CARDS_v3_2 (07/11/2026): a linha agora traz o que foi pedido, separado por " || "
+       ("controle || Laboratoriais: a; b || Imagem: x"). O Dr. pediu para "relembrar rapido no briefing
+       alem da data": os itens ficam num toque, em etiquetas, sem ocupar a tela fechados. */
+    var partes=String(m[3]||'').split(/\s*\|\|\s*/), arq=partes.shift()||'', blocos='', total=0;
+    partes.forEach(function(bl){
+      var mm=bl.match(/^([^:]{2,30}):\s*(.+)$/), rot=mm?mm[1]:'', itens=(mm?mm[2]:bl).split(/\s*;\s*/).filter(Boolean);
+      total+=itens.length;
+      blocos+=(rot?'<div class="brf-gl">'+esc(rot)+'</div>':'')+'<div class="brf-chips">'+itens.map(function(x){ return '<span class="brf-chip">'+esc(x)+'</span>'; }).join('')+'</div>';
+    });
     return '<div class="brf-ped'+(dias>21?' forte':'')+'"><i>⏳</i><span><b>Pedido de '+esc(m[1])+' sem resultado</b> · há '+dias+' dias'
-      +(m[3]?' · '+esc(m[3]):'')+'</span></div>';
+      +(arq?' · '+esc(arq):'')
+      +(total?'<details class="brf-pedx"><summary>Ver o que foi pedido ('+total+')</summary>'+blocos+'</details>':'')+'</span></div>';
   }
 
   /* ── medicacoes: "Atual: A ate 10/11 (4d); B continuo; ..." vira lista ── */
@@ -381,6 +391,11 @@
     +'border-radius:10px;padding:7px 10px;margin:0 0 8px;color:#7A4A1E;font-size:13px}',
   '.brf-cards .brf-ped.forte{border-color:#E7B9A6;background:#FDF0EA;color:#8A3414}',
   '.brf-cards .brf-ped i{font-style:normal}',
+  '.brf-cards .brf-ped>span{min-width:0;flex:1}',
+  '.brf-cards .brf-pedx{margin-top:6px}',
+  '.brf-cards .brf-pedx summary{cursor:pointer;font-family:'+FM+';font-size:9.8px;letter-spacing:.1em;text-transform:uppercase;padding:3px 0}',
+  '.brf-cards .brf-pedx .brf-gl{margin:6px 0 4px;color:inherit;opacity:.75}',
+  '.brf-cards .brf-pedx .brf-chip{font-size:11.8px;background:rgba(255,255,255,.6)}',
   /* medicacoes */
   '.brf-cards .brf-meds{border:1px solid #F0EDE4;border-radius:9px;overflow:hidden;margin:0 0 10px}',
   '.brf-cards .brf-med{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;font-size:13px}',
@@ -487,6 +502,7 @@
     +'.brf-cards.brf-auto .brf-av small{color:#9DB3D6}'
     +'.brf-cards.brf-auto .brf-ped{background:#372B17;border-color:#5A4522;color:#E9C083}'
     +'.brf-cards.brf-auto .brf-ped.forte{background:#3A1F22;border-color:#5A302C;color:#F3A08F}'
+    +'.brf-cards.brf-auto .brf-pedx .brf-chip{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.12);color:inherit}'
     +'.brf-cards.brf-auto .brf-meds{border-color:#2E3647}'
     +'.brf-cards.brf-auto .brf-med + .brf-med{border-top-color:#2E3647}'
     +'.brf-cards.brf-auto .brf-med.urg{background:#2E1D20}'
@@ -514,5 +530,5 @@
     }catch(e){}
   }
 
-  raiz.HAGBriefingCards = { render: render, css: CSS, injetar: injetar, versao: 'v3.1' };
+  raiz.HAGBriefingCards = { render: render, css: CSS, injetar: injetar, versao: 'v3.2' };
 })(typeof self !== 'undefined' ? self : this);
