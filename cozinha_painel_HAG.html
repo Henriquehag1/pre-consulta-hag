@@ -109,6 +109,8 @@ async function carregar(){
   await carregarSel();
   await carregarEv();
   await carregarUso();   /* HAG_COZINHA_FUNIL_v1 */
+  /* HAG_ORIENTACOES_DESTINO_v1 (08/11/2026): combinado na consulta para o proximo Plano Alimentar */
+  try{ D.ori=await api('consulta_orientacoes?status=eq.pendente&destino=eq.plano_alimentar&select=id,patient_id,data_consulta,item,texto&order=data_consulta.desc,item')||[]; }catch(e){ D.ori=[]; }
 }
 // HAG_COZINHA_SO_LIBERADO_v1: o que está liberado para cada paciente (seleção ativa).
 async function carregarSel(){ D.sel=await api('cozinha_selecao?ativo=eq.true&select=patient_id,item_id,motivo,ordem,consulta_data,criado_em&order=patient_id,consulta_data.desc.nullslast,ordem')||[]; }
@@ -181,6 +183,14 @@ function cardPaciente(){
       h+='<div class="it'+(it.aprovado?'':' pend')+'"><div class="th">'+(fotoDe(it)?'<img alt="" src="'+esc(fotoDe(it))+'">':(it.tipo==='guia'?'guia':'foto'))+'</div><div class="tx"><span class="nm">'+esc(r.nome||x.item_id)+'</span>'+
          (x.motivo?'<span class="rs"><i>'+esc(x.motivo)+'</i></span>':'')+'<span class="mt">'+(it.tipo==='guia'?'guia':'receita')+(x.consulta_data?' · consulta de '+esc(x.consulta_data.split('-').reverse().join('/')):'')+(it.aprovado?'':' · tirado do ar, o paciente não vê')+esc(usoTxt(S.pid,x.item_id))+'</span></div>'+
          '<div class="ac"><button class="btn peq sec" data-a="retirar" data-v="'+esc(x.item_id)+'">Retirar</button></div></div>'; });
+    var _or=(D.ori||[]).filter(function(o){ return o.patient_id===S.pid; });   /* HAG_ORIENTACOES_DESTINO_v1 */
+    if(_or.length){
+      h+='</div><div class="grp"><h2>Combinado na consulta, para o próximo Plano Alimentar <span class="note">('+_or.length+')</span></h2><p class="note">Veio da conduta falada no gravador. Entra no próximo Plano Alimentar pela skill de documentos. Marque aqui se já resolveu de outro jeito.</p>';
+      _or.forEach(function(o){
+        h+='<div class="it"><div class="th">consulta</div><div class="tx"><span class="nm">'+esc(o.item)+'</span><span class="rs">'+esc(o.texto)+'</span><span class="mt">consulta de '+esc(String(o.data_consulta||'').split('-').reverse().join('/'))+'</span></div>'+
+           '<div class="ac"><button class="btn peq sec" data-a="oriusado" data-v="'+esc(o.id)+'">Já está no plano</button><button class="btn peq sec" data-a="oridesc" data-v="'+esc(o.id)+'">Descartar</button></div></div>';
+      });
+    }
     h+='</div><div class="grp"><h2>Liberar mais</h2><div class="row"><input id="libq" placeholder="Buscar receita ou guia aprovado" value="'+esc(S.libq||'')+'" style="flex:1;min-width:220px"><button class="btn sec" data-a="libbuscar">Buscar</button></div>'+
        '<div class="row"><input id="libmot" placeholder="Por que (aparece para o paciente, em uma linha; opcional)" value="'+esc(S.libmot||'')+'" style="flex:1;min-width:260px" maxlength="160"></div>';
     if(S.libq){ var q=semAcento(S.libq), ja=l.map(function(x){return x.item_id});
@@ -335,6 +345,9 @@ main.addEventListener('click',function(e){
     var ordem=l.reduce(function(m,x){return Math.max(m,x.ordem||0)},0)+1;
     await api('cozinha_selecao?on_conflict=patient_id,item_id',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:[{patient_id:S.pid,item_id:v,motivo:mot||null,ordem:ordem,consulta_data:null,criado_por:'painel',ativo:true,criado_em:new Date().toISOString()}]});
     S.libmot=''; await carregarSel(); S.msg='Liberado. Já aparece na página do paciente.'; });
+  if(a==='oriusado'||a==='oridesc') return tentar(async function(){   /* HAG_ORIENTACOES_DESTINO_v1 */
+    await api('consulta_orientacoes?id=eq.'+encodeURIComponent(v),{method:'PATCH',body:{status:a==='oriusado'?'usado':'descartado',usado_em:a==='oriusado'?'marcado no painel da Cozinha':null,resolvido_em:new Date().toISOString()}});
+    D.ori=(D.ori||[]).filter(function(o){ return o.id!==v; }); S.msg=a==='oriusado'?'Marcado como já incluído no plano.':'Descartado.'; });
   if(a==='retirar') return tentar(async function(){ await api('cozinha_selecao?patient_id=eq.'+encodeURIComponent(S.pid)+'&item_id=eq.'+encodeURIComponent(v),{method:'PATCH',body:{ativo:false}});
     await carregarSel(); S.msg='Retirado. Some da página do paciente na próxima vez que ele abrir.'; });
   if(a==='pedirnovo'){ S.pid=document.getElementById('pac').value||S.pid; if(!S.pid){ S.erro='Escolha o paciente.'; return render(); } S.confNovo=true; return render(); }
