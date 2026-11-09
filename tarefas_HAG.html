@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261105-2223"></script>
+<script src="hag_auth.js?v=20261109-1022"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -2856,8 +2856,10 @@ const FILA_EV_LABEL={retorno:'Retorno',diagnostica:'Consulta diagnostica',proced
 function fmtBRf(iso){if(!iso)return '';const p=String(iso).slice(0,10).split('-');return p[2]+'/'+p[1];}
 /* HAG_REMARCAR_v1: local vindo com maiuscula caia fora do mapa e o cartao
    mostrava "undefined". Agora normaliza e, no pior caso, mostra o proprio valor. */
-function _filaLocalLabel(v){
+function _filaLocalLabel(v, ouOnline){
   var k=String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  /* HAG_TAREFA_PRESENCIAL_OU_ONLINE_v1: o Dr. deixou o paciente escolher; o link mostra as duas formas */
+  if(ouOnline && (k==='pinheiros'||k==='tatuape')) return '📍 '+(k==='tatuape'?'Tatuapé':'Pinheiros')+' ou 💻 online · o paciente escolhe';
   return ({online:'💻 Online',pinheiros:'📍 Presencial · Pinheiros',tatuape:'📍 Presencial · Tatuapé'})[k] || ('📍 '+v);
 }
 /* ============================================================================
@@ -2924,7 +2926,7 @@ function _resumoFila(t){
       + _resLinha('Plano', _vigTexto(t.patient_id)) /* HAG_VIGENCIA_PLANO_v1 */
       + _resLinha('Tipo', _resEsc(ev))
       + _resLinha('Janela', t.janela_data ? (_resDataBR(t.janela_data)+' · '+_resEsc(_resDias(t.janela_data))) : 'a combinar')
-      + _resLinha('Local', t.local ? _resEsc(_filaLocalLabel(t.local)) : '<i>ainda não definido</i>')
+      + _resLinha('Local', t.local ? _resEsc(_filaLocalLabel(t.local, t.status!=='concluida' && t.aceita_online)) : '<i>ainda não definido</i>')
       + _resLinha('Na agenda', t.status==='concluida' ? (t.calendar_sync==='criado'?'sim':'ainda não') : null)
       + _resLinha('Observação', t.obs ? _resEsc(String(t.obs).split('|')[0].trim()) : null)
       + _resLinha('Remarcações', hist||null)
@@ -3113,7 +3115,7 @@ function buildFilaCard(t){
         (_seloI?'<div style="margin:0 0 4px">'+_seloI+'</div>':'')+ /* HAG_INTENCAO_SEM_CONFIRMAR_v1 */ /* HAG_FILA_PEDIDO_PACIENTE_v1: selo em linha propria, o nome nao fica cortado */
         '<div class="tc-name">'+_selo+_seloF+t.patient_nome+'</div>'+
         '<div class="tc-desc">'+(FILA_EV_LABEL[t.tipo_evento]||'Agendamento')+' &middot; '+janela+'</div>'+
-        (t.local?'<div class="tc-desc" style="color:var(--ink3)">'+_filaLocalLabel(t.local)+'</div>':'')+
+        (t.local?'<div class="tc-desc" style="color:var(--ink3)">'+_filaLocalLabel(t.local, t.status!=='concluida' && t.aceita_online)+'</div>':'')+
         _boxP+_boxI+(t.obs&&!_ped?'<div class="tc-desc" style="color:var(--ink3)">'+_msgEsc(t.obs)+'</div>':'')+ /* HAG_FILA_PEDIDO_PACIENTE_v1: obs escapado (vem do link) */
         /* HAG_LEMBRETE_AGENDAR_v2: quantas vezes foi lembrado e quando foi o último */
         ((+t.lembretes>0 && t.status!=='concluida')?'<div class="tc-desc" style="color:#8A6D1F;font-weight:600">&#x1f514; Lembrado '+t.lembretes+'x'+(t.ultimo_lembrete_em?(' &middot; último em '+fmtBRf(String(t.ultimo_lembrete_em).slice(0,10))):'')+'</div>':'')+
@@ -5059,7 +5061,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261105-2223';
+  var VERSAO = '20261109-1022';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
