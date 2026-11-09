@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261109-1022"></script>
+<script src="hag_auth.js?v=20261109-1758"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -1455,7 +1455,10 @@ var DAN_TPL=[
      publicadas e o endereco nao existe em lugar nenhum do HAG OS, entao nao ha
      "como chegar" pronto, e inventar endereco de consultorio e pior que nao ter. */
   {id:'aceita_convenio',cat:'administrativo',nome:'Aceita conv\u00eanio ou plano de sa\u00fade',sub:'Particular, com nota para reembolso',texto:'[nome], o atendimento do Dr. Henrique \u00e9 particular, n\u00e3o passa por conv\u00eanio.\n\nO que a maioria dos pacientes faz \u00e9 pedir reembolso ao plano depois. Eu emito a nota fiscal com o CNPJ do consult\u00f3rio e te envio organizada, para voc\u00ea dar entrada.\n\nO quanto o plano devolve depende do seu contrato, ent\u00e3o quem confirma esse valor \u00e9 a sua operadora. Se ajudar, eu te explico como funciona antes de voc\u00ea decidir.'},
-  {id:'valor_consulta',cat:'administrativo',nome:'Quanto custa a consulta',sub:'Valor dito sem emo\u00e7\u00e3o, total do parcelado junto',texto:'[nome], a avalia\u00e7\u00e3o presencial \u00e9 R$ 900 \u00e0 vista no Pix, ou 3x de R$ 320, total de R$ 960 no cart\u00e3o. Na modalidade online, R$ 750 \u00e0 vista, ou 3x de R$ 270, total de R$ 810.\n\n\u00c9 uma consulta longa, em que o Dr. Henrique levanta hist\u00f3ria cl\u00ednica, exames, composi\u00e7\u00e3o corporal e rotina antes de definir qualquer conduta. Voc\u00ea sai dela com um plano e com a data da reavalia\u00e7\u00e3o j\u00e1 marcada.\n\nPara reservar o hor\u00e1rio \u00e9 pago um sinal, que já faz parte desse valor: R$ 450 no Pix, ou R$ 480 no cartão, em até 3x de R$ 160. O restante é acertado no dia da consulta.\n\nQuer que eu veja as datas dispon\u00edveis para voc\u00ea?'},
+  /* HAG_SEM_PROMESSA_DE_PLANO_v1 (09/11/2026): o Dr. corrigiu, a pessoa NAO sai da primeira consulta com o plano.
+     Frase alinhada ao material oficial (clinicahag.com/consulta): fica claro o que o momento pede e o Dr. indica o nivel.
+     Proximo passo e o formulario (cria o cadastro e libera o link); data nunca e oferecida por mensagem. */
+  {id:'valor_consulta',cat:'administrativo',nome:'Quanto custa a consulta',sub:'Valor dito sem emo\u00e7\u00e3o, total do parcelado junto',texto:'[nome], a avalia\u00e7\u00e3o presencial \u00e9 R$ 900 \u00e0 vista no Pix, ou 3x de R$ 320, total de R$ 960 no cart\u00e3o. Na modalidade online, R$ 750 \u00e0 vista, ou 3x de R$ 270, total de R$ 810.\n\n\u00c9 uma consulta longa, em que o Dr. Henrique levanta hist\u00f3ria cl\u00ednica, exames, composi\u00e7\u00e3o corporal e rotina antes de definir qualquer conduta. Ao final, fica claro o que o seu momento pede, e o Dr. Henrique indica o n\u00edvel de acompanhamento.\n\nPara reservar o hor\u00e1rio \u00e9 pago um sinal, que já faz parte desse valor: R$ 450 no Pix, ou R$ 480 no cartão, em até 3x de R$ 160. O restante é acertado no dia da consulta.\n\nSe fizer sentido, te envio o formul\u00e1rio pr\u00e9-consulta, que \u00e9 o primeiro passo para liberar a sua agenda.'},
   {id:'valor_acompanhamento',cat:'administrativo',nome:'Quanto custa o acompanhamento',sub:'N\u00e3o se responde antes da avalia\u00e7\u00e3o',texto:'[nome], os valores do acompanhamento variam conforme o n\u00edvel indicado, e isso s\u00f3 \u00e9 definido depois da avalia\u00e7\u00e3o.\n\nAp\u00f3s a consulta, o Dr. Henrique define qual n\u00edvel de acompanhamento faz mais sentido para o seu momento cl\u00ednico. A\u00ed eu te envio a proposta por escrito, com os valores e as formas de pagamento.\n\nO que eu consigo te adiantar agora \u00e9 o valor da avalia\u00e7\u00e3o, se ajudar a se organizar.'},
   {id:'reembolso_nota',cat:'administrativo',nome:'Reembolso e nota fiscal',sub:'Nota com CNPJ, e fracionamento nos planos longos',texto:'[nome], claro. A nota fiscal sai com o CNPJ do consult\u00f3rio e eu te envio por aqui.\n\nNos planos mais longos eu fa\u00e7o o fracionamento, que \u00e9 emitir a nota m\u00eas a m\u00eas, 1/12, 2/12 e assim por diante, em vez de uma nota \u00fanica com o valor total. Isso costuma facilitar bastante a entrada do reembolso.\n\nMe diz para qual e-mail devo enviar, que eu j\u00e1 organizo. Se o seu plano pedir algum documento a mais, me avisa que eu providencio com o Dr. Henrique.'},
   {id:'atestado_declaracao',cat:'administrativo',nome:'Atestado, relat\u00f3rio ou declara\u00e7\u00e3o',sub:'Quem assina \u00e9 o m\u00e9dico, quem organiza \u00e9 a Daniela',texto:'[nome], consigo organizar isso para voc\u00ea.\n\nDeclara\u00e7\u00e3o de comparecimento eu preparo aqui e te envio. Atestado e relat\u00f3rio m\u00e9dico s\u00e3o documentos assinados pelo Dr. Henrique, ent\u00e3o eu registro o pedido e levo para ele.\n\nMe confirma a finalidade e para quem deve ser endere\u00e7ado, assim ele emite j\u00e1 do jeito certo e eu te devolvo por aqui. Se houver prazo, me fala qual que eu priorizo.'},
@@ -5061,7 +5064,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261109-1022';
+  var VERSAO = '20261109-1758';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
