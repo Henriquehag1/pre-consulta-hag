@@ -448,7 +448,8 @@ function abaVendas(){
   return Promise.all([ rpc('hag_dr_renovacoes'), api('propostas?select=id,patient_nome,status,resumo,valor_pix,criado_em&status=in.(apresentada,vai_pensar)&order=criado_em.desc&limit=30'),
                        api('v_propostas_funil?select=*&order=mes.desc&limit=6'),
                        rpc('hag_dr_site_resumo', { p_dias: 30 }).catch(function(){ return null; }),
-                       api('mkt_lead?select=origem,status,primeiro_contato_em&primeiro_contato_em=gte.' + hojeISO(-30)).catch(function(){ return []; }) ]).then(function(res){
+                       api('mkt_lead?select=origem,status,primeiro_contato_em&primeiro_contato_em=gte.' + hojeISO(-30)).catch(function(){ return []; }),
+                       rpc('hag_dr_desfechos').catch(function(){ return []; }) ]).then(function(res){   /* HAG_DR_DESFECHO_v1 */
     var ren = res[0] || [], abertas = res[1] || [], fun = res[2] || [], site = res[3];
     function dataRef(r){ return r.momento === 'penultima' ? r.conversa_data : r.fechamento_data; }
     var prox = ren.filter(function(r){ var d = dataRef(r); return d && d <= lim; }).sort(function(a,b){ return String(dataRef(a)).localeCompare(String(dataRef(b))); });
@@ -456,6 +457,7 @@ function abaVendas(){
     var f0 = fun.filter(function(f){ return String(f.mes).slice(0,7) === h0.slice(0,7); });
     var pTot = f0.reduce(function(s, f){ return s + (+f.propostas || 0); }, 0), pAc = f0.reduce(function(s, f){ return s + (+f.aceitas || 0); }, 0);
     var h = '<div class="stats"><div class="stat"><b>' + prox.length + '</b><span>renovações em 60 dias</span></div><div class="stat"><b>' + abertas.length + '</b><span>ficaram de pensar</span></div><div class="stat"><b>' + (pTot ? Math.round(100 * pAc / pTot) + '%' : '—') + '</b><span>conversão do mês</span></div></div>';
+    h += blocoDesfechos(res[5]);   /* HAG_DR_DESFECHO_v1 */
     h += '<h2>Renovações · próximos 60 dias</h2>';
     h += prox.length ? prox.map(function(r){
       var d = dataRef(r), atras = d < h0 && !r.proposta_status;
@@ -478,6 +480,61 @@ function abaVendas(){
     h += blocoSite(site);
     W(h);
   }).catch(falha);
+}
+
+/* HAG_DR_DESFECHO_v1 (09/11/2026), pedido do Dr.: "algo automatizado que ja direcione que caminho tal
+   paciente tomou; por exemplo a Juliana Pacini nao deu seguimento, nao renovou, e dar fechamento".
+   Fonte: hag_dr_desfechos (banco). O banco encerra sozinho no fim da janela de 30 dias para reativar
+   (hag_desfechos_diario, 06h50); aqui o Dr. ve o caminho, diz se o fechamento sem registro aconteceu
+   e pode encerrar antes. Encerrar = hag_encerrar_ciclo (ciclo, consultas, tarefas, acessos, paciente). */
+var DESF = {};
+var DESF_TAG = { fechamento_sem_registro:'fechamento', nao_seguiu:'fechamento', sem_retorno:'atrasada', pensando:'vai_pensar',
+                 decidindo:'vai_pensar', fechamento_marcado:'penultima', renovou:'aceita', encerrado:'' };
+function desfMeta(d){
+  if(d.caminho === 'fechamento_sem_registro') return (d.fechamento_nome || 'Fechamento') + ' de ' + dm(d.fechamento_data) + ' ficou sem registro';
+  if(d.caminho === 'encerrado') return 'Encerrado em ' + dm(d.prazo);
+  if(d.caminho === 'renovou') return 'Ciclo novo garantido';
+  if(d.caminho === 'nao_seguiu') return 'Encerra sozinho amanhã cedo';
+  var t = d.caminho === 'pensando' ? 'Proposta em ' + dm(d.proposta_em) : d.caminho === 'decidindo' ? 'Fechamento em ' + dm(d.fechamento_realizado)
+        : d.caminho === 'fechamento_marcado' ? 'Fechamento em ' + dm(d.fechamento_data) : 'Ciclo acabou em ' + dm(d.ciclo_fim) + ', sem fechamento marcado';
+  return t + (d.prazo ? ' · encerra sozinho em ' + dm(d.prazo) : '');
+}
+function blocoDesfechos(lista){
+  var l = (lista || []).filter(function(d){ return d.caminho !== 'em_andamento'; });
+  DESF = {}; l.forEach(function(d){ DESF[d.ciclo_id] = d; });
+  var h = '<h2>Caminho de cada ciclo</h2>';
+  if(!l.length) return h + '<div class="vazio card">Nenhum ciclo terminado esperando caminho.</div>';
+  return h + l.map(function(d){
+    return '<div class="card row" data-desf="' + esc(d.ciclo_id) + '"><div class="q"><div class="nome">' + esc(d.patient_nome || d.patient_id) + '</div>'
+      + '<div class="sub">' + esc(NOMEPLANO[d.tipo_ciclo] || d.tipo_ciclo || '') + ' · fim ' + dm(d.ciclo_fim) + '</div><div class="meta">' + esc(desfMeta(d)) + '</div></div>'
+      + '<span class="tag ' + (DESF_TAG[d.caminho] || '') + '">' + esc(d.rotulo || d.caminho) + '</span></div>';
+  }).join('');
+}
+function desfDet(cid){
+  var d = DESF[cid]; if(!d) return;
+  var c = '<p class="sub" style="margin-bottom:8px">' + esc(desfMeta(d)) + '</p>';
+  c += li('Plano', esc(NOMEPLANO[d.tipo_ciclo] || d.tipo_ciclo || '') + ' · terminou em ' + dm(d.ciclo_fim));
+  if(d.fechamento_nome) c += li('Consulta de fechamento', esc(d.fechamento_nome) + ' · ' + dm(d.fechamento_data) + (d.fechamento_status ? ' · ' + esc(d.fechamento_status) : ''));
+  if(d.proposta_status) c += li('Proposta', esc(STP[d.proposta_status] || d.proposta_status) + ' · ' + dm(d.proposta_em));
+  if(d.ultima_msg_paciente) c += li('Última mensagem do paciente', dm(d.ultima_msg_paciente));
+  var b = '';
+  if(d.caminho === 'fechamento_sem_registro' && d.fechamento_id){
+    b += '<button class="pri" data-regfech="' + esc(d.fechamento_id) + '|1">Aconteceu em ' + dm(d.fechamento_data) + '</button><button data-regfech="' + esc(d.fechamento_id) + '|0">Faltou</button>';
+  }
+  if(['renovou', 'encerrado'].indexOf(d.caminho) < 0){
+    b += '<button data-encerra="' + esc(cid) + '|nao_renovou">Encerrar agora · não renovou</button><button data-encerra="' + esc(cid) + '|a_pedido">Encerrar · a pedido</button>';
+    c += '<div class="msg">Encerrar cancela as consultas que faltam, tira as tarefas de agenda da Daniela, desliga Cozinha, Treino e link de agendamento e deixa o paciente inativo. Se ele voltar, reative pelo Mac.</div>';
+  }
+  b += '<button data-pac="' + esc(d.patient_id) + '" data-nome="' + esc(d.patient_nome || '') + '">Ver o ciclo</button>';
+  folha(d.patient_nome || 'Ciclo', c + '<div class="acoes">' + b + '</div>');
+}
+function desfAcao(nome, corpo){
+  return rpc(nome, corpo).then(function(r){
+    if(r && r.ok === false) throw new Error(r.erro || 'não deu certo');
+    fechaFolha(); abrir('vendas'); carregaPend().then(badgePend);
+  }).catch(function(e){
+    var fc = document.getElementById('fCorpo'); if(fc) fc.insertAdjacentHTML('afterbegin', '<div class="msg erro">Não consegui: ' + esc(e && e.message || e) + '</div>');
+  });
 }
 
 /* HAG_SITE_MEDICAO_v1 (31/10/2026): o clinicahag.com passou a mandar para o HAG OS, sem
@@ -688,6 +745,7 @@ function abrePend(i){
   if(a === 'estado'){ estadoSistema(); return; }
   if(a === 'agenda_amanha'){ fechaFolha(); DIA = hojeISO(1); abrir('hoje'); return; }
   if(a === 'fin'){ fechaFolha(); abrir('fin'); return; }
+  if(a === 'vendas'){ fechaFolha(); abrir('vendas'); return; }   /* HAG_DR_DESFECHO_v1 */
   var it = p.itens || [];
   var corpo = '<p class="sub" style="margin-bottom:8px">' + esc(p.sub || '') + '</p>';
   if(a === 'vendas_sem_receita'){
@@ -1209,6 +1267,12 @@ document.addEventListener('click', function(e){
     try{ if(navigator.clipboard) navigator.clipboard.writeText(wt).catch(function(){}); }catch(x){}
     window.open('https://wa.me/' + String(wr.telefone).replace(/\D/g,'') + '?text=' + encodeURIComponent(wt), '_blank'); return; }
   if((a = t.closest('[data-wppst]'))){ e.preventDefault(); var ws = a.getAttribute('data-wppst').split('|'); wppStatus(ws[0], ws[1]); return; }
+  if((a = t.closest('[data-desf]'))){ desfDet(a.getAttribute('data-desf')); return; }   /* HAG_DR_DESFECHO_v1 */
+  if((a = t.closest('[data-regfech]'))){ var rf = a.getAttribute('data-regfech').split('|'); a.disabled = true;
+    desfAcao('hag_registrar_fechamento', { p_retorno_id: rf[0], p_aconteceu: rf[1] === '1' }); return; }
+  if((a = t.closest('[data-encerra]'))){ var en = a.getAttribute('data-encerra').split('|'), dd = DESF[en[0]] || {};
+    if(!confirm('Encerrar o ciclo de ' + (dd.patient_nome || 'paciente') + (en[1] === 'a_pedido' ? ' a pedido?' : ' sem renovação?'))) return;
+    a.disabled = true; desfAcao('hag_encerrar_ciclo', { p_ciclo_id: en[0], p_motivo: en[1], p_obs: 'Encerrado pelo Dr. no HAG Dr.', p_origem: 'dr' }); return; }
   if((a = t.closest('[data-pac]'))){ pacienteCiclo(a.getAttribute('data-pac'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-prop]'))){ propostaDet(a.getAttribute('data-prop'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-conv]'))){ var cv = a.getAttribute('data-conv').split('|'); detalhe('propostas', cv[0], a.getAttribute('data-nome'), cv[1]); return; }
