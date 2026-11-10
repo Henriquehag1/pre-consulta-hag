@@ -10,13 +10,13 @@
      Página do paciente. Abre só pelo link pessoal (?t=), o mesmo da Cozinha. Mostra apenas as folhas que o médico
      aprovou e liberou para aquele paciente. Sem login, sem nome, sem dado cadastral. Nada fica guardado no aparelho
      além do próprio link. Sem IA. -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+
 <style>
-:root{--bg:#F6F4EF;--surface:#FFFFFF;--cream:#FAF7F1;--ink:#1B2745;--ink-2:#4A5568;--muted:#6F7585;--line:#E3DED3;--gold:#9C7A36;--gold-ui:#B8924A;--navy:#1B2745;--on-navy:#F4EEDF;
-  --warn:#A86A12;--warn-bg:#F7EDDC;--btn:#1B2745;--on-btn:#F4EEDF;
-  --display:"Caladea",Georgia,serif;--body:"Carlito","Lato","Helvetica Neue",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
-@media (prefers-color-scheme:dark){:root{--bg:#141B2E;--surface:#1C2540;--cream:#222C4A;--ink:#F1ECDF;--ink-2:#C9CBD6;--muted:#9AA0B4;--line:#2F3A5C;--gold:#D7B56D;--gold-ui:#C9A45A;--navy:#0F1526;--on-navy:#F4EEDF;--warn:#E8B45E;--warn-bg:#3A2F1A;--btn:#D7B56D;--on-btn:#141B2E}}
+:root{--bg:#F7F2EA;--surface:#FFFFFF;--cream:#F4EEE5;--ink:#33251E;--ink-2:#4A3F36;--muted:#7E7064;--line:#E2D8CA;--gold:#8C4F2B;--gold-ui:#B98A5E;--navy:#33251E;--on-navy:#EEE7DC;
+  --warn:#A86A12;--warn-bg:#F7EDDC;--btn:#33251E;--on-btn:#EEE7DC;
+  --display:"Bodoni Moda",Georgia,serif;--body:"Hanken Grotesk","Lato","Helvetica Neue",Arial,sans-serif;--mono:"Jost",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#141B2E;--surface:#1C2540;--cream:#222C4A;--ink:#F1ECDF;--ink-2:#C9CBD6;--muted:#9AA0B4;--line:#2F3A5C;--gold:#D7B56D;--gold-ui:#C9A45A;--navy:#0F1526;--on-navy:#EEE7DC;--warn:#E8B45E;--warn-bg:#3A2F1A;--btn:#D7B56D;--on-btn:#141B2E}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -58,7 +58,12 @@ p{margin:0}
   .alerta{background:none;border:1px solid #999;border-left:3px solid #000}
 }
 </style>
-</head>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Jost:wght@400;500;600&display=swap"><style id="hag-marca-2026">/* HAG_PAGINAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, couro e linho */
+:root{--hag-display:'Bodoni Moda',Georgia,serif;--hag-serif:'Bodoni Moda',Georgia,serif;--hag-sans:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;--hag-mono:'Jost','Helvetica Neue',Arial,sans-serif;
+--display:'Bodoni Moda',Georgia,serif;--body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;--mono:'Jost','Helvetica Neue',Arial,sans-serif}
+body{font-family:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif}
+h1,h2,h3{font-family:'Bodoni Moda',Georgia,serif;font-weight:500;letter-spacing:0}
+</style></head>
 <body>
 <header class="top"><div class="in"><div class="brand">Método HAG</div><h1>Suas orientações</h1></div></header>
 <main id="app"><div class="estado">Abrindo…</div></main>
