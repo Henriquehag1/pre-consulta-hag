@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261109-1830"></script>
+<script src="hag_auth.js?v=20261110-1314"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -3055,7 +3055,11 @@ function _filaFase(t){
     var d=_filaDiasEntre(t.janela_data,hoje);
     if(d!==null&&d>FILA_DIAS_VENCE){
       return {cod:'vencido',cor:'#B03A2E',
-        rot:(t.tipo_evento==='diagnostica'?'LINK VENCIDO \u00b7 REENVIAR':'JANELA VENCIDA \u00b7 NOVA DATA')};
+        /* HAG_FILA_REENVIAR_LINK_v1 (10/11/2026): desde o HAG_ATRASADO_PROXIMAS_DATAS_v2 o link do retorno vencido ja
+           oferece sozinho as proximas datas (de hoje+7, sem dia de reserva) enquanto o plano vale, e desde o
+           HAG_LINK_PERMANENTE_v1 o link do paciente ativo nao vence. 'NOVA DATA' mandava a Daniela pedir data ao Dr.;
+           o certo agora e reenviar o mesmo link. Passado o limite do plano, o proprio link manda o paciente para ela. */
+        rot:(t.tipo_evento==='diagnostica'?'LINK VENCIDO \u00b7 REENVIAR':'DATA PASSOU \u00b7 REENVIAR O LINK')};
     }
     if(d!==null&&d>=0){
       return {cod:'alvo',cor:'#C0621B',
@@ -5066,7 +5070,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261109-1830';
+  var VERSAO = '20261110-1314';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
