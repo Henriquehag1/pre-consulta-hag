@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
+<head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261110-1314"></script>
+<script src="hag_auth.js?v=20261110-1908"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -10,7 +10,7 @@
 <!-- HAG_MSG_SEM_APRESENTACAO_v1 (01/10/2026): mensagens sem 'Aqui é a Daniela', decisão do Dr. Henrique -->
 <!-- HAG_APP_TELA_INICIO_v1: faz o "adicionar a tela de inicio" virar app de verdade -->
 <link rel="manifest" href="manifest-tarefas.json">
-<meta name="theme-color" content="#1B2745">
+<meta name="theme-color" content="#33251E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Tarefas HAG">
@@ -18,7 +18,7 @@
 <!-- HAG_SUPABASE_FIXO_v1 08/10/2026: versao fixa, identica byte a byte ao que "@2" servia hoje; so trocar de proposito e testando -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:ital,wght@0,300..700;1,300..500&family=Jost:wght@400..600&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:        #f8f7f4;
@@ -63,8 +63,8 @@
   --shadow:     0 4px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
   --shadow-lg:  0 12px 40px rgba(0,0,0,.1), 0 4px 12px rgba(0,0,0,.05);
 
-  --fd: 'Playfair Display', Georgia, serif;
-  --fb: 'DM Sans', system-ui, sans-serif;
+  --fd: 'Bodoni Moda', Georgia, serif;
+  --fb: 'Hanken Grotesk', system-ui, sans-serif;
   --fm: 'DM Mono', monospace;
 }
 
@@ -338,12 +338,12 @@ body {
 .hag-vig-sem{color:#6b6b63;font-style:italic;padding:7px 11px}
 .hag-vig-top{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
 .hag-vig-rot{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#A8822F}
-.hag-vig-nome{font-weight:700;color:#1B2745;font-size:12.5px}
+.hag-vig-nome{font-weight:700;color:#33251E;font-size:12.5px}
 .hag-vig-datas{display:flex;justify-content:space-between;gap:10px;color:#4a4a44}
 .hag-vig-barra{height:6px;border-radius:6px;background:#e4dfd1;margin:6px 0 5px;overflow:hidden}
-.hag-vig-barra i{display:block;height:100%;border-radius:6px;background:var(--vig-cor,#1B2745)}
+.hag-vig-barra i{display:block;height:100%;border-radius:6px;background:var(--vig-cor,#33251E)}
 .hag-vig-pe{display:flex;flex-wrap:wrap;gap:4px 12px;color:#5b5b55}
-.hag-vig-dias{font-weight:700;color:var(--vig-cor,#1B2745)}
+.hag-vig-dias{font-weight:700;color:var(--vig-cor,#33251E)}
 /* HAG_RESUMO_CARTAO_v1 */
 .task-card { cursor: pointer; }
 .task-card .tc-actions, .task-card .tc-actions * { cursor: default; }
@@ -763,19 +763,19 @@ body {
      enquanto: os paineis desenham varios fundos brancos direto no HTML. -->
 <style id="hagVisualV2">
 :root{
-  --navy:#1B2745; --navy2:#26365c; --gold-hag:#C9A55E; --gold2:#9A7B3F;
+  --navy:#33251E; --navy2:#4A3A30; --gold-hag:#B98A5E; --gold2:#8C4F2B;
   --bg:#f3f2ee; --bg2:#f7f6f2; --surface:#ffffff; --surface2:#faf9f6;
   --border:#ebe6d8; --border2:#ddd6c4; --ink:#17181c; --ink2:#55565c; --ink3:#8c8d93;
-  --gold:#9A7B3F; --gold-light:#f6efe0; --gold-border:#e6d6b2;
+  --gold:#8C4F2B; --gold-light:#F4EADC; --gold-border:#e6d6b2;
   --green:#2F6B4A; --green-light:#e4f1e9; --green-border:#bfdcc9;
   --red:#a3322f; --red-light:#f9e6e5; --red-border:#efc3c0;
-  --amber:#8a5a12; --amber-light:#f8eedb; --amber-border:#ecd3a5;
+  --amber:#8C4F2B; --amber-light:#F4EADC; --amber-border:#ecd3a5;
   --blue:#2563a8; --blue-light:#e8f0fa; --blue-border:#bcd3ef;
   --r:16px; --rsm:10px; --rxs:6px;
-  --shadow-sm:0 1px 2px rgba(20,24,36,.05),0 4px 14px rgba(20,24,36,.05);
-  --shadow:0 2px 4px rgba(20,24,36,.06),0 10px 26px rgba(20,24,36,.08);
-  --shadow-lg:0 20px 50px rgba(20,24,36,.18);
-  --fd:'New York','Iowan Old Style',Georgia,serif;
+  --shadow-sm:0 1px 2px rgba(34,26,22,.05),0 4px 14px rgba(34,26,22,.05);
+  --shadow:0 2px 4px rgba(34,26,22,.06),0 10px 26px rgba(34,26,22,.08);
+  --shadow-lg:0 20px 50px rgba(34,26,22,.18);
+  --fd:'Bodoni Moda','New York',Georgia,serif;
   --fb:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
   --fm:ui-monospace,'SF Mono',Menlo,monospace;
 }
@@ -886,6 +886,7 @@ body{font-size:14px;-webkit-text-size-adjust:100%}
     color:var(--blue);font-family:var(--fb);font-size:15px;font-weight:500}
 }
 </style>
+<style id="hag-telas-marca-2026">/* HAG_TELAS_MARCA_2026_v1 */ .brand-mark{background:#33251E!important;border:none!important;color:#B98A5E!important}.brand-mark .hag-mono{height:54%;width:auto;display:block}.ctr-mark{width:auto!important;height:44px!important}.ctr-mark .hag-mono{height:100%;width:auto}.hex{width:auto!important;height:30px!important}.hex .hag-mono{height:100%;width:auto}.shex{width:auto!important;height:34px!important}.shex .hag-mono{height:100%;width:auto}</style>
 </head>
 <body>
 
@@ -900,7 +901,7 @@ body{font-size:14px;-webkit-text-size-adjust:100%}
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="brand">
-      <div class="brand-mark">HG</div>
+      <div class="brand-mark"><svg class="hag-mono" viewBox="-15.5 -4.5 1144.0 844.5" style="height:54%;width:auto" aria-hidden="true"><path d="M741.0 50.0V62.5H651.0V787.5H741.0V800.0H442.0V787.5H539.5V436.5H226.5V787.5H323.5V800.0H24.5V787.5H114.0V62.5H24.5V50.0H323.5V62.5H226.5V423.5H539.5V62.5H442.0V50.0Z M456.0 800.0 897.0 35.5H923.5L1018.5 800.0H896.5L832.5 171.0L470.0 800.0ZM374.5 800.0V787.5H594.5V800.0ZM781.5 800.0V787.5H1088.5V800.0ZM605.0 561.5V549.0H934.0V561.5Z" fill="#B98A5E"/></svg></div>
       <div>
         <div class="brand-name">Dr. Henrique Gonzaga</div>
         <div class="brand-crm">CRM/SP 226530 &middot; METODO HAG</div>
@@ -1090,7 +1091,7 @@ body{font-size:14px;-webkit-text-size-adjust:100%}
              a D+28. Sem janela, o link oferece de hoje ate 14 dias, que e o certo para
              paciente novo sem exames. Decidido pelo Dr. Henrique em 21/09. -->
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <button type="button" onclick="hagJanelaExames()" style="padding:6px 11px;font-size:12px;border:1px solid #8A7B4F;background:#F3EFE4;color:#5c5233;border-radius:8px;cursor:pointer;font-family:inherit">+3 semanas · com exames antes</button>
+          <button type="button" onclick="hagJanelaExames()" style="padding:6px 11px;font-size:12px;border:1px solid #8C4F2B;background:#F3EFE4;color:#5c5233;border-radius:8px;cursor:pointer;font-family:inherit">+3 semanas · com exames antes</button>
           <span id="f-janela-nota" style="font-size:11px;color:var(--ink3)"></span>
         </div>
         <script>
@@ -1902,12 +1903,12 @@ function _msgPainelHtml(q){
        faltava. Paciente ja cadastrado sai da busca; paciente que ainda nao
        existe, que e o caso de toda a pre-consulta, entra pelo campo de baixo. */
     topo='<div style="padding:11px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px;margin-bottom:12px">'
-      +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42;margin-bottom:7px">Para quem é a mensagem</div>'
+      +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6E3E22;margin-bottom:7px">Para quem é a mensagem</div>'
       +'<input id="msgBusca" type="text" value="'+_msgEsc(q)+'" oninput="render()" onfocus="_msgFoco=\'msgBusca\'" placeholder="Paciente já cadastrado: digite o nome..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit">'
       +lista
       +(qq.length>=2&&!achados.length?'<div style="font-size:.78rem;color:#6b6b63;margin-top:7px">Nenhum paciente com esse nome. Se ele ainda não foi cadastrado, use o campo abaixo.</div>':'')
       +'<div style="margin-top:11px;padding-top:11px;border-top:1px dashed #ddd0a8">'
-        +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42;margin-bottom:6px">Ainda não é paciente cadastrado</div>'
+        +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6E3E22;margin-bottom:6px">Ainda não é paciente cadastrado</div>'
         +'<input id="msgNome" type="text" value="'+_msgEsc(_msgNomeAvulso)+'" oninput="_msgSetNome(this.value)" onfocus="_msgFoco=\'msgNome\'" placeholder="Primeiro nome, como ele se apresentou" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e5e2da;border-radius:9px;font-size:.86rem;font-family:inherit">'
         +'<div style="font-size:.72rem;color:#8a8578;margin-top:6px">Na pré-consulta o cadastro ainda não existe, é o formulário que cria. Escreva o nome aqui que as mensagens já saem certas. Sem WhatsApp no cadastro, use Copiar.</div>'
       +'</div></div>';
@@ -2451,7 +2452,7 @@ function _leadTrilha(l){
   var i=LEAD_ETAPAS.indexOf(l.status), out='';
   for(var k=0;k<LEAD_ETAPAS.length;k++){
     var cor = (l.status==='perdido') ? '#c9a0a0'
-            : (k<=i ? (l.status==='paciente' ? '#4b9e78' : '#c9a55e') : '#e5e2da');
+            : (k<=i ? (l.status==='paciente' ? '#4b9e78' : '#B98A5E') : '#e5e2da');
     out+='<i style="flex:1;height:5px;border-radius:3px;background:'+cor+'"></i>';
   }
   return '<div style="display:flex;gap:4px;margin:0 0 11px">'+out+'</div>';
@@ -2470,8 +2471,8 @@ function _leadFormNovo(){
   var est='width:100%;padding:11px;border:1px solid #e5e2da;border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:#1a1a18;margin:0 0 10px';
   var lab='display:block;font-size:.74rem;color:#6b6b63;margin:0 0 5px';
   return '<div style="background:#fff;border:1px solid #e5e2da;border-radius:14px;padding:16px;margin:0 0 14px">'
-    +'<div style="font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:#9a7b3f;margin:0 0 12px">Novo contato</div>'
-    +'<div style="background:#FBF8F0;border-left:3px solid #c9a55e;padding:10px 13px;border-radius:0 8px 8px 0;font-size:.8rem;color:#6b6b63;margin:0 0 14px">'
+    +'<div style="font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:#8C4F2B;margin:0 0 12px">Novo contato</div>'
+    +'<div style="background:#FBF8F0;border-left:3px solid #B98A5E;padding:10px 13px;border-radius:0 8px 8px 0;font-size:.8rem;color:#6b6b63;margin:0 0 14px">'
     +'Preencha só o que já sabe. Origem é o único campo que não dá para descobrir depois.</div>'
     +'<label style="'+lab+'">Nome</label><input id="ldNome" type="text" style="'+est+'" placeholder="Como a pessoa se apresentou">'
     +'<label style="'+lab+'">WhatsApp</label><input id="ldZap" type="tel" style="'+est+'" placeholder="11 90000-0000">'
@@ -2589,7 +2590,7 @@ function _leadCard(l){
   var perda=(l.status==='perdido'&&l.motivo_perda)?(' · '+_msgEsc(l.motivo_perda)):'';
   return '<div style="background:#fff;border:1px solid #e5e2da;border-radius:14px;padding:14px;margin:0 0 11px">'
     +'<div style="font-size:1.02rem;font-weight:600;color:#1a1a18;margin:0 0 3px">'+_msgEsc(l.nome||'Sem nome')+'</div>'
-    +'<div style="font-size:.78rem;color:#9a938a;margin:0 0 10px"><b style="color:#9a7b3f">'+_msgEsc(partes.join(' · '))+'</b><br>'+LEAD_ROTULO[l.status]+dinheiro+perda+'</div>'
+    +'<div style="font-size:.78rem;color:#9a938a;margin:0 0 10px"><b style="color:#8C4F2B">'+_msgEsc(partes.join(' · '))+'</b><br>'+LEAD_ROTULO[l.status]+dinheiro+perda+'</div>'
     +_leadTrilha(l)
     +'<div style="display:flex;gap:7px;flex-wrap:wrap">'+acoes+'</div>'
     +extra+'</div>';
@@ -2798,7 +2799,7 @@ function render(){
       if(pa!==pb) return pa-pb;
       if(pa<1){ var ca=String(a.criado_em||''), cb=String(b.criado_em||''); if(ca!==cb) return ca<cb?-1:1; }
       var da=(a[_ordCol])||''; var db2=(b[_ordCol])||''; if(!da&&!db2)return 0; if(!da)return 1; if(!db2)return -1; return da<db2?-1:(da>db2?1:0); });
-    var _stab=function(key,label,n){return '<button onclick="setFilaSub(\''+key+'\')" style="flex:1;padding:9px 6px;border:1px solid '+(_filaSub===key?'#1B2745':'#e5e2da')+';background:'+(_filaSub===key?'#1B2745':'#fff')+';color:'+(_filaSub===key?'#fff':'#6b6b63')+';border-radius:10px;font-size:.76rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'+label+' '+n+'</button>';};
+    var _stab=function(key,label,n){return '<button onclick="setFilaSub(\''+key+'\')" style="flex:1;padding:9px 6px;border:1px solid '+(_filaSub===key?'#33251E':'#e5e2da')+';background:'+(_filaSub===key?'#33251E':'#fff')+';color:'+(_filaSub===key?'#fff':'#6b6b63')+';border-radius:10px;font-size:.76rem;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">'+label+' '+n+'</button>';};
     var subtabs=blocoBloqueios() /* HAG_AGENDA_BLOQUEIO_v1 */ +blocoSinais() /* HAG_DIAG_SINAL_v1 */
       /* HAG_FILA_PEDIDO_PACIENTE_v1: aviso no topo, em qualquer aba da fila */
       +(function(){
@@ -2819,11 +2820,11 @@ function render(){
         var nome=String(t.patient_nome||'—').split(' ').slice(0,3).join(' ');
         return '<div style="font-size:.78rem;color:#4a4436;padding:2px 0">• <b>'+nome+'</b>: '+_filaDescreve(t)+'</div>';
       }).join('');
-      var _novMais=(_nNov>6)?('<div style="font-size:.72rem;color:#7D6F42;padding:2px 0">e mais '+(_nNov-6)+'…</div>'):'';
+      var _novMais=(_nNov>6)?('<div style="font-size:.72rem;color:#6E3E22;padding:2px 0">e mais '+(_nNov-6)+'…</div>'):'';
       subtabs+='<div style="margin:0 0 12px;padding:10px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px">'+
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'+
-          '<span style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42">Desde a sua última olhada</span>'+
-          '<button onclick="filaMarcarVisto()" style="margin-left:auto;border:1px solid #ddd0a8;background:#fff;border-radius:8px;padding:6px 11px;font-size:.72rem;font-weight:600;font-family:inherit;cursor:pointer;color:#7D6F42">Marcar como visto</button>'+
+          '<span style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6E3E22">Desde a sua última olhada</span>'+
+          '<button onclick="filaMarcarVisto()" style="margin-left:auto;border:1px solid #ddd0a8;background:#fff;border-radius:8px;padding:6px 11px;font-size:.72rem;font-weight:600;font-family:inherit;cursor:pointer;color:#6E3E22">Marcar como visto</button>'+
         '</div>'+_novLista+_novMais+'</div>';
     }
     if(!lf.length){
@@ -3255,15 +3256,15 @@ function blocoSinais(){
       +'<div style="flex:1;min-width:190px">'
         +'<div style="font-size:.86rem;font-weight:700;color:#2b2a26">'+nome+'</div>'
         +'<div style="font-size:.76rem;color:#6b6b63">'+quando+' · '+onde+' · sinal de '+_brl(x.sinal_valor)+'</div>'
-        +'<div style="font-size:.74rem;color:'+(x.vencida?'#a3392f':'#7D6F42')+'">'
+        +'<div style="font-size:.74rem;color:'+(x.vencida?'#a3392f':'#6E3E22')+'">'
           +(x.vencida?'prazo vencido, o horário já foi liberado':('guardado até '+prazo))+'</div>'
       +'</div>'
-      +'<button onclick="whatsSinal(\''+x.id+'\')" title="Abre o WhatsApp para pedir o comprovante" style="border:1px solid #ddd0a8;background:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;color:#7D6F42">Cobrar comprovante</button>'
+      +'<button onclick="whatsSinal(\''+x.id+'\')" title="Abre o WhatsApp para pedir o comprovante" style="border:1px solid #ddd0a8;background:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;color:#6E3E22">Cobrar comprovante</button>'
       +'<button onclick="confirmarSinal(\''+x.id+'\')" title="O comprovante chegou: confirma o agendamento e cria a tarefa de lançar na Livance" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer">Sinal recebido</button>'
       +'</div>';
   }).join('');
   return '<div style="margin:0 0 12px;padding:10px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px">'
-    +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7D6F42;margin-bottom:2px">'
+    +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6E3E22;margin-bottom:2px">'
     +'Sinal a confirmar · '+_sinais.length+'</div>'
     +'<div style="font-size:.74rem;color:#6b6b63;margin-bottom:2px">Horário guardado. Vira agendamento quando o comprovante chegar.</div>'
     +linhas+'</div>';
@@ -4552,7 +4553,7 @@ function _vigEstado(v){
   else if(dias<0){ cor='#B03A2E'; txt='terminou há '+Math.abs(dias)+(Math.abs(dias)===1?' dia':' dias'); }
   else if(dias===0){ cor='#B03A2E'; txt='termina hoje'; }
   else if(dias<=30){ cor='#A8822F'; txt='faltam '+dias+(dias===1?' dia':' dias'); }
-  else { cor='#1B2745'; txt='faltam '+dias+' dias'; }
+  else { cor='#33251E'; txt='faltam '+dias+' dias'; }
   return {dias:dias, pct:pct, cor:cor, txt:txt};
 }
 function _vigConsultas(v){
@@ -5070,7 +5071,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261110-1314';
+  var VERSAO = '20261110-1908';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
