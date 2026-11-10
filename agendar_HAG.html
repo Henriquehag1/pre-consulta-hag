@@ -721,11 +721,12 @@ function capLimite(j){
   return j;
 }
 /* dias depois da data indicada (ou prevista), só quando passa de 7 */
-function atrasoDe(iso){ if(!prazoAtivo() || !ALVO) return 0; var n=_difDias(iso, ALVO); return n>7 ? n : 0; }
+/* HAG_ATRASADO_PROXIMAS_DATAS_v2: com a data vencida o ALVO e so hoje+7, nao uma data clinica; "+8 dias da data prevista" mentiria */
+function atrasoDe(iso){ if(!prazoAtivo() || !ALVO || ATRASO_DE) return 0; var n=_difDias(iso, ALVO); return n>7 ? n : 0; }
 function avisosPrazo(iso){
   if(!prazoAtivo() || !ALVO) return '';
-  var n=_difDias(iso, ALVO), t=[];
-  if(n>7){
+  var n=_difDias(iso, ATRASO_DE||ALVO), t=[];   /* HAG_ATRASADO_PROXIMAS_DATAS_v2 */
+  if(n>7 && !ATRASO_DE){
     t.push((ALVOMED ? 'O Dr. Henrique indicou <b>'+_dm(ALVO)+'</b>' : 'A data prevista no seu plano era <b>'+_dm(ALVO)+'</b>')
       +' para manter o ritmo do seu acompanhamento. Esta data fica <b>'+n+' dias depois</b>.');
   }
@@ -814,9 +815,14 @@ function iniciar(){
       return;
     }
     if(JANELA.situacao==='atrasado' && TIPOCON==='retorno' && PRAZO && JANELA.motivo==='janela clínica já passou'){
-      ATRASO_DE=ALVO; ALVO=hojeSP(); ALVOMED=false;   /* HAG_ATRASADO_PROXIMAS_DATAS_v1 */
-      /* hoje e amanha nunca sao oferecidos (a Daniela garante a sala na Livance): de hoje + 8 sobram 7 dias, uma semana inteira */
-      JANELA=janelaComTeto({antes:0, depois:8});
+      /* HAG_ATRASADO_PROXIMAS_DATAS_v2 (10/11/2026). Regra do Dr. Henrique: com a data indicada vencida,
+         o paciente so recebe datas a partir de 7 dias depois do dia em que abre o link, e o dia de reserva
+         (quinta, segunda) nao aparece so porque a primeira quarta esta cheia. A v1 ia de hoje ate hoje+8:
+         sobrava UMA quarta, e cheia ela, a escada descia para a quinta 12/11 (caso Wilson).
+         Agora a janela comeca em hoje+7 e cobre duas semanas (hoje+7 ate hoje+20): duas quartas, e o dia
+         de reserva so entra se as duas estiverem cheias. O ALVO vira hoje+7, entao o mais perto dele vem primeiro. */
+      ATRASO_DE=ALVO; ALVO=_somaDias(hojeSP(), 7); ALVOMED=false;   /* HAG_ATRASADO_PROXIMAS_DATAS_v2 */
+      JANELA=janelaComTeto({antes:0, depois:13});
     }
     if(JANELA.situacao==='atrasado'){
       ouOJaMarcado(telaAjuda, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A data ideal da sua próxima '+PAL()+' já passou. Vamos encontrar juntos o melhor horário: toque no botão abaixo e a Daniela entra em contato.');
@@ -1088,7 +1094,8 @@ function telaEscolha(nota){
      dizer 'nao ha horarios', alarga uma vez para o padrao do plano. */
   var alargou=false;
   if(!dias.length && (ALVOMED || ATRASO_DE)){   /* HAG_ATRASADO_PROXIMAS_DATAS_v1: tambem alarga uma vez */
-    var jOrig=JANELA, tOrig=TETO_CORTOU, j2=janelaComTeto((PRAZO&&TIPOCON==='retorno')?{antes:7,depois:Math.max(14,PRAZO.depois)}:null); /* HAG_PRAZO_PROPORCIONAL_v1 + HAG_TETO_NAO_DESCE_v1 */
+    var jOrig=JANELA, tOrig=TETO_CORTOU, j2=janelaComTeto(ATRASO_DE ? {antes:0, depois:27}   /* HAG_ATRASADO_PROXIMAS_DATAS_v2: alarga para frente, nunca antes de hoje+7 */
+      : (PRAZO&&TIPOCON==='retorno')?{antes:7,depois:Math.max(14,PRAZO.depois)}:null); /* HAG_PRAZO_PROPORCIONAL_v1 + HAG_TETO_NAO_DESCE_v1 */
     if(j2 && j2.situacao==='aberta'){
       JANELA=j2; dias=diasOfertados(TAB);
       if(dias.length) alargou=true; else { JANELA=jOrig; TETO_CORTOU=tOrig; }
