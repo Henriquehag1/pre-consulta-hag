@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0A0E17">
+<meta name="theme-color" content="#1A1411">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="HAG Cozinha">
@@ -28,17 +28,17 @@
      HAG_COZINHA_NOTURNO_v1 (16/10/2026): telas novas aprovadas pelo Dr. Henrique. Visual do HAG Treino (escuro e claro),
      início com filtro, ficha curta com versões em abas, modo cozinhar (Separe, passo a passo com timer, tela acesa) e
      "Fiz esta receita", que grava em cozinha_eventos (hag_cozinha_evento, HAG_COZINHA_FIZ_v1) para o painel. -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
+
 <script>/* HAG_COZINHA_NOTURNO_v1: aplica o tema escolhido antes de desenhar, sem piscar */try{if(localStorage.getItem("hagcozinha.tema")==="claro")document.documentElement.dataset.tema="claro"}catch(e){}</script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+
 <style>
 /* HAG_COZINHA_NOTURNO_v1 (16/10/2026): visual do HAG Treino (Noturno), escuro por padrão e claro no botão sol e lua.
    Telas aprovadas pelo Dr. Henrique no canvas "HAG Cozinha · telas novas". */
 :root{
-  --bg:#0A0E17; --surface:#131A28; --tile:#1E2738; --ink:#F1F2F5; --ink2:#A9B1C2; --muted:#8A93A7; --line:#252F44;
-  --gold:#E3B964; --btn:#E3B964; --onbtn:#1A1405; --good:#5DD39E; --goodbg:rgba(93,211,158,.14);
-  --rest:#F0B35A; --restbg:rgba(240,179,90,.12); --sombra:0 1px 3px rgba(0,0,0,.25); --veu:rgba(10,14,23,.72);
-  --disp:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Manrope","Helvetica Neue",Arial,sans-serif;
+  --bg:#1A1411; --surface:#241B16; --tile:#33251E; --ink:#EEE7DC; --ink2:#C8B9A6; --muted:#A69886; --line:#3A2C24;
+  --gold:#C99A6B; --btn:#C99A6B; --onbtn:#1A1411; --good:#5DD39E; --goodbg:rgba(93,211,158,.14);
+  --rest:#F0B35A; --restbg:rgba(240,179,90,.12); --sombra:0 1px 3px rgba(0,0,0,.25); --veu:rgba(26,20,17,.72);
+  --disp:"Bodoni Moda","Arial Narrow",sans-serif; --body:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   color-scheme:dark;
 }
 :root[data-tema="claro"]{
@@ -103,8 +103,8 @@ h2{font-family:var(--disp);font-weight:700;font-size:30px;line-height:1.05;text-
 .heroi{position:relative;margin:0 -16px;height:240px;background:var(--tile);overflow:hidden}
 .heroi img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .heroi .vazio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:28px;letter-spacing:.2em;color:var(--gold)}
-.heroi .bt{position:absolute;top:12px;width:44px;height:44px;border-radius:50%;border:0;background:var(--veu);color:#F1F2F5;display:flex;align-items:center;justify-content:center;padding:0}
-.heroi .bt.v{left:14px} .heroi .bt.s{right:14px;color:#E3B964}
+.heroi .bt{position:absolute;top:12px;width:44px;height:44px;border-radius:50%;border:0;background:var(--veu);color:#EEE7DC;display:flex;align-items:center;justify-content:center;padding:0}
+.heroi .bt.v{left:14px} .heroi .bt.s{right:14px;color:#C99A6B}
 .heroi .ilus{position:absolute;right:12px;bottom:8px;font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.8);text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .voltar{align-self:flex-start;height:40px;padding:0 12px 0 6px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;gap:4px;font-weight:700;font-size:14px}
 .ficha{display:flex;flex-direction:column;gap:14px}
@@ -224,7 +224,7 @@ nav.tabs .n[hidden]{display:none}
 .timer .bar i{display:block;height:8px;background:var(--rest);width:0}
 .timer .bts{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .timer .bts button{height:52px;border-radius:12px;font-weight:800;font-size:15px;border:1px solid var(--line);background:transparent}
-.timer .bts .go{border:0;background:var(--rest);color:#1A1405}
+.timer .bts .go{border:0;background:var(--rest);color:#1A1411}
 .timer.fim{border-color:var(--good)}
 .timer.fim .relogio,.timer.fim .tt span{color:var(--good)}
 .cz .nota{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--tile);font-size:14px;line-height:1.4;color:var(--ink2)}
@@ -276,7 +276,9 @@ nav.tabs .n[hidden]{display:none}
 .hagi-b.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .hagi-b[hidden]{display:none}
 </style>
-</head>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Jost:wght@400;500;600&display=swap"><style id="hag-marca-2026">/* HAG_PAGINAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, versão couro escuro */
+:root{--disp:'Bodoni Moda',Georgia,serif;--display:'Bodoni Moda',Georgia,serif;--body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;--mono:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif}
+</style></head>
 <body>
 <header class="top"><div class="in">
   <span class="marca">HAG <span>COZINHA</span></span>
@@ -299,7 +301,7 @@ nav.tabs .n[hidden]{display:none}
   // manifesto com o link pessoal como endereço de partida
   try{
     var man={name:CFG.nome,short_name:CFG.nome,start_url:location.href.split('#')[0],scope:base,display:'standalone',
-      background_color:'#0A0E17',theme_color:'#0A0E17',
+      background_color:'#1A1411',theme_color:'#1A1411',
       icons:[{src:base+CFG.icone+'-192.png',sizes:'192x192',type:'image/png'},{src:base+CFG.icone+'-512.png',sizes:'512x512',type:'image/png'}]};
     var l=document.createElement('link'); l.rel='manifest'; l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man)); document.head.appendChild(l);
   }catch(e){}
@@ -385,7 +387,7 @@ var VITRINE=new URLSearchParams(location.search).get('vitrine')==='1';
 var VER=VITRINE||new URLSearchParams(location.search).get('ver')==='1';
 var ls=VER?(function(){var m={};return {get:function(k){return Object.prototype.hasOwnProperty.call(m,k)?JSON.parse(m[k]):null},set:function(k,v){m[k]=JSON.stringify(v)}}})()
   :{get:function(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent=VITRINE?'Cozinha como o paciente vê · todas as receitas e guias aprovados · nada é gravado':'Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#E3B964;color:#1A1405;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
+if(VER){ var _vb=document.createElement('div'); _vb.setAttribute('role','status'); _vb.textContent=VITRINE?'Cozinha como o paciente vê · todas as receitas e guias aprovados · nada é gravado':'Visualização do médico · nada do que você fizer aqui é gravado'; _vb.style.cssText='position:sticky;top:0;z-index:9999;background:#C99A6B;color:#1A1411;font:600 13px/1.35 -apple-system,Helvetica,Arial,sans-serif;text-align:center;padding:7px 12px'; document.body.insertBefore(_vb, document.body.firstChild); }
 
 /* link pessoal: ?t=TOKEN fica guardado neste aparelho */
 var qs=new URLSearchParams(location.search), TOKEN=VITRINE?'vitrine':(qs.get('t')||ls.get('hagcozinha.col.token')||null);
@@ -420,7 +422,7 @@ function coracao(on,tam){ return '<svg width="'+(tam||20)+'" height="'+(tam||20)
 function claro(){ return document.documentElement.dataset.tema==='claro'; }
 function aplicaTema(c){
   if(c) document.documentElement.dataset.tema='claro'; else delete document.documentElement.dataset.tema;
-  var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=c?'#F3F4F6':'#0A0E17';
+  var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=c?'#F3F4F6':'#1A1411';
   var b=$('#tema'); if(b){ b.innerHTML=c?IC.lua:IC.sol; b.setAttribute('aria-label',c?'Usar tema escuro':'Usar tema claro'); }
 }
 aplicaTema(claro());

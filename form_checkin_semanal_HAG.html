@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Check-in Semanal | Dr. Henrique Alves · Método HAG</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+
 <style>
 /* ============================================================
    IBM Plex Mono — fonte mono oficial do Método HAG.
@@ -13,16 +13,16 @@
    IBMPlexMono-Regular.woff2 e IBMPlexMono-Medium.woff2.
    Sem essa pasta, o navegador cai no fallback de sistema (ui-monospace > Menlo > Consolas).
    ============================================================ */
-@font-face{font-family:'IBM Plex Mono';src:url('fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:'IBM Plex Mono';src:url('fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Jost';src:url('fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Jost';src:url('fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
 
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#1A233A;--navy2:#212d47;
-  --gold:#C9AF6E;--gold2:#b89c58;--gold-pale:#e8d9b4;--gold-bg:#faf7ef;--gold-border:#ddd0a8;
-  --cream:#EBEDEF;--cream2:#f5f4f0;--surface:#fff;
-  --ink:#1A233A;--ink2:#3d4a63;--ink3:#7a8399;--ink4:#adb5c4;
-  --border:#dde2eb;--border2:#c4cad6;
+  --navy:#33251E;--navy2:#1A1411;
+  --gold:#B98A5E;--gold2:#8C4F2B;--gold-pale:#E8D6BF;--gold-bg:#F7F2EA;--gold-border:#DCC9AE;
+  --cream:#EEE7DC;--cream2:#F7F2EA;--surface:#fff;
+  --ink:#33251E;--ink2:#4A3F36;--ink3:#7E7064;--ink4:#A69886;
+  --border:#E2D8CA;--border2:#CFC2B0;
   --green:#1e5c3a;--green-bg:#eaf4ee;--green-border:#a8d5b5;
   --amber:#7a4f00;--amber-bg:#fff8eb;--amber-border:#f5d58a;
   --red:#8b2020;--red-bg:#fdf0f0;--red-border:#e8c0c0;
@@ -35,10 +35,10 @@ body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--ink);font
 .hx-bg2{position:absolute;bottom:-40px;left:-40px;opacity:.03;pointer-events:none}
 .header-inner{max-width:640px;margin:0 auto;padding:2.75rem 1.5rem 2.5rem;text-align:center;position:relative;z-index:1}
 .logo-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:.75rem;margin-bottom:1.75rem}
-.brand-wordmark{font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:.3em;color:var(--gold-pale);text-transform:uppercase;font-weight:300}
+.brand-wordmark{font-family:'Bodoni Moda',serif;font-size:11px;letter-spacing:.3em;color:var(--gold-pale);text-transform:uppercase;font-weight:300}
 .brand-wordmark strong{color:var(--gold);font-weight:500}
 .week-tag{display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,175,110,.12);border:1px solid rgba(201,175,110,.25);border-radius:20px;padding:.3rem 1rem;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:.875rem;font-weight:500}
-.h-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.875rem,5vw,2.5rem);font-weight:300;color:#fff;letter-spacing:.04em;line-height:1.15;margin-bottom:.625rem}
+.h-title{font-family:'Bodoni Moda',serif;font-size:clamp(1.875rem,5vw,2.5rem);font-weight:300;color:#fff;letter-spacing:.04em;line-height:1.15;margin-bottom:.625rem}
 .h-title em{font-style:italic;color:var(--gold-pale)}
 .h-sub{font-size:13px;color:rgba(255,255,255,.42);font-weight:300;max-width:380px;margin:0 auto;line-height:1.7}
 .alert-banner{max-width:640px;margin:0 auto;padding:0 1.25rem}
@@ -54,10 +54,10 @@ body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--ink);font
 .al-vermelho .al-body strong{color:var(--red)}
 .al-body p{font-size:13px;color:var(--ink2);font-weight:300}
 .form-body{max-width:640px;margin:0 auto;padding:2rem 1.25rem 5rem}
-.bloco{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:1.25rem;overflow:hidden;box-shadow:0 2px 16px rgba(26,35,58,.05)}
+.bloco{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:1.25rem;overflow:hidden;box-shadow:0 2px 16px rgba(51,37,30,.05)}
 .bloco-header{background:var(--navy);padding:.875rem 1.375rem;display:flex;align-items:center;gap:.875rem}
-.bloco-num{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:300;color:var(--gold);letter-spacing:.06em;min-width:28px}
-.bloco-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:400;color:#fff;letter-spacing:.04em}
+.bloco-num{font-family:'Bodoni Moda',serif;font-size:1.25rem;font-weight:300;color:var(--gold);letter-spacing:.06em;min-width:28px}
+.bloco-title{font-family:'Bodoni Moda',serif;font-size:1rem;font-weight:400;color:#fff;letter-spacing:.04em}
 .bloco-body{padding:1.375rem 1.375rem .875rem}
 .field{margin-bottom:1.375rem}
 .field:last-child{margin-bottom:.5rem}
@@ -93,14 +93,14 @@ textarea.finput{min-height:76px}
 .closing-msg::before{content:"";position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(201,175,110,.05)}
 .closing-eyebrow{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:.625rem}
 .closing-text{font-size:13.5px;color:rgba(255,255,255,.55);line-height:1.75;font-weight:300;font-style:italic}
-.closing-sign{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--gold-pale);margin-top:.875rem;font-weight:400;letter-spacing:.04em}
+.closing-sign{font-family:'Bodoni Moda',serif;font-size:15px;color:var(--gold-pale);margin-top:.875rem;font-weight:400;letter-spacing:.04em}
 .result-screen{text-align:center;padding:4rem 1rem;max-width:500px;margin:0 auto}
 .r-spinner{width:46px;height:46px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.5rem}
 @keyframes spin{to{transform:rotate(360deg)}}
 .r-hex-wrap{margin:0 auto 1.5rem;animation:hexIn .8s cubic-bezier(.34,1.56,.64,1) forwards}
 @keyframes hexIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 .success-eyebrow{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:.625rem}
-.r-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--navy);letter-spacing:.04em;margin-bottom:.5rem}
+.r-title{font-family:'Bodoni Moda',serif;font-size:2rem;font-weight:300;color:var(--navy);letter-spacing:.04em;margin-bottom:.5rem}
 .r-rule{width:44px;height:1.5px;background:var(--gold);margin:.875rem auto 1.25rem;animation:ruleGrow .5s .4s both;transform-origin:center}
 @keyframes ruleGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .r-sub{font-size:13.5px;color:var(--ink3);font-weight:300;line-height:1.75;letter-spacing:.01em;margin-bottom:2rem}
@@ -108,7 +108,7 @@ textarea.finput{min-height:76px}
 .sc-eyebrow{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.75rem}
 .ss-list{display:flex;flex-direction:column;gap:.75rem}
 .ss-item{display:flex;align-items:flex-start;gap:.875rem}
-.ss-num{font-family:'Cormorant Garamond',serif;font-size:1.375rem;font-weight:300;color:var(--gold);flex-shrink:0;line-height:1.2;min-width:24px}
+.ss-num{font-family:'Bodoni Moda',serif;font-size:1.375rem;font-weight:300;color:var(--gold);flex-shrink:0;line-height:1.2;min-width:24px}
 .ss-text{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6;font-weight:300}
 .ss-text strong{display:block;color:var(--gold-pale);font-weight:500;font-size:13.5px;margin-bottom:.15rem}
 .ss-divider{height:1px;background:rgba(255,255,255,.06)}
@@ -116,18 +116,18 @@ textarea.finput{min-height:76px}
 .err-icon{width:52px;height:52px;border-radius:50%;background:var(--red-bg);border:1.5px solid var(--red-border);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.25rem}
 .btn-retry{background:var(--navy);color:var(--gold-pale);border:none;border-radius:2px;padding:.75rem 2rem;font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;font-family:'Jost',sans-serif;cursor:pointer;margin-top:1.25rem;display:inline-flex;align-items:center;gap:.5rem}
 .soap-err{background:var(--cream2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;text-align:left;margin-top:1.25rem}
-.soap-err textarea{width:100%;height:160px;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:transparent;border:none;outline:none;resize:none;color:var(--ink2);line-height:1.6}
+.soap-err textarea{width:100%;height:160px;font-family:'Jost',ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:transparent;border:none;outline:none;resize:none;color:var(--ink2);line-height:1.6}
 .hidden{display:none}
 @media(max-width:480px){.scale-5{gap:.2rem}.s5-btn{height:46px}.s5-label{display:none}}
 
 /* ─── ADMIN API BAR ─── */
-.hag-api-bar{display:none;background:#1a1918;border-bottom:2px solid #C9AF6E;padding:.625rem 1rem}
+.hag-api-bar{display:none;background:#1a1918;border-bottom:2px solid #B98A5E;padding:.625rem 1rem}
 .hag-api-bar.visible{display:block}
 .hag-api-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:.625rem;flex-wrap:wrap}
-.hag-api-label{font-size:10px;font-weight:700;color:#C9AF6E;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
-.hag-api-input{flex:1;min-width:200px;font-size:11px;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;padding:5px 10px;border-radius:6px;border:1px solid #444;background:#2a2928;color:#fff;outline:none}
-.hag-api-input:focus{border-color:#C9AF6E}
-.hag-api-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:none;background:#C9AF6E;color:#1a1918;cursor:pointer;white-space:nowrap}
+.hag-api-label{font-size:10px;font-weight:700;color:#B98A5E;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.hag-api-input{flex:1;min-width:200px;font-size:11px;font-family:'Jost',ui-monospace,Menlo,Consolas,monospace;padding:5px 10px;border-radius:6px;border:1px solid #444;background:#2a2928;color:#fff;outline:none}
+.hag-api-input:focus{border-color:#B98A5E}
+.hag-api-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:none;background:#B98A5E;color:#1a1918;cursor:pointer;white-space:nowrap}
 .hag-api-st{font-size:10px;white-space:nowrap}
 .hag-api-st.ok{color:#4ade80;font-weight:600}
 .hag-api-st.err{color:#f87171}
@@ -146,7 +146,7 @@ textarea.finput{min-height:76px}
 .doc-row{display:flex;gap:6px;align-items:stretch}
 .doc-type{font-size:12px;padding:7px 10px;border:1px solid var(--border,#e8e4da);border-radius:6px;background:#fff;color:var(--ink,#1f1e1a);outline:none;cursor:pointer;min-width:110px;font-family:inherit}
 .doc-type:focus{border-color:#9a7b3d}
-.doc-number{flex:1;min-width:140px;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;letter-spacing:.02em}
+.doc-number{flex:1;min-width:140px;font-family:'Jost',ui-monospace,Menlo,Consolas,monospace;letter-spacing:.02em}
 .doc-status{font-size:13px;font-weight:600;min-height:24px;display:flex;align-items:center;gap:5px;margin-top:8px;padding:6px 10px;border-radius:6px;background:transparent;transition:all .15s}
 .doc-status:empty{padding:0;min-height:14px}
 .doc-status.ok{color:#1a5728;background:#e4f3e7;border:1px solid #9ec9a7}
@@ -165,20 +165,20 @@ textarea.finput{min-height:76px}
    ============================================================ */
 :root {
   /* ---- Official HAG tokens ---- */
-  --hag-ink:        #1A1A1A;
+  --hag-ink:        #221A16;
   --hag-white:      #FFFFFF;
-  --hag-champ:      #A89968;
+  --hag-champ:      #B98A5E;
   --hag-champ-lt:   #C5B98A;
-  --hag-navy:       #1B2745;
-  --hag-cream:      #F5F2ED;
-  --hag-bg:         #FAFAF7;
+  --hag-navy:       #33251E;
+  --hag-cream:      #F4EEE5;
+  --hag-bg:         #F7F2EA;
   --hag-hairline:   #E5E5E5;
   --hag-graydark:   #6B6B6B;
   --hag-graylight:  #888888;
   --hag-blackDeep:  #0A0A0A;
   --hag-blackSoft:  #1F1F1F;
-  --hag-olive:      #9A8A45;
-  --hag-nude:       #BBA89A;
+  --hag-olive:      #8C4F2B;
+  --hag-nude:       #C9B8A6;
 
   /* Semantic pairs */
   --hag-green-bg:   #E8F0DD; --hag-green-tx: #4F6B22; --hag-green-bd: #BFD49A;
@@ -210,10 +210,10 @@ textarea.finput{min-height:76px}
   --red-border:  var(--hag-mahog-bd);
 
   /* ---- HAG type stack ---- */
-  --hag-display: 'Cinzel','Trajan Pro',serif;
-  --hag-serif:   Cambria,'PT Serif',Georgia,serif;
-  --hag-sans:    Calibri,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --hag-mono:    'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --hag-display: 'Bodoni Moda','Trajan Pro',serif;
+  --hag-serif:   'Bodoni Moda','Hanken Grotesk',Georgia,serif;
+  --hag-sans:    'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --hag-mono:    'Jost',ui-monospace,Menlo,Consolas,monospace;
 }
 
 /* ---- Body inherits Calibri across the form ---- */
@@ -426,12 +426,17 @@ input[type="number"], input[type="date"], select, textarea {
 }
 
 </style>
-</head>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Jost:wght@400;500;600&display=swap"><style id="hag-marca-2026">/* HAG_PAGINAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, couro e linho */
+:root{--hag-display:'Bodoni Moda',Georgia,serif;--hag-serif:'Bodoni Moda',Georgia,serif;--hag-sans:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;--hag-mono:'Jost','Helvetica Neue',Arial,sans-serif;
+--display:'Bodoni Moda',Georgia,serif;--body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;--mono:'Jost','Helvetica Neue',Arial,sans-serif}
+body{font-family:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif}
+h1,h2,h3{font-family:'Bodoni Moda',Georgia,serif;font-weight:500;letter-spacing:0}
+.hx1,.hx2,.hx-bg,.hx-bg2{display:none}.hag-mono{height:46px;width:auto}</style></head>
 <body>
 <!-- HAG_TAG_SO_DEBUG_v1 (29/09/2026): a etiqueta de versao (vermelha ate o script de documento
      iniciar, verde depois) ficava fixa no canto de TODA pagina de paciente. E instrumento de
      diagnostico, nao de paciente: fica oculta e so aparece com ?debug=1 na URL. -->
-<div id="hagVersionTag" style="display:none;position:fixed;top:8px;right:8px;z-index:99999;background:#c11e1e;color:#fff;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.3);letter-spacing:.05em">⚠ JS NÃO CARREGOU</div>
+<div id="hagVersionTag" style="display:none;position:fixed;top:8px;right:8px;z-index:99999;background:#c11e1e;color:#fff;font-family:'Jost',ui-monospace,Menlo,Consolas,monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.3);letter-spacing:.05em">⚠ JS NÃO CARREGOU</div>
 <script>console.log('[HAG-EARLY] script tag reached, JS runtime active');</script>
 
 <script>
@@ -720,16 +725,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   <svg class="hx-bg2" width="200" height="200" viewBox="0 0 200 200" fill="none"><polygon points="100,12 178,56 178,144 100,188 22,144 22,56" stroke="white" stroke-width="1"/></svg>
   <div class="header-inner">
     <div class="logo-wrap">
-      <svg width="52" height="52" viewBox="0 0 58 58" fill="none">
-        <polygon points="29,3.5 53,16.5 53,41.5 29,54.5 5,41.5 5,16.5" stroke="#C9AF6E" stroke-width="1.2" fill="none"/>
-        <polygon points="29,9 47,19.5 47,38.5 29,49 11,38.5 11,19.5" stroke="#C9AF6E" stroke-width=".5" fill="none" opacity=".35"/>
-        <line x1="18" y1="21" x2="18" y2="37" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
-        <line x1="18" y1="29" x2="27" y2="29" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
-        <line x1="27" y1="21" x2="27" y2="37" stroke="#C9AF6E" stroke-width="2" stroke-linecap="round"/>
-        <line x1="32" y1="37" x2="37" y2="21" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="37" y1="21" x2="42" y2="37" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="33.5" y1="31" x2="40.5" y2="31" stroke="#C9AF6E" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
+      <svg class="hag-mono" width="64" height="48" viewBox="-15.5 -4.5 1144.0 844.5" aria-hidden="true"><path d="M741.0 50.0V62.5H651.0V787.5H741.0V800.0H442.0V787.5H539.5V436.5H226.5V787.5H323.5V800.0H24.5V787.5H114.0V62.5H24.5V50.0H323.5V62.5H226.5V423.5H539.5V62.5H442.0V50.0Z M456.0 800.0 897.0 35.5H923.5L1018.5 800.0H896.5L832.5 171.0L470.0 800.0ZM374.5 800.0V787.5H594.5V800.0ZM781.5 800.0V787.5H1088.5V800.0ZM605.0 561.5V549.0H934.0V561.5Z" fill="#B98A5E"/></svg>
       <span class="brand-wordmark"><strong>Dr. Henrique Alves</strong> · Método HAG</span>
     </div>
     <div class="week-tag">
@@ -841,7 +837,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         <div class="fdiv"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.375rem">
           <span style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);font-weight:500">Score da semana</span>
-          <span style="font-family:'Cormorant Garamond',serif;font-size:1.25rem;color:var(--gold);font-weight:400" id="scoreTxt">—</span>
+          <span style="font-family:'Bodoni Moda',serif;font-size:1.25rem;color:var(--gold);font-weight:400" id="scoreTxt">—</span>
         </div>
         <div class="score-bar-wrap"><div class="score-bar-fill" id="scoreBar" style="width:0%"></div></div>
       </div>
@@ -980,9 +976,9 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   <div class="result-screen" id="screenSuccess" style="display:none">
     <div class="r-hex-wrap">
       <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-        <polygon points="36,4 64,20 64,52 36,68 8,52 8,20" stroke="#C9AF6E" stroke-width="1.2" fill="none"/>
-        <polygon points="36,12 56,23.5 56,48.5 36,60 16,48.5 16,23.5" stroke="#C9AF6E" stroke-width=".5" fill="none" opacity=".35"/>
-        <path d="M25 36l8 8 14-14" stroke="#C9AF6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <polygon points="36,4 64,20 64,52 36,68 8,52 8,20" stroke="#B98A5E" stroke-width="1.2" fill="none"/>
+        <polygon points="36,12 56,23.5 56,48.5 36,60 16,48.5 16,23.5" stroke="#B98A5E" stroke-width=".5" fill="none" opacity=".35"/>
+        <path d="M25 36l8 8 14-14" stroke="#B98A5E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
     <div class="success-eyebrow">Check-in Semanal</div>

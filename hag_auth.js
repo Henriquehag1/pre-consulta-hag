@@ -1,3 +1,4 @@
+/* HAG_AUTH_MARCA_2026_v1 (10/11/2026): tela de login na paleta couro e linho da marca Henrique Alves */
 /* ============================================================================
    HAG OS · Camada de login (Supabase Auth) — Fase 2 do plano de segurança
    ----------------------------------------------------------------------------
@@ -284,19 +285,19 @@
     if(document.getElementById('hagAuthCss')) return;
     var s=document.createElement('style'); s.id='hagAuthCss';
     s.textContent =
-      '#hagAuthOv{position:fixed;inset:0;z-index:100000;background:#1A233A;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
+      '#hagAuthOv{position:fixed;inset:0;z-index:100000;background:#33251E;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
      +'#hagAuthOv .box{background:#fff;border-radius:16px;padding:32px 30px;width:340px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.4)}'
-     +'#hagAuthOv .brand{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#b89c58;font-weight:700;margin-bottom:4px}'
-     +'#hagAuthOv h2{font-family:Georgia,serif;font-size:22px;color:#1A233A;margin:0 0 2px}'
-     +'#hagAuthOv .sub{font-size:12.5px;color:#7a8399;margin-bottom:18px}'
-     +'#hagAuthOv label{display:block;font-size:11.5px;color:#3d4a63;font-weight:600;margin:10px 0 4px}'
-     +'#hagAuthOv input{width:100%;box-sizing:border-box;font-size:14px;padding:10px 12px;border:1px solid #c4cad6;border-radius:9px;background:#f5f4f0;color:#1A233A}'
-     +'#hagAuthOv button{width:100%;margin-top:18px;padding:11px;border:none;border-radius:9px;background:#b89c58;color:#fff;font-size:14px;font-weight:700;cursor:pointer}'
-     +'#hagAuthOv button:hover{background:#a6883f}#hagAuthOv button:disabled{opacity:.6;cursor:default}'
+     +'#hagAuthOv .brand{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#B98A5E;font-weight:700;margin-bottom:4px}'
+     +'#hagAuthOv h2{font-family:Georgia,serif;font-size:22px;color:#33251E;margin:0 0 2px}'
+     +'#hagAuthOv .sub{font-size:12.5px;color:#7E7064;margin-bottom:18px}'
+     +'#hagAuthOv label{display:block;font-size:11.5px;color:#4A3F36;font-weight:600;margin:10px 0 4px}'
+     +'#hagAuthOv input{width:100%;box-sizing:border-box;font-size:14px;padding:10px 12px;border:1px solid #CFC2B0;border-radius:9px;background:#F7F2EA;color:#33251E}'
+     +'#hagAuthOv button{width:100%;margin-top:18px;padding:11px;border:none;border-radius:9px;background:#B98A5E;color:#fff;font-size:14px;font-weight:700;cursor:pointer}'
+     +'#hagAuthOv button:hover{background:#8C4F2B}#hagAuthOv button:disabled{opacity:.6;cursor:default}'
      +'#hagAuthOv .err{color:#a13232;font-size:12px;margin-top:10px;min-height:14px}'
-     +'.hag-auth-badge{position:fixed;top:14px;right:16px;z-index:9000;display:flex;align-items:center;height:34px;max-width:34px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid #dde2eb;box-shadow:0 2px 8px rgba(0,0,0,.07);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:11.5px;font-weight:500;color:#7a8399;cursor:pointer;transition:max-width .2s ease,box-shadow .2s ease}'
+     +'.hag-auth-badge{position:fixed;top:14px;right:16px;z-index:9000;display:flex;align-items:center;height:34px;max-width:34px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid #E2D8CA;box-shadow:0 2px 8px rgba(0,0,0,.07);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:11.5px;font-weight:500;color:#7E7064;cursor:pointer;transition:max-width .2s ease,box-shadow .2s ease}'
      +'.hag-auth-badge.aberto{max-width:340px;box-shadow:0 6px 18px rgba(0,0,0,.13)}'
-     +'.hag-auth-badge .hab-ini{flex:0 0 34px;width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#b89c58,#9c8244);color:#fff;font-weight:700;font-size:13px;letter-spacing:.02em}'
+     +'.hag-auth-badge .hab-ini{flex:0 0 34px;width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#B98A5E,#8C4F2B);color:#fff;font-weight:700;font-size:13px;letter-spacing:.02em}'
      +'.hag-auth-badge .hab-txt{white-space:nowrap;padding:0 13px 0 9px}'
      +'.hag-auth-badge .hab-sair{color:#a13232;font-weight:600}'
      +'.hag-auth-badge .hab-sair:hover{text-decoration:underline}'
