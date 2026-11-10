@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
+<head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <!-- HAG_TRIAGEM_CHECKIN_v1 (31/10/2026) + HAG_TRIAGEM_SUGESTAO_v2: a IA recomenda a conduta
      (dose, horario, liberar ou nao) entre [[colchetes duplos]]; o Dr. aceita, troca ou apaga.
      POR QUE EXISTE: cada check-in novo passa pela Edge Function
@@ -22,13 +22,13 @@ window.HAG_EXIGIR_LOGIN=true;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#1B2745">
+<meta name="theme-color" content="#33251E">
 <title>Triagem dos check-ins · HAG</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--navy:#1B2745;--gold:#C9A55E;--gold2:#9A7B3F;--line:#E4DECB;--ink:#1a1a1a;--ink2:#5a5a55;--ink3:#8a8578;--bg:#f4f4f0;
-      --verde:#2F6B4A;--verde-bg:#e3f0e8;--verm:#9C2B2B;--verm-bg:#f8e4e4;--amb:#8a5a12;--amb-bg:#f8eedb;--azul:#2563a8;--azul-bg:#e8f0fa;
-      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:Georgia,'Times New Roman',serif}
+:root{--navy:#33251E;--gold:#B98A5E;--gold2:#8C4F2B;--line:#E4DECB;--ink:#1a1a1a;--ink2:#5a5a55;--ink3:#8a8578;--bg:#f4f4f0;
+      --verde:#2F6B4A;--verde-bg:#e3f0e8;--verm:#9C2B2B;--verm-bg:#f8e4e4;--amb:#8C4F2B;--amb-bg:#F4EADC;--azul:#2563a8;--azul-bg:#e8f0fa;
+      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:'Bodoni Moda',Georgia,'Times New Roman',serif}
 body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
 .top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
 .top a{color:var(--gold);text-decoration:none;font-size:13px;white-space:nowrap}
@@ -84,6 +84,7 @@ input.assunto{margin-bottom:6px}
 .lacx{margin-top:6px}
 .ok{color:var(--verde)}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:ital,wght@0,300..700;1,300..500&family=Jost:wght@400..600&display=swap"><style id="hag-telas-marca-2026">/* HAG_TELAS_MARCA_2026_v1 */ .brand-mark{background:#33251E!important;border:none!important;color:#B98A5E!important}.brand-mark .hag-mono{height:54%;width:auto;display:block}.ctr-mark{width:auto!important;height:44px!important}.ctr-mark .hag-mono{height:100%;width:auto}.hex{width:auto!important;height:30px!important}.hex .hag-mono{height:100%;width:auto}.shex{width:auto!important;height:34px!important}.shex .hag-mono{height:100%;width:auto}</style>
 </head>
 <body>
 <div class="top"><a href="tarefas_HAG.html" id="voltar">‹ Tarefas</a><span class="ti">Triagem dos check-ins</span></div>

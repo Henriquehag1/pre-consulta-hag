@@ -1,3 +1,4 @@
+/* HAG_TELAS_MARCA_2026_v1 (10/11/2026): cores, fontes e assinatura da marca Henrique Alves */
 /* HAG_BRIEFING_CARDS_v3 ──────────────────────────────────────────────────────
    06/11/2026 · Renderizador do briefing de consulta em cartoes.
    (v2 de 28/08/2026; o contrato e o mesmo.)
@@ -310,11 +311,11 @@
       +fim;
   }
 
-  var FM = "'DejaVu Sans Mono','IBM Plex Mono',ui-monospace,monospace";
+  var FM = "'DejaVu Sans Mono','Jost',ui-monospace,monospace";
   var CSS = [
   '.brf-cards{font-size:13.4px;line-height:1.5;color:#2B2A26;container-type:inline-size;container-name:brf}',
   /* cabecalho */
-  '.brf-cards .cab{background:#1B2745;color:#fff;border-radius:12px;padding:12px 14px;margin:0 0 10px;display:flex;flex-direction:column;gap:6px}',
+  '.brf-cards .cab{background:#33251E;color:#fff;border-radius:12px;padding:12px 14px;margin:0 0 10px;display:flex;flex-direction:column;gap:6px}',
   '.brf-cards .brf-nome{font-size:16px;font-weight:700;letter-spacing:.01em;line-height:1.25}',
   '.brf-cards .brf-idchips{margin-top:5px;display:flex;flex-wrap:wrap;gap:5px}',
   '.brf-cards .brf-idchips span{font-family:'+FM+';font-size:10px;letter-spacing:.09em;text-transform:uppercase;'
@@ -325,9 +326,9 @@
   /* cartoes */
   '.brf-cards .brf-c{border:1px solid #E4DECB;border-radius:12px;padding:10px 12px 11px;margin:0 0 10px;background:#fff}',
   '.brf-cards .brf-ct{display:flex;align-items:center;gap:7px;font-family:'+FM+';font-size:9.8px;'
-    +'letter-spacing:.15em;text-transform:uppercase;color:#9A7B3F;margin:0 0 8px}',
+    +'letter-spacing:.15em;text-transform:uppercase;color:#8C4F2B;margin:0 0 8px}',
   '.brf-cards .brf-ic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;'
-    +'background:#F5EEDC;color:#9A7B3F;font-size:11px;letter-spacing:0;font-family:inherit}',
+    +'background:#F5EEDC;color:#8C4F2B;font-size:11px;letter-spacing:0;font-family:inherit}',
   '.brf-cards .brf-c.al{border-color:#E7B9A6;background:#FDF4F0}',
   '.brf-cards .brf-c.al .brf-ct{color:#A63D18}',
   '.brf-cards .brf-c.al .brf-ic{background:#F6D9CC;color:#A63D18}',
@@ -341,16 +342,16 @@
   '.brf-cards .brf-passo span{font-family:'+FM+';font-size:10.8px;letter-spacing:.04em;border:1px solid #E4DECB;'
     +'border-radius:20px;padding:4px 10px;background:#FBFAF6;color:#3F3B33}',
   '.brf-cards .brf-passo span b{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;'
-    +'background:#1B2745;color:#fff;font-size:9.5px;margin-right:6px}',
-  '.brf-cards .brf-passo i{font-style:normal;color:#C9A55E;font-weight:700}',
+    +'background:#33251E;color:#fff;font-size:9.5px;margin-right:6px}',
+  '.brf-cards .brf-passo i{font-style:normal;color:#B98A5E;font-weight:700}',
   /* caixas de marcar */
   '.brf-cards .brf-mk{display:flex;gap:9px;align-items:flex-start;padding:7px 5px;border-radius:7px;'
     +'cursor:pointer;line-height:1.42;-webkit-tap-highlight-color:transparent}',
   '.brf-cards .brf-mk:hover{background:#FBFAF6}',
   '.brf-cards .brf-mk + .brf-mk{border-top:1px solid #F0EDE4}',
-  '.brf-cards .brf-mk i,.brf-cards .brf-av>i{flex:none;width:16px;height:16px;margin-top:2px;border:1.5px solid #C9A55E;'
+  '.brf-cards .brf-mk i,.brf-cards .brf-av>i{flex:none;width:16px;height:16px;margin-top:2px;border:1.5px solid #B98A5E;'
     +'border-radius:4px;font-style:normal;font-size:11px;line-height:14px;text-align:center;color:transparent}',
-  '.brf-cards .brf-mk.ok i,.brf-cards .brf-av.ok>i{background:#C9A55E;color:#fff}',
+  '.brf-cards .brf-mk.ok i,.brf-cards .brf-av.ok>i{background:#B98A5E;color:#fff}',
   '.brf-cards .brf-mk.ok{opacity:.45;text-decoration:line-through}',
   '.brf-cards .brf-mk b{font-weight:700}',
   '.brf-cards .brf-mk u{text-decoration:none;color:#6E6A60}',
@@ -375,7 +376,7 @@
   '.brf-cards .brf-ext{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}',
   '.brf-cards .brf-exi{border:1px solid #E4DECB;border-radius:9px;padding:5px 9px;background:#FBFAF6;display:flex;flex-direction:column;line-height:1.25}',
   '.brf-cards .brf-exi em{font-style:normal;font-family:'+FM+';font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#98917F}',
-  '.brf-cards .brf-exi b{font-size:13.4px;color:#1B2745}',
+  '.brf-cards .brf-exi b{font-size:13.4px;color:#33251E}',
   '.brf-cards .brf-exi small{font-size:10.5px;color:#9A5A1E}',
   '.brf-cards .brf-exi.velho{border-color:#EBD9BE;background:#FCF3E8}',
   '.brf-cards .brf-exi.nada b{color:#B5AE9E;font-weight:500}',
@@ -384,8 +385,8 @@
   '.brf-cards .brf-av>i{border-color:#4A6797}',
   '.brf-cards .brf-av.ok>i{background:#4A6797}',
   '.brf-cards .brf-av.ok{opacity:.5}',
-  '.brf-cards .brf-avt{font-weight:800;color:#1B2745;margin:0 0 4px}',
-  '.brf-cards .brf-chip.av{border-color:#C6D3E8;background:#fff;color:#1B2745;font-weight:600}',
+  '.brf-cards .brf-avt{font-weight:800;color:#33251E;margin:0 0 4px}',
+  '.brf-cards .brf-chip.av{border-color:#C6D3E8;background:#fff;color:#33251E;font-weight:600}',
   '.brf-cards .brf-av small{display:block;margin-top:4px;font-size:11px;color:#55688A}',
   '.brf-cards .brf-ped{display:flex;gap:8px;align-items:flex-start;border:1px solid #EBD9BE;background:#FCF3E8;'
     +'border-radius:10px;padding:7px 10px;margin:0 0 8px;color:#7A4A1E;font-size:13px}',
@@ -409,7 +410,7 @@
   '.brf-cards .brf-selo.urg{background:#F9DCCF;color:#8A3414;font-weight:700}',
   '.brf-cards .brf-selo.ama{background:#FBEBCB;color:#7A4A1E}',
   '.brf-cards .brf-info{margin:0 0 4px}',
-  '.brf-cards .brf-decl{margin-top:10px;color:#1B2745}',
+  '.brf-cards .brf-decl{margin-top:10px;color:#33251E}',
   '.brf-cards .brf-mk.dec{border:1px solid #E4DECB;border-radius:8px;margin:0 0 5px;padding:6px 8px}',
   '.brf-cards .brf-mk.dec + .brf-mk.dec{border-top:1px solid #E4DECB}',
   /* linhas rotuladas */
@@ -475,7 +476,7 @@
     +'.brf-cards.brf-auto .brf-al{color:#F8C9BE}'
     +'.brf-cards.brf-auto .brf-al i{color:#F08D86}'
     +'.brf-cards.brf-auto .brf-passo span{background:#1A1F2B;border-color:#2E3647;color:#D5D9E2}'
-    +'.brf-cards.brf-auto .brf-passo span b{background:#C9A55E;color:#14161C}'
+    +'.brf-cards.brf-auto .brf-passo span b{background:#B98A5E;color:#14161C}'
     +'.brf-cards.brf-auto .brf-mk:hover{background:#262D3D}'
     +'.brf-cards.brf-auto .brf-mk + .brf-mk{border-top-color:#2E3647}'
     +'.brf-cards.brf-auto .brf-mk.ok i,.brf-cards.brf-auto .brf-av.ok>i{color:#14161C}'
@@ -494,7 +495,7 @@
     +'.brf-cards.brf-auto .brf-exi small{color:#E5B569}'
     +'.brf-cards.brf-auto .brf-exi.velho{background:#372B17;border-color:#5A4522}'
     +'.brf-cards.brf-auto .brf-exi.nada b{color:#6C7488}'
-    +'.brf-cards.brf-auto .brf-av{background:#1B2A42;border-color:#3D5A86}'
+    +'.brf-cards.brf-auto .brf-av{background:#2A1F18;border-color:#3D5A86}'
     +'.brf-cards.brf-auto .brf-av>i{border-color:#8DB8F0}'
     +'.brf-cards.brf-auto .brf-av.ok>i{background:#8DB8F0}'
     +'.brf-cards.brf-auto .brf-avt{color:#BFD6F7}'

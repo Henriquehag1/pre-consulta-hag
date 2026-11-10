@@ -1,3 +1,4 @@
+/* HAG_TELAS_MARCA_2026_v1 (10/11/2026): cores, fontes e assinatura da marca Henrique Alves */
 /* HAG_PILARES_PAINEL_v1 ───────────────────────────────────────────────────────
    06/11/2026 · Os quatro pilares (dieta, suplemento, medicacao, exercicio) como
    modulo proprio, para a pagina Briefings do dia.
@@ -254,11 +255,11 @@
     return '<div class="'+cx+'">'+topo+'<div class="pil-g4">'+pil+'</div><div class="pil-g2">'+esq+'</div>'+rod+'</div>';
   }
 
-  var FM="'DejaVu Sans Mono','IBM Plex Mono',ui-monospace,monospace";
+  var FM="'DejaVu Sans Mono','Jost',ui-monospace,monospace";
   var CSS=[
   '.pil-x{font-size:13px;line-height:1.5;color:#2B2A26;container-type:inline-size;container-name:pil}',
   '.pil-x .pil-meta{font-size:11.5px;color:#6E6A60;margin-bottom:9px;line-height:1.45}',
-  '.pil-x .pil-sec{font-family:'+FM+';font-size:9.8px;letter-spacing:.16em;text-transform:uppercase;color:#9A7B3F;margin:0 0 6px;padding-bottom:3px;border-bottom:1px solid #E4DECB}',
+  '.pil-x .pil-sec{font-family:'+FM+';font-size:9.8px;letter-spacing:.16em;text-transform:uppercase;color:#8C4F2B;margin:0 0 6px;padding-bottom:3px;border-bottom:1px solid #E4DECB}',
   '.pil-x .pil-box{border:1px solid #E4DECB;border-radius:12px;background:#fff;padding:10px 12px;margin:0 0 10px}',
   '.pil-x .pil-tab{width:100%;border-collapse:collapse;font-size:12.4px;margin-bottom:4px}',
   '.pil-x .pil-tab th{font-family:'+FM+';font-size:8.8px;letter-spacing:.1em;text-transform:uppercase;color:#6E6A60;font-weight:400;text-align:right;padding:2px 5px}',
@@ -271,12 +272,12 @@
   '.pil-x .pil-al.atencao{background:#FCF3E8;border:1px solid #EBD9BE;color:#7A4A1E}',
   '.pil-x .pil-al b{display:block;font-size:11.4px;letter-spacing:.04em}',
   '.pil-x .pil-card{border:1px solid #E4DECB;border-radius:12px;margin:0 0 10px;overflow:hidden;background:#fff}',
-  '.pil-x .pil-card>h4{margin:0;background:#1B2745;color:#fff;font-family:'+FM+';font-size:10.4px;letter-spacing:.18em;text-transform:uppercase;padding:7px 12px;display:flex;justify-content:space-between}',
-  '.pil-x .pil-card>h4 span{color:#D9BE8C;font-weight:400;letter-spacing:.08em}',
+  '.pil-x .pil-card>h4{margin:0;background:#33251E;color:#fff;font-family:'+FM+';font-size:10.4px;letter-spacing:.18em;text-transform:uppercase;padding:7px 12px;display:flex;justify-content:space-between}',
+  '.pil-x .pil-card>h4 span{color:#D2B48F;font-weight:400;letter-spacing:.08em}',
   '.pil-x .pil-in{padding:8px 12px 10px}',
   '.pil-x .pil-it{padding:6px 0;border-bottom:1px dashed #E4DECB}',
   '.pil-x .pil-it:last-child{border-bottom:0}',
-  '.pil-x .pil-it .n{font-weight:700;font-size:13.4px;color:#1B2745}',
+  '.pil-x .pil-it .n{font-weight:700;font-size:13.4px;color:#33251E}',
   '.pil-x .pil-nl{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px}',
   '.pil-x .pil-selo{font-family:'+FM+';font-size:10.2px;color:#7A5A22;background:#F7F0DF;border-radius:20px;padding:1px 8px;line-height:1.6}',
   '.pil-x .pil-it .nt{font-size:12px;color:#5a564d;margin-top:4px;line-height:1.45}',
@@ -299,7 +300,7 @@
   '.pil-x .pil-tab .pil-mut{color:#8A8475 !important}',
   '.pil-x .pil-esc{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}',
   '.pil-x .pil-esc span{font-family:'+FM+';font-size:9.8px;border:1px solid #E4DECB;border-radius:4px;padding:1px 6px;color:#6E6A60}',
-  '.pil-x .pil-esc span.at{background:#1B2745;border-color:#1B2745;color:#fff;font-weight:700}',
+  '.pil-x .pil-esc span.at{background:#33251E;border-color:#33251E;color:#fff;font-weight:700}',
   '.pil-x .pil-ind{font-size:11.8px;color:#2F6B48;margin:5px 0 0;line-height:1.45}',
   '.pil-x .pil-card details{margin-top:7px;font-size:11.8px}',
   '.pil-x .pil-card summary{cursor:pointer;font-family:'+FM+';font-size:9.8px;letter-spacing:.12em;text-transform:uppercase;color:#6E6A60}',
@@ -320,17 +321,17 @@
   /* HAG_PILARES_IA_v1: analise de IA */
   '.pil-x .pil-iax{margin:0 0 10px}',
   '.pil-x .pil-ia-cab{display:flex;align-items:center;gap:10px;justify-content:space-between;border:1px solid #D9C9A3;background:#FBF6EA;border-radius:12px;padding:9px 12px}',
-  '.pil-x .pil-ia-cab b{display:block;font-size:13px;color:#1B2745}',
+  '.pil-x .pil-ia-cab b{display:block;font-size:13px;color:#33251E}',
   '.pil-x .pil-ia-cab span{display:block;font-size:11.4px;color:#6E6A60;line-height:1.4}',
-  '.pil-x .pil-ia-bt{flex:none;font:inherit;font-size:12.4px;font-weight:600;border:0;border-radius:9px;padding:8px 12px;background:#1B2745;color:#fff;cursor:pointer}',
+  '.pil-x .pil-ia-bt{flex:none;font:inherit;font-size:12.4px;font-weight:600;border:0;border-radius:9px;padding:8px 12px;background:#33251E;color:#fff;cursor:pointer}',
   '.pil-x .pil-ia-bt[disabled]{opacity:.55;cursor:default}',
   '.pil-x .pil-ia-msg{font-size:12px;color:#2563a8;background:#e8f0fa;border-radius:9px;padding:7px 10px;margin:6px 0 0}',
   '.pil-x .pil-ia-msg.erro{color:#8A3414;background:#FDF0EA}',
   '.pil-x .pil-ia-geral{font-size:13px;line-height:1.5;color:#2B2A26;margin:8px 2px 0}',
-  '.pil-x .pil-renov{border:1.5px solid #C9A55E;border-radius:12px;padding:10px 12px;margin:10px 0 0;background:#fff}',
-  '.pil-x .pil-renov-t{font-family:'+FM+';font-size:9.8px;letter-spacing:.16em;text-transform:uppercase;color:#9A7B3F;margin:0 0 6px}',
+  '.pil-x .pil-renov{border:1.5px solid #B98A5E;border-radius:12px;padding:10px 12px;margin:10px 0 0;background:#fff}',
+  '.pil-x .pil-renov-t{font-family:'+FM+';font-size:9.8px;letter-spacing:.16em;text-transform:uppercase;color:#8C4F2B;margin:0 0 6px}',
   '.pil-x .pil-renov-p em,.pil-x .pil-renov-f em,.pil-x .pil-ia-mr em{display:block;font-style:normal;font-family:'+FM+';font-size:9.2px;letter-spacing:.1em;text-transform:uppercase;color:#98917F}',
-  '.pil-x .pil-renov-p b{display:block;font-size:17px;color:#1B2745;line-height:1.3}',
+  '.pil-x .pil-renov-p b{display:block;font-size:17px;color:#33251E;line-height:1.3}',
   '.pil-x .pil-renov-p span{font-size:12px;color:#6E6A60}',
   '.pil-x .pil-renov-q{font-size:12.8px;line-height:1.5;margin:6px 0 0;color:#3F3B33}',
   '.pil-x .pil-renov-c{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 0}',
@@ -346,7 +347,7 @@
   '.pil-x .pil-ia-op{margin:6px 0 0}',
   '.pil-x .pil-ia-op summary{cursor:pointer;font-family:'+FM+';font-size:9.8px;letter-spacing:.12em;text-transform:uppercase;color:#4A6797;padding:3px 0}',
   '.pil-x .pil-ia-o{padding:4px 0;border-top:1px solid #E3E9F3;font-size:12.4px;line-height:1.4}',
-  '.pil-x .pil-ia-o b{display:block;color:#1B2745}',
+  '.pil-x .pil-ia-o b{display:block;color:#33251E}',
   '.pil-x .pil-ia-o span{color:#55565c}',
   '.pil-x .pil-ia-v{font-size:11.8px;color:#7A4A1E;margin:6px 0 0}',
   /* HAG_PILARES_PAINEL_v2_1: CELULAR (container de ate 520 px) */
@@ -399,7 +400,7 @@
     +'.pil-x.pil-auto .pil-card.curto>h4{background:#2A3141;color:#9AA1B2}'
     +'.pil-x.pil-auto .pil-card.curto>h4 span{color:#8D95A8}'
     +'.pil-x.pil-auto .pil-esc span{border-color:#343D50;color:#9AA1B2}'
-    +'.pil-x.pil-auto .pil-esc span.at{background:#C9A55E;border-color:#C9A55E;color:#14161C}'
+    +'.pil-x.pil-auto .pil-esc span.at{background:#B98A5E;border-color:#B98A5E;color:#14161C}'
     +'.pil-x.pil-auto .pil-ind{color:#7FCF9F}'
     +'.pil-x.pil-auto .pil-card summary{color:#9AA1B2}'
     +'.pil-x.pil-auto .pil-cam{border-bottom-color:#2E3647}'
@@ -412,11 +413,11 @@
     +'.pil-x.pil-auto .pil-ia-cab{background:#2B261B;border-color:#5A4A2A}'
     +'.pil-x.pil-auto .pil-ia-cab b{color:#F1F3F7}'
     +'.pil-x.pil-auto .pil-ia-cab span{color:#9AA1B2}'
-    +'.pil-x.pil-auto .pil-ia-bt{background:#C9A55E;color:#14161C}'
-    +'.pil-x.pil-auto .pil-ia-msg{background:#1B2A42;color:#8DB8F0}'
+    +'.pil-x.pil-auto .pil-ia-bt{background:#B98A5E;color:#14161C}'
+    +'.pil-x.pil-auto .pil-ia-msg{background:#2A1F18;color:#8DB8F0}'
     +'.pil-x.pil-auto .pil-ia-msg.erro{background:#3A1F22;color:#F3A08F}'
     +'.pil-x.pil-auto .pil-ia-geral{color:#D5D9E2}'
-    +'.pil-x.pil-auto .pil-renov{background:#202634;border-color:#C9A55E}'
+    +'.pil-x.pil-auto .pil-renov{background:#202634;border-color:#B98A5E}'
     +'.pil-x.pil-auto .pil-renov-t{color:#D9B877}'
     +'.pil-x.pil-auto .pil-renov-p b{color:#F2CF95}'
     +'.pil-x.pil-auto .pil-renov-p span,.pil-x.pil-auto .pil-renov-p em,.pil-x.pil-auto .pil-renov-f em,.pil-x.pil-auto .pil-ia-mr em{color:#8D95A8}'

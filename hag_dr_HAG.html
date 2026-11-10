@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
+<head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <!-- HAG_DR_V3 (03/11/2026): pendencias, NFS-e pelo celular, pedido a Daniela, busca de paciente, contas a pagar,
      avisos neste app, procedimentos da semana, leads, prontuarios a assinar, fechar um dia, gravacao pelo iPhone,
      evolucao ditada e estado do sistema (war room de 02/11; doc claude/hag-dr-v3-03-11-2026.md).
@@ -31,7 +31,7 @@ window.HAG_EXIGIR_LOGIN=true;
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="HAG Dr">
-<meta name="theme-color" content="#1B2745">
+<meta name="theme-color" content="#33251E">
 <link rel="manifest" href="manifest-dr.json">
 <link rel="apple-touch-icon" href="icone-dr-180.png">
 <title>HAG Dr</title>
@@ -41,13 +41,13 @@ window.HAG_EXIGIR_LOGIN=true;
    agenda em linha do tempo, check-ins com faixa de cor por nivel, resumo no topo de Vendas, Financeiro
    com o "entrou na conta" em destaque e grafico vendido x entrou. Modo escuro acompanha o iPhone. */
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--navy:#1B2745;--navy2:#26365c;--gold:#C9A55E;--gold2:#9A7B3F;--gold-bg:#f6efe0;--line:#ebe6d8;--ink:#17181c;--ink2:#55565c;--ink3:#8c8d93;
-      --bg:#f3f2ee;--card:#ffffff;--sombra:0 1px 2px rgba(20,24,36,.05),0 6px 18px rgba(20,24,36,.06);
-      --verde:#2F6B4A;--verde-bg:#e4f1e9;--verm:#a3322f;--verm-bg:#f9e6e5;--amb:#8a5a12;--amb-bg:#f8eedb;--azul:#2563a8;--azul-bg:#e8f0fa;
-      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:'New York','Iowan Old Style',Georgia,serif;--r:16px}
+:root{--navy:#33251E;--navy2:#4A3A30;--gold:#B98A5E;--gold2:#8C4F2B;--gold-bg:#F4EADC;--line:#ebe6d8;--ink:#17181c;--ink2:#55565c;--ink3:#8c8d93;
+      --bg:#f3f2ee;--card:#ffffff;--sombra:0 1px 2px rgba(34,26,22,.05),0 6px 18px rgba(34,26,22,.06);
+      --verde:#2F6B4A;--verde-bg:#e4f1e9;--verm:#a3322f;--verm-bg:#f9e6e5;--amb:#8C4F2B;--amb-bg:#F4EADC;--azul:#2563a8;--azul-bg:#e8f0fa;
+      --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:'Bodoni Moda','New York',Georgia,serif;--r:16px}
 @media (prefers-color-scheme: dark){
   :root{--bg:#0f1219;--card:#1a1f2b;--line:#2a3141;--ink:#eef0f4;--ink2:#b5bac6;--ink3:#8189a0;--gold-bg:#2b261b;--sombra:0 1px 2px rgba(0,0,0,.3);
-        --verde-bg:#1d3327;--verde:#7fcf9f;--verm-bg:#3a1f22;--verm:#f08d86;--amb-bg:#372b17;--amb:#e5b569;--azul-bg:#1b2a42;--azul:#8db8f0;--gold2:#d9b877}
+        --verde-bg:#1d3327;--verde:#7fcf9f;--verm-bg:#3a1f22;--verm:#f08d86;--amb-bg:#372b17;--amb:#e5b569;--azul-bg:#2A1F18;--azul:#8db8f0;--gold2:#d9b877}
 }
 html,body{background:var(--bg)}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;color:var(--ink);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
@@ -126,7 +126,7 @@ h2:first-child{margin-top:4px}
 .stat{background:var(--card);border-radius:14px;padding:11px 10px;box-shadow:var(--sombra);text-align:center}
 .stat b{display:block;font-family:var(--fs);font-size:22px;font-weight:500}
 .stat span{font-size:11px;color:var(--ink3);line-height:1.2;display:block;margin-top:2px}
-.hero{background:linear-gradient(150deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;border-radius:20px;padding:18px 18px 16px;box-shadow:0 10px 30px rgba(27,39,69,.25);margin-bottom:10px;cursor:pointer}
+.hero{background:linear-gradient(150deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;border-radius:20px;padding:18px 18px 16px;box-shadow:0 10px 30px rgba(51,37,30,.25);margin-bottom:10px;cursor:pointer}
 .hero .l{font-size:13px;color:rgba(255,255,255,.7)}
 .hero .v{font-family:var(--fs);font-size:36px;font-weight:500;color:var(--gold);margin:2px 0 12px;letter-spacing:-.01em}
 .hero .barra{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.12)}
@@ -181,6 +181,7 @@ h2:first-child{margin-top:4px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--navy);color:#fff;padding:10px 16px;border-radius:22px;font-size:14px;z-index:40;max-width:92vw;box-shadow:var(--sombra)}
 .toast.erro{background:var(--verm)}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:ital,wght@0,300..700;1,300..500&family=Jost:wght@400..600&display=swap"><style id="hag-telas-marca-2026">/* HAG_TELAS_MARCA_2026_v1 */ .brand-mark{background:#33251E!important;border:none!important;color:#B98A5E!important}.brand-mark .hag-mono{height:54%;width:auto;display:block}.ctr-mark{width:auto!important;height:44px!important}.ctr-mark .hag-mono{height:100%;width:auto}.hex{width:auto!important;height:30px!important}.hex .hag-mono{height:100%;width:auto}.shex{width:auto!important;height:34px!important}.shex .hag-mono{height:100%;width:auto}</style>
 </head>
 <body>
 <header class="top"><div class="eye">HAG DR · MÉTODO HAG</div><div class="tl"><h1 id="titAba">Agenda</h1><button type="button" id="buscar" aria-label="Buscar paciente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button><button type="button" id="recarregar" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></div><div class="dt" id="hojeDt"></div></header>
