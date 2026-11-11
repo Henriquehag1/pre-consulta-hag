@@ -715,7 +715,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <span class="hag-api-label">🔑 Chave API (admin)</span>
     <input class="hag-api-input" id="hagApiInput" type="password" placeholder="sk-ant-..." autocomplete="off">
     <button class="hag-api-btn" onclick="hagSaveKey()">Salvar no servidor</button>
-    <span class="hag-api-st" id="hagApiSt">A chave é enviada ao servidor Supabase — nunca fica no HTML</span>
+    <span class="hag-api-st" id="hagApiSt">A chave vai para o servidor Supabase e nunca fica no HTML</span>
   </div>
 </div>
 
@@ -733,7 +733,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       Check-in Semanal
     </div>
     <h1 class="h-title">Como foi a sua <em>semana?</em></h1>
-    <p class="h-sub">Respostas honestas permitem que o Dr. Henrique intervenha antes da próxima consulta quando necessário.</p>
+    <p class="h-sub">Se algo precisar de ajuste, o Dr. Henrique fica sabendo antes da consulta.</p>
   </div>
 </div>
 
@@ -779,7 +779,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="bloco-header"><div class="bloco-num">01</div><div class="bloco-title">O Termômetro da Semana</div></div>
     <div class="bloco-body">
       <div class="field">
-        <label class="fl">Dieta — Seguiu a estratégia proposta?</label>
+        <label class="fl">Alimentação: seguiu o plano?</label>
         <div class="scale-5" id="s_dieta">
           <button class="s5-btn" onclick="setScale5(this,'s_dieta')"><span class="s5-num">0</span><span class="s5-label">Nada</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_dieta')"><span class="s5-num">1</span><span class="s5-label">Pouco</span></button>
@@ -790,7 +790,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         </div>
       </div>
       <div class="field">
-        <label class="fl">Treino — Cumpriu a meta de exercícios?</label>
+        <label class="fl">Treino: cumpriu a meta?</label>
         <div class="scale-5" id="s_treino">
           <button class="s5-btn" onclick="setScale5(this,'s_treino')"><span class="s5-num">0</span><span class="s5-label">Nada</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_treino')"><span class="s5-num">1</span><span class="s5-label">Pouco</span></button>
@@ -801,7 +801,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         </div>
       </div>
       <div class="field">
-        <label class="fl">Sono — Acordou descansado na maioria dos dias?</label>
+        <label class="fl">Sono: acordou descansado na maioria dos dias?</label>
         <div class="scale-5" id="s_sono">
           <button class="s5-btn" onclick="setScale5(this,'s_sono')"><span class="s5-num">0</span><span class="s5-label">Péssimo</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_sono')"><span class="s5-num">1</span><span class="s5-label">Ruim</span></button>
@@ -812,7 +812,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         </div>
       </div>
       <div class="field">
-        <label class="fl">Fome — Controle do apetite e vontade de doces?</label>
+        <label class="fl">Fome: controlou o apetite e a vontade de doce?</label>
         <div class="scale-5" id="s_fome">
           <button class="s5-btn" onclick="setScale5(this,'s_fome')"><span class="s5-num">0</span><span class="s5-label">Sem ctrl.</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_fome')"><span class="s5-num">1</span><span class="s5-label">Difícil</span></button>
@@ -823,7 +823,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         </div>
       </div>
       <div class="field" style="margin-bottom:.5rem">
-        <label class="fl">Energia — Disposição no dia a dia?</label>
+        <label class="fl">Energia no dia a dia</label>
         <div class="scale-5" id="s_energia">
           <button class="s5-btn" onclick="setScale5(this,'s_energia')"><span class="s5-num">0</span><span class="s5-label">Esgotado</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_energia')"><span class="s5-num">1</span><span class="s5-label">Baixa</span></button>
@@ -848,7 +848,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="bloco-header"><div class="bloco-num">02</div><div class="bloco-title">Corpo e Clínica</div></div>
     <div class="bloco-body">
       <div class="field">
-        <label class="fl">Medicação e Suplementos — Tomou conforme o plano?</label>
+        <label class="fl">Medicação e suplementos: tomou conforme o plano?</label>
         <div class="scale-5" id="s_med">
           <button class="s5-btn" onclick="setScale5(this,'s_med')"><span class="s5-num">0</span><span class="s5-label">Nada</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_med')"><span class="s5-num">1</span><span class="s5-label">Pouco</span></button>
@@ -864,7 +864,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       </div>
       <div class="field" style="margin-bottom:.5rem">
         <label class="fl">Peso atual ou percepção nas roupas</label>
-        <div class="fh">Só informe se a balança não gerar ansiedade — percepção nas roupas também vale.</div>
+        <div class="fh">Se a balança gera ansiedade, vale a percepção nas roupas.</div>
         <input class="finput" id="f_peso" type="text" placeholder="Ex: 84,2 kg · ou 'calça mais folgada' · ou 'não me pesei'">
       </div>
     </div>
@@ -901,11 +901,11 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="bloco-header"><div class="bloco-num">04</div><div class="bloco-title">Suporte</div></div>
     <div class="bloco-body">
       <div class="field">
-        <label class="fl">Estoque de medicações e suplementos — suficiente para 7 dias?</label>
+        <label class="fl">Medicação e suplementos dão para 7 dias?</label>
         <div class="radio-group" id="r_estoque">
           <div class="radio-row" onclick="toggleRadio(this,'r_estoque')"><div class="radio-dot"></div><span class="radio-label">Sim, estoque suficiente</span></div>
           <div class="radio-row" onclick="toggleRadio(this,'r_estoque')"><div class="radio-dot"></div><span class="radio-label">Preciso renovar em breve</span></div>
-          <div class="radio-row" onclick="toggleRadio(this,'r_estoque')"><div class="radio-dot"></div><span class="radio-label">Estou sem — preciso urgente</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_estoque')"><div class="radio-dot"></div><span class="radio-label">Estou sem, preciso com urgência</span></div>
           <div class="radio-row" onclick="toggleRadio(this,'r_estoque')"><div class="radio-dot"></div><span class="radio-label">Não uso medicação / suplemento</span></div>
         </div>
       </div>
@@ -954,7 +954,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   <div class="closing-msg">
     <div class="closing-eyebrow">Método HAG · Dr. Henrique Alves</div>
-    <p class="closing-text">"No Método HAG, constância sempre supera intensidade. Não buscamos uma semana perfeita — buscamos uma semana melhor que a anterior. Se você tropeçou, o recomeço é agora, na próxima refeição."</p>
+    <p class="closing-text">"Constância supera intensidade. Não buscamos a semana perfeita, e sim uma semana melhor que a anterior. Tropeçou? O recomeço é na próxima refeição."</p>
     <div class="closing-sign">Estamos juntos no processo.</div>
   </div>
 
@@ -992,7 +992,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         <div class="ss-divider"></div>
         <div class="ss-item"><div class="ss-num">02</div><div class="ss-text"><strong>Intervenção se necessário</strong>Se algo precisar de ajuste, você recebe orientação antes da consulta</div></div>
         <div class="ss-divider"></div>
-        <div class="ss-item"><div class="ss-num">03</div><div class="ss-text"><strong>Continue o plano</strong>Constância supera intensidade — uma semana de cada vez</div></div>
+        <div class="ss-item"><div class="ss-num">03</div><div class="ss-text"><strong>Continue o plano</strong>Constância supera intensidade, uma semana de cada vez</div></div>
       </div>
     </div>
     <p class="close-note">Você já pode fechar esta página.</p>
