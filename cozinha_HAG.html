@@ -41,10 +41,11 @@
   --disp:"Bodoni Moda","Arial Narrow",sans-serif; --body:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   color-scheme:dark;
 }
+/* HAG_COZINHA_MARCA2026_v1 (11/11/2026): tema claro saiu do cinza azulado para o linho da marca 2026. */
 :root[data-tema="claro"]{
-  --bg:#F3F4F6; --surface:#FFFFFF; --tile:#E3E6EC; --ink:#0E1320; --ink2:#465063; --muted:#5B6578; --line:#D9DDE5;
-  --gold:#8A6516; --good:#1D8657; --goodbg:rgba(29,134,87,.12); --rest:#9A5D08; --restbg:rgba(154,93,8,.10);
-  --sombra:0 1px 2px rgba(14,19,32,.08); color-scheme:light;
+  --bg:#F4EEE5; --surface:#FFFFFF; --tile:#EDE5D8; --ink:#221A16; --ink2:#4A3F36; --muted:#6B5D50; --line:#E2D8CA;
+  --gold:#8C4F2B; --good:#1D8657; --goodbg:rgba(29,134,87,.12); --rest:#9A5D08; --restbg:rgba(154,93,8,.10);
+  --sombra:0 1px 2px rgba(34,26,22,.08); color-scheme:light;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -422,7 +423,7 @@ function coracao(on,tam){ return '<svg width="'+(tam||20)+'" height="'+(tam||20)
 function claro(){ return document.documentElement.dataset.tema==='claro'; }
 function aplicaTema(c){
   if(c) document.documentElement.dataset.tema='claro'; else delete document.documentElement.dataset.tema;
-  var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=c?'#F3F4F6':'#1A1411';
+  var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=c?'#F4EEE5':'#1A1411';
   var b=$('#tema'); if(b){ b.innerHTML=c?IC.lua:IC.sol; b.setAttribute('aria-label',c?'Usar tema escuro':'Usar tema claro'); }
 }
 aplicaTema(claro());
