@@ -36,6 +36,10 @@ jobs:
       - name: Instalar Playwright
         run: |
           npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.0
-          npx playwright install --with-deps chromium
+          # HAG_CI_PLAYWRIGHT_RESILIENTE_v2 (11/11/2026): o apt do runner travou no PR #45 (espelho do
+          # Ubuntu fora, 7 min por tentativa). Agora o apt tem no maximo 150 s e, se falhar, o teste segue
+          # sem ele: o Chromium vem do CDN do Playwright e a imagem ja tem as bibliotecas do Chrome.
+          timeout 150 npx playwright install-deps chromium || echo 'apt indisponivel agora: seguindo sem ele'
+          npx playwright install chromium
       - name: Testes da Cozinha HAG
         run: node tests/cozinha/teste_cozinha.mjs

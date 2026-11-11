@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- HAG_CENTRAL_PACIENTE_v1 (11/11/2026): painel da equipe para a central do paciente. Gera e troca
+     o link, desconecta aparelhos, mostra e esconde documentos e lê o registro de acessos.
+     Login da equipe (hag_auth.js). Nenhum dado de paciente no arquivo. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Central do paciente · Painel</title>
+<meta name="theme-color" content="#33251E">
+<script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
+<script src="hag_auth.js?v=20260915-2056"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:ital,wght@0,300..700;1,300..500&family=Jost:wght@400..600&display=swap">
+<style>
+:root{--linho:#F4EEE5;--papel:#FCFAF6;--fio:#E3D8C8;--tinta:#221A16;--suave:#5C4F44;--apoio:#8F8274;--conhaque:#8C4F2B;--camurca:#B98A5E;--choc:#33251E;--floresta:#2E3A2D;--bordo:#5B2529}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--linho);color:var(--tinta);font-family:'Hanken Grotesk',-apple-system,Arial,sans-serif;font-size:15px;line-height:1.45}
+header{background:var(--choc);color:var(--linho);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
+header h1{font-family:'Bodoni Moda',Georgia,serif;font-weight:400;font-size:22px}
+.rot{font-family:Jost,Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.26em;text-transform:uppercase}
+header .rot{color:var(--camurca)}
+main{max-width:980px;margin:0 auto;padding:18px}
+.barra{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+input[type=search]{flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--fio);border-radius:3px;background:#fff;font:inherit}
+button{font:inherit;cursor:pointer}
+.b{border:1px solid var(--choc);background:var(--choc);color:var(--linho);border-radius:3px;padding:8px 12px;font-family:Jost,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.b.c{background:transparent;color:var(--choc)}
+.b.r{border-color:var(--bordo);color:var(--bordo);background:transparent}
+.b.r.sim{background:var(--bordo);color:#fff}
+.b:disabled{opacity:.5}
+.p{background:var(--papel);border:1px solid var(--fio);border-radius:4px;margin-bottom:10px}
+.cab{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:14px 16px}
+.nm{font-family:'Bodoni Moda',Georgia,serif;font-size:18px}
+.mt{color:var(--apoio);font-size:13px;margin-top:2px}
+.chip{display:inline-block;font-family:Jost,Arial,sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:2px;margin-right:6px}
+.chip.ok{background:#E3EADF;color:var(--floresta)}.chip.no{background:#F1E3DC;color:var(--conhaque)}.chip.ne{background:#EEE7DC;color:var(--suave)}
+.acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.det{border-top:1px solid var(--fio);padding:12px 16px;display:none}
+.det.on{display:block}
+.det h3{font-family:Jost,Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--apoio);margin:10px 0 6px}
+.det h3:first-child{margin-top:0}
+.linha{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #EEE7DC;font-size:14px}
+.linha:first-of-type{border-top:0}
+.link{word-break:break-all;background:#fff;border:1px solid var(--fio);padding:8px 10px;font-size:13px;border-radius:3px}
+textarea{width:100%;min-height:110px;padding:10px;border:1px solid var(--fio);border-radius:3px;font:inherit;font-size:14px;background:#fff}
+.av{background:#fff;border-left:3px solid var(--camurca);padding:10px 12px;margin-bottom:14px;font-size:14px;color:var(--suave)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--choc);color:var(--linho);padding:10px 16px;border-radius:3px;font-size:14px;display:none;z-index:9}
+.vis{font-family:Jost,Arial,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<header><div><div class="rot">Henrique Alves · Método HAG</div><h1>Central do paciente</h1></div><a class="b c" style="color:var(--linho);border-color:var(--camurca)" href="hag_dr_HAG.html">HAG Dr</a></header>
+<main>
+  <div class="av">A central fica aberta só enquanto há ciclo ativo, e fecha sozinha quando o ciclo termina. No primeiro acesso de cada aparelho, o paciente recebe um código no e-mail do cadastro. Planos de tratamento, planos alimentares e receitas vigentes aparecem sozinhos; o resto só aparece se você marcar "mostrar".</div>
+  <div class="barra"><input type="search" id="busca" placeholder="Buscar paciente"><button class="b c" id="bTodos">Gerar links que faltam</button></div>
+  <div id="lista">Carregando…</div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+var db, ROWS=[];
+var BASE='https://henriquehag1.github.io/pre-consulta-hag/';
+var $=function(s,r){return (r||document).querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(t){var e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(function(){e.style.display='none'},2600)}
+function dt(s){ if(!s) return ''; var d=new Date(s); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function linkDe(t){ return BASE+'central_HAG.html?t='+t; }
+function msgDaniela(nome, t){
+  return 'Oi '+nome+', tudo bem? A partir de agora o seu acompanhamento tem uma central própria: planos, receitas, a Cozinha, o Treino e a agenda num lugar só.\n\n'
+    +'É só abrir este link no celular: '+linkDe(t)+'\n\n'
+    +'No primeiro acesso chega um código de 6 números no seu e-mail. Depois, salve na tela de início para abrir como um app. O link é pessoal, não encaminhe.';
+}
+var CAT={plano_tratamento:'Plano de tratamento',plano_alimentar:'Plano alimentar',receita:'Receita',exame:'Exame',prontuario:'Prontuário',proposta:'Proposta',nota_fiscal:'Nota fiscal'};
+function padraoVisivel(d){ return ['plano_tratamento','plano_alimentar','receita'].indexOf(d.categoria)>=0 && !d.substituida_por && !d.historico; }
+
+async function carrega(){
+  var r=await db.from('v_central_painel').select('*').order('nome');
+  if(r.error){ $('#lista').textContent='Erro ao carregar: '+r.error.message; return; }
+  ROWS=r.data||[]; desenha();
+}
+function desenha(){
+  var q=($('#busca').value||'').toLowerCase();
+  var h=ROWS.filter(function(x){return !q||String(x.nome||'').toLowerCase().indexOf(q)>=0}).map(function(x){
+    var st = !x.token ? '<span class="chip ne">Sem link</span>' : x.aparelhos>0 ? '<span class="chip ok">Ativo em '+x.aparelhos+' aparelho'+(x.aparelhos>1?'s':'')+'</span>' : '<span class="chip no">Link criado, ainda não entrou</span>';
+    var dc = '<span class="chip ne">'+x.docs_visiveis+' documento'+(x.docs_visiveis==1?'':'s')+'</span>'+(x.docs_sem_nuvem>0?'<span class="chip no">'+x.docs_sem_nuvem+' ainda só no Mac</span>':'');
+    return '<div class="p" data-id="'+esc(x.patient_id)+'"><div class="cab"><div><div class="nm">'+esc(x.nome)+(x.interno?' <span class="chip ne">interno</span>':'')+'</div><div class="mt">'+st+dc+(x.ultimo_uso?' Último uso '+dt(x.ultimo_uso):'')+'</div></div>'
+      +'<div class="acoes">'+(x.token?'<button class="b" data-a="msg">Mensagem</button>':'<button class="b" data-a="gerar">Gerar link</button>')
+      +'<a class="b c" style="text-decoration:none" target="_blank" rel="noopener" href="central_HAG.html?ver=1&p='+encodeURIComponent(x.patient_id)+'">Ver como ele vê</a><button class="b c" data-a="docs">Documentos</button><button class="b c" data-a="log">Registro</button></div></div><div class="det"></div></div>';
+  }).join('');
+  $('#lista').innerHTML=h||'<p>Nenhum paciente com ciclo ativo.</p>';
+}
+function linha(id){ return ROWS.filter(function(x){return x.patient_id===id})[0]; }
+
+async function gerar(id, trocar){
+  var r=await db.rpc('central_gerar_link',{p_patient:id,p_trocar:!!trocar});
+  if(r.error){ toast('Erro: '+r.error.message); return null; }
+  return r.data;
+}
+
+async function abreMsg(box, x){
+  var t=x.token; var det=$('.det',box);
+  det.innerHTML='<h3>Link pessoal</h3><div class="link">'+esc(linkDe(t))+'</div>'
+    +'<h3>Mensagem para a Daniela</h3><textarea readonly>'+esc(msgDaniela(String(x.nome||'').split(' ')[0], t))+'</textarea>'
+    +'<div class="acoes" style="justify-content:flex-start;margin-top:8px"><button class="b" data-a="copiar">Copiar mensagem</button><button class="b c" data-a="copiarlink">Copiar só o link</button>'
+    +'<button class="b r" data-a="sairtodos">Desconectar aparelhos</button><button class="b r" data-a="trocar">Trocar o link</button></div>'
+    +'<p class="mt" style="margin-top:8px">Trocar o link desconecta todos os aparelhos e invalida o link antigo. Desconectar aparelhos mantém o link e pede um código novo.</p>';
+  det.classList.add('on');
+}
+
+async function abreDocs(box, x){
+  var det=$('.det',box); det.innerHTML='Carregando…'; det.classList.add('on');
+  var r=await db.from('documentos').select('id,categoria,nome_arquivo,data_prescricao,data_ingestao,caminho_storage,central_visivel,substituida_por,historico').eq('patient_id',x.patient_id).order('data_ingestao',{ascending:false}).limit(120);
+  if(r.error){ det.textContent='Erro: '+r.error.message; return; }
+  var ds=(r.data||[]).filter(function(d){return d.categoria!=='nota_fiscal'});
+  det.innerHTML='<h3>Documentos</h3>'+(ds.length?ds.map(function(d){
+    var pad=padraoVisivel(d), vis=d.central_visivel===false?false:d.central_visivel===true?true:pad;
+    var est=!d.caminho_storage&&vis?' · ainda só no Mac':'';
+    var lbl=(CAT[d.categoria]||d.categoria)+' · '+esc(String(d.data_prescricao||d.data_ingestao||'').slice(0,10).split('-').reverse().join('/'));
+    return '<div class="linha"><span>'+lbl+'<br><span class="mt">'+esc(d.nome_arquivo||'')+est+'</span></span><span><span class="vis" style="color:'+(vis?'var(--floresta)':'var(--apoio)')+'">'+(vis?'Aparece':'Oculto')+(d.central_visivel==null?' (padrão)':'')+'</span> '
+      +'<button class="b c" data-a="vis" data-doc="'+d.id+'" data-v="'+(vis?'0':'1')+'">'+(vis?'Esconder':'Mostrar')+'</button></span></div>';
+  }).join(''):'<p class="mt">Nenhum documento.</p>');
+}
+
+async function abreLog(box, x){
+  var det=$('.det',box); det.innerHTML='Carregando…'; det.classList.add('on');
+  var r=await db.from('central_log').select('acao,doc_id,detalhe,em').eq('patient_id',x.patient_id).order('em',{ascending:false}).limit(30);
+  var s=await db.from('central_sessoes').select('aparelho,criado_em,ultimo_uso,revogada,expira_em').eq('patient_id',x.patient_id).order('criado_em',{ascending:false}).limit(10);
+  var N={entrou:'Entrou com código',abriu_doc:'Abriu documento',codigo_enviado:'Código enviado',codigo_errado:'Código errado',codigo_falhou:'Envio do código falhou',sair:'Saiu do aparelho',bloqueado:'Tentou entrar com acesso fechado'};
+  det.innerHTML='<h3>Aparelhos</h3>'+((s.data||[]).map(function(a){return '<div class="linha"><span>'+esc(a.aparelho||'aparelho')+' · desde '+dt(a.criado_em)+'</span><span class="mt">'+(a.revogada?'desconectado':'último uso '+dt(a.ultimo_uso))+'</span></div>'}).join('')||'<p class="mt">Nenhum.</p>')
+    +'<h3>Últimos acessos</h3>'+((r.data||[]).map(function(l){return '<div class="linha"><span>'+esc(N[l.acao]||l.acao)+(l.detalhe?' ('+esc(l.detalhe)+')':'')+'</span><span class="mt">'+dt(l.em)+'</span></div>'}).join('')||'<p class="mt">Nada ainda.</p>');
+}
+
+function liga(){
+  $('#busca').addEventListener('input',desenha);
+  $('#bTodos').addEventListener('click',async function(){
+    var b=this, falta=ROWS.filter(function(x){return !x.token});
+    if(!falta.length){ toast('Todos já têm link.'); return; }
+    if(!b.dataset.sim){ b.dataset.sim='1'; b.textContent='Confirmar: '+falta.length+' links'; setTimeout(function(){delete b.dataset.sim;b.textContent='Gerar links que faltam'},5000); return; }
+    b.disabled=true; for(var i=0;i<falta.length;i++){ await gerar(falta[i].patient_id,false); } b.disabled=false; delete b.dataset.sim; b.textContent='Gerar links que faltam'; toast(falta.length+' links gerados.'); carrega();
+  });
+  $('#lista').addEventListener('click',async function(e){
+    var bt=e.target.closest('[data-a]'); if(!bt) return;
+    var box=bt.closest('.p'), id=box.dataset.id, x=linha(id), a=bt.dataset.a, det=$('.det',box);
+    if(['msg','docs','log'].indexOf(a)>=0 && det.classList.contains('on') && det.dataset.v===a){ det.classList.remove('on'); return; }
+    det.dataset.v=a;
+    if(a==='gerar'){ bt.disabled=true; var t=await gerar(id,false); if(t){ x.token=t; await carrega(); box=$('.p[data-id="'+CSS.escape(id)+'"]'); abreMsg(box, linha(id)); } return; }
+    if(a==='msg') return abreMsg(box,x);
+    if(a==='docs') return abreDocs(box,x);
+    if(a==='log') return abreLog(box,x);
+    if(a==='copiar'){ try{ await navigator.clipboard.writeText($('textarea',box).value); toast('Mensagem copiada.'); }catch(_){ $('textarea',box).select(); toast('Selecionado: use Copiar.'); } return; }
+    if(a==='copiarlink'){ try{ await navigator.clipboard.writeText(linkDe(x.token)); toast('Link copiado.'); }catch(_){ toast('Não deu para copiar.'); } return; }
+    if(a==='sairtodos' || a==='trocar'){
+      if(!bt.classList.contains('sim')){ bt.classList.add('sim'); bt.textContent='Confirmar'; setTimeout(function(){bt.classList.remove('sim'); bt.textContent=a==='trocar'?'Trocar o link':'Desconectar aparelhos'},5000); return; }
+      bt.disabled=true;
+      if(a==='sairtodos'){ var r=await db.from('central_sessoes').update({revogada:true,revogada_em:new Date().toISOString()}).eq('patient_id',id).eq('revogada',false); if(r.error){toast('Erro: '+r.error.message);return;} toast('Aparelhos desconectados.'); }
+      else { var t2=await gerar(id,true); if(!t2) return; toast('Link trocado. Mande o novo.'); }
+      await carrega(); box=$('.p[data-id="'+CSS.escape(id)+'"]'); if(a==='trocar') abreMsg(box, linha(id)); return;
+    }
+    if(a==='vis'){ var v=bt.dataset.v==='1'; var r2=await db.from('documentos').update({central_visivel:v}).eq('id',bt.dataset.doc); if(r2.error){toast('Erro: '+r2.error.message);return;} toast(v?'Agora aparece na central.':'Escondido da central.'); await carrega(); box=$('.p[data-id="'+CSS.escape(id)+'"]'); abreDocs(box, linha(id)); return; }
+  });
+}
+window.HAGAuth.mount(function(){
+  window.HAGAuth.patchFetch();
+  db = window.supabase.createClient(window.SUPA_URL, window.SUPA_KEY);
+  liga(); carrega();
+});
+</script>
+</body>
+</html>
