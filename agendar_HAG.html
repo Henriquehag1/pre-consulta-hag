@@ -657,6 +657,25 @@ function blocoComoChegar(local, ehOnline){
 var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
+/* HAG_AGENDA_VISAO_DR_v1 (11/11/2026): so no link do perfil interno do Dr. Mostra TODO
+   horario livre da janela, nao so os encaixes colados ao bloco que o paciente recebe
+   (agenda compacta). Pedido do Dr.: ver a agenda inteira disponivel quando quiser. */
+function _livresDemo(jIni,jFim,limite,encurta,marc,tipo){
+  var S=window.HAGAgendaSlots, t=S.TIPOS[tipo]; if(!t) return [];
+  var a=S.paraMin(jIni), b=S.paraMin(jFim);
+  var oc=(marc||[]).map(function(o){ return {i:S.paraMin(o.inicio), f:S.paraMin(o.fim)}; })
+            .filter(function(o){ return o.i!=null && o.f>a && o.i<b; });
+  if(limite!=null && oc.length>=limite) return [];
+  var enc=(tipo==='retorno' && encurta>0)?+encurta:0;
+  var fimDe=function(h){ var f=h+t.paciente; if(f<=b) return f; if(enc && h<b && b-h>=enc) return b; return null; };
+  var passo=t.paciente+(t.arrumacaoSempre?t.arrumacao:0), cand={};
+  for(var h=a; h<b; h+=passo) cand[h]=1;
+  oc.forEach(function(o){ cand[o.f+(t.arrumacaoSempre?t.arrumacao:0)]=1; });
+  return Object.keys(cand).map(Number).sort(function(x,y){return x-y;}).filter(function(h){
+    var f=fimDe(h); if(h<a || f==null) return false;
+    return !oc.some(function(o){ return h<o.f && f>o.i; });
+  }).map(function(h){ return {hora:S.paraHora(h), posicao:'livre'}; });
+}
 function hojeSP(){
   /* HAG_AGENDAR_PACIENTE_v1: 'hoje' no fuso do consultorio, nao do aparelho.
      Paciente viajando nao pode deslocar a janela. */
@@ -747,6 +766,8 @@ function avisosPrazo(iso){
    remarcar. MODO diz qual das duas está acontecendo, e é a única diferença no
    caminho: as regras de dia, horário, contiguidade e unidade são as mesmas. */
 var MODO='marcar', REM=null;
+/* HAG_AGENDA_VISAO_DR_v1 (11/11/2026): link do perfil interno do Dr. = visao completa da agenda, sem reservar nada */
+var DEMO=false;
 
 function falha(msg){
   el('<div class="cartao"><div class="destaque">'+msg+'</div></div>');
@@ -761,7 +782,7 @@ function ouOJaMarcado(fn, msg){
 
 function iniciar(){
   if(!TOKEN){ falha(PID_LEGADO ? LINK_VENCIDO : 'Este link de agendamento está incompleto. Peça um novo link para a equipe pelo WhatsApp.'); return; }
-  rpc('hag_agendamento_contexto_link',{p_token:TOKEN}).then(function(c){
+  rpc('hag_agendamento_demo',{p_token:TOKEN}).catch(function(){ return false; }).then(function(dm){ DEMO=(dm===true); return rpc('hag_agendamento_contexto_link',{p_token:TOKEN}); }).then(function(c){
     if(c&&c.erro==='link_invalido'){ falha(LINK_VENCIDO); return; }
     if(!c||!c.ok){ falha('Não encontrei o seu cadastro por este link. Fale com a equipe pelo WhatsApp que resolvemos rapidinho.'); return; }
     CTX=c;
@@ -769,6 +790,14 @@ function iniciar(){
     /* HAG_DIAG_SINAL_v1 · HAG_LINK_INJETAVEL_v1 */
     TIPOCON=(c.tipo==='diagnostica')?'diagnostica':(c.tipo==='injetavel'?'injetavel':'retorno');
     tituloDaPagina();
+    if(DEMO){ /* HAG_AGENDA_VISAO_DR_v1 */
+      TIPOCON='retorno'; PRAZO=null; ATRASO_DE=null; ALVOMED=false; LOCALMED=null; TETO_CORTOU=false;
+      ALVO=_somaDias(hojeSP(),2);
+      c.retorno={id:null,nome:'Visao completa da agenda',data_alvo:ALVO,modalidade:'hibrido',preferida:null,local:null};
+      c.plano=null; c.agendamento=null; c.remarcacao=null;
+      JANELA={inicio:hojeSP(), fim:_somaDias(hojeSP(),35), situacao:'aberta'};
+      carregarAgenda(); return;
+    }
     /* HAG_LINK_INJETAVEL_v1 (14/09/2026)
        "Você já tem horário marcado" DEIXA de ser a primeira tela. Quem manda é o
        item que ainda falta marcar; o que já está marcado vira a saída de
@@ -896,7 +925,7 @@ function diasOfertados(modalidade){
      quando os dias preferidos nao tem NENHUM horario na janela. A vespera e o
      proprio dia ficam de fora: a Daniela precisa de um dia util para garantir a
      sala na Livance. */
-  var minData=(function(){var d=new Date(hojeSP()+'T12:00:00');d.setDate(d.getDate()+2);
+  var minData=DEMO?hojeSP():(function(){var d=new Date(hojeSP()+'T12:00:00');d.setDate(d.getDate()+2);
     return d.toISOString().slice(0,10);})();
   var porPrio={};
   var d=new Date(JANELA.inicio+'T12:00:00'), fim=new Date(JANELA.fim+'T12:00:00');
@@ -925,15 +954,20 @@ function diasOfertados(modalidade){
           {inicio:_jIni,fim:_jFim,limite:rg.limite,encurtaFinal:rg.encurta_final_min}, /* HAG_LIGHT_PINHEIROS_v1 */
           OCUP[iso]||[], tipo);
         var hs=r.horarios;
+        if(DEMO) hs=_livresDemo(_jIni,_jFim,rg.limite,rg.encurta_final_min,OCUP[iso]||[],tipo); /* HAG_AGENDA_VISAO_DR_v1 */
         /* HAG_REMARCA_SEM_BURACO_v2: o horário exato que ele já tem não entra na
            lista. Escolher o mesmo horário seria cancelar e remarcar para o mesmo
            lugar, gastando a única remarcação por conta própria à toa. */
         if(MODO==='remarcar' && REM && REM.atual && iso===REM.atual.data){
           hs=hs.filter(function(x){ return x.hora!==hhmm(REM.atual.inicio); });
         }
+        if(DEMO && iso===hojeSP()){ /* HAG_AGENDA_VISAO_DR_v1: hoje so mostra o que ainda nao passou */
+          var _ag=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
+          hs=hs.filter(function(x){ return x.hora>_ag; });
+        }
         if(hs.length){
           (porPrio[_prio]=porPrio[_prio]||[]).push(
-            {data:iso, local:rg.local, tipo:tipo, horarios:hs.slice(0,3)});
+            {data:iso, local:rg.local, tipo:tipo, horarios:(DEMO?hs:hs.slice(0,3))});
         }
 
       }
@@ -941,6 +975,7 @@ function diasOfertados(modalidade){
     d.setDate(d.getDate()+1);
   }
   var prios=Object.keys(porPrio).map(Number).sort(function(a,b){return a-b;});
+  if(DEMO){ var todos=[]; prios.forEach(function(pp){ todos=todos.concat(porPrio[pp]); }); return todos.sort(function(a,b){ return a.data<b.data?-1:(a.data>b.data?1:(a.local<b.local?-1:1)); }); } /* HAG_AGENDA_VISAO_DR_v1: sem escada */
 
   /* HAG_ALVO_MEDICO_v1: o dia indicado pelo medico sai de QUALQUER prioridade
      antes da concentracao e vai para a frente da lista, marcado.
@@ -1162,6 +1197,7 @@ function telaEscolha(nota){
                 +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
                 +'melhor se encaixam na sua agenda.')
     +'</div></div>');
+  if(DEMO) h='<div class="cartao"><div class="destaque"><b>Visão do Dr. Henrique.</b> Todos os horários livres das próximas 5 semanas, presencial e online, sem as regras de prioridade do paciente. Nada aqui é reservado: é só para consulta.</div></div>'; /* HAG_AGENDA_VISAO_DR_v1 */
   if(nota) h+='<div class="aviso">'+nota+'</div>';
   /* HAG_COMBINADOS_v1 (05/11/2026): nos tres casos de novembro foi a ULTIMA consulta que escorregou para
      depois do fim do ciclo. Quando nao sobra nenhuma depois desta, a tela diz que e o fechamento e ate quando. */
@@ -1208,7 +1244,7 @@ function telaEscolha(nota){
   h+='<div class="cartao"><h2>'+(TAB==='online'?'Consulta online':'No consultório')+'</h2>'
     /* HAG_TOM_PACIENTE_v5: dito ao lado dos horários, que é onde a dúvida aparece. */
     +'<p style="font-size:13px;color:var(--ink4);margin:-4px 0 12px">'
-    +'O horário fica reservado no seu nome assim que você escolher e confirmar. Até lá, ele segue disponível.</p>';
+    +(DEMO?'Horários livres de verdade agora. Nada é reservado nesta visão.':'O horário fica reservado no seu nome assim que você escolher e confirmar. Até lá, ele segue disponível.')+'</p>'; /* HAG_AGENDA_VISAO_DR_v1 */
   if(!dias.length){
     h+='<p style="font-size:14.5px;color:var(--ink3)">Não há horários '+(TAB==='online'?'online':'presenciais')+' disponíveis dentro do período ideal da sua '+PAL()+'.</p>';
   } else {
@@ -1234,7 +1270,7 @@ function telaEscolha(nota){
         +'<button class="btn claro mais" onclick="var m=document.getElementById(\'maisdatas\');m.hidden=false;this.remove();">Ver mais datas ('+nMais+')</button>';
     }
   }
-  h+='</div><button class="btn claro" onclick="HAGpg.ajuda()">Nenhum destes horários funciona para mim</button>';
+  h+='</div>'+(DEMO?'':'<button class="btn claro" onclick="HAGpg.ajuda()">Nenhum destes horários funciona para mim</button>');
   /* HAG_PLANO_NO_LINK_v1: o cartao do plano vai no topo. Remarcando, a consulta
      'desta vez' e a que esta sendo remarcada; marcando, o retorno em aberto. */
   var _plAtual = (MODO==='remarcar' && REM)
@@ -1269,8 +1305,8 @@ function telaConfirma(dia,slot){
     +'<button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>');
   window.HAGpg._sel={dia:dia,slot:slot};
   /* HAG_CONFIRMA_OU_AVISA_v1: arma o aviso de saida e registra a escolha (sem reserva em 15 min, a Daniela ve no Tarefas) */
-  window.HAG_CONFIRMA_PEND=true;
-  try{ if(TOKEN) rpc('hag_registrar_intencao_link',{p_token:TOKEN, p_data:dia.data, p_hora:slot.hora,
+  window.HAG_CONFIRMA_PEND=!DEMO;
+  try{ if(TOKEN && !DEMO) rpc('hag_registrar_intencao_link',{p_token:TOKEN, p_data:dia.data, p_hora:slot.hora,
         p_local:(TAB==='online'?'online':dia.local), p_tipo:(MODO==='remarcar'?'remarcar':TIPOCON)}).catch(function(){}); }catch(e){}
 }
 
@@ -1499,7 +1535,9 @@ window.HAGpg={
     carregarAgenda();
   },
   voltarAoAgendado:function(){ MODO='marcar'; telaJaAgendado(); },
-  confirmar:function(){ if(MODO==='remarcar') this.remarcarConfirma(); else this.reservar(); },
+  confirmar:function(){
+    if(DEMO){ window.HAG_CONFIRMA_PEND=false; el('<div class="cartao"><div class="destaque"><b>Visão do Dr.:</b> este horário está livre. Nada foi reservado.</div></div><button class="btn claro" onclick="HAGpg.voltar()">Voltar aos horários</button>'); return; } /* HAG_AGENDA_VISAO_DR_v1 */
+    if(MODO==='remarcar') this.remarcarConfirma(); else this.reservar(); },
   remarcarConfirma:function(){
     var s=this._sel; if(!s) return;
     if(this._enviando) return;
@@ -1643,4 +1681,5 @@ function carregarAgendaENotificar(nota){
 iniciar();
 })();
 </script>
+<script src="hag_voltar_central.js?v=20261111"></script><!-- HAG_VOLTAR_CENTRAL_v1 -->
 </body></html>

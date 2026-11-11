@@ -217,7 +217,7 @@ function painel(d){
     var dt=new Date(d.proxima.data+'T12:00:00');
     h+='<div class="prox"><div class="dia"><b>'+dt.getDate()+'</b><span>'+MESES[dt.getMonth()]+'</span></div><div><div style="font-size:17px;font-weight:400">'+DIAS[dt.getDay()]+(d.proxima.hora?', '+esc(d.proxima.hora):'')+'</div><div class="q" style="color:var(--apoio);font-size:14.5px">'+esc(LOCAL[d.proxima.local]||d.proxima.local||'')+'</div></div></div>';
   } else { h+='<p class="vazio">Nenhuma consulta marcada.</p>'; }
-  if(L.agendar){ h+='<a class="btn claro" style="margin-top:16px" href="agendar_HAG.html?t='+encodeURIComponent(L.agendar)+'">'+(d.proxima?'Remarcar':'Agendar')+'</a>'; }
+  if(L.agendar){ h+='<a class="btn claro" style="margin-top:16px" href="agendar_HAG.html?t='+encodeURIComponent(L.agendar)+'&de=central">'+(d.proxima?'Remarcar':'Agendar')+'</a>'; }
   h+='</div>';
 
   var docs=d.documentos||[];
@@ -235,9 +235,9 @@ function painel(d){
   h+='<div class="msg" id="mDoc"></div></div>';
 
   var apps='';
-  if(L.cozinha){ apps+='<a class="app coz" href="cozinha_HAG.html?t='+encodeURIComponent(L.cozinha)+'"><div class="n">Cozinha</div><div class="s">Receitas do seu plano</div></a>'; }
-  if(L.treino){ apps+='<a class="app tre" href="treino_HAG.html?t='+encodeURIComponent(L.treino)+'"><div class="n">Treino</div><div class="s">Seu programa e registros</div></a>'; }
-  if(L.cozinha){ apps+='<a class="app ori" href="orientacoes_HAG.html?t='+encodeURIComponent(L.cozinha)+'"><div class="n">Orientações</div><div class="s">O que combinamos</div></a>'; }
+  if(L.cozinha){ apps+='<a class="app coz" href="cozinha_HAG.html?t='+encodeURIComponent(L.cozinha)+'&de=central"><div class="n">Cozinha</div><div class="s">Receitas do seu plano</div></a>'; }
+  if(L.treino){ apps+='<a class="app tre" href="treino_HAG.html?t='+encodeURIComponent(L.treino)+'&de=central"><div class="n">Treino</div><div class="s">Seu programa e registros</div></a>'; }
+  if(L.cozinha){ apps+='<a class="app ori" href="orientacoes_HAG.html?t='+encodeURIComponent(L.cozinha)+'&de=central"><div class="n">Orientações</div><div class="s">O que combinamos</div></a>'; }
   apps+='<a class="app agd" href="'+WPP+'" target="_blank" rel="noopener"><div class="n">Equipe</div><div class="s">WhatsApp do consultório</div></a>';
   h+='<div class="apps">'+apps+'</div>';
 
@@ -248,6 +248,12 @@ function painel(d){
   tela.innerHTML=h;
 
   tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
+  /* HAG_CENTRAL_VER_EQUIPE_v2: na visualização da equipe os atalhos levam aos links DO PACIENTE.
+     Agendar ali marcaria consulta em nome dele; Treino gravaria registro como se fosse ele. Ficam desligados. */
+  if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app.coz,a.app.tre,a.app.ori').forEach(function(a){
+    a.removeAttribute('href'); a.style.opacity='.55'; a.style.cursor='default';
+    a.onclick=function(){ $('#mDoc').textContent='Na visualização da equipe os atalhos ficam desligados: abririam a agenda e os apps em nome do paciente.'; $('#mDoc').scrollIntoView({block:'center'}); };
+  }); }
   var bj=$('#bJa'); if(bj) bj.onclick=function(){ ls.set('hagcentral.salvou','1'); $('#avInst').remove(); try{ history.replaceState(null,'',enderecoCom('')); }catch(e){} poeManifesto(''); };
   if($('#bSair')) $('#bSair').onclick=function(){ api({acao:'sair',sessao:SESSAO}).then(function(){ ls.del('hagcentral.s'); SESSAO=''; inicio(); }); };
 }
