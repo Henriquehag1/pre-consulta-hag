@@ -112,6 +112,26 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .equipe .sv svg{width:18px;height:18px;fill:none;stroke:var(--apoio);stroke-width:1.6}
 .card.vaz{border-radius:6px}
 @media (max-width:360px){.apps{grid-template-columns:1fr 1fr}.planos{grid-template-columns:1fr}}
+/* HAG_CENTRAL_CHECKIN_v1 */
+.ck{display:flex;align-items:center;gap:14px;width:100%;margin-top:18px;background:var(--papel);border:1px solid var(--camurca);border-radius:6px;padding:15px 16px;text-align:left;cursor:pointer;font-family:var(--t);color:var(--tinta)}
+.ck .dt{flex:1;display:flex;flex-direction:column}.ck .t{font-family:var(--d);font-size:19px}.ck .q{font-size:13px;color:var(--apoio)}
+.ck .sv svg{width:18px;height:18px;fill:none;stroke:var(--conhaque);stroke-width:1.6}
+.ckfeito{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;color:var(--suave)}
+.ckfeito svg{width:18px;height:18px;fill:none;stroke:#2E3A2D;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ckq{padding:14px 14px 12px}.ckq.feita{border-color:var(--camurca)}
+.ckt b{font-family:var(--d);font-weight:400;font-size:18px;display:block}.ckt span{font-size:13px;color:var(--apoio)}
+.ckops{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.ckops button{flex:1 1 0;min-width:44px;display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--linho);border:1px solid var(--fio);border-radius:6px;padding:8px 2px;cursor:pointer;font-family:var(--t);color:var(--tinta)}
+.ckops button b{font-family:var(--d);font-weight:400;font-size:18px}.ckops button span{font-size:10.5px;color:var(--apoio);line-height:1.15;text-align:center}
+.ckops button.on{background:var(--choc);border-color:var(--choc);color:var(--linho)}.ckops button.on span{color:#D8C9B6}
+.ckops button.na{flex:0 0 auto;padding:8px 10px}.ckops.est button{padding:11px 6px}.ckops.est span{font-size:12.5px}
+.ckl{display:block;font-size:14.5px;margin:14px 0 6px;color:var(--tinta)}.ckl:first-child{margin-top:0}.ckl span{color:var(--apoio);font-size:13px}
+.card textarea,.card input[type=text]{width:100%;border:1px solid var(--fio);border-radius:4px;background:#fff;padding:10px 12px;font:inherit;font-size:15.5px;color:var(--tinta)}
+.ckres{display:flex;align-items:flex-end;gap:22px}.ckres>div:first-child b{display:block;font-family:var(--d);font-weight:400;font-size:46px;line-height:1}
+.ckres>div:first-child span{font-size:13px;color:var(--apoio)}
+.graf{flex:1;display:flex;gap:10px;align-items:flex-end;height:90px}.graf .b{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
+.graf .b i{display:block;width:100%;max-width:28px;background:var(--camurca);border-radius:3px 3px 0 0}.graf .b span{font-size:11px;color:var(--apoio);margin-top:4px}
+
 </style>
 </head>
 <body>
@@ -263,7 +283,8 @@ var IC={
   chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5Z"/></svg>',
   pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
-  seta:'<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>'
+  seta:'<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>',
+  ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></svg>'
 };
 var MAPA={pinheiros:'Av. Brigadeiro Faria Lima, 1461, São Paulo',tatuape:'R. Vilela, 665, Tatuapé, São Paulo'};
 function diasAte(iso){ var a=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); a.setHours(12,0,0,0); return Math.round((new Date(iso+'T12:00:00')-a)/864e5); }
@@ -280,6 +301,13 @@ function painel(d){
   var h=(VER?'<div class="aviso" style="margin:0 0 14px;border-left-color:#8C4F2B"><b>Visualização da equipe.</b> É assim que o paciente vê a central. Nada aqui fica registrado como acesso dele.</div>':'')
     +'<p class="rot">Seu acompanhamento</p><h1>Olá, '+esc(d.nome||'')+'.</h1>';
   if(d.ciclo){ h+=progresso(d.ciclo)||('<p class="sub">'+esc(nomeCiclo(d.ciclo.tipo))+(d.ciclo.fim?' · até '+dataBR(d.ciclo.fim):'')+'</p>'); }
+
+  /* HAG_CENTRAL_CHECKIN_v1: check-in da semana dentro da central, sem CPF */
+  var CK=d.checkin||{};
+  if(CK.elegivel){
+    if(CK.pendente) h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">Check-in da semana</span><span class="q">1 minuto · o Dr. Henrique acompanha por aqui</span></span><span class="sv">'+IC.seta+'</span></button>';
+    else h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+'</span></div>';
+  }
 
   if(querPonte()){
     h+='<div class="aviso" id="avInst"><b>Deixe na tela de início.</b> Agora, no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". O ícone já abre entrando, sem pedir código de novo. <button class="link" id="bJa">Já salvei</button></div>';
@@ -340,6 +368,7 @@ function painel(d){
   tela.innerHTML=h;
 
   tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
+  var bck=$('#bCk'); if(bck) bck.onclick=function(){ if(VER){ $('#mDoc').textContent='Na visualização da equipe o check-in fica desligado.'; return; } telaCheckin(d); };
   /* HAG_CENTRAL_VER_EQUIPE_v2: na visualização da equipe os atalhos levam aos links DO PACIENTE.
      Agendar ali marcaria consulta em nome dele; Treino gravaria registro como se fosse ele. Ficam desligados. */
   if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app').forEach(function(a){
@@ -348,6 +377,60 @@ function painel(d){
   }); }
   var bj=$('#bJa'); if(bj) bj.onclick=function(){ ls.set('hagcentral.salvou','1'); $('#avInst').remove(); try{ history.replaceState(null,'',enderecoCom('')); }catch(e){} poeManifesto(''); };
   if($('#bSair')) $('#bSair').onclick=function(){ api({acao:'sair',sessao:SESSAO}).then(function(){ ls.del('hagcentral.s'); SESSAO=''; inicio(); }); };
+}
+
+/* HAG_CENTRAL_CHECKIN_v1 (11/11/2026). Fase 1 do Check-in Sob Medida: as perguntas de hoje, curtas, em toques.
+   A pergunta aberta alterna por semana (ajudou / atrapalhou). Fase 2 troca estas perguntas pelas do plano de cada um. */
+var CK_ESC=[['s_dieta','Alimentação','Seguiu o plano?',['Nada','Pouco','Metade','Quase','Bem','Tudo']],
+  ['s_treino','Treino','Cumpriu a meta?',['Nada','Pouco','Metade','Quase','Bem','Tudo']],
+  ['s_sono','Sono','Acordou descansado?',['Péssimo','Ruim','Regular','Ok','Bom','Ótimo']],
+  ['s_fome','Fome','Controle do apetite e do doce',['Sem controle','Difícil','Regular','Ok','Bom','Ótimo']],
+  ['s_energia','Energia','Disposição no dia a dia',['Esgotado','Baixa','Regular','Ok','Boa','Ótima']],
+  ['s_med','Medicação e suplementos','Tomou conforme o plano?',['Nada','Pouco','Metade','Quase','Bem','Tudo']]];
+function telaCheckin(d){
+  var CK=d.checkin||{}, R={}, ab=CK.semana_par?['acerto','O que mais te ajudou esta semana?']:['obstaculo','O que mais atrapalhou esta semana?'];
+  var h='<button class="link" id="ckV">‹ Voltar</button><p class="rot" style="margin-top:10px">Check-in da semana</p><h1>Como foi a <em>semana</em>?</h1><p class="sub">Toque em cada linha. Leva 1 minuto.</p>';
+  CK_ESC.forEach(function(e){
+    h+='<div class="card ckq" data-k="'+e[0]+'"><div class="ckt"><b>'+e[1]+'</b><span>'+e[2]+'</span></div><div class="ckops">'
+      +e[3].map(function(l,i){ return '<button data-v="'+i+'"><b>'+i+'</b><span>'+l+'</span></button>'; }).join('')
+      +(e[0]==='s_med'?'<button data-v="na" class="na"><span>Não uso</span></button>':'')+'</div></div>';
+  });
+  h+='<div class="card"><label class="ckl">Efeitos, sintomas novos ou intestino diferente? <span>(se tiver)</span></label><textarea id="ck_colateral" rows="2"></textarea>'
+    +'<label class="ckl">'+ab[1]+' <span>(uma frase)</span></label><textarea id="ck_aberta" rows="2"></textarea>'
+    +'<label class="ckl">Peso ou como as roupas estão <span>(opcional)</span></label><input id="ck_peso" type="text" inputmode="decimal">'
+    +'<label class="ckl">Medicação e suplementos dão para 7 dias?</label><div class="ckops est">'
+    +[['Sim, estoque suficiente','Sim'],['Preciso renovar em breve','Renovar em breve'],['Estou sem, preciso com urgência','Estou sem']].map(function(o){ return '<button data-est="'+o[0]+'"><span>'+o[1]+'</span></button>'; }).join('')+'</div>'
+    +'<label class="ckl">Algo para o Dr. Henrique? <span>(opcional)</span></label><textarea id="ck_msg" rows="2"></textarea></div>'
+    +'<div class="msg" id="ckM"></div><button class="btn" id="ckEnviar" style="margin-top:14px">Enviar check-in</button>';
+  tela.innerHTML=h; window.scrollTo(0,0);
+  $('#ckV').onclick=function(){ painel(d); };
+  tela.querySelectorAll('.ckq').forEach(function(q){ q.querySelectorAll('button').forEach(function(b){ b.onclick=function(){
+    q.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on');
+    var v=b.getAttribute('data-v'); if(v==='na') delete R[q.getAttribute('data-k')]; else R[q.getAttribute('data-k')]=+v; q.classList.add('feita'); }; }); });
+  var EST=null; tela.querySelectorAll('[data-est]').forEach(function(b){ b.onclick=function(){ tela.querySelectorAll('[data-est]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); EST=b.getAttribute('data-est'); }; });
+  $('#ckEnviar').onclick=function(){
+    var faltam=['s_dieta','s_treino','s_sono','s_fome','s_energia'].filter(function(k){ return R[k]==null; });
+    if(faltam.length>2){ $('#ckM').textContent='Responda pelo menos alimentação, sono e energia.'; return; }
+    var b=this; b.disabled=true; b.textContent='Enviando…';
+    var r=Object.assign({},R,{colateral:$('#ck_colateral').value,peso:$('#ck_peso').value,estoque:EST,mensagem:$('#ck_msg').value});
+    r[ab[0]]=$('#ck_aberta').value;
+    api({acao:'checkin',token:TOKEN,sessao:SESSAO,respostas:r}).then(function(x){
+      if(x.fechado) return fechado(x.motivo);
+      if(!x.ok){ b.disabled=false; b.textContent='Enviar check-in';
+        if(x.erro==='sessao'){ ls.del('hagcentral.s'); return inicio(); }
+        $('#ckM').textContent= x.erro==='ja_enviado'?'O check-in desta semana já chegou. Obrigado.':x.erro==='incompleto'?'Responda pelo menos três linhas.':'Não foi possível enviar agora. Tente de novo.'; return; }
+      d.checkin=x.checkin; telaCheckinFeito(d, x.score);
+    });
+  };
+}
+function telaCheckinFeito(d, score){
+  var CK=d.checkin||{}, hs=(CK.historico||[]);
+  var barras=hs.map(function(c){ var p=Math.max(6,Math.min(100,+c.score||0)); return '<div class="b"><i style="height:'+p+'%"></i><span>'+dataBR(c.data).slice(0,5)+'</span></div>'; }).join('');
+  tela.innerHTML='<p class="rot">Check-in recebido</p><h1>Obrigado.</h1><p class="sub">O Dr. Henrique vê as suas respostas antes da próxima consulta.</p>'
+    +'<div class="card"><div class="ckres"><div><b>'+(CK.sequencia||1)+'</b><span>'+((CK.sequencia||1)>1?'semanas seguidas':'semana')+'</span></div>'
+    +(hs.length>1?'<div class="graf">'+barras+'</div>':'')+'</div></div>'
+    +'<button class="btn claro" id="ckOk" style="margin-top:14px">Voltar ao início</button>';
+  window.scrollTo(0,0); $('#ckOk').onclick=function(){ painel(d); };
 }
 
 function abrirDoc(id, b){
@@ -394,7 +477,7 @@ function inicio(){
     telaEntrar(r);
   });
 }
-window.HAG_CENTRAL={versao:'HAG_CENTRAL_PACIENTE_v1+PONTE_v1+INICIO_v2'};
+window.HAG_CENTRAL={versao:'HAG_CENTRAL_PACIENTE_v1+PONTE_v1+INICIO_v2+CHECKIN_v1'};
 inicio();
 })();
 </script>
