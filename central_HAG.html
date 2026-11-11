@@ -102,18 +102,33 @@ function jwtEquipe(){ try{ var o=JSON.parse(localStorage.getItem('hag_auth_sessi
 var TOKEN=qs.get('t')||ls.get('hagcentral.t')||'';
 if(qs.get('t')&&qs.get('t')!==ls.get('hagcentral.t')){ ls.del('hagcentral.s'); ls.set('hagcentral.t',qs.get('t')); }
 var SESSAO=ls.get('hagcentral.s')||'';
+/* HAG_CENTRAL_PONTE_v1 (11/11/2026): no iPhone, o Safari e o ícone da tela de início têm armazenamento
+   separado. Depois de entrar no Safari, a página põe no endereço (?k=) uma passagem de uso único que vale
+   30 min; o ícone salvo nesse intervalo abre com ela e entra sem pedir código de novo. */
+var IOS=/iPhone|iPad/.test(navigator.userAgent);
+var STANDALONE=navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+var PONTE=qs.get('k')||'';
+function querPonte(){ return !VER && IOS && !STANDALONE && ls.get('hagcentral.salvou')!=='1'; }
+function enderecoCom(k){ return 'central_HAG.html?t='+encodeURIComponent(TOKEN)+(k?'&k='+encodeURIComponent(k):''); }
+function poeManifesto(k){
+  try{
+    var man={name:'HAG · Seu acompanhamento',short_name:'HAG',start_url:BASE+enderecoCom(k),scope:BASE,display:'standalone',
+      background_color:'#F4EEE5',theme_color:'#F4EEE5',icons:[{src:BASE+'icone-central-192.png',sizes:'192x192',type:'image/png'},{src:BASE+'icone-central-512.png',sizes:'512x512',type:'image/png'}]};
+    var old=document.getElementById('hagMan'); if(old) old.remove();
+    var l=document.createElement('link');l.rel='manifest';l.id='hagMan';l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));document.head.appendChild(l);
+  }catch(e){}
+}
+function aplicaPonte(k){
+  if(!k) return;
+  try{ history.replaceState(null,'',enderecoCom(k)); }catch(e){}
+  poeManifesto(k);
+}
 var $=function(s){return document.querySelector(s)};
 var tela=$('#tela');
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 
 /* manifesto montado aqui: o ícone salvo abre sempre o link pessoal (mesmo padrão da Cozinha) */
-try{
-  if(TOKEN&&!VER){
-    var man={name:'HAG · Seu acompanhamento',short_name:'HAG',start_url:BASE+'central_HAG.html?t='+encodeURIComponent(TOKEN),scope:BASE,display:'standalone',
-      background_color:'#F4EEE5',theme_color:'#F4EEE5',icons:[{src:BASE+'icone-central-192.png',sizes:'192x192',type:'image/png'},{src:BASE+'icone-central-512.png',sizes:'512x512',type:'image/png'}]};
-    var l=document.createElement('link');l.rel='manifest';l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));document.head.appendChild(l);
-  }
-}catch(e){}
+if(TOKEN&&!VER){ poeManifesto(''); }
 
 function api(corpo){
   var h={'Content-Type':'application/json','apikey':KEY};
@@ -177,11 +192,12 @@ function confirmar(){
   var i=$('#cod'), b=$('#bOk'); if(!i||i.value.length!==6){ $('#m').textContent='São 6 números.'; return; }
   b.disabled=true; b.textContent='Conferindo…';
   var ap=(navigator.userAgent.match(/iPhone|iPad|Android|Mac|Windows/)||['aparelho'])[0];
-  api({acao:'confirmar',token:TOKEN,codigo:i.value,aparelho:ap}).then(function(r){
+  api({acao:'confirmar',token:TOKEN,codigo:i.value,aparelho:ap,ponte:querPonte()}).then(function(r){
     if(r.fechado) return fechado(r.motivo);
     if(!r.ok){ b.disabled=false; b.textContent='Entrar'; $('#m').textContent=(ERROS[r.erro]||ERROS.interno)+(r.restam!=null&&r.erro==='codigo'?' Restam '+r.restam+' tentativas.':''); i.select(); return; }
     SESSAO=r.sessao; ls.set('hagcentral.s',SESSAO); ls.set('hagcentral.t',TOKEN);
     painel(r.dados);
+    if(r.ponte) aplicaPonte(r.ponte);
   });
 }
 
@@ -225,14 +241,14 @@ function painel(d){
   apps+='<a class="app agd" href="'+WPP+'" target="_blank" rel="noopener"><div class="n">Equipe</div><div class="s">WhatsApp do consultório</div></a>';
   h+='<div class="apps">'+apps+'</div>';
 
-  if(!VER && /iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone && ls.get('hagcentral.salvou')!=='1'){
-    h+='<div class="aviso" id="avInst"><b>Deixe na tela de início.</b> No Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". <button class="link" id="bJa">Já salvei</button></div>';
+  if(querPonte()){
+    h+='<div class="aviso" id="avInst"><b>Deixe na tela de início.</b> Agora, no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". O ícone já abre entrando, sem pedir código de novo. <button class="link" id="bJa">Já salvei</button></div>';
   }
   if(!VER) h+='<div style="text-align:center;margin-top:22px"><button class="link" id="bSair">Sair deste aparelho</button></div>';
   tela.innerHTML=h;
 
   tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
-  var bj=$('#bJa'); if(bj) bj.onclick=function(){ ls.set('hagcentral.salvou','1'); $('#avInst').remove(); };
+  var bj=$('#bJa'); if(bj) bj.onclick=function(){ ls.set('hagcentral.salvou','1'); $('#avInst').remove(); try{ history.replaceState(null,'',enderecoCom('')); }catch(e){} poeManifesto(''); };
   if($('#bSair')) $('#bSair').onclick=function(){ api({acao:'sair',sessao:SESSAO}).then(function(){ ls.del('hagcentral.s'); SESSAO=''; inicio(); }); };
 }
 
@@ -257,15 +273,30 @@ function inicio(){
     });
   }
   if(!TOKEN){ return fechado('link'); }
+  // ícone recém-salvo: abre com a passagem e entra sem código
+  if(PONTE && !SESSAO){
+    var ap=(navigator.userAgent.match(/iPhone|iPad|Android|Mac|Windows/)||['aparelho'])[0];
+    var k=PONTE; PONTE='';
+    return api({acao:'usar_ponte',token:TOKEN,ponte:k,aparelho:ap}).then(function(r){
+      if(r.fechado) return fechado(r.motivo);
+      if(r.ok&&r.sessao){ SESSAO=r.sessao; ls.set('hagcentral.s',SESSAO); ls.set('hagcentral.t',TOKEN); if(STANDALONE) ls.set('hagcentral.salvou','1'); try{ history.replaceState(null,'',enderecoCom('')); }catch(e){} return painel(r.dados); }
+      inicio();
+    });
+  }
   api({acao:'estado',token:TOKEN,sessao:SESSAO}).then(function(r){
     if(r.fechado) return fechado(r.motivo);
     if(!r.ok){ tela.innerHTML='<h1>Sem conexão.</h1><p class="sub">'+esc(ERROS[r.erro]||ERROS.interno)+'</p><div class="card"><button class="btn" onclick="location.reload()">Tentar de novo</button></div>'; return; }
-    if(r.entrou) return painel(r.dados);
+    if(r.entrou){
+      painel(r.dados);
+      // no Safari do iPhone, já dentro: renova a passagem para o ícone que ainda vai ser salvo
+      if(querPonte()) api({acao:'ponte_nova',token:TOKEN,sessao:SESSAO}).then(function(x){ if(x&&x.ok&&x.ponte) aplicaPonte(x.ponte); });
+      return;
+    }
     if(SESSAO){ ls.del('hagcentral.s'); SESSAO=''; }
     telaEntrar(r);
   });
 }
-window.HAG_CENTRAL={versao:'HAG_CENTRAL_PACIENTE_v1'};
+window.HAG_CENTRAL={versao:'HAG_CENTRAL_PACIENTE_v1+PONTE_v1'};
 inicio();
 })();
 </script>
