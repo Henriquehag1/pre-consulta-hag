@@ -69,7 +69,7 @@ body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--ink);font
 .step.active{display:block}
 @keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-.s-eyebrow{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold2);font-weight:500;margin-bottom:.5rem}
+.s-eyebrow{display:none!important;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold2);font-weight:500;margin-bottom:.5rem}
 .s-title{font-family:'Bodoni Moda',serif;font-size:clamp(1.625rem,4.5vw,2.125rem);font-weight:300;color:var(--navy);letter-spacing:.04em;margin-bottom:.5rem;line-height:1.2}
 .s-desc{font-size:13.5px;color:var(--ink3);font-weight:300;margin-bottom:2rem;line-height:1.7;letter-spacing:.01em}
 
@@ -944,7 +944,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <span class="hag-api-label">🔑 Chave API (admin)</span>
     <input class="hag-api-input" id="hagApiInput" type="password" placeholder="sk-ant-..." autocomplete="off">
     <button class="hag-api-btn" onclick="hagSaveKey()">Salvar no servidor</button>
-    <span class="hag-api-st" id="hagApiSt">A chave é enviada ao servidor Supabase — nunca fica no HTML</span>
+    <span class="hag-api-st" id="hagApiSt">A chave vai para o servidor Supabase e nunca fica no HTML</span>
   </div>
 </div>
 
@@ -962,7 +962,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     </div>
     <div class="h-eyebrow">Questionário de Diagnóstico</div>
     <h1 class="h-title">Pré-Consulta <em>Clínica</em></h1>
-    <p class="h-sub">Suas respostas moldam a estratégia antes mesmo de nos encontrarmos. Seja honesto — quanto mais completo, mais preciso será o seu plano.</p>
+    <p class="h-sub">O Dr. Henrique lê tudo antes da consulta. Quanto mais completo, mais a consulta rende.</p>
   </div>
 </div>
 
@@ -978,7 +978,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step active" data-step="1">
   <div class="s-eyebrow">Bloco 1</div>
   <h2 class="s-title">Contexto</h2>
-  <p class="s-desc">Antes de começar, algumas informações básicas para personalizar o atendimento.</p>
+  <p class="s-desc">Seus dados básicos.</p>
 
   <div class="field">
     <label class="fl">Nome completo <span class="req">*</span></label>
@@ -986,7 +986,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="req-msg">Campo obrigatório</div>
   </div>
   <div class="field">
-    <label class="fl">Documento de identificação <span class="req">*</span><span style="font-size:10px;font-weight:500;color:#6b6a63;margin-left:6px">(escolha um e vincularemos ao seu prontuário)</span></label>
+    <label class="fl">Documento de identificação <span class="req">*</span><span style="font-size:10px;font-weight:500;color:#6b6a63;margin-left:6px">(escolha um)</span></label>
     <div class="cpf-wrap">
       <div class="doc-row">
         <select class="finput doc-type" id="f_doc_tipo">
@@ -1001,13 +1001,13 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   </div>
   
   <div class="g2">
-    <div class="field">
+    <div class="field" style="display:none">
       <label class="fl">Idade</label>
       <input class="finput" id="f_idade" type="text" placeholder="Ex: 34 anos">
     </div>
     <div class="field">
       <label class="fl">Data de nascimento</label>
-      <input class="finput" id="f_data_nasc" type="date" placeholder="dd/mm/aaaa">
+      <input class="finput" id="f_data_nasc" type="date" placeholder="dd/mm/aaaa" onchange="(function(v){var i=document.getElementById('f_idade');if(!v||!i)return;var n=new Date(v+'T12:00:00'),h=new Date(),a=h.getFullYear()-n.getFullYear();if(h.getMonth()<n.getMonth()||(h.getMonth()===n.getMonth()&&h.getDate()<n.getDate()))a--;if(a>0&&a<120)i.value=a+' anos';})(this.value)"><!-- HAG_BREVIDADE_v1: idade sai da tela e vem da data de nascimento -->
     </div>
   </div>
   <div class="g2">
@@ -1029,7 +1029,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   <!-- ═══ DADOS PARA NOTA FISCAL E PRONTUÁRIO (patch 2026-06-14) ═══ -->
   <div style="margin:1.5rem 0 .75rem;padding:.75rem .875rem;background:#f4f1ea;border:1px solid #e3ddd0;border-radius:10px">
     <div style="font-size:12px;font-weight:600;color:#3a3a36;letter-spacing:.02em">Dados para emissão de nota fiscal</div>
-    <div style="font-size:11px;font-weight:500;color:#6b6a63;margin-top:3px;line-height:1.4">Preencha uma única vez aqui. Esses dados são usados para emitir sua nota fiscal e completar seu prontuário, então você não precisa enviá-los separadamente.</div>
+    <div style="font-size:11px;font-weight:500;color:#6b6a63;margin-top:3px;line-height:1.4">Usados na nota fiscal e no prontuário. Não precisa enviar de novo.</div>
   </div>
 
   <div class="g2">
@@ -1116,7 +1116,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="2">
   <div class="s-eyebrow">Bloco 2</div>
   <h2 class="s-title">Motivo Principal</h2>
-  <p class="s-desc">O que te trouxe até aqui? Seja direto(a) — não existe resposta certa ou errada.</p>
+  <p class="s-desc">O que te trouxe até aqui. Não existe resposta errada.</p>
 
   <div class="field">
     <label class="fl">O que mais te incomoda hoje? <span class="req">*</span><br><span style="font-size:12px;color:var(--ink4);font-weight:400">(Selecione todos que se aplicam)</span></label>
@@ -1138,7 +1138,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 
   <div class="field">
     <label class="fl">Se pudesse mudar apenas uma coisa nos próximos meses, qual seria? <span class="req">*</span></label>
-    <div class="fh">Uma frase é suficiente. Isso define a sua prioridade clínica.</div>
+    <div class="fh">Uma frase basta.</div>
     <textarea class="finput" id="f_uma_coisa" placeholder="Ex: Quero perder gordura visceral e ter mais disposição no dia a dia..."></textarea>
     <div class="req-msg">Campo obrigatório</div>
   </div>
@@ -1153,7 +1153,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="3">
   <div class="s-eyebrow">Bloco 3</div>
   <h2 class="s-title">Dados Corporais</h2>
-  <p class="s-desc">Informações básicas de composição. Não precisa ser exato — uma estimativa honesta já ajuda muito.</p>
+  <p class="s-desc">Não precisa ser exato: uma estimativa já ajuda.</p>
 
   <div class="g2">
     <div class="field">
@@ -1191,14 +1191,14 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="4">
   <div class="s-eyebrow">Bloco 4</div>
   <h2 class="s-title">Histórico Clínico</h2>
-  <p class="s-desc">Informações médicas que orientam a prescrição. Seja completo — tudo é confidencial.</p>
+  <p class="s-desc">Tudo aqui é confidencial.</p>
 
   <div class="field">
     <label class="fl">Tem alguma doença diagnosticada ou já passou por cirurgia?</label>
     <textarea class="finput" id="f_doencas" placeholder="Ex: Hipotireoidismo (tratado) · Colecistectomia 2018 · Sem alergias..."></textarea>
   </div>
   <div class="field">
-    <label class="fl">Histórico familiar — marque se há ocorrência na família <span style="font-size:12px;color:var(--ink4);font-weight:400">(pai, mãe, irmãos)</span></label>
+    <label class="fl">Histórico familiar <span style="font-size:12px;color:var(--ink4);font-weight:400">(pai, mãe, irmãos)</span></label>
     <div class="chips-group" id="c_familiar">
       <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Câncer</div>
       <div class="chip-opt" onclick="toggleChip(this)"><span class="chip-check"></span>Diabetes</div>
@@ -1350,7 +1350,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="6">
   <div class="s-eyebrow">Bloco 6</div>
   <h2 class="s-title">Comportamento Alimentar</h2>
-  <p class="s-desc">Sua relação com a comida é uma das chaves do plano. Não existe resposta errada.</p>
+  <p class="s-desc">Não existe resposta errada.</p>
 
   <div class="field">
     <label class="fl">Já seguiu algum planejamento alimentar? O que funcionou?</label>
@@ -1405,7 +1405,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="7">
   <div class="s-eyebrow">Bloco 7</div>
   <h2 class="s-title">Hábitos e Saúde</h2>
-  <p class="s-desc">Pequenos hábitos diários revelam padrões metabólicos importantes.</p>
+  <p class="s-desc">Os hábitos do dia a dia.</p>
 
   <div class="field">
     <label class="fl">Ingestão diária de água</label>
@@ -1483,7 +1483,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="8">
   <div class="s-eyebrow">Bloco 8</div>
   <h2 class="s-title">Contexto Pessoal</h2>
-  <p class="s-desc">Aspectos que influenciam diretamente no planejamento de longo prazo.</p>
+  <p class="s-desc">O que pesa no planejamento.</p>
 
   <div class="field">
     <label class="fl">Tem filhos ou planos de ter?</label>
@@ -1525,7 +1525,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="9">
   <div class="s-eyebrow">Bloco 9</div>
   <h2 class="s-title">Barreiras</h2>
-  <p class="s-desc">O que já te impediu de chegar onde você quer? Entender isso é metade do caminho.</p>
+  <p class="s-desc">O que já te impediu de chegar onde quer.</p>
 
   <div class="field">
     <label class="fl">O que hoje mais te impede de seguir um plano estruturado?<br><span style="font-size:12px;color:var(--ink4);font-weight:400">(Selecione todos que se aplicam)</span></label>
@@ -1552,7 +1552,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <div class="step" data-step="10">
   <div class="s-eyebrow">Bloco 10</div>
   <h2 class="s-title">Motivação</h2>
-  <p class="s-desc">Última pergunta — e talvez a mais importante.</p>
+  <p class="s-desc">Última etapa.</p>
 
   <div class="field">
     <label class="fl">Em uma escala de 0 a 10, o quanto você está disposto(a) a mudar hábitos agora? <span class="req">*</span></label>
@@ -1582,8 +1582,8 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   </div>
 
   <div style="background:var(--gold-bg);border:1px solid var(--gold-light);border-radius:var(--radius);padding:1.25rem 1.5rem;margin:2rem 0;font-size:13.5px;line-height:1.7;color:var(--ink2)">
-    <strong style="color:var(--ink);display:block;margin-bottom:.375rem">Suas informações chegam diretamente ao Dr. Henrique antes da consulta.</strong>
-    Tudo que você compartilhou aqui é confidencial e protegido pelo sigilo médico. Ao enviar, suas respostas ficam disponíveis para estruturar sua estratégia personalizada no Método HAG.
+    <strong style="color:var(--ink);display:block;margin-bottom:.375rem">Suas respostas chegam só ao Dr. Henrique.</strong>
+    Tudo aqui é protegido pelo sigilo médico.
   </div>
 
   <div class="nav-row">
@@ -1627,7 +1627,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="success-rule"></div>
 
     <!-- Mensagem principal -->
-    <p class="success-msg">Suas respostas chegaram ao Dr. Henrique.<br>A equipe entrará em contato em breve.</p>
+    <p class="success-msg">Suas respostas chegaram ao Dr. Henrique.<br>A equipe fala com você em breve.</p>
 
     <!-- 3 passos -->
     <div class="success-steps">
@@ -1635,7 +1635,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         <div class="ss-num">01</div>
         <div class="ss-text">
           <strong>Análise prévia</strong>
-          O Dr. Henrique revisará seu perfil antes da consulta
+          O Dr. Henrique lê suas respostas antes da consulta
         </div>
       </div>
       <div class="ss-divider"></div>
@@ -1643,7 +1643,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         <div class="ss-num">02</div>
         <div class="ss-text">
           <strong>Contato da equipe</strong>
-          Você receberá a confirmação da data e horário
+          A equipe envia o link para você escolher o horário
         </div>
       </div>
       <div class="ss-divider"></div>
@@ -1651,7 +1651,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         <div class="ss-num">03</div>
         <div class="ss-text">
           <strong>Consulta personalizada</strong>
-          Junto dos dados coletados na consulta, desenvolvemos o melhor plano de suporte para você alcançar o seu objetivo
+          Na consulta, o Dr. Henrique avalia com você o que o seu momento pede
         </div>
       </div>
     </div>

@@ -1181,15 +1181,14 @@ function telaEscolha(nota){
                && (new Date(JANELA.inicio+'T12:00:00')-new Date(hojeSP()+'T12:00:00'))/864e5>=10))
                ? ', para dar tempo de os seus exames ficarem prontos. ' : '. ')
             +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
-          : 'Escolha abaixo o dia e o horário da sua consulta diagnóstica, entre as próximas datas que o Dr. Henrique tem abertas.')
+          : 'Escolha o dia e o horário da sua consulta diagnóstica.')
      : (ALVOMED && alvoNaLista) ? 'O Dr. Henrique indicou <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b> '
                 +'para a sua próxima '+PAL()+', para manter a periodicidade do seu acompanhamento. '
                 +'Se esse dia não encaixar na sua agenda, logo abaixo estão as datas mais próximas.'
      : ALVOMED ? 'A sua próxima '+PAL()+' estava indicada para <b style="text-transform:capitalize">'+dataBR(ALVO)+'</b>, '
-                +'mas esse dia não tem horário disponível. Separamos abaixo as datas mais próximas a ele: '
-                +'é só escolher uma delas, que a periodicidade do seu acompanhamento fica mantida.'
+                +'mas esse dia está sem horário. Abaixo estão as datas mais próximas, que mantêm a periodicidade.'
      : ATRASO_DE ? 'A data indicada para a sua próxima '+PAL()+' era <b>'+_dm(ATRASO_DE)+'</b>. '   /* HAG_ATRASADO_PROXIMAS_DATAS_v1 */
-                +'Separamos abaixo as próximas datas disponíveis: é só escolher o dia e o horário que melhor se encaixam na sua agenda.'
+                +'Abaixo estão as próximas datas disponíveis.'
      : c.retorno.data_estimada ? 'A sua próxima '+PAL()+' está prevista para <b>meados de '
                 +dataBR(ALVO).split(', ')[1]+'</b>, para manter a periodicidade do seu acompanhamento. '
                 +'Escolha abaixo o dia e o horário que melhor se encaixam na sua agenda.'
@@ -1197,7 +1196,7 @@ function telaEscolha(nota){
                 +'para manter a periodicidade do seu acompanhamento. Escolha abaixo o dia e o horário que '
                 +'melhor se encaixam na sua agenda.')
     +'</div></div>');
-  if(DEMO) h='<div class="cartao"><div class="destaque"><b>Visão do Dr. Henrique.</b> Todos os horários livres das próximas 5 semanas, presencial e online, sem as regras de prioridade do paciente. Nada aqui é reservado: é só para consulta.</div></div>'; /* HAG_AGENDA_VISAO_DR_v1 */
+  if(DEMO) h='<div class="cartao"><div class="destaque"><b>Visão do Dr. Henrique.</b> Todos os horários livres das próximas 5 semanas, sem a prioridade de paciente. Nada é reservado.</div></div>'; /* HAG_AGENDA_VISAO_DR_v1 */
   if(nota) h+='<div class="aviso">'+nota+'</div>';
   /* HAG_COMBINADOS_v1 (05/11/2026): nos tres casos de novembro foi a ULTIMA consulta que escorregou para
      depois do fim do ciclo. Quando nao sobra nenhuma depois desta, a tela diz que e o fechamento e ate quando. */
@@ -1681,5 +1680,5 @@ function carregarAgendaENotificar(nota){
 iniciar();
 })();
 </script>
-<script src="hag_voltar_central.js?v=20261111"></script><!-- HAG_VOLTAR_CENTRAL_v1 -->
+<script src="hag_voltar_central.js?v=20261111b"></script><!-- HAG_VOLTAR_CENTRAL_v1 -->
 </body></html>

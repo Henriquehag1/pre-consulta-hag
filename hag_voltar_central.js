@@ -15,5 +15,7 @@
     f.style.cssText='position:relative;z-index:99990;padding:calc(env(safe-area-inset-top, 0px) + 10px) 12px 4px;max-width:720px;margin:0 auto;box-sizing:border-box';
     f.appendChild(a);
     var b=document.body||document.documentElement; b.insertBefore(f, b.firstChild);
+    /* HAG_BREVIDADE_v1: quem veio pela central já tem o ícone dela; o convite para salvar Treino ou Cozinha na tela sai. */
+    var st=document.createElement('style'); st.textContent='.hagi{display:none!important}'; document.head.appendChild(st);
   }catch(e){}
 })();

@@ -638,8 +638,8 @@ window.HAG_URL_PID = (function(){
     box.style.textAlign = 'center';
     box.innerHTML = '<div style="max-width:520px;margin:32px auto;padding:28px 24px;border:1px solid #e2ddd0;border-radius:12px;background:#fff">'
       + '<div style="font-size:30px;margin-bottom:10px">🔒</div>'
-      + '<h2 style="color:#1f2a24;margin:0 0 8px;font-size:20px">Link invalido ou expirado</h2>'
-      + '<p style="color:#5a5a5a;line-height:1.5;margin:0">Por favor, solicite um novo link ao consultorio do Dr. Henrique para preencher o seu check-in.</p>'
+      + '<h2 style="color:#1f2a24;margin:0 0 8px;font-size:20px">Link inválido ou expirado</h2>'
+      + '<p style="color:#5a5a5a;line-height:1.5;margin:0">Peça um novo link ao consultório pelo WhatsApp.</p>'
       + '</div>';
     var hdr = document.querySelector('.form-header');
     if(hdr && hdr.parentNode){ hdr.parentNode.insertBefore(box, hdr.nextSibling); }
@@ -922,7 +922,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <span class="hag-api-label">🔑 Chave API (admin)</span>
     <input class="hag-api-input" id="hagApiInput" type="password" placeholder="sk-ant-..." autocomplete="off">
     <button class="hag-api-btn" onclick="hagSaveKey()">Salvar no servidor</button>
-    <span class="hag-api-st" id="hagApiSt">A chave é enviada ao servidor Supabase — nunca fica no HTML</span>
+    <span class="hag-api-st" id="hagApiSt">A chave vai para o servidor Supabase e nunca fica no HTML</span>
   </div>
 </div>
 
@@ -940,7 +940,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       Acompanhamento · Check-in Mensal
     </div>
     <h1 class="h-title">Balanço do <em>último mês</em></h1>
-    <p class="h-sub">Este check-in mantém o acompanhamento entre as consultas e permite identificar precocemente qualquer desvio para ajustar a estratégia.</p>
+    <p class="h-sub">Um balanço rápido do mês, para ajustar o plano entre as consultas se precisar.</p>
   </div>
 </div>
 
@@ -1031,7 +1031,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="bloco-header"><div class="bloco-num">02</div><div class="bloco-title">Adesão</div></div>
     <div class="bloco-body">
       <div class="field">
-        <label class="fl">Consistência alimentar nos último mês</label>
+        <label class="fl">Constância na alimentação no último mês</label>
         <div class="scale-5" id="s_alim">
           <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">1</span><span class="s5-label">Ruim</span></button>
           <button class="s5-btn" onclick="setScale5(this,'s_alim')"><span class="s5-num">2</span><span class="s5-label">Fraca</span></button>
@@ -1087,7 +1087,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         </div>
       </div>
       <div class="field" style="margin-bottom:.5rem">
-        <label class="fl">O que mais dificultou sua constância? <span style="font-size:11px;color:var(--ink4);font-weight:300;text-transform:none;letter-spacing:0">— selecione todos</span></label>
+        <label class="fl">O que mais dificultou sua constância? <span style="font-size:11px;color:var(--ink4);font-weight:300;text-transform:none;letter-spacing:0">(selecione todos)</span></label>
         <div class="chips-group" id="c_dificuldade">
           <div class="chip-opt" onclick="toggleChip(this)">Rotina</div>
           <div class="chip-opt" onclick="toggleChip(this)">Trabalho</div>
@@ -1213,15 +1213,15 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       <div class="field">
         <label class="fl">Sente necessidade de acompanhamento mais próximo?</label>
         <div class="radio-group" id="r_acompanhamento">
-          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento')"><div class="radio-dot"></div><span class="radio-label">Não — estou bem com o acompanhamento atual</span></div>
-          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Talvez — sinto que poderia melhorar</span></div>
-          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Sim — preciso de suporte</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento')"><div class="radio-dot"></div><span class="radio-label">Não, estou bem com o acompanhamento atual</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Talvez, sinto que poderia melhorar</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_acompanhamento');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Sim, preciso de suporte</span></div>
         </div>
       </div>
       <div class="field" style="margin-bottom:.5rem">
         <label class="fl">Deseja antecipar sua próxima consulta para algum ajuste?</label>
         <div class="radio-group" id="r_antecipar">
-          <div class="radio-row" onclick="toggleRadio(this,'r_antecipar')"><div class="radio-dot"></div><span class="radio-label">Não precisa — seguirei o calendário normal</span></div>
+          <div class="radio-row" onclick="toggleRadio(this,'r_antecipar')"><div class="radio-dot"></div><span class="radio-label">Não, sigo o calendário normal</span></div>
           <div class="radio-row" onclick="toggleRadio(this,'r_antecipar');calcAlerta()"><div class="radio-dot"></div><span class="radio-label">Sim, por favor entrem em contato para agendar</span></div>
         </div>
       </div>
@@ -1260,7 +1260,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
   <!-- CLOSING -->
   <div class="closing-msg">
     <div class="closing-eyebrow">Método HAG · Acompanhamento Contínuo</div>
-    <p class="closing-text">"O acompanhamento entre as consultas é o que mantém você no caminho certo. Cada check-in me permite enxergar sua evolução e ajustar a estratégia no momento exato, para que cada etapa do seu plano seja bem aproveitada."</p>
+    <p class="closing-text">"Cada check-in me mostra a sua evolução entre as consultas e me deixa ajustar o plano na hora certa."</p>
     <div class="closing-sign">Dr. Henrique Alves · CRM/SP 226530</div>
   </div>
 
@@ -1299,7 +1299,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
         <div class="ss-divider"></div>
         <div class="ss-item"><div class="ss-num">02</div><div class="ss-text"><strong>Ajuste se necessário</strong>Caso identifique necessidade, a equipe entrará em contato para orientação ou reagendamento</div></div>
         <div class="ss-divider"></div>
-        <div class="ss-item"><div class="ss-num">03</div><div class="ss-text"><strong>Continue firme</strong>O resultado conquista-se mês a mês — você está no caminho certo</div></div>
+        <div class="ss-item"><div class="ss-num">03</div><div class="ss-text"><strong>Continue firme</strong>O resultado se constrói mês a mês. Você está no caminho certo</div></div>
       </div>
     </div>
     <p class="close-note">Você já pode fechar esta página.</p>
