@@ -5,8 +5,8 @@
   "start_url": "tarefas_HAG.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f8f7f4",
-  "theme_color": "#1a1a18",
+  "background_color": "#F4EEE5",
+  "theme_color": "#1A1411",
   "orientation": "portrait",
   "icons": [
     {
