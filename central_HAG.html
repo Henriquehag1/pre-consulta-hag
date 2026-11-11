@@ -113,6 +113,14 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .card.vaz{border-radius:6px}
 @media (max-width:360px){.apps{grid-template-columns:1fr 1fr}.planos{grid-template-columns:1fr}}
 /* HAG_CENTRAL_CHECKIN_v1 */
+/* HAG_CHECKIN_SOB_MEDIDA_v1 */
+.ckops.nums button{min-width:34px}.ckops.nums button span{font-size:9.5px;min-height:11px}
+.ckops.uso button{padding:11px 6px}.ckops.uso span{font-size:12.5px}
+.ckmeds .ckmed{border-top:1px solid var(--fio);padding:12px 0 2px;margin-top:10px}.ckmeds .ckmed:first-of-type{margin-top:12px}
+.ckmed .mn b{font-weight:500;font-size:15.5px;display:block}.ckmed .mn span{font-size:12.5px;color:var(--apoio)}
+.ckmeds .ckops.uso{margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{background:var(--linho);border:1px solid var(--fio);border-radius:999px;padding:8px 12px;font:inherit;font-size:13.5px;color:var(--tinta);cursor:pointer}
+.chips button.on{background:var(--choc);border-color:var(--choc);color:var(--linho)}
 .ck{display:flex;align-items:center;gap:14px;width:100%;margin-top:18px;background:var(--papel);border:1px solid var(--camurca);border-radius:6px;padding:15px 16px;text-align:left;cursor:pointer;font-family:var(--t);color:var(--tinta)}
 .ck .dt{flex:1;display:flex;flex-direction:column}.ck .t{font-family:var(--d);font-size:19px}.ck .q{font-size:13px;color:var(--apoio)}
 .ck .sv svg{width:18px;height:18px;fill:none;stroke:var(--conhaque);stroke-width:1.6}
@@ -304,8 +312,11 @@ function painel(d){
 
   /* HAG_CENTRAL_CHECKIN_v1: check-in da semana dentro da central, sem CPF */
   var CK=d.checkin||{};
+  /* HAG_CHECKIN_BALANCO_v1: até 7 dias antes da consulta o check-in vira o balanço da fase (no lugar do mensal/trimestral genérico) */
+  var nProx=d.proxima?diasAte(d.proxima.data):99, balanco=CK.elegivel&&nProx>=0&&nProx<=7&&(!CK.ultimo||diasAte(CK.ultimo)<=-3);
+  d._balanco=balanco;
   if(CK.elegivel){
-    if(CK.pendente) h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">Check-in da semana</span><span class="q">1 minuto · o Dr. Henrique acompanha por aqui</span></span><span class="sv">'+IC.seta+'</span></button>';
+    if(CK.pendente||balanco||VER) h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">'+(balanco?'Balanço antes da consulta':'Check-in da semana')+'</span><span class="q">'+(balanco?'2 minutos · o Dr. Henrique lê antes de te ver':'1 minuto · o Dr. Henrique acompanha por aqui')+'</span></span><span class="sv">'+IC.seta+'</span></button>';
     else h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+'</span></div>';
   }
 
@@ -368,7 +379,7 @@ function painel(d){
   tela.innerHTML=h;
 
   tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
-  var bck=$('#bCk'); if(bck) bck.onclick=function(){ if(VER){ $('#mDoc').textContent='Na visualização da equipe o check-in fica desligado.'; return; } telaCheckin(d); };
+  var bck=$('#bCk'); if(bck) bck.onclick=function(){ telaCheckin(d); };
   /* HAG_CENTRAL_VER_EQUIPE_v2: na visualização da equipe os atalhos levam aos links DO PACIENTE.
      Agendar ali marcaria consulta em nome dele; Treino gravaria registro como se fosse ele. Ficam desligados. */
   if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app').forEach(function(a){
@@ -387,30 +398,67 @@ var CK_ESC=[['s_dieta','Alimentação','Seguiu o plano?',['Nada','Pouco','Metade
   ['s_fome','Fome','Controle do apetite e do doce',['Sem controle','Difícil','Regular','Ok','Bom','Ótimo']],
   ['s_energia','Energia','Disposição no dia a dia',['Esgotado','Baixa','Regular','Ok','Boa','Ótima']],
   ['s_med','Medicação e suplementos','Tomou conforme o plano?',['Nada','Pouco','Metade','Quase','Bem','Tudo']]];
-function telaCheckin(d){
-  var CK=d.checkin||{}, R={}, ab=CK.semana_par?['acerto','O que mais te ajudou esta semana?']:['obstaculo','O que mais atrapalhou esta semana?'];
-  var h='<button class="link" id="ckV">‹ Voltar</button><p class="rot" style="margin-top:10px">Check-in da semana</p><h1>Como foi a <em>semana</em>?</h1><p class="sub">Toque em cada linha. Leva 1 minuto.</p>';
-  CK_ESC.forEach(function(e){
-    h+='<div class="card ckq" data-k="'+e[0]+'"><div class="ckt"><b>'+e[1]+'</b><span>'+e[2]+'</span></div><div class="ckops">'
+function escQ(e){ return '<div class="card ckq" data-k="'+e[0]+'"><div class="ckt"><b>'+e[1]+'</b><span>'+e[2]+'</span></div><div class="ckops">'
       +e[3].map(function(l,i){ return '<button data-v="'+i+'"><b>'+i+'</b><span>'+l+'</span></button>'; }).join('')
-      +(e[0]==='s_med'?'<button data-v="na" class="na"><span>Não uso</span></button>':'')+'</div></div>';
-  });
-  h+='<div class="card"><label class="ckl">Efeitos, sintomas novos ou intestino diferente? <span>(se tiver)</span></label><textarea id="ck_colateral" rows="2"></textarea>'
+      +(e[4]?'<button data-v="na" class="na"><span>'+e[4]+'</span></button>':'')+'</div></div>'; }
+/* HAG_CHECKIN_SOB_MEDIDA_v1: com plano, as perguntas saem dele (metas, dieta, exercícios, cada medicação e os efeitos dela) */
+function telaCheckin(d){
+  var CK=d.checkin||{}, P=CK.plano, R={metas:{},exercicios:{},meds:{}}, ab=CK.semana_par?['acerto','O que mais te ajudou esta semana?']:['obstaculo','O que mais atrapalhou esta semana?'];
+  var CINCO=['Nada','Pouco','Metade','Quase','Bem','Tudo'];
+  var BAL=!!d._balanco;
+  var h='<button class="link" id="ckV">‹ Voltar</button><p class="rot" style="margin-top:10px">'+(BAL?'Balanço antes da consulta':'Check-in da semana')+'</p><h1>'+(BAL?'Como foi a <em>fase</em>?':'Como foi a <em>semana</em>?')+'</h1>'
+    +'<p class="sub">'+(P?'Perguntas do seu plano'+(P.data&&!P.teste?' de '+dataBR(P.data):'')+'. ':'')+(BAL?'Leva 2 minutos.':'Leva 1 minuto.')+'</p>'
+    +(VER?'<div class="aviso" style="margin-top:12px">Pré-visualização da equipe: é isto que o paciente responde. Nada é enviado.</div>':'');
+  if(P){
+    h+=escQ(['s_dieta','Alimentação',P.dieta?esc(P.dieta):'Seguiu o plano?',CINCO]);
+    (P.metas||[]).forEach(function(m){ h+='<div class="card ckq" data-meta="'+m.id+'"><div class="ckt"><b>Meta da fase</b><span>'+esc(m.texto)+'</span></div><div class="ckops">'
+      +['Nada','Pouco','Metade','Quase','Bem','Bati'].map(function(l,i){ return '<button data-v="'+i+'"><b>'+i+'</b><span>'+l+'</span></button>'; }).join('')+'</div></div>'; });
+    (P.exercicios||[]).forEach(function(e){ var mx=Math.max(7,(e.meta||0)); var o='';
+      for(var i=0;i<=mx;i++) o+='<button data-v="'+i+'"><b>'+i+'</b><span>'+(e.meta&&i===e.meta?'meta':(i===0?'vezes':''))+'</span></button>';
+      h+='<div class="card ckq" data-ex="'+e.id+'"><div class="ckt"><b>'+esc(e.nome)+'</b><span>Quantas vezes nesta semana'+(e.meta?' (meta '+e.meta+')':(e.momento?' ('+esc(e.momento)+')':''))+'</span></div><div class="ckops nums">'+o+'</div></div>'; });
+  } else {
+    h+=escQ(['s_dieta','Alimentação','Seguiu o plano?',CINCO])+escQ(['s_treino','Treino','Cumpriu a meta?',CINCO]);
+  }
+  h+=escQ(['s_sono','Sono','Acordou descansado?',['Péssimo','Ruim','Regular','Ok','Bom','Ótimo']])
+    +escQ(['s_fome','Fome','Controle do apetite e do doce',['Sem controle','Difícil','Regular','Ok','Bom','Ótimo']])
+    +escQ(['s_energia','Energia','Disposição no dia a dia',['Esgotado','Baixa','Regular','Ok','Boa','Ótima']]);
+  var temMed=false, EFS=[];
+  if(P&&(P.meds||[]).length){ temMed=true;
+    /* uma lista só de efeitos, juntando as medicações (check-in curto); o servidor sabe de qual remédio é cada um */
+    P.meds.forEach(function(m){ (m.efeitos?m.efeitos.ops:[]).forEach(function(o){ if(EFS.indexOf(o)<0) EFS.push(o); }); });
+    h+='<div class="card ckmeds"><div class="ckt"><b>Suas medicações</b><span>Como foi o uso nesta semana?</span></div>'
+      +P.meds.map(function(m){ return '<div class="ckmed" data-med="'+m.id+'"><div class="mn"><b>'+esc(m.nome)+'</b>'+(m.dose?'<span>'+esc(m.dose)+'</span>':'')+'</div>'
+        +'<div class="ckops uso">'+[['sim','Tomei certo'],['esqueci','Esqueci alguma vez'],['parei','Parei']].map(function(u){ return '<button data-uso="'+u[0]+'"><span>'+u[1]+'</span></button>'; }).join('')+'</div></div>'; }).join('')
+      +(EFS.length?'<span class="ckl" style="margin:16px 0 8px">Sentiu algo destes?</span><div class="chips">'+EFS.map(function(o){ return '<button data-ef="'+esc(o)+'">'+esc(o)+'</button>'; }).join('')+'<button data-ef="" class="nenhum">Nenhum</button></div>':'')
+      +'</div>';
+  } else if(!P){ temMed=true; h+=escQ(['s_med','Medicação e suplementos','Tomou conforme o plano?',CINCO,'Não uso']); }
+  h+='<div class="card"><label class="ckl">'+(P&&(P.meds||[]).some(function(m){return m.efeitos;})?'Algo mais diferente no corpo ou no intestino?':'Efeitos, sintomas novos ou intestino diferente?')+' <span>(se tiver)</span></label><textarea id="ck_colateral" rows="2"></textarea>'
     +'<label class="ckl">'+ab[1]+' <span>(uma frase)</span></label><textarea id="ck_aberta" rows="2"></textarea>'
     +'<label class="ckl">Peso ou como as roupas estão <span>(opcional)</span></label><input id="ck_peso" type="text" inputmode="decimal">'
-    +'<label class="ckl">Medicação e suplementos dão para 7 dias?</label><div class="ckops est">'
-    +[['Sim, estoque suficiente','Sim'],['Preciso renovar em breve','Renovar em breve'],['Estou sem, preciso com urgência','Estou sem']].map(function(o){ return '<button data-est="'+o[0]+'"><span>'+o[1]+'</span></button>'; }).join('')+'</div>'
-    +'<label class="ckl">Algo para o Dr. Henrique? <span>(opcional)</span></label><textarea id="ck_msg" rows="2"></textarea></div>'
-    +'<div class="msg" id="ckM"></div><button class="btn" id="ckEnviar" style="margin-top:14px">Enviar check-in</button>';
+    +(temMed?'<label class="ckl">Medicação e suplementos dão para 7 dias?</label><div class="ckops est">'
+      +[['Sim, estoque suficiente','Sim'],['Preciso renovar em breve','Renovar em breve'],['Estou sem, preciso com urgência','Estou sem']].map(function(o){ return '<button data-est="'+o[0]+'"><span>'+o[1]+'</span></button>'; }).join('')+'</div>':'')
+    +'<label class="ckl">'+(BAL?'O que você quer levar para a consulta?':'Algo para o Dr. Henrique?')+' <span>(opcional)</span></label><textarea id="ck_msg" rows="'+(BAL?3:2)+'"></textarea></div>'
+    +'<div class="msg" id="ckM"></div><button class="btn" id="ckEnviar" style="margin-top:14px"'+(VER?' disabled':'')+'>'+(VER?'Pré-visualização':'Enviar check-in')+'</button>';
   tela.innerHTML=h; window.scrollTo(0,0);
   $('#ckV').onclick=function(){ painel(d); };
-  tela.querySelectorAll('.ckq').forEach(function(q){ q.querySelectorAll('button').forEach(function(b){ b.onclick=function(){
-    q.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on');
-    var v=b.getAttribute('data-v'); if(v==='na') delete R[q.getAttribute('data-k')]; else R[q.getAttribute('data-k')]=+v; q.classList.add('feita'); }; }); });
+  function marca(q,b){ q.querySelectorAll(':scope > .ckops > button, :scope > .ckops.uso > button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); q.classList.add('feita'); }
+  tela.querySelectorAll('.ckq').forEach(function(q){ q.querySelectorAll('.ckops button').forEach(function(b){ b.onclick=function(){
+    q.querySelectorAll('.ckops button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); q.classList.add('feita');
+    var v=b.getAttribute('data-v');
+    if(q.dataset.k){ if(v==='na') delete R[q.dataset.k]; else R[q.dataset.k]=+v; }
+    if(q.dataset.meta) R.metas[q.dataset.meta]=+v;
+    if(q.dataset.ex) R.exercicios[q.dataset.ex]=+v; }; }); });
+  tela.querySelectorAll('.ckmed').forEach(function(q){ var id=q.dataset.med;
+    q.querySelectorAll('[data-uso]').forEach(function(b){ b.onclick=function(){ q.querySelectorAll('[data-uso]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); q.classList.add('feita'); R.meds[id]=b.dataset.uso; }; }); });
+  tela.querySelectorAll('[data-ef]').forEach(function(b){ b.onclick=function(){
+    if(!b.dataset.ef){ tela.querySelectorAll('[data-ef]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); R.efeitos_todos=[]; return; }
+    var nn=tela.querySelector('[data-ef].nenhum'); if(nn) nn.classList.remove('on'); b.classList.toggle('on');
+    R.efeitos_todos=[].slice.call(tela.querySelectorAll('[data-ef].on')).map(function(x){ return x.dataset.ef; }).filter(Boolean); }; });
   var EST=null; tela.querySelectorAll('[data-est]').forEach(function(b){ b.onclick=function(){ tela.querySelectorAll('[data-est]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); EST=b.getAttribute('data-est'); }; });
   $('#ckEnviar').onclick=function(){
-    var faltam=['s_dieta','s_treino','s_sono','s_fome','s_energia'].filter(function(k){ return R[k]==null; });
-    if(faltam.length>2){ $('#ckM').textContent='Responda pelo menos alimentação, sono e energia.'; return; }
+    if(VER) return;
+    var base=['s_dieta','s_sono','s_fome','s_energia'].filter(function(k){ return R[k]!=null; }).length + ((P&&(P.exercicios||[]).length)? (Object.keys(R.exercicios).length?1:0) : (R.s_treino!=null?1:0));
+    if(base<3){ $('#ckM').textContent='Responda pelo menos alimentação, sono e energia.'; return; }
     var b=this; b.disabled=true; b.textContent='Enviando…';
     var r=Object.assign({},R,{colateral:$('#ck_colateral').value,peso:$('#ck_peso').value,estoque:EST,mensagem:$('#ck_msg').value});
     r[ab[0]]=$('#ck_aberta').value;
@@ -419,14 +467,16 @@ function telaCheckin(d){
       if(!x.ok){ b.disabled=false; b.textContent='Enviar check-in';
         if(x.erro==='sessao'){ ls.del('hagcentral.s'); return inicio(); }
         $('#ckM').textContent= x.erro==='ja_enviado'?'O check-in desta semana já chegou. Obrigado.':x.erro==='incompleto'?'Responda pelo menos três linhas.':'Não foi possível enviar agora. Tente de novo.'; return; }
-      d.checkin=x.checkin; telaCheckinFeito(d, x.score);
+      d.checkin=x.checkin; telaCheckinFeito(d, x.score, x.emergencia);
     });
   };
 }
-function telaCheckinFeito(d, score){
+function telaCheckinFeito(d, score, emerg){
   var CK=d.checkin||{}, hs=(CK.historico||[]);
   var barras=hs.map(function(c){ var p=Math.max(6,Math.min(100,+c.score||0)); return '<div class="b"><i style="height:'+p+'%"></i><span>'+dataBR(c.data).slice(0,5)+'</span></div>'; }).join('');
   tela.innerHTML='<p class="rot">Check-in recebido</p><h1>Obrigado.</h1><p class="sub">O Dr. Henrique vê as suas respostas antes da próxima consulta.</p>'
+    +(emerg?'<div class="aviso" style="margin-top:14px;border-left-color:#8a2e2e"><b>Se for intenso ou piorar, procure um pronto-atendimento.</b></div>':'')
+    +(CK.cadencia==='quinzenal'?'<p class="sub" style="font-size:14px;margin-top:8px">Sua fase está estável: o próximo check-in vem em duas semanas.</p>':'')
     +'<div class="card"><div class="ckres"><div><b>'+(CK.sequencia||1)+'</b><span>'+((CK.sequencia||1)>1?'semanas seguidas':'semana')+'</span></div>'
     +(hs.length>1?'<div class="graf">'+barras+'</div>':'')+'</div></div>'
     +'<button class="btn claro" id="ckOk" style="margin-top:14px">Voltar ao início</button>';
@@ -477,7 +527,7 @@ function inicio(){
     telaEntrar(r);
   });
 }
-window.HAG_CENTRAL={versao:'HAG_CENTRAL_PACIENTE_v1+PONTE_v1+INICIO_v2+CHECKIN_v1'};
+window.HAG_CENTRAL={versao:'HAG_CENTRAL_PACIENTE_v1+PONTE_v1+INICIO_v2+CHECKIN_v1+SOB_MEDIDA_v1'};
 inicio();
 })();
 </script>
