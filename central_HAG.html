@@ -352,7 +352,8 @@ var IC={
   pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
   seta:'<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>',
-  ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></svg>'
+  ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></svg>',
+  ex:'<svg viewBox="0 0 24 24"><path d="M9.5 3.5h5M10.5 3.5v6L5.8 18a1.8 1.8 0 0 0 1.6 2.5h9.2a1.8 1.8 0 0 0 1.6-2.5l-4.7-8.5v-6"/><path d="M8 14.5h8"/></svg>'
 };
 var MAPA={pinheiros:'Av. Brigadeiro Faria Lima, 1461, São Paulo',tatuape:'R. Vilela, 665, Tatuapé, São Paulo'};
 function diasAte(iso){ var a=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); a.setHours(12,0,0,0); return Math.round((new Date(iso+'T12:00:00')-a)/864e5); }
@@ -479,40 +480,24 @@ function painel(d){
   }
 
   /* documentos */
+  /* HAG_CENTRAL_CARTOES_v1 (12/11/2026, pedido do Dr.): quatro cartões, como já eram os dois planos: Plano de tratamento,
+     Plano alimentar, Receitas e Exames. Os planos abrem o PDF; Receitas e Exames abrem uma tela com tudo organizado
+     (receitas por data; exames por tipo: pedidos, bioimpedância, laboratoriais, imagem, outros e os enviados por ele). */
   var docs=d.documentos||[], g={plano_tratamento:[],plano_alimentar:[],receita:[],exame:[],outros:[]};
   docs.forEach(function(x){ (g[x.categoria]||g.outros).push(x); });
+  d._g=g;
   h+='<h3 class="tit">Seu plano</h3>';
-  if(!docs.length){ h+='<div class="card"><p class="vazio">Os seus documentos aparecem aqui assim que o Dr. Henrique concluir o seu plano.</p></div>'; }
-  else {
-    var dest=[g.plano_tratamento[0],g.plano_alimentar[0]].filter(Boolean);
-    if(dest.length){ h+='<div class="planos n'+dest.length+'">'+dest.map(function(x){
-      return '<button class="plano" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="t">'+esc(x.titulo)+'</span><span class="q">Atualizado em '+dataBR(x.data)+'</span><span class="a">Abrir</span></button>';
-    }).join('')+'</div>'; }
-    /* HAG_CENTRAL_RECEITAS_v1 (11/11/2026): o Dr. pediu que o paciente saiba o que tem em cada receita sem abrir uma por uma.
-       Cada receita mostra os itens (lidos da prescrição) e o tipo; agrupadas por data; as datas mais antigas ficam recolhidas. */
-    if(g.receita.length){
-      var datas=[], porData={}; g.receita.forEach(function(x){ if(!porData[x.data]){ porData[x.data]=[]; datas.push(x.data); } porData[x.data].push(x); });
-      var linhaRx=function(x){
-        var it=x.itens||[], t=it.length? (it.length>3? it.slice(0,2).join(' · ')+' e mais '+(it.length-2) : it.join(' · ')) : 'Receita';
-        var q=it.length? (x.tipo||'') : 'Abra para ver os itens';
-        return '<li><button class="doc rx" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.rx+'</span><span class="dt">'+(x.tipo&&it.length?'<span class="tp">'+esc(x.tipo)+'</span>':'')+'<span class="t">'+esc(t)+'</span>'+(!it.length?'<span class="q">'+esc(q)+'</span>':'')+'</span><span class="a">Abrir</span></button></li>';
-      };
-      var blocoRx=function(dt){ var l=porData[dt]; return '<div class="rxd">'+dataBR(dt)+' · '+l.length+(l.length>1?' receitas':' receita')+'</div><ul class="lista">'+l.map(linhaRx).join('')+'</ul>'; };
-      var abertas=datas.slice(0,1), velhas=datas.slice(1);
-      h+='<div class="card lst"><div class="grupo">Suas receitas</div>'+abertas.map(blocoRx).join('');
-      if(velhas.length){ var nv=0; velhas.forEach(function(dt){ nv+=porData[dt].length; });
-        h+='<details class="rxant"><summary>Ainda válidas, de consultas anteriores · '+nv+'</summary>'+velhas.map(blocoRx).join('')+'</details>'; }
-      h+='</div>';
-    }
-    var resto=[];
-    h+=examesHTML(g.exame);   /* HAG_CENTRAL_EXAMES_v1 */
-    /* HAG_CENTRAL_SO_VIGENTE_v1 (12/11/2026, decisão do Dr.): o paciente vê só o plano de tratamento e o plano alimentar atuais; os anteriores ficam com a clínica */
-    g.outros.forEach(function(x){ resto.push([x,x.titulo,IC.doc]); });
-    if(resto.length){ h+='<div class="card lst"><div class="grupo">Outros documentos</div><ul class="lista">'+resto.map(function(r){
-      return '<li><button class="doc" data-doc="'+esc(r[0].id)+'"><span class="ic">'+r[2]+'</span><span class="dt"><span class="t">'+esc(r[1])+'</span><span class="q">'+dataBR(r[0].data)+'</span></span><span class="a">Abrir</span></button></li>';
-    }).join('')+'</ul></div>'; }
-  }
-  if(!docs.length) h+=examesHTML([]);   /* HAG_CENTRAL_EXAMES_v1: sem documento ainda, o envio de exame continua à mão */
+  var cards=[];
+  [['plano_tratamento','Plano de tratamento'],['plano_alimentar','Plano alimentar']].forEach(function(k){
+    var x=g[k[0]][0]; if(x) cards.push('<button class="plano" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="t">'+esc(x.titulo||k[1])+'</span><span class="q">Atualizado em '+dataBR(x.data)+'</span><span class="a">Abrir</span></button>');
+  });
+  if(g.receita.length) cards.push('<button class="plano" id="cRx"><span class="ic">'+IC.rx+'</span><span class="t">Receitas</span><span class="q">'+g.receita.length+(g.receita.length>1?' receitas válidas':' receita válida')+'</span><span class="a">Ver</span></button>');
+  cards.push('<button class="plano" id="cEx"><span class="ic">'+IC.ex+'</span><span class="t">Exames</span><span class="q">'+(g.exame.length?g.exame.length+(g.exame.length>1?' arquivos':' arquivo'):'Envie seus exames por aqui')+'</span><span class="a">Ver</span></button>');
+  h+='<div class="planos n'+cards.length+'">'+cards.join('')+'</div>';
+  if(!g.plano_tratamento.length&&!g.plano_alimentar.length&&!g.receita.length) h+='<p class="exnota">Os seus planos e receitas aparecem aqui assim que o Dr. Henrique concluir o seu plano.</p>';
+  if(g.outros.length){ h+='<div class="card lst"><div class="grupo">Outros documentos</div><ul class="lista">'+g.outros.map(function(x){
+    return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo)+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>';
+  }).join('')+'</ul></div>'; }
   h+='<div class="msg" id="mDoc"></div>';
 
   /* equipe */
@@ -523,7 +508,8 @@ function painel(d){
 
   tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
   var bck=$('#bCk'); if(bck) bck.onclick=function(){ telaCheckin(d); };
-  var bex=$('#bExEnv'); if(bex) bex.onclick=function(){ formExame(d); };   /* HAG_CENTRAL_EXAMES_v1 */
+  var crx=$('#cRx'); if(crx) crx.onclick=function(){ telaReceitas(d); };   /* HAG_CENTRAL_CARTOES_v1 */
+  var cex=$('#cEx'); if(cex) cex.onclick=function(){ telaExames(d); };
   /* HAG_CENTRAL_VER_EQUIPE_v2: na visualização da equipe os atalhos levam aos links DO PACIENTE.
      Agendar ali marcaria consulta em nome dele; Treino gravaria registro como se fosse ele. Ficam desligados. */
   if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app').forEach(function(a){
@@ -630,18 +616,46 @@ function telaCheckinFeito(d, score, emerg){
 /* HAG_CENTRAL_EXAMES_v1 (12/11/2026, decisões do Dr.): os exames que a clínica já tem (resultados e pedidos) aparecem só
    pelo título, nunca pelo nome do arquivo; o paciente envia exame novo por aqui (PDF ou foto). O arquivo sobe direto para o
    Storage por URL assinada, entra na lista na hora, o Mac arquiva na pasta Exames dele e o Dr. recebe aviso no HAG Dr. */
-function examesHTML(L){
-  L=L||[];
-  var ped=L.filter(function(x){return x.pedido;}), res=L.filter(function(x){return !x.pedido;});
-  var linha=function(x){ return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo||'Exame')+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>'; };
-  var h='<div class="card lst exc"><div class="grupo">Seus exames</div>';
-  h+=VER?'<p class="exnota">O paciente vê aqui o botão para enviar exame.</p>':'<button class="btn claro exbtn" id="bExEnv">Enviar um exame</button>';
-  if(!L.length) h+='<p class="exnota">Quando você fizer exames, envie por aqui. Eles ficam guardados neste lugar para você e para o Dr. Henrique.</p>';
-  if(ped.length) h+='<div class="rxd">Pedidos de exame</div><ul class="lista">'+ped.slice(0,3).map(linha).join('')+'</ul>';
-  if(res.length){ h+='<div class="rxd">Resultados</div><ul class="lista">'+res.slice(0,5).map(linha).join('')+'</ul>'; }
-  var ant=ped.slice(3).concat(res.slice(5));
-  if(ant.length) h+='<details class="rxant"><summary>Anteriores · '+ant.length+'</summary><ul class="lista">'+ant.map(linha).join('')+'</ul></details>';
-  return h+'</div>';
+function grupoExame(x){
+  var t=String(x.titulo||'');
+  if(x.enviado) return 'env';
+  if(x.pedido||/^Pedido/.test(t)) return 'ped';
+  if(/Bioimped/.test(t)) return 'bio';
+  if(/laborat/i.test(t)) return 'lab';
+  if(/Ultrassom|Resson|Tomogr|Raio-x|Mamogr|Densitom|Doppler|Elastogr|Ecocard|imagem/i.test(t)) return 'img';
+  return 'out';
+}
+var GRUPOS_EX=[['ped','Pedidos de exame'],['lab','Laboratoriais'],['bio','Bioimpedância'],['img','Imagem'],['out','Outros exames'],['env','Enviados por você']];
+function linhaDoc(x){ return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo||'Exame')+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>'; }
+function telaSub(d, rot, tit, corpo){
+  window.scrollTo(0,0);
+  tela.innerHTML=VOLTA_DR+'<button class="link" id="subV">‹ Voltar</button><p class="rot" style="margin-top:10px">'+rot+'</p><h1>'+tit+'</h1>'+corpo+'<div class="msg" id="mDoc"></div>';
+  $('#subV').onclick=function(){ painel(d); };
+  tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
+}
+function telaReceitas(d){
+  var L=(d._g&&d._g.receita)||[], datas=[], porData={};
+  L.forEach(function(x){ if(!porData[x.data]){ porData[x.data]=[]; datas.push(x.data); } porData[x.data].push(x); });
+  var linhaRx=function(x){
+    var it=x.itens||[], t=it.length? (it.length>3? it.slice(0,2).join(' · ')+' e mais '+(it.length-2) : it.join(' · ')) : 'Receita';
+    return '<li><button class="doc rx" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.rx+'</span><span class="dt">'+(x.tipo&&it.length?'<span class="tp">'+esc(x.tipo)+'</span>':'')+'<span class="t">'+esc(t)+'</span>'+(!it.length?'<span class="q">Abra para ver os itens</span>':'')+'</span><span class="a">Abrir</span></button></li>';
+  };
+  var corpo=datas.map(function(dt,i){ var l=porData[dt];
+    return '<div class="card lst"><div class="grupo">'+(i===0?'Da última consulta':'Ainda válidas')+' · '+dataBR(dt)+'</div><ul class="lista">'+l.map(linhaRx).join('')+'</ul></div>'; }).join('');
+  telaSub(d,'Seu plano','Suas receitas.', '<p class="sub">Só as receitas válidas. Use cada uma como o Dr. Henrique orientou.</p>'+(corpo||'<div class="card"><p class="vazio">Nenhuma receita válida no momento.</p></div>'));
+}
+function telaExames(d){
+  var L=(d._g&&d._g.exame)||[], por={};
+  L.forEach(function(x){ var k=grupoExame(x); (por[k]=por[k]||[]).push(x); });
+  var corpo=(VER?'<p class="exnota">O paciente vê aqui o botão para enviar exame.</p>':'<button class="btn" id="bExEnv">Enviar um exame</button>');
+  if(!L.length) corpo+='<div class="card"><p class="vazio">Quando você fizer exames, envie por aqui. Eles ficam guardados neste lugar para você e para o Dr. Henrique.</p></div>';
+  GRUPOS_EX.forEach(function(gx){ var l=por[gx[0]]; if(!l||!l.length) return;
+    l.sort(function(a,b){ return String(b.data||'').localeCompare(String(a.data||'')); });
+    if(gx[0]==='env') l=l.map(function(x){ return Object.assign({},x,{titulo:String(x.titulo||'').replace(/^Enviado por você:?\s*/,'')||'Exame enviado'}); });
+    corpo+='<div class="card lst"><div class="grupo">'+gx[1]+' · '+l.length+'</div><ul class="lista">'+l.slice(0,4).map(linhaDoc).join('')+'</ul>'
+      +(l.length>4?'<details class="rxant"><summary>Mais '+(l.length-4)+'</summary><ul class="lista">'+l.slice(4).map(linhaDoc).join('')+'</ul></details>':'')+'</div>'; });
+  telaSub(d,'Seu plano','Seus exames.','<p class="sub">Pedidos e resultados, separados por tipo. A leitura clínica é feita em consulta.</p>'+corpo);
+  var bex=$('#bExEnv'); if(bex) bex.onclick=function(){ formExame(d); };
 }
 function formExame(d){
   window.scrollTo(0,0);
@@ -651,7 +665,7 @@ function formExame(d){
     +'<label class="exl">Data do exame (se souber)<input type="date" id="exData" max="'+mx+'"></label>'
     +'<label class="exl">O que é (opcional)<input type="text" id="exDesc" maxlength="120" placeholder="Ex.: hemograma, ultrassom de abdômen"></label>'
     +'<button class="btn" id="exEnviar" style="margin-top:16px">Enviar</button><button class="btn claro" id="exVoltar">Voltar</button><p class="msg" id="exMsg"></p></div>';
-  $('#exVoltar').onclick=function(){ painel(d); };
+  $('#exVoltar').onclick=function(){ telaExames(d); };
   $('#exEnviar').onclick=function(){
     var f=($('#exArq').files||[])[0], m=$('#exMsg'), bt=$('#exEnviar');
     if(!f){ m.textContent='Escolha o arquivo do exame.'; return; }
@@ -668,9 +682,9 @@ function formExame(d){
         return api({acao:'exame_ok',token:TOKEN,sessao:SESSAO,path:r.path,data:$('#exData').value||'',descricao:$('#exDesc').value||''}).then(function(k){
           if(!k.ok) return falha();
           tela.innerHTML='<p class="rot">Seus exames</p><h1>Exame recebido.</h1><p class="sub">Ele já está na sua lista, e o Dr. Henrique foi avisado. A leitura do resultado é feita em consulta.</p>'
-            +'<button class="btn" id="exMais">Enviar outro</button><button class="btn claro" id="exFim">Voltar ao início</button>';
+            +'<button class="btn" id="exMais">Enviar outro</button><button class="btn claro" id="exFim">Ver meus exames</button>';
           var volta=function(fn){ api({acao:'dados',token:TOKEN,sessao:SESSAO}).then(function(x){ var nd=(x&&x.ok&&x.dados)||d; fn(nd); }); };
-          $('#exMais').onclick=function(){ volta(formExame); }; $('#exFim').onclick=function(){ volta(painel); };
+          $('#exMais').onclick=function(){ volta(formExame); }; $('#exFim').onclick=function(){ volta(function(nd){ painel(nd); var ce=$('#cEx'); if(ce) ce.click(); }); };
         });
       });
     }).catch(function(){ falha(); });
