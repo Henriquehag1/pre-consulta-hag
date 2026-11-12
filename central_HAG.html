@@ -90,6 +90,7 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .cons li.feita .nm{color:var(--tinta)}
 .cons li .qd{font-size:13px;color:var(--apoio);text-align:right}
 .cons li.marcada .qd{color:var(--conhaque)}
+.cons .cnota{font-size:13px;color:var(--apoio);margin:6px 0 0}
 .hero{background:var(--choc);color:var(--linho);border-radius:6px;padding:20px 20px 16px;margin-top:20px}
 .hero .rot{color:var(--camurca)}
 .hx{display:flex;gap:16px;align-items:center;margin-top:14px}
@@ -329,10 +330,12 @@ function consultasHTML(d){
   var feitas=L.filter(function(x){return x.status==='realizada';}).length, faltou=L.filter(function(x){return x.status==='faltou';}).length, faltam=L.length-feitas-faltou;
   var li=L.map(function(x){
     var ok=x.status==='realizada', st=ok?'feita':x.status==='faltou'?'falta':x.status==='agendada'?'marcada':'prevista';
-    var q=ok?dataBR(x.data):x.status==='faltou'?'não compareceu · '+dataBR(x.data):x.status==='agendada'?'marcada · '+dataBR(x.data)+(x.hora?' às '+esc(x.hora):''):(x.data?'a marcar · por volta de '+dataBR(x.data).slice(0,5):'a marcar');
+    var q=ok?dataBR(x.data):x.status==='faltou'?'não compareceu · '+dataBR(x.data):x.status==='agendada'?'marcada · '+dataBR(x.data)+(x.hora?' às '+esc(x.hora):''):'a agendar';   /* HAG_CENTRAL_SO_VIGENTE_v1: a data prevista fica só na visão interna */
     return '<li class="'+st+'"><span class="pt">'+(ok?IC.ok:'')+'</span><span class="nm">'+esc(nomeConsulta(x))+'</span><span class="qd">'+q+'</span></li>';
   }).join('');
-  return '<div class="cons"><div class="cr"><b>'+feitas+' de '+L.length+' consultas feitas</b><span>'+(faltam>0?(faltam===1?'falta 1':'faltam '+faltam):'todas feitas')+'</span></div><ul>'+li+'</ul></div>';
+  var aAg=L.some(function(x){return x.status==='agendar';});
+  return '<div class="cons"><div class="cr"><b>'+feitas+' de '+L.length+' consultas feitas</b><span>'+(faltam>0?(faltam===1?'falta 1':'faltam '+faltam):'todas feitas')+'</span></div><ul>'+li+'</ul>'
+    +(aAg?'<p class="cnota">Nossa equipe entra em contato para agendar as próximas.</p>':'')+'</div>';
 }
 function progresso(c,d){
   if(!c||!c.inicio||!c.fim) return '';
@@ -413,11 +416,11 @@ function painel(d){
       var abertas=datas.slice(0,1), velhas=datas.slice(1);
       h+='<div class="card lst"><div class="grupo">Suas receitas</div>'+abertas.map(blocoRx).join('');
       if(velhas.length){ var nv=0; velhas.forEach(function(dt){ nv+=porData[dt].length; });
-        h+='<details class="rxant"><summary>Receitas anteriores · '+nv+'</summary>'+velhas.map(blocoRx).join('')+'</details>'; }
+        h+='<details class="rxant"><summary>Ainda válidas, de consultas anteriores · '+nv+'</summary>'+velhas.map(blocoRx).join('')+'</details>'; }
       h+='</div>';
     }
     var resto=[];
-    g.plano_tratamento.slice(1).concat(g.plano_alimentar.slice(1)).forEach(function(x){ resto.push([x,x.titulo+' anterior',IC.doc]); });
+    /* HAG_CENTRAL_SO_VIGENTE_v1 (12/11/2026, decisão do Dr.): o paciente vê só o plano de tratamento e o plano alimentar atuais; os anteriores ficam com a clínica */
     g.outros.forEach(function(x){ resto.push([x,x.titulo,IC.doc]); });
     if(resto.length){ h+='<div class="card lst"><div class="grupo">Outros documentos</div><ul class="lista">'+resto.map(function(r){
       return '<li><button class="doc" data-doc="'+esc(r[0].id)+'"><span class="ic">'+r[2]+'</span><span class="dt"><span class="t">'+esc(r[1])+'</span><span class="q">'+dataBR(r[0].data)+'</span></span><span class="a">Abrir</span></button></li>';
