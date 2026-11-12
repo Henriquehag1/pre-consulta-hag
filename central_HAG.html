@@ -390,7 +390,10 @@ function miniGraf(pts){
 }
 function evolucaoHTML(d){
   var E=(d&&d.evolucao)||null; if(!E||!E.length) return '';
-  var M=[['peso','Peso','kg',1],['musculo','Massa muscular','kg',1],['gordura','Gordura corporal','%',1],['visceral','Gordura visceral','nível',0]];
+  /* HAG_CENTRAL_GORDURA_KG_v1 (12/11/2026, Dr.): gordura em kg, não em %. O percentual cai só com ganho de músculo,
+     sem perda de gordura; o kg mostra a gordura de fato. Exame sem o dado em kg volta para o percentual. */
+  var GK=E.some(function(x){return x.gordura_kg!=null;}), G=GK?'gordura_kg':'gordura';
+  var M=[['peso','Peso','kg',1],['musculo','Massa muscular','kg',1],GK?['gordura_kg','Massa de gordura','kg',1]:['gordura','Gordura corporal','%',1],['visceral','Gordura visceral','nível',0]];
   if(E.length<2) return '<h3 class="tit">Sua evolução</h3><div class="card"><p class="vazio">Sua primeira bioimpedância é de '+dataBR(E[0].data)+'. A evolução aparece aqui a partir da próxima.</p></div>';
   var cards=M.map(function(m){
     var pts=E.filter(function(x){return x[m[0]]!=null;}).map(function(x){return [x.data,+x[m[0]]];}); if(pts.length<2) return '';
@@ -399,7 +402,7 @@ function evolucaoHTML(d){
   }).join('');
   if(!cards) return '';
   var f=E[0], l=E[E.length-1], rec='';
-  if(f.peso!=null&&l.peso!=null&&f.musculo!=null&&l.musculo!=null&&f.gordura!=null&&l.gordura!=null&&Math.abs(l.peso-f.peso)<=1.5&&l.musculo-f.musculo>=0.4&&f.gordura-l.gordura>=1)
+  if(f.peso!=null&&l.peso!=null&&f.musculo!=null&&l.musculo!=null&&f[G]!=null&&l[G]!=null&&Math.abs(l.peso-f.peso)<=1.5&&l.musculo-f.musculo>=0.4&&f[G]-l[G]>=1)
     rec='<p class="evrec"><b>A balança mudou pouco, o corpo mudou.</b> Mais massa muscular e menos gordura desde '+dataBR(f.data).slice(0,5)+'.</p>';
   return '<h3 class="tit">Sua evolução</h3><div class="card evc">'+rec+'<div class="evg">'+cards+'</div>'
     +'<p class="evnota">'+E.length+' bioimpedâncias, de '+dataBR(f.data)+' a '+dataBR(l.data)+'. A leitura clínica é feita em consulta.</p></div>';
