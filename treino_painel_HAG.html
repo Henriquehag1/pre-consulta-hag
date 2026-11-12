@@ -219,6 +219,11 @@ const CMIN={0:"nunca correu",1:"até 1 min",3:"2 a 3 min",5:"5 min",10:"10 min",
 function cP5(pf){ const km=+pf.teste_km, sg=+pf.teste_seg; let v=null; if(km>=1&&sg>0) v=sg*Math.pow(5/km,1.06)/5; else if(+pf.pace_conf_seg>0) v=+pf.pace_conf_seg-60; return v&&v>=150&&v<=900?Math.round(v):null; }
 const cPace = s => Math.floor(s/60)+":"+String(Math.round(s%60)).padStart(2,"0");
 function cTempo(s){ s=Math.round(+s||0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=String(s%60).padStart(2,"0"); return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`; }
+/* HAG_TREINO_PROVA_v1 (12/11/2026): prova marcada pelo paciente no app (data, dias, tempo) e o aviso de mínimo. */
+const PV_ROT={dias:"dias por semana",tempo:"tempo nos dias comuns",longo:"tempo do longão",semanas:"semanas até a prova"};
+function provaPainelHTML(pf,nomeCat){ const pv=pf&&pf.prova; if(!pv) return "";
+  return `<div style="margin-top:6px">Prova: <b>${esc(pv.nome||"sem nome")}</b> em <b>${br(pv.data)}</b> · ${esc(nomeCat(pv.cat))} · ${pv.dias} dias/semana, ${pv.min} min, longão ${pv.longo} min${+pv.sem_ini>1?` · entrou na semana ${pv.sem_ini}`:""}</div>
+   ${pv.aceitou_abaixo?`<div style="margin-top:6px;padding:8px 12px;border:1px solid var(--warn,#F0B35A);border-radius:10px">Seguiu abaixo do mínimo recomendado: ${esc((pv.abaixo||[]).map(k=>PV_ROT[k]||k).join(", "))}.</div>`:""}`; }
 function corridaPainelHTML(P){
   const pf=P&&P.corrida_perfil; if(!pf) return "";
   const p5=cP5(pf), r=x=>Math.round(x/5)*5, kmh=x=>(Math.round(36000/x)/10).toFixed(1).replace(".",",");
@@ -231,6 +236,7 @@ function corridaPainelHTML(P){
    <div>Corre sem parar: <b>${CMIN[pf.corre_min]??esc(pf.corre_min)}</b> · Onde: <b>${({rua:"rua",esteira:"esteira",ambos:"rua e esteira"})[pf.local]||esc(pf.local)}</b></div>
    <div>Base: <b>${esc(base)}</b>${p5?` · pace de 5 km ${cPace(p5)}/km · leve ${cPace(r(p5+60))} a ${cPace(r(p5+90))}/km (${kmh(r(p5+90))} a ${kmh(r(p5+60))} km/h)`:""}</div>
    ${ent?`<div>Entrada: ${ent}</div>`:""}
+   ${provaPainelHTML(pf,nomeCat)}
    ${trav?`<div class="row between" style="margin-top:10px;padding:10px 12px;border:1px solid var(--crit);border-radius:10px;gap:10px"><span style="color:var(--crit)">Relatou dor ao correr nas últimas 4 semanas · corrida pausada</span><button class="btn small" data-a="corlib">Liberar corrida</button></div>`
         :pf.dor4sem?`<p class="note" style="margin:6px 0 0">Relatou dor; liberado por ${esc(pf.dor_liberada_por||"")} em ${br(String(pf.dor_liberada_em).slice(0,10))}.</p>`:""}
   </div>`;
@@ -243,6 +249,7 @@ function historia(P){
   /* HAG_TREINO_NAO_FIZ_v1 (28/10/2026): dias que o paciente avisou que não ia treinar, últimos 28 dias */
   const nf=(P.nao_feitos||[]).filter(x=>diasAtras(x.data)<28);
   if(nf.length) L.push({c:nf.some(x=>x.motivo==="dor"||x.motivo==="doente")?"y":"n",t:`Avisou que não ia treinar em ${nf.length} ${nf.length===1?"dia":"dias"}: ${nf.map(x=>`${br(x.data)} ${NF_MOT[x.motivo]||x.motivo}`).join(", ")}.`});
+  const cpv=P.corrida_perfil&&P.corrida_perfil.prova; if(cpv && cpv.aceitou_abaixo) L.push({c:"y",t:`Marcou prova (${cpv.nome||"sem nome"}, ${br(cpv.data)}) e seguiu abaixo do mínimo recomendado: ${(cpv.abaixo||[]).map(k=>PV_ROT[k]||k).join(", ")}. Vale conversar.`});   /* HAG_TREINO_PROVA_v1 */
   const cpf=P.corrida_perfil; if(cpf && cpf.dor4sem && !cpf.dor_liberada_em) L.push({c:"r",t:"Relatou dor ao correr nas últimas 4 semanas. Os programas de corrida estão pausados até você liberar no cartão Corrida."});   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
   if(!h.length){ L.push({c:"n",t:prog?"Programa ativo, nenhuma sessão registrada ainda.":"Sem programa ativo e sem sessões registradas."}); return L; }
   const ult=h.at(-1), cv=h.filter(s=>s.cv && diasAtras(s.data)<=60);

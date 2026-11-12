@@ -232,6 +232,18 @@ body.descansando .wrap{padding-bottom:190px}
 .iso.segura .btn{background:var(--on-navy);color:var(--navy)}
 .navx{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:4px}
 .navx .btn{min-height:52px}
+/* HAG_TREINO_TELA_BLOQUEADA_v1, HAG_TREINO_IMAGEM_v1, HAG_TREINO_PROVA_v1 (12/11/2026) */
+.gbloq{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:10px;text-align:center}
+.imgov{position:fixed;inset:0;z-index:60;background:rgba(10,7,5,.82);display:flex;align-items:flex-end;justify-content:center;padding:16px;overflow:auto}
+.imgbox{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:auto 0}
+.imgprev{border-radius:12px;padding:22px 14px;display:flex;justify-content:center}
+.imgprev.claro{background:linear-gradient(160deg,#6f7f8c 0%,#4b4036 55%,#2c241e 100%)}
+.imgprev.escuro{background:linear-gradient(160deg,#f3ede3 0%,#dccfbd 60%,#c9b79f 100%)}
+.imgprev img{width:100%;height:auto;display:block}
+.pvcard .pvbig{font-family:var(--display);font-size:22px;margin:2px 0 4px}
+.pvcard .pvbig b{font-size:34px}
+.pvaviso{border:1px solid var(--warn);background:var(--warn-bg);border-radius:12px;padding:12px;margin:4px 0 6px}
+.pvaviso ul{margin:6px 0 10px;padding-left:18px;font-size:14px}
 /* HAG_TREINO_CORRIDA_GUIADA_v1: tela da corrida guiada */
 .gtag{font-family:var(--display);font-size:46px;font-weight:700;text-align:center;letter-spacing:.02em;line-height:1;margin-top:12px}
 .g-corre .gtag,.g-forte .gtag,.g-acel .gtag,.g-prova .gtag{color:var(--gold)}
@@ -809,6 +821,278 @@ let S = novoEstado();
 let pvAberto=null; const pnAberto=new Set();
 const PLAY='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
 let wakeLock=null, audio=null, tick=null, descanso=null, tickCrono=null;
+/* HAG_TREINO_TELA_BLOQUEADA_v1 (12/11/2026). Pedido do Dr. Henrique: o cronômetro e o pace que a pessoa deve manter
+   aparecem na tela bloqueada do celular e no relógio. O app é página da web: não existe "Live Activity" nem acesso ao
+   relógio por Bluetooth no iPhone. O caminho possível é o "Tocando agora" do sistema: com um áudio silencioso tocando,
+   a tela bloqueada mostra o nome da etapa, o tempo que falta, o pace e a barra da etapa, com pausar e continuar; o Apple
+   Watch (e relógios que mostram a música do celular) repete o mesmo cartão. Os bipes das trocas são agendados no relógio
+   de áudio na hora em que a etapa começa, para tocar no tempo certo mesmo com a tela apagada. Efeito colateral: o áudio
+   do app pausa a música de outro app, por isso a pessoa pode desligar. Piloto: só perfis internos (CTX.piloto). */
+const piloto = () => !!(CTX && CTX.piloto);
+const bqLigado = () => piloto() && store.get("hagtreino.bloq", true) !== false;
+let BQ=null;   /* {el, nos:[], seg:-1} */
+const bqAtivo = () => !!(BQ && BQ.el && !BQ.el.paused && gAtual());
+function bqWav(){
+  const sr=8000, n=sr, b=new ArrayBuffer(44+n*2), v=new DataView(b), w=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,"RIFF"); v.setUint32(4,36+n*2,true); w(8,"WAVE"); w(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,"data"); v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++) v.setInt16(44+i*2, i%2?1:-1, true);   /* ruído de 1 bit, inaudível: o sistema precisa de áudio "de verdade" */
+  return URL.createObjectURL(new Blob([b],{type:"audio/wav"}));
+}
+function bqIniciar(){
+  if(!bqLigado()||!gAtual()) return;
+  try{
+    if(!BQ) BQ={el:null, nos:[], seg:-1};
+    if(!BQ.el){ const a=new Audio(bqWav()); a.loop=true; a.setAttribute("playsinline",""); a.preload="auto"; BQ.el=a; }
+    const p=BQ.el.play(); if(p&&p.catch) p.catch(()=>{});
+    if("mediaSession" in navigator){
+      const ms=navigator.mediaSession;
+      try{ ms.setActionHandler("play",()=>{ bqSeguir(); }); ms.setActionHandler("pause",()=>{ bqPausar(); }); }catch(e){}
+      try{ ms.setActionHandler("nexttrack",null); ms.setActionHandler("previoustrack",null); }catch(e){}
+    }
+  }catch(e){}
+  BQ.seg=-1; bqAgenda(); bqMeta(true);
+}
+function bqParar(){
+  bqCancela();
+  if(BQ && BQ.el){ try{ BQ.el.pause(); }catch(e){} }
+  if("mediaSession" in navigator){ try{ navigator.mediaSession.metadata=null; navigator.mediaSession.playbackState="none"; }catch(e){} }
+}
+function bqCancela(){ if(!BQ) return; for(const o of BQ.nos){ try{ o.stop(); }catch(e){} } BQ.nos=[]; }
+function bqTom(t,f,dur,vol){ if(!audio) return; const o=audio.createOscillator(), g=audio.createGain(); o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.setValueAtTime(vol,t+dur-.02); g.gain.linearRampToValueAtTime(0,t+dur);
+  o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t+dur+.02); BQ.nos.push(o); }
+function bqPadrao(t,prox){ /* corre ou acelera: dois bipes agudos; caminha ou trota: um grave longo; fim: três subindo */
+  if(!prox){ [660,880,1100].forEach((f,i)=>bqTom(t+i*.22,f,.18,.16)); return; }
+  if(["caminha","trote","solta","aquec","mob"].includes(prox.tipo)) bqTom(t,520,.55,.17);
+  else { bqTom(t,880,.15,.17); bqTom(t+.22,880,.15,.17); } }
+function bqAgenda(){
+  if(!BQ) return; bqCancela(); const g=gAtual(); if(!g||g.pausa||!bqLigado()) return;
+  somPronto(); if(!audio) return; try{ if(audio.state==="suspended") audio.resume(); }catch(e){}
+  const agora=audio.currentTime; let t=agora;
+  for(let k=g.k;k<g.segs.length;k++){ const s=g.segs[k]; if(!s.seg) break;
+    t+= k===g.k ? Math.max(0, s.seg-gDecorrido(g)) : s.seg;
+    for(const x of [3,2,1]) if(t-x>agora+.05) bqTom(t-x,660,.12,.12);
+    bqPadrao(t, g.segs[k+1]||null); }
+}
+function bqMeta(forca){
+  if(!BQ||!BQ.el||!("mediaSession" in navigator)) return; const g=gAtual(); if(!g) return;
+  const s=g.segs[g.k], d=gDecorrido(g), seg=Math.floor(s.seg?Math.max(0,s.seg-d):d);
+  if(!forca && seg===BQ.seg) return; BQ.seg=seg;
+  const pc=paceSegTxt(s), rep=s.rep?` · ${s.rep[0]} de ${s.rep[1]}`:"";
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:`${s.rot.toUpperCase()} · ${mmss(seg)}${s.seg?"":" (toque em FIZ)"}`,
+      artist: pc ? `${pc}${rep}` : `Etapa ${g.k+1} de ${g.segs.length}${rep}`,
+      album:`HAG Treino · ${gTotTxt(g)}`,
+      artwork:[{src:"icone-treino-192.png", sizes:"192x192", type:"image/png"}]});
+    navigator.mediaSession.playbackState=g.pausa?"paused":"playing";
+    if(forca && navigator.mediaSession.setPositionState){
+      if(s.seg) navigator.mediaSession.setPositionState({duration:s.seg, position:Math.min(s.seg,Math.max(0,d)), playbackRate:g.pausa?0:1});
+    }
+  }catch(e){}
+}
+function bqPausar(){ const g=gAtual(); if(g&&!g.pausa){ g.pausa=Date.now(); salvarRascunho(); } bqCancela(); bqMeta(true); if(document.getElementById("gcrono")) render(); }
+function bqSeguir(){ const g=gAtual(); if(g&&g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; somPronto(); manterTelaAcesa(); salvarRascunho(); }
+  if(BQ&&BQ.el){ const p=BQ.el.play(); if(p&&p.catch) p.catch(()=>{}); } bqAgenda(); bqMeta(true); if(document.getElementById("gcrono")) render(); }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible" && gAtual() && bqAtivo()){ bqAgenda(); bqMeta(true); } });
+const bloqHTML = () => piloto() ? `<div class="gbloq"><button type="button" class="link" data-a="gbloq">Tela bloqueada e relógio: <b>${bqLigado()?"ligado":"desligado"}</b></button>${bqLigado()?`<span class="note">Mostra tempo e pace com a tela apagada. Pausa a música de outro app.</span>`:""}</div>` : "";
+/* HAG_TREINO_IMAGEM_v1 (12/11/2026). Pedido do Dr. Henrique: ao fim de cada treino, uma imagem PNG com as métricas, para
+   salvar no celular e postar. Fundo transparente (escolha dele): a pessoa cola sobre a própria foto, como figurinha.
+   Texto claro ou escuro, assinatura "MÉTODO HAG" discreta. Sem nome e sem dado clínico (nada de esforço, dor ou nota). */
+function imgDados(d, series, cardio, dur){
+  const km=cardio.reduce((a,c)=>a+(+c.km>0?+c.km:0),0), seg=cardio.reduce((a,c)=>a+(+c.seg>0?+c.seg:0),0);
+  const fs=series.filter(x=>!x.trab), vol=fs.reduce((a,x)=>a+((+x.kg>0&&+x.reps>0)?x.kg*x.reps:0),0);
+  const exs=new Set(series.map(x=>x.ex)).size, corrida=cardio.some(c=>c.ex==="corrida"||c.ex==="caminhada");
+  return {nome:String(d.nome||"Treino"), data:HOJE(), semana:d.semana||null, km:Math.round(km*100)/100, seg, dur, series:fs.length, vol:Math.round(vol), exs, corrida};
+}
+function imgMetricas(m){
+  const nf=(x,c)=>x.toLocaleString("pt-BR",{maximumFractionDigits:c,minimumFractionDigits:c});
+  if(m.km>0 && m.seg>0){ const p=m.seg/m.km;
+    return [["Distância", nf(m.km, m.km<10?2:1)+" km"], ["Tempo", fTempo(m.seg)], ["Pace", (p>=150&&p<=1500?fPace(p):"–")+" /km"]]; }
+  if(m.km>0) return [["Distância", nf(m.km, m.km<10?2:1)+" km"], ["Tempo", m.dur+" min"]];
+  if(m.seg>0 && !m.series) return [["Tempo", fTempo(m.seg)], ["Duração", m.dur+" min"]];
+  const L=[["Tempo", m.dur+" min"]];
+  if(m.series) L.push(["Séries", String(m.series)]);
+  if(m.vol>0) L.push(["Volume", nf(m.vol,0)+" kg"]); else if(m.exs) L.push(["Exercícios", String(m.exs)]);
+  return L;
+}
+function imgEspacado(ctx, t, x, y, esp, alinha){
+  const ls=[...t], larg=ls.reduce((a,ch)=>a+ctx.measureText(ch).width,0)+esp*(ls.length-1);
+  let cx=alinha==="center"?x-larg/2:x; const al=ctx.textAlign; ctx.textAlign="left";
+  for(const ch of ls){ ctx.fillText(ch,cx,y); cx+=ctx.measureText(ch).width+esp; } ctx.textAlign=al; return larg;
+}
+function imgQuebra(ctx, t, max){ const ps=String(t).split(" "), L=[]; let l="";
+  for(const p of ps){ const tt=l?l+" "+p:p; if(ctx.measureText(tt).width>max && l){ L.push(l); l=p; } else l=tt; } if(l) L.push(l); return L.slice(0,3); }
+function imgDesenha(m, tom){
+  const W=1080, cv=document.createElement("canvas"), ctx=cv.getContext("2d"), cor=tom==="escuro"?"#1A1411":"#FFFFFF", ouro="#C99A6B";
+  const sombra=()=>{ if(tom==="escuro"){ ctx.shadowColor="rgba(255,255,255,0)"; ctx.shadowBlur=0; } else { ctx.shadowColor="rgba(0,0,0,.38)"; ctx.shadowBlur=18; ctx.shadowOffsetY=2; } };
+  const met=imgMetricas(m), nm=m.nome.replace(/\s*·\s*/g," · ");
+  ctx.font='400 66px "Bodoni Moda", Georgia, serif'; const tl=imgQuebra(ctx, nm, W-200);
+  const H=110+50+tl.length*78+70+250+110; cv.width=W; cv.height=H; ctx.textBaseline="alphabetic";
+  sombra(); ctx.fillStyle=cor; ctx.textAlign="center";
+  const dt=new Date(m.data+"T12:00:00"), mes=["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"][dt.getMonth()];
+  ctx.font='500 28px "Hanken Grotesk", Arial, sans-serif'; ctx.globalAlpha=.85;
+  imgEspacado(ctx, `HAG TREINO · ${dt.getDate()} ${mes} ${dt.getFullYear()}${m.semana?` · SEMANA ${m.semana}`:""}`, W/2, 110, 7, "center"); ctx.globalAlpha=1;
+  ctx.font='400 66px "Bodoni Moda", Georgia, serif'; let y=110+50+60; for(const l of tl){ ctx.fillText(l, W/2, y); y+=78; }
+  y+=10; ctx.shadowBlur=0; ctx.fillStyle=ouro; ctx.fillRect(W/2-60, y, 120, 3); sombra(); ctx.fillStyle=cor; y+=60;
+  const n=met.length, col=(W-120)/n;
+  met.forEach(([rot,val],i)=>{ const cx=60+col*i+col/2;
+    ctx.font='500 26px "Hanken Grotesk", Arial, sans-serif'; ctx.globalAlpha=.8; imgEspacado(ctx, rot.toUpperCase(), cx, y+40, 6, "center"); ctx.globalAlpha=1;
+    let fs=n>2?92:110; ctx.font=`300 ${fs}px "Hanken Grotesk", Arial, sans-serif`; while(ctx.measureText(val).width>col-24 && fs>48){ fs-=4; ctx.font=`300 ${fs}px "Hanken Grotesk", Arial, sans-serif`; }
+    ctx.fillText(val, cx, y+40+20+fs*.82); });
+  y+=250;
+  ctx.font='600 26px "Hanken Grotesk", Arial, sans-serif'; ctx.globalAlpha=.9; imgEspacado(ctx, "MÉTODO HAG", W/2, y+40, 12, "center"); ctx.globalAlpha=1;
+  return cv;
+}
+let IMG=null;   /* {m, tom, cv} */
+function imgAbrir(){
+  const r=S.salvo; if(!r||!r.img) return; IMG={m:r.img, tom:store.get("hagtreino.imgtom","claro"), cv:null};
+  const pr=(document.fonts&&document.fonts.load)?Promise.all(['400 66px "Bodoni Moda"','300 100px "Hanken Grotesk"','500 26px "Hanken Grotesk"','600 26px "Hanken Grotesk"'].map(f=>document.fonts.load(f).catch(()=>{}))):Promise.resolve();
+  pr.then(imgRender);
+}
+function imgRender(){
+  if(!IMG) return; IMG.cv=imgDesenha(IMG.m, IMG.tom); IMG.blob=null; IMG.cv.toBlob(bl=>{ if(IMG) IMG.blob=bl; },"image/png");   /* pronto antes do toque: o iPhone só abre o compartilhar dentro do toque */
+  let ov=document.getElementById("imgov"); if(!ov){ ov=document.createElement("div"); ov.id="imgov"; ov.className="imgov"; document.body.appendChild(ov); ov.addEventListener("click", imgAcao); }
+  const pode=!!(navigator.clipboard&&window.ClipboardItem);
+  ov.innerHTML=`<div class="imgbox" role="dialog" aria-label="Imagem do treino">
+   <div class="imgprev ${IMG.tom}"><img alt="Prévia da imagem do treino" src="${IMG.cv.toDataURL("image/png")}"></div>
+   <div class="chips" role="group" aria-label="Cor do texto" style="justify-content:center"><button type="button" class="chip" data-i="tom" data-v="claro" aria-pressed="${IMG.tom==="claro"}">Texto claro</button><button type="button" class="chip" data-i="tom" data-v="escuro" aria-pressed="${IMG.tom==="escuro"}">Texto escuro</button></div>
+   <button type="button" class="btn wide" data-i="salvar">SALVAR IMAGEM</button>
+   ${pode?`<button type="button" class="btn ghost wide" data-i="copiar">COPIAR PARA COLAR NA FOTO</button>`:""}
+   <p class="note" id="imgmsg" style="margin:0;text-align:center">Fundo transparente: cole sobre a sua foto nos stories.</p>
+   <button type="button" class="link" data-i="fechar" style="align-self:center">fechar</button></div>`;
+}
+function imgBlob(){ return new Promise(res=>IMG.cv.toBlob(res,"image/png")); }
+function imgAcao(e){
+  const b=e.target.closest("[data-i]"); if(!b){ if(e.target.id==="imgov"){ IMG=null; e.currentTarget.remove(); } return; }
+  const a=b.dataset.i, msg=t=>{ const el=document.getElementById("imgmsg"); if(el) el.textContent=t; };
+  if(a==="fechar"){ IMG=null; document.getElementById("imgov").remove(); return; }
+  if(a==="tom"){ IMG.tom=b.dataset.v; store.set("hagtreino.imgtom",IMG.tom); return imgRender(); }
+  if(a==="copiar"){ try{ navigator.clipboard.write([new ClipboardItem({"image/png":imgBlob()})]).then(()=>msg("Copiada. No Instagram, abra a sua foto nos stories e cole.")).catch(()=>msg("Não consegui copiar. Use Salvar imagem.")); }catch(x){ msg("Não consegui copiar. Use Salvar imagem."); } return; }
+  if(a==="salvar"){ const bl=IMG.blob; if(!bl){ msg("Preparando a imagem. Toque de novo."); return; } const nome=`HAG Treino ${IMG.m.data}.png`, f=new File([bl],nome,{type:"image/png"});
+      if(navigator.canShare && navigator.canShare({files:[f]})){ navigator.share({files:[f]}).then(()=>msg("Pronto.")).catch(()=>{}); return; }
+      const u=URL.createObjectURL(bl), l=document.createElement("a"); l.href=u; l.download=nome; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); msg("Imagem baixada."); }
+}
+/* HAG_TREINO_PROVA_v1 (12/11/2026). Pedido do Dr. Henrique: quem tem prova marcada (ele: os 15 km da São Silvestre)
+   coloca a data, quantos dias por semana e quanto tempo tem para treinar, e o programa se encaixa até a prova:
+   - semanas: faltando menos semanas que o programa, a pessoa entra mais adiante (a semana final cai na semana da prova);
+     sobrando, o programa começa mais tarde e o app diz a data;
+   - dias: com menos dias que o programa pede, saem primeiro os treinos fáceis; longão e treino de qualidade ficam;
+   - tempo: a corrida leve dos dias comuns cabe no tempo do dia; o longão vai até o tempo do dia longo.
+   Mínimo de segurança aprovado por ele para os 15 km: 3 dias, 40 min, 1 dia de 90 min e 6 semanas. As outras distâncias
+   seguem a mesma lógica (escala minha, para ele revisar). Abaixo do mínimo: aviso, a pessoa aumenta ou segue, e a
+   escolha vai para o painel dele. Piloto: só perfis internos. */
+const MINPROVA={corrida_5k:{dias:3,min:30,longo:40,sem:6}, corrida_5k_rapido:{dias:3,min:40,longo:45,sem:4}, corrida_10k:{dias:3,min:40,longo:70,sem:6},
+  corrida_15k:{dias:3,min:40,longo:90,sem:6}, corrida_21k:{dias:3,min:45,longo:120,sem:8}, corrida_42k:{dias:4,min:50,longo:180,sem:12}};
+const PV_DIAS=[2,3,4,5,6], PV_MIN=[30,40,45,50,60,75,90], PV_LONGO=[45,60,75,90,105,120,150,180,210];
+let qProva=null;
+const temProvaPlano = c => !!(c && MINPROVA[c.id]);
+const provaDe = c => { const pf=perfilCorrida(), pv=pf&&pf.prova; return pv&&c&&pv.cat===c.id&&piloto()?pv:null; };
+const semanasAte = (data,hoje) => Math.ceil((diaNum(data)-diaNum(hoje)+1)/7);
+const isoDe = n => new Date(n*864e5).toISOString().slice(0,10);
+function papelSess(s){ const n=semAc(s.nome||""); if((s.itens||[]).some(it=>/^seus? |^\d+(?:[.,]\d+)?\s*km:\s*teste/i.test(String(it.alvo||"")))) return "prova";
+  if(/^longo/.test(n)) return "longo"; if(/qualidade|ritmo|tiros/.test(n)) return "qual"; return "facil"; }
+function planoProva(c, pv, hoje, comecou){
+  const N=c.semanas||1, m=MINPROVA[c.id]||{dias:3,min:40,longo:60,sem:6}, W=semanasAte(pv.data,hoje), passou=diaNum(pv.data)<diaNum(hoje);
+  const sem_ini = comecou||passou ? null : (W<N ? N-W+1 : 1);
+  const inicio_em = !comecou && !passou && W>N ? isoDe(diaNum(pv.data)-N*7+1) : null;
+  const abaixo=[]; if(+pv.dias<m.dias) abaixo.push("dias"); if(+pv.min<m.min) abaixo.push("tempo"); if(+pv.longo<m.longo) abaixo.push("longo"); if(!passou && W<m.sem) abaixo.push("semanas");
+  return {N, W, m, sem_ini, inicio_em, abaixo, passou};
+}
+function cortaProva(sessoes, pv){   /* função pura: tira treinos fáceis quando faltam dias e encaixa os minutos */
+  const porSem={}; for(const s of sessoes) for(const w of (s.semanas||[0])) (porSem[w]||(porSem[w]=[])).push(s);
+  const fora=new Set(), dias=Math.max(1,+pv.dias||0);
+  for(const w in porSem){ const L=porSem[w]; if(L.length<=dias) continue;
+    const ordem=L.map((s,i)=>({s,i,p:papelSess(s)})).filter(x=>x.p==="facil"||x.p==="qual")
+      .sort((a,b)=>(a.p===b.p?0:a.p==="facil"?-1:1) || (/2\s*$/.test(b.s.nome||"")-/2\s*$/.test(a.s.nome||"")) || b.i-a.i);
+    let sobra=L.length-dias; for(const x of ordem){ if(sobra<=0) break; if(x.s.semanas&&x.s.semanas.length>1) continue; fora.add(x.s); sobra--; } }
+  const re=/^(\d+) min leve/;
+  return sessoes.filter(s=>!fora.has(s)).map(s=>{ const p=papelSess(s); if(p==="prova"||p==="qual") return s; let mud=false;
+    const its=(s.itens||[]).map(it=>{ const mm=String(it.alvo||"").match(re); if(it.ex!=="corrida"||!mm) return it; const n=+mm[1];
+      const tot=(s.itens||[]).reduce((t,x)=>{ const d=GUIA_EX.has(x.ex)&&gDur(x.alvo); return t+(d?d.seg/60:0); },0);   /* duração real das corridas da sessão */
+      const novo = p==="longo" ? Math.max(20, Math.min(n, (+pv.longo||n+5)-Math.round(tot-n))) : Math.max(15, n-Math.max(0,Math.round(tot)-(+pv.min||999)));
+      if(novo===n) return it; mud=true; return {...it, alvo:String(it.alvo).replace(re,`${novo} min leve`)}; });
+    return mud?{...s, itens:its, _pv:true}:s; });
+}
+function ajustaProva(c){
+  if(!ehCorrida(c)||!c.lib||!Array.isArray(c.sessoes)) return;
+  const pv=provaDe(c), key=JSON.stringify(pv||null);
+  if(c._prOut && c.sessoes===c._prOut && c._prKey===key) return;
+  const base=(c._prOut && c.sessoes===c._prOut) ? c._prSrc : c.sessoes;
+  c._prSrc=base; c._prKey=key;
+  if(!pv){ c.sessoes=base; c._prOut=null; return; }
+  c.sessoes=c._prOut=cortaProva(base, pv);
+}
+const PV_TXT={dias:(v,m)=>`${v} ${v>1?"dias":"dia"} por semana (mínimo ${m.dias})`, tempo:(v,m)=>`${v} min nos dias comuns (mínimo ${m.min})`,
+  longo:(v,m)=>`${v} min no dia mais longo (mínimo ${m.longo})`, semanas:(v,m)=>`${v} ${v>1?"semanas":"semana"} até a prova (recomendado ${m.sem})`};
+function provaAbaixoTxt(pl, q){ return pl.abaixo.map(k=>PV_TXT[k](k==="dias"?+q.dias:k==="tempo"?+q.min:k==="longo"?+q.longo:pl.W, pl.m)); }
+function provaHTML(c){
+  if(!piloto()||!temProvaPlano(c)||!perfilCorrida()) return "";
+  if(qProva && qProva.cat===c.id) return provaFormHTML(c);
+  const pv=provaDe(c);
+  if(!pv) return `<div class="card pvcard"><div class="row between" style="gap:10px"><div><div class="kicker">Prova marcada?</div><div style="font-size:14px">O programa se encaixa até a data dela.</div></div><button type="button" class="btn small" data-a="pvabrir" data-v="${esc(c.id)}">INFORMAR</button></div></div>`;
+  const hoje=HOJE(), pl=planoProva(c, pv, hoje, true), faltam=diaNum(pv.data)-diaNum(hoje), p=progCat(c);
+  const nomes=[...new Set(sessDaSemana(c, p&&!p.fim?p.w:(c.semanas||1)).map(s=>s.nome))];
+  let ritmo="";
+  if(c.inicio && p && !p.fim && !pl.passou){ const w0=+pv.sem_ini||semIni(c), esp=Math.min(pl.N, w0+Math.floor((diaNum(hoje)-diaNum(c.inicio))/7)); if(p.w<esp) ritmo=`Pelo calendário da prova você estaria na semana ${esp}. Siga sem pular treinos: dobrar a semana aumenta o risco de lesão.`; }
+  return `<div class="card pvcard"><div class="row between"><div class="kicker">Prova marcada</div><span><button type="button" class="link" data-a="pvabrir" data-v="${esc(c.id)}">alterar</button> <button type="button" class="link" data-a="pvremover" data-v="${esc(c.id)}">remover</button></span></div>
+   <h3 style="margin-top:2px">${esc(pv.nome||"Sua prova")}</h3>
+   ${pl.passou?`<div style="font-size:14px">${br(pv.data)} · a prova já passou. Registre o seu tempo no treino da prova e fale com o Dr. Henrique sobre o próximo passo.</div>`
+   :`<div class="pvbig"><b>${faltam}</b> ${faltam===1?"dia":"dias"} · ${br(pv.data)}</div>
+   <div style="font-size:14px">${pv.dias} ${+pv.dias>1?"dias":"dia"} por semana: <b>${esc(nomes.join(", "))}</b></div>
+   <div style="font-size:14px">Dias comuns até <b>${pv.min} min</b> · longão até <b>${pv.longo} min</b></div>
+   ${+pv.sem_ini>1?`<div style="font-size:14px">Você entrou na <b>semana ${pv.sem_ini}</b> para terminar na semana da prova.</div>`:""}
+   ${pl.inicio_em&&!c.inicio?`<div style="font-size:14px">Comece em <b>${br(pl.inicio_em)}</b>: o programa termina na semana da prova. Até lá, 2 ou 3 corridas leves por semana.</div>`:""}
+   ${ritmo?`<p class="note" style="margin:4px 0 0;color:var(--warn)">${ritmo}</p>`:""}
+   ${pv.aceitou_abaixo?`<p class="note" style="margin:4px 0 0;color:var(--warn)">Abaixo do mínimo recomendado: ${esc((pv.abaixo||[]).map(k=>({dias:"dias",tempo:"tempo",longo:"longão",semanas:"semanas"})[k]||k).join(", "))}. O Dr. Henrique foi avisado.</p>`:""}
+   <p class="note" style="margin:4px 0 0">Na semana da prova, o último treino é a própria prova.</p>`}</div>`;
+}
+function provaFormHTML(c){
+  const q=qProva, m=MINPROVA[c.id], ch=(k,v,t)=>`<button type="button" class="chip" data-a="pvc" data-k="${k}" data-v="${v}" aria-pressed="${String(q[k])===String(v)}">${t}</button>`;
+  const ok=q.data&&q.dias&&q.min&&q.longo, pl=ok&&diaNum(q.data)>=diaNum(HOJE())?planoProva(c,q,HOJE(),!!feitasCat(c).length):null;
+  return `<div class="card qc pvcard"><div class="kicker">Sua prova</div><h3 style="margin-top:4px">Encaixar o programa até a prova</h3>
+   <div class="esc"><div class="lbl">Nome da prova (opcional)</div><input class="qin" data-pv="nome" autocomplete="off" maxlength="60" placeholder="ex.: São Silvestre" value="${esc(q.nome||"")}" style="margin-top:6px"></div>
+   <div class="esc"><div class="lbl">Data da prova</div><input class="qin" type="date" data-pv="data" min="${HOJE()}" value="${esc(q.data||"")}" style="margin-top:6px"></div>
+   <div class="esc"><div class="lbl">Dias por semana para correr</div><div class="chips" style="margin-top:6px">${PV_DIAS.map(v=>ch("dias",v,String(v))).join("")}</div></div>
+   <div class="esc"><div class="lbl">Tempo nos dias comuns</div><div class="chips" style="margin-top:6px">${PV_MIN.map(v=>ch("min",v,v+" min")).join("")}</div></div>
+   <div class="esc"><div class="lbl">Tempo no seu dia mais livre (longão)</div><div class="chips" style="margin-top:6px">${PV_LONGO.map(v=>ch("longo",v,v<60?v+" min":Math.floor(v/60)+" h"+(v%60?" "+(v%60):""))).join("")}</div></div>
+   <p class="note" style="margin:0 0 8px">Mínimo recomendado para ${esc(c.nome)}: ${m.dias} dias, ${m.min} min, 1 dia de ${m.longo} min e ${m.sem} semanas.</p>
+   ${q.aviso&&pl&&pl.abaixo.length?`<div class="pvaviso" role="alert"><b>Abaixo do mínimo para uma preparação segura</b><ul>${provaAbaixoTxt(pl,q).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
+     ${pl.abaixo.some(k=>k!=="semanas")?`<button type="button" class="btn wide" data-a="pvmin">AUMENTAR AO MÍNIMO</button>`:""}
+     <button type="button" class="btn ghost wide" data-a="pvseguir" style="margin-top:8px">SEGUIR ASSIM</button>
+     <p class="note" style="margin:6px 0 0">Seguindo assim, o Dr. Henrique é avisado.${pl.abaixo.includes("semanas")?" Para ter mais semanas, escolha uma prova mais à frente.":""}</p></div>`
+   :`<button type="button" class="btn wide" data-a="pvsalvar" ${ok?"":"disabled"}>MONTAR MEU PLANO</button>`}
+   ${q.erro?`<p class="note" style="color:var(--crit);margin:6px 0 0">${esc(q.erro)}</p>`:""}
+   <button type="button" class="link" data-a="pvcancela" style="align-self:center;margin-top:6px">cancelar</button></div>`;
+}
+function provaSalvar(c, aceitou){
+  const q=qProva; if(!q||!c) return; q.erro="";
+  if(!q.data||diaNum(q.data)<diaNum(HOJE())){ q.erro="Escolha uma data a partir de hoje."; return renderLivre(); }
+  if(diaNum(q.data)-diaNum(HOJE())>400){ q.erro="Escolha uma prova dentro dos próximos 12 meses."; return renderLivre(); }
+  const comecou=!!feitasCat(c).length, pl=planoProva(c,q,HOJE(),comecou);
+  if(pl.abaixo.length && !aceitou){ q.aviso=true; return renderLivre(); }
+  const pv={cat:c.id, data:q.data, nome:(q.nome||"").trim().slice(0,60)||null, dias:+q.dias, min:+q.min, longo:+q.longo, sem_ini:pl.sem_ini, abaixo:pl.abaixo, aceitou_abaixo:!!aceitou&&pl.abaixo.length>0};
+  if(CTX&&CTX.corrida_perfil) CTX.corrida_perfil={...CTX.corrida_perfil, prova:{...pv, salvo_em:new Date().toISOString()}};
+  qProva=null; catSem=null; renderLivre(); render(); window.scrollTo(0,0);
+  return rpc("hag_treino_prova_salvar",{p_token:TOKEN,p:pv}).then(r=>{ if(r&&r.ok&&r.perfil&&CTX){ CTX.corrida_perfil=r.perfil; renderLivre(); } }).catch(()=>{});
+}
+function provaAcao(b){   /* devolve true quando tratou */
+  const a=b.dataset.a; if(!/^pv/.test(a)) return false;
+  const c=cats().find(x=>x.id===(b.dataset.v&&a!=="pvc"?b.dataset.v:catAberto));
+  if(a==="pvabrir"){ const pv=provaDe(c), m=MINPROVA[c.id]; qProva={cat:c.id, nome:pv?pv.nome:"", data:pv?pv.data:"", dias:pv?pv.dias:m.dias+1, min:pv?pv.min:Math.max(m.min,45), longo:pv?pv.longo:m.longo, aviso:false, erro:""}; renderLivre(); return true; }
+  if(a==="pvcancela"){ qProva=null; renderLivre(); return true; }
+  if(a==="pvc"&&qProva){ qProva[b.dataset.k]=+b.dataset.v; qProva.aviso=false; qProva.erro=""; renderLivre(); return true; }
+  if(a==="pvmin"&&qProva){ const m=MINPROVA[c.id]; qProva.dias=Math.max(+qProva.dias,m.dias); qProva.min=Math.max(+qProva.min,m.min); qProva.longo=Math.max(+qProva.longo,m.longo);
+    const pl=planoProva(c,qProva,HOJE(),!!feitasCat(c).length); if(pl.abaixo.length){ qProva.aviso=true; renderLivre(); return true; } provaSalvar(c,false); return true; }
+  if(a==="pvsalvar"){ provaSalvar(c,false); return true; }
+  if(a==="pvseguir"){ provaSalvar(c,true); return true; }
+  if(a==="pvremover"){ if(b.dataset.ok!=="1"){ b.dataset.ok="1"; b.textContent="toque de novo para remover"; return true; }
+    if(CTX&&CTX.corrida_perfil) CTX.corrida_perfil={...CTX.corrida_perfil, prova:null}; renderLivre(); render();
+    rpc("hag_treino_prova_salvar",{p_token:TOKEN,p:{remover:true}}).then(r=>{ if(r&&r.ok&&r.perfil&&CTX){ CTX.corrida_perfil=r.perfil; renderLivre(); } }).catch(()=>{}); return true; }
+  return false;
+}
+vLivre.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.pv; if(k&&qProva){ qProva[k]=e.target.value; qProva.aviso=false; } });
+vLivre.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.pv; if(k==="data"&&qProva){ qProva.data=e.target.value; qProva.aviso=false; renderLivre(); } });
 
 const prog = () => CTX && CTX.programa;
 /* HAG_TREINO_ENTRADA_v1: programa com dias nomeados pela semana ("Sexta · Força em casa") abre no dia de hoje.
@@ -842,7 +1126,7 @@ const livres = () => (CTX && Array.isArray(CTX.livres)) ? CTX.livres : [];
    (card em_casa). Programa com semanas conta a semana a partir de inicio (gravado no primeiro "Começar"). */
 const CORES = {verde:"#5DD39E", dourado:"#C99A6B", azul:"#6CB4F0", rosa:"#F08CB4", vermelho:"#FF8A80", grafite:"#C8B9A6", laranja:"#F0A35A", lilas:"#B79CF0", amarelo:"#F2D35B"};
 function cats(){
-  const c=(CTX && Array.isArray(CTX.catalogo)) ? CTX.catalogo : null; if(c){ for(const x of c){ if(x.id==="corrida_5k") ajustaPonte(x); else if(LONGOS[x.id]||x.id==="corrida_42k") ajustaLongos(x); } return c; }   /* HAG_TREINO_CORRIDA_PONTE_v1 */
+  const c=(CTX && Array.isArray(CTX.catalogo)) ? CTX.catalogo : null; if(c){ for(const x of c){ if(x.id==="corrida_5k") ajustaPonte(x); else if(LONGOS[x.id]||x.id==="corrida_42k") ajustaLongos(x); ajustaProva(x); } return c; }   /* HAG_TREINO_CORRIDA_PONTE_v1 */
   const L=livres(); return L.length ? [{id:"em_casa", nome:"Em casa", sub:"Peso do corpo · casa, hotel, viagem", tipo:"bloco", niveis:["iniciante","intermediario"], lib:true, sessoes:L.map(l=>({...l, pc:true}))}] : [];
 }
 const catLib = () => cats().filter(c=>c.lib);
@@ -1342,7 +1626,8 @@ let qCor=null;   /* rascunho das 4 perguntas */
 const perfilCorrida = () => (CTX && CTX.corrida_perfil) || null;
 const ehCorrida = c => !!(c && c.trilha==="corrida" && c.tipo==="programa");
 const travaDor = pf => !!(pf && pf.dor4sem && !pf.dor_liberada_em);
-function semIni(c){ const pf=perfilCorrida(); if(!ehCorrida(c)||!pf||!pf.entrada) return 1; const w=+pf.entrada[c.id]; return w>=1 && w<=(c.semanas||1) ? w : 1; }
+function semIni(c){ const pf=perfilCorrida(), pv=provaDe(c); if(pv && +pv.sem_ini>=1 && +pv.sem_ini<=(c.semanas||1)) return +pv.sem_ini;   /* HAG_TREINO_PROVA_v1 */
+  if(!ehCorrida(c)||!pf||!pf.entrada) return 1; const w=+pf.entrada[c.id]; return w>=1 && w<=(c.semanas||1) ? w : 1; }
 const precisaPerfil = c => ehCorrida(c) && (!perfilCorrida() || travaDor(perfilCorrida()));
 function ritmoHTML(segs,d){
   const pf=perfilCorrida(); if(!pf||!segs||!segs.length) return ""; const p5=p5Perfil(pf), zs=[...new Set(segs.map(zonaSeg).filter(Boolean))];
@@ -1419,18 +1704,19 @@ function gTotTxt(g){ const s=g.segs[g.k], d=gDecorrido(g), feito=g.real.reduce((
   return `${mmss(feito)}${falta>0?` · faltam ~${Math.ceil(falta/60)} min`:""}${ab&&falta<=0?" · por distância":""}`; }
 function gIniciar(G){ somPronto(); manterTelaAcesa(); if(!S.inicio) S.inicio=Date.now();
   S.guia={i:S.i, itens:G.itens, segs:G.segs, k:0, ini:Date.now(), pausa:null, real:[], fim:false, parou:null, ult:null};
-  bip(); salvarRascunho(); clearInterval(tickGuia); tickGuia=setInterval(gTick,250); }
-function gAvanca(g,seg){ g.real.push(Math.round(seg)); g.k++; g.ini=Date.now(); g.ult=null; if(g.k>=g.segs.length){ gEncerrar("fim"); return; } bip(); salvarRascunho(); }
+  bip(); salvarRascunho(); clearInterval(tickGuia); tickGuia=setInterval(gTick,250); bqIniciar(); /* HAG_TREINO_TELA_BLOQUEADA_v1 */ }
+function gAvanca(g,seg){ g.real.push(Math.round(seg)); g.k++; g.ini=Date.now(); g.ult=null; if(g.k>=g.segs.length){ gEncerrar("fim"); return; } bip(); salvarRascunho(); bqAgenda(); bqMeta(true); }
 function gTick(){
   const g=gAtual(); if(!g){ clearInterval(tickGuia); tickGuia=null; return; }
   if(S.fase!=="treino"||S.i!==g.i){ gEncerrar("saiu"); return; }
   if(g.pausa) return;
   let mudou=false;
   while(!g.fim){ const s=g.segs[g.k]; if(!s.seg) break; const el=(Date.now()-g.ini)/1000;
-    if(el<s.seg){ const f=Math.ceil(s.seg-el); if(f<=3&&g.ult!==f){ g.ult=f; bipCurto(); } break; }
+    if(el<s.seg){ const f=Math.ceil(s.seg-el); if(f<=3&&g.ult!==f){ g.ult=f; if(!bqAtivo()) bipCurto(); } break; }
     g.real.push(s.seg); g.ini+=s.seg*1000; g.k++; g.ult=null; mudou=true;
     if(g.k>=g.segs.length){ gEncerrar("fim"); break; } }
-  if(mudou){ if(!g.fim){ bip(); salvarRascunho(); } if(document.getElementById("gcrono")) render(); return; }
+  if(mudou){ if(!g.fim){ if(!bqAtivo()) bip(); salvarRascunho(); bqMeta(true); } if(document.getElementById("gcrono")) render(); return; }
+  bqMeta(false);   /* HAG_TREINO_TELA_BLOQUEADA_v1 */
   const el=document.getElementById("gcrono"); if(!el) return; const s=g.segs[g.k], d=gDecorrido(g);
   el.textContent=s.seg?mmss(Math.max(0,s.seg-d)):mmss(d);
   const b=document.getElementById("gbar"); if(b) b.style.width=(s.seg?Math.min(100,100*d/s.seg):0)+"%";
@@ -1439,7 +1725,7 @@ function gTick(){
 function gEncerrar(motivo){
   const g=S.guia; if(!g||g.fim) return;
   if(motivo!=="fim"){ const d=gDecorrido(g); if(d>=1 && g.k<g.segs.length) g.real.push(Math.round(d)); }
-  g.fim=true; g.parou=motivo==="fim"?null:motivo; g.pausa=null; clearInterval(tickGuia); tickGuia=null;
+  g.fim=true; g.parou=motivo==="fim"?null:motivo; g.pausa=null; clearInterval(tickGuia); tickGuia=null; bqParar();
   const tot=g.real.reduce((a,x)=>a+x,0), porItem={}; g.real.forEach((x,j)=>{ const it=(g.segs[j]||{}).item; if(it!=null) porItem[it]=(porItem[it]||0)+x; });
   const ultimo=motivo==="fim" ? g.itens[g.itens.length-1] : (g.segs[Math.min(g.k,g.segs.length-1)]||{}).item;
   for(const j of g.itens){ if(j>ultimo) break; const sec=porItem[j]||0, c=S.cardio[j]||(S.cardio[j]={sup:null,km:"",min:"",fc:"",z2:""});
@@ -1474,6 +1760,7 @@ function renderGuia(barra){
    </div>
    <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="gpula">pular etapa</button><button type="button" class="link" data-a="gfim">encerrar aqui</button></div>
    <button type="button" class="btn wide gdor" data-a="gdor">PARAR · SENTI DOR</button>
+   ${bloqHTML()}
   </div>${rodapeTreino()}`;
   if(!tickGuia) tickGuia=setInterval(gTick,250);
 }
@@ -1541,6 +1828,7 @@ function renderSalvo(){
      ${/por dor/.test(r.nota||"")?`<p style="color:var(--crit);margin:6px 0 0">Corrida interrompida por dor. Não retome hoje; se a dor continuar, fale com o consultório.</p>`:""}
      ${r.cv?`<p style="color:var(--crit);margin:6px 0 0">Sintoma registrado. O consultório foi avisado. Não retome o treino antes de falar com o Dr. Henrique.</p>`:""}</div>
    ${r.prox.length?`<div class="card"><div class="kicker">Próxima vez neste treino</div>${r.prox.map(p=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><b>${esc(p.nome)}: ${p.sobe?`${fkg(p.de)} → ${fkg(p.kg)} kg`:`${p.un==="kg"?fkg(p.kg)+" kg × ":""}${p.reps}${p.un==="seg"?" seg":""}`}</b><div class="note">${esc(p.motivo)}</div></div>`).join("")}</div>`:""}
+   ${r.img&&!r.cv&&!/por dor/.test(r.nota||"")?`<button type="button" class="btn wide" data-a="img">IMAGEM PARA POSTAR</button>`:""}
    <button type="button" class="btn ghost wide" data-a="novo">Voltar ao início</button>`;
 }
 
@@ -1659,7 +1947,7 @@ function salvar(){
   const dor=[...new Set(series.filter(x=>x.dor>=4).map(x=>EX(x.ex).nome))];
   const prox=its.filter(it=>it.mod==="forca"||it.mod==="mobilidade").map(it=>({nome:EX(it.id).nome, un:(it.livre&&EX(it.id).un==="kg")?"pc":EX(it.id).un, ...sugestao(it)})); /* HAG_TREINO_LIVRE_v1: sem "0 kg" no treino de qualquer lugar */
   const partes=[series.length?`${series.length} ${series.length===1?"série":"séries"}`:"", cardio.length?`${cardio.length} cardio`:"", hyrox.length?`${hyrox.length} ${hyrox.length===1?"tempo":"tempos"}`:""].filter(Boolean).join(" · ");
-  S.salvo={n:series.length, um:series.filter(x=>x.um).length, rpe, dur, ci:rpe*dur, rec, dor, prox, cv:S.cv, partes, enviada:false, nota:S.notaCorrida||""};
+  S.salvo={n:series.length, um:series.filter(x=>x.um).length, rpe, dur, ci:rpe*dur, rec, dor, prox, cv:S.cv, partes, enviada:false, nota:S.notaCorrida||"", img:imgDados(d,series,cardio,dur)};   /* HAG_TREINO_IMAGEM_v1 */
   if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; }
   render();
   enviarFila().then(ok=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
@@ -1668,6 +1956,7 @@ function salvar(){
 vHoje.addEventListener("click", e=>{
   const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a; if(!a) return;
   if(a==="recarregar") return carregar();
+  if(a==="img") return imgAbrir();   /* HAG_TREINO_IMAGEM_v1 */
   if(a==="mplay") return mPlay();   /* HAG_TREINO_MENTE_v1 */
   if(a==="mfim") return mConcluir(false);
   if(a==="msalvar") return mSalvar();
@@ -1721,8 +2010,9 @@ vHoje.addEventListener("click", e=>{
   if(a==="sup"){ S.cardio[S.i].sup=b.dataset.v; return render(); }
   /* HAG_TREINO_CORRIDA_GUIADA_v1 */
   if(a==="guia"){ const G=gCadeia(S.i); if(G) gIniciar(G); return render(); }
-  if(a==="gpausa"){ const g=gAtual(); if(g&&!g.pausa){ g.pausa=Date.now(); salvarRascunho(); } return render(); }
-  if(a==="gseguir"){ const g=gAtual(); if(g&&g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; somPronto(); manterTelaAcesa(); salvarRascunho(); } return render(); }
+  if(a==="gpausa"){ const g=gAtual(); if(g&&!g.pausa){ g.pausa=Date.now(); salvarRascunho(); } bqCancela(); bqMeta(true); return render(); }
+  if(a==="gseguir"){ const g=gAtual(); if(g&&g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; somPronto(); manterTelaAcesa(); salvarRascunho(); } if(BQ&&BQ.el&&bqLigado()) bqSeguir(); else bqIniciar(); return render(); }
+  if(a==="gbloq"){ store.set("hagtreino.bloq", !bqLigado()); if(bqLigado()) bqIniciar(); else bqParar(); return render(); }   /* HAG_TREINO_TELA_BLOQUEADA_v1 */
   if(a==="gfiz"||a==="gpula"){ const g=gAtual(); if(g){ if(g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; } const s=g.segs[g.k], d=gDecorrido(g); gAvanca(g, s.seg?Math.min(d,s.seg):d); } return render(); }
   if(a==="gfim"){ gEncerrar("parou"); return render(); }
   if(a==="gdor"){ gEncerrar("dor"); return render(); }
@@ -1948,7 +2238,7 @@ function renderCatAberto(c){
   let ver=catSem||cur; if(ver>cur && !p.fim) ver=cur;
   const sem=Array.from({length:N},(_,i)=>i+1);
   const st=i=>p.fim||i<cur?"feita":i===cur?"atual":"tranc";
-  vLivre.innerHTML=`${head}${ehCorrida(c)?perfilResumoHTML(c):""}
+  vLivre.innerHTML=`${head}${ehCorrida(c)?perfilResumoHTML(c)+provaHTML(c):""}
   ${!w?`<div class="card"><h3>Pronto para começar</h3><p class="sub">A semana ${semIni(c)} começa no seu primeiro treino. A semana seguinte libera quando você completar todos os treinos da semana.</p></div>`
      : p.fim?`<div class="card"><h3>Programa concluído</h3><p class="sub">Você completou as ${N} semanas. Repita a última semana até a consulta, ou recomece.</p></div>`
      : `<div class="bloco"><div class="kicker">Semana atual</div><div style="font-family:var(--display);font-size:20px;font-weight:700;margin-top:2px">Semana ${cur} de ${N}</div><div style="font-size:13.5px;opacity:.85">${p.feitas.size} de ${sessDaSemana(c,cur).length} treinos feitos · a semana ${cur+1<=N?cur+1:N} libera quando todos estiverem feitos</div></div>`}
@@ -2020,6 +2310,7 @@ function catAcao(b){
     catReini=null; const c=cats().find(x=>x.id===id); if(c) c.inicio=null; catSem=null; renderLivre();
     return rpc("hag_treino_catalogo_iniciar",{p_token:TOKEN,p_id:id,p_reiniciar:true}).then(()=>carregar()).catch(()=>{});
   }
+  if(provaAcao(b)) return;   /* HAG_TREINO_PROVA_v1 */
   if(a==="qc"){ if(!qCor) return; const k=b.dataset.k, v=b.dataset.v; qCor[k]=k==="min"||k==="km"?+v:k==="dor"?v==="true":v; qCor.erro=""; return renderLivre(); }   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
   if(a==="qsalvar") return qSalvar();
   if(a==="qcancela"){ qCor=null; return renderLivre(); }
