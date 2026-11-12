@@ -150,6 +150,21 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .ck .sv svg{width:18px;height:18px;fill:none;stroke:var(--conhaque);stroke-width:1.6}
 .ckfeito{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;color:var(--suave)}
 .ckfeito svg{width:18px;height:18px;fill:none;stroke:#2E3A2D;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ckespera svg{stroke:var(--apoio)}
+/* HAG_CENTRAL_EVOLUCAO_v1 */
+.evc{padding:16px}
+.evg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ev{border:1px solid var(--fio);border-radius:6px;padding:10px 10px 8px;background:var(--papel)}
+.ev .er{font-size:12.5px;color:var(--apoio)}
+.ev .ev2{display:flex;align-items:baseline;gap:4px;margin-top:2px}
+.ev .ev2 b{font-family:var(--d);font-weight:400;font-size:26px;color:var(--tinta)}
+.ev .ev2 span{font-size:12.5px;color:var(--apoio)}
+.ev .mg{width:100%;height:42px;display:block;margin:4px 0 2px}
+.ev .mg polyline{fill:none;stroke:var(--conhaque);stroke-width:1.6;vector-effect:non-scaling-stroke}
+.ev .mg circle{fill:var(--conhaque)}
+.ev .ed{font-size:12.5px;color:var(--suave)}
+.evrec{font-size:14.5px;color:var(--suave);margin:0 0 12px}.evrec b{color:var(--tinta);font-weight:500}
+.evnota{font-size:12.5px;color:var(--apoio);margin:10px 0 0}
 .ckq{padding:14px 14px 12px}.ckq.feita{border-color:var(--camurca)}
 .ckt b{font-family:var(--d);font-weight:400;font-size:18px;display:block}.ckt span{font-size:13px;color:var(--apoio)}
 .ckops{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
@@ -337,6 +352,44 @@ function consultasHTML(d){
   return '<div class="cons"><div class="cr"><b>'+feitas+' de '+L.length+' consultas feitas</b><span>'+(faltam>0?(faltam===1?'falta 1':'faltam '+faltam):'todas feitas')+'</span></div><ul>'+li+'</ul>'
     +(aAg?'<p class="cnota">Nossa equipe entra em contato para agendar as próximas.</p>':'')+'</div>';
 }
+function hojeSP(){ var a=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); a.setHours(12,0,0,0); return a; }
+function isoD(x){ return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+function segundaDe(x){ var y=new Date(x); y.setDate(y.getDate()-((y.getDay()+6)%7)); return y; }
+function janelaCheckin(CK){   /* HAG_CHECKIN_JANELA_v1 */
+  var h=hojeSP(), seg=segundaDe(h), dow=(h.getDay()+6)%7, ult=CK&&CK.ultimo?new Date(CK.ultimo+'T12:00:00'):null;
+  var semAnt=new Date(seg); semAnt.setDate(semAnt.getDate()-7);
+  var feitaSemana=!!(ult&&ult>=seg), feitaAnterior=!!(ult&&ult>=semAnt&&ult<seg);
+  var devida=!feitaSemana&&!(CK&&CK.cadencia==='quinzenal'&&feitaAnterior);
+  var prox=new Date(seg); prox.setDate(prox.getDate()+(devida&&dow<=3?0:(CK&&CK.cadencia==='quinzenal'&&(feitaSemana)?14:7)));
+  return {aberta:dow<=3, feitaSemana:feitaSemana, devida:devida, proxima:isoD(prox)};
+}
+/* HAG_CENTRAL_EVOLUCAO_v1 (12/11/2026, decisão do Dr.): a evolução do corpo pela bioimpedância, um ponto por exame.
+   Peso, massa muscular esquelética, gordura corporal e gordura visceral. Sem vermelho e sem faixa de bom ou ruim; quando o
+   peso muda pouco e a composição melhora, a leitura de recomposição vem antes dos números. O Dr. esconde o peso ou todos
+   os gráficos por paciente (patients.central_ocultar). */
+function nfBR(v,c){ return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c}); }
+function miniGraf(pts){
+  var W=140,H=42,P=4, vs=pts.map(function(p){return p[1];}), lo=Math.min.apply(null,vs), hi=Math.max.apply(null,vs), sp=Math.max(hi-lo, Math.abs((hi+lo)/2)*0.08, 0.5), mn=(hi+lo)/2-sp/2;   /* escala mínima de 8% do valor: oscilação pequena não vira tombo no gráfico */
+  var xy=pts.map(function(p,i){ var x=P+(pts.length>1?i*(W-2*P)/(pts.length-1):(W-2*P)/2), y=H-P-(p[1]-mn)/sp*(H-2*P); return [x,y]; });
+  return '<svg class="mg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+xy.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ')+'"/>'
+    +xy.map(function(q,i){ return '<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="'+(i===xy.length-1?2.6:1.6)+'"/>'; }).join('')+'</svg>';
+}
+function evolucaoHTML(d){
+  var E=(d&&d.evolucao)||null; if(!E||!E.length) return '';
+  var M=[['peso','Peso','kg',1],['musculo','Massa muscular','kg',1],['gordura','Gordura corporal','%',1],['visceral','Gordura visceral','nível',0]];
+  if(E.length<2) return '<h3 class="tit">Sua evolução</h3><div class="card"><p class="vazio">Sua primeira bioimpedância é de '+dataBR(E[0].data)+'. A evolução aparece aqui a partir da próxima.</p></div>';
+  var cards=M.map(function(m){
+    var pts=E.filter(function(x){return x[m[0]]!=null;}).map(function(x){return [x.data,+x[m[0]]];}); if(pts.length<2) return '';
+    var a=pts[0][1], b=pts[pts.length-1][1], dv=b-a, dtx=Math.abs(dv)<(m[3]?0.05:0.5)?'igual a '+dataBR(pts[0][0]).slice(0,5):(dv>0?'+':'−')+nfBR(Math.abs(dv),m[3])+(m[2]==='nível'?'':' '+m[2])+' desde '+dataBR(pts[0][0]).slice(0,5);
+    return '<div class="ev"><div class="er">'+m[1]+'</div><div class="ev2"><b>'+nfBR(b,m[3])+'</b><span>'+(m[2]==='nível'?'nível':m[2])+'</span></div>'+miniGraf(pts)+'<div class="ed">'+dtx+'</div></div>';
+  }).join('');
+  if(!cards) return '';
+  var f=E[0], l=E[E.length-1], rec='';
+  if(f.peso!=null&&l.peso!=null&&f.musculo!=null&&l.musculo!=null&&f.gordura!=null&&l.gordura!=null&&Math.abs(l.peso-f.peso)<=1.5&&l.musculo-f.musculo>=0.4&&f.gordura-l.gordura>=1)
+    rec='<p class="evrec"><b>A balança mudou pouco, o corpo mudou.</b> Mais massa muscular e menos gordura desde '+dataBR(f.data).slice(0,5)+'.</p>';
+  return '<h3 class="tit">Sua evolução</h3><div class="card evc">'+rec+'<div class="evg">'+cards+'</div>'
+    +'<p class="evnota">'+E.length+' bioimpedâncias, de '+dataBR(f.data)+' a '+dataBR(l.data)+'. A leitura clínica é feita em consulta.</p></div>';
+}
 function progresso(c,d){
   if(!c||!c.inicio||!c.fim) return '';
   var i=new Date(c.inicio+'T12:00:00'), f=new Date(c.fim+'T12:00:00'), tot=Math.max(1,Math.round((f-i)/864e5)), feito=Math.min(tot,Math.max(0,tot-diasAte(c.fim)));
@@ -355,10 +408,16 @@ function painel(d){
   /* HAG_CENTRAL_CHECKIN_v1: check-in da semana dentro da central, sem CPF */
   var CK=d.checkin||{};
   /* HAG_CHECKIN_BALANCO_v1: até 7 dias antes da consulta o check-in vira o balanço da fase (no lugar do mensal/trimestral genérico) */
-  var nProx=d.proxima?diasAte(d.proxima.data):99, balanco=CK.elegivel&&nProx>=0&&nProx<=7&&(!CK.ultimo||diasAte(CK.ultimo)<=-3);
+  /* HAG_CHECKIN_JANELA_v1 (12/11/2026, decisão do Dr.): o check-in abre de segunda a quinta e vale um por semana.
+     Dados: 49% respondem na segunda, 27% na terça, 15% na quarta; a janela cobre 97%. O balanço antes da consulta
+     substitui o check-in daquela semana. Fase quinzenal: semanas alternadas. O banco recusa uma segunda resposta na semana. */
+  var JC=janelaCheckin(CK);
+  var nProx=d.proxima?diasAte(d.proxima.data):99, balanco=CK.elegivel&&nProx>=0&&nProx<=7&&!JC.feitaSemana;
   d._balanco=balanco;
   if(CK.elegivel){
-    if(CK.pendente||balanco||VER) h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">'+(balanco?'Balanço antes da consulta':'Check-in da semana')+'</span><span class="q">'+(balanco?'2 minutos · o Dr. Henrique lê antes de te ver':'1 minuto · o Dr. Henrique acompanha por aqui')+'</span></span><span class="sv">'+IC.seta+'</span></button>';
+    if(!JC.devida&&!balanco&&!VER){ h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+(CK.cadencia==='quinzenal'?' · o próximo é em '+dataBR(JC.proxima).slice(0,5):'')+'</span></div>'; }
+    else if(!JC.aberta&&!balanco&&!VER){ h+='<div class="ckfeito ckespera">'+IC.cal+'<span>Check-in da semana abre na segunda, '+dataBR(JC.proxima).slice(0,5)+'</span></div>'; }
+    else if(JC.devida||balanco||VER) h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">'+(balanco?'Balanço antes da consulta':'Check-in da semana')+'</span><span class="q">'+(balanco?'2 minutos · o Dr. Henrique lê antes de te ver':'1 minuto · o Dr. Henrique acompanha por aqui')+'</span></span><span class="sv">'+IC.seta+'</span></button>';
     else h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+'</span></div>';
   }
 
@@ -381,6 +440,8 @@ function painel(d){
     h+='<section class="card vaz"><div class="rot">Próxima consulta</div><p class="vazio" style="margin-top:6px">Nenhuma consulta marcada.</p>'
       +(agd?'<a class="btn" style="margin-top:14px" href="'+agd+'">Agendar</a>':'')+'</section>';
   }
+
+  h+=evolucaoHTML(d);   /* HAG_CENTRAL_EVOLUCAO_v1 */
 
   /* dia a dia */
   var apps=[];
