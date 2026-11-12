@@ -1,3 +1,4 @@
+/* HAG_MARCA_2026_ESCURO_v1 (12/11/2026): cores azuladas (modo escuro e acentos) trocadas pelos tons quentes da marca 2026. Cópia idêntica em HAG_Consultas e pre-consulta-hag. */
 /* HAG_TELAS_MARCA_2026_v1 (10/11/2026): cores, fontes e assinatura da marca Henrique Alves */
 /* HAG_BRIEFING_CARDS_v3 ──────────────────────────────────────────────────────
    06/11/2026 · Renderizador do briefing de consulta em cartoes.
@@ -380,14 +381,14 @@
   '.brf-cards .brf-exi small{font-size:10.5px;color:#9A5A1E}',
   '.brf-cards .brf-exi.velho{border-color:#EBD9BE;background:#FCF3E8}',
   '.brf-cards .brf-exi.nada b{color:#B5AE9E;font-weight:500}',
-  '.brf-cards .brf-av{display:flex;gap:9px;align-items:flex-start;border:1.5px solid #9DB3D6;background:#EEF3FB;'
+  '.brf-cards .brf-av{display:flex;gap:9px;align-items:flex-start;border:1.5px solid #CFB6A4;background:#F8F4F1;'
     +'border-radius:10px;padding:8px 10px;margin:0 0 8px;cursor:pointer}',
-  '.brf-cards .brf-av>i{border-color:#4A6797}',
-  '.brf-cards .brf-av.ok>i{background:#4A6797}',
+  '.brf-cards .brf-av>i{border-color:#8D6C54}',
+  '.brf-cards .brf-av.ok>i{background:#8D6C54}',
   '.brf-cards .brf-av.ok{opacity:.5}',
   '.brf-cards .brf-avt{font-weight:800;color:#33251E;margin:0 0 4px}',
-  '.brf-cards .brf-chip.av{border-color:#C6D3E8;background:#fff;color:#33251E;font-weight:600}',
-  '.brf-cards .brf-av small{display:block;margin-top:4px;font-size:11px;color:#55688A}',
+  '.brf-cards .brf-chip.av{border-color:#E4D5CA;background:#fff;color:#33251E;font-weight:600}',
+  '.brf-cards .brf-av small{display:block;margin-top:4px;font-size:11px;color:#876C58}',
   '.brf-cards .brf-ped{display:flex;gap:8px;align-items:flex-start;border:1px solid #EBD9BE;background:#FCF3E8;'
     +'border-radius:10px;padding:7px 10px;margin:0 0 8px;color:#7A4A1E;font-size:13px}',
   '.brf-cards .brf-ped.forte{border-color:#E7B9A6;background:#FDF0EA;color:#8A3414}',
@@ -465,9 +466,9 @@
   +'}',
   /* HAG_BRIEFING_CARDS_v3_1: TEMA ESCURO OPCIONAL (classe brf-auto), cores do HAG Dr */
   '@media (prefers-color-scheme: dark){'
-    +'.brf-cards.brf-auto{color:#E3E6EC}'
-    +'.brf-cards.brf-auto .cab{background:#202A44;border:1px solid #33405F}'
-    +'.brf-cards.brf-auto .brf-c{background:#202634;border-color:#2E3647}'
+    +'.brf-cards.brf-auto{color:#ECE7E3}'
+    +'.brf-cards.brf-auto .cab{background:#403024;border:1px solid #5A4638}'
+    +'.brf-cards.brf-auto .brf-c{background:#332821;border-color:#46392F}'
     +'.brf-cards.brf-auto .brf-ct{color:#D9B877}'
     +'.brf-cards.brf-auto .brf-ic{background:#2F2A1E;color:#D9B877}'
     +'.brf-cards.brf-auto .brf-c.al{background:#35201F;border-color:#5A302C}'
@@ -475,45 +476,45 @@
     +'.brf-cards.brf-auto .brf-c.al .brf-ic{background:#4A2723;color:#F3A08F}'
     +'.brf-cards.brf-auto .brf-al{color:#F8C9BE}'
     +'.brf-cards.brf-auto .brf-al i{color:#F08D86}'
-    +'.brf-cards.brf-auto .brf-passo span{background:#1A1F2B;border-color:#2E3647;color:#D5D9E2}'
-    +'.brf-cards.brf-auto .brf-passo span b{background:#B98A5E;color:#14161C}'
-    +'.brf-cards.brf-auto .brf-mk:hover{background:#262D3D}'
-    +'.brf-cards.brf-auto .brf-mk + .brf-mk{border-top-color:#2E3647}'
-    +'.brf-cards.brf-auto .brf-mk.ok i,.brf-cards.brf-auto .brf-av.ok>i{color:#14161C}'
-    +'.brf-cards.brf-auto .brf-mk u{color:#9AA1B2}'
-    +'.brf-cards.brf-auto .brf-gl,.brf-cards.brf-auto .brf-lin em,.brf-cards.brf-auto .brf-exi em{color:#8D95A8}'
-    +'.brf-cards.brf-auto .brf-chip{background:#1A1F2B;border-color:#343D50;color:#C9CED8}'
+    +'.brf-cards.brf-auto .brf-passo span{background:#2A211B;border-color:#46392F;color:#E1DBD6}'
+    +'.brf-cards.brf-auto .brf-passo span b{background:#B98A5E;color:#1C1714}'
+    +'.brf-cards.brf-auto .brf-mk:hover{background:#3C3027}'
+    +'.brf-cards.brf-auto .brf-mk + .brf-mk{border-top-color:#46392F}'
+    +'.brf-cards.brf-auto .brf-mk.ok i,.brf-cards.brf-auto .brf-av.ok>i{color:#1C1714}'
+    +'.brf-cards.brf-auto .brf-mk u{color:#B1A49B}'
+    +'.brf-cards.brf-auto .brf-gl,.brf-cards.brf-auto .brf-lin em,.brf-cards.brf-auto .brf-exi em{color:#A7988E}'
+    +'.brf-cards.brf-auto .brf-chip{background:#2A211B;border-color:#4F4035;color:#D7CFCA}'
     +'.brf-cards.brf-auto .brf-chip b{color:#F1F3F7}'
     +'.brf-cards.brf-auto .brf-chip.at{background:#372B17;border-color:#5A4522;color:#E9C083}'
     +'.brf-cards.brf-auto .brf-chip.at b{color:#F2CF95}'
-    +'.brf-cards.brf-auto .brf-frase{color:#D5D9E2}'
+    +'.brf-cards.brf-auto .brf-frase{color:#E1DBD6}'
     +'.brf-cards.brf-auto .brf-frase.at,.brf-cards.brf-auto .brf-lin.at span{color:#E9C083}'
     +'.brf-cards.brf-auto .brf-lin.fim span{color:#F3A08F}'
-    +'.brf-cards.brf-auto .brf-sep{background:#2E3647}'
-    +'.brf-cards.brf-auto .brf-exi{background:#1A1F2B;border-color:#343D50}'
+    +'.brf-cards.brf-auto .brf-sep{background:#46392F}'
+    +'.brf-cards.brf-auto .brf-exi{background:#2A211B;border-color:#4F4035}'
     +'.brf-cards.brf-auto .brf-exi b{color:#F1F3F7}'
     +'.brf-cards.brf-auto .brf-exi small{color:#E5B569}'
     +'.brf-cards.brf-auto .brf-exi.velho{background:#372B17;border-color:#5A4522}'
-    +'.brf-cards.brf-auto .brf-exi.nada b{color:#6C7488}'
-    +'.brf-cards.brf-auto .brf-av{background:#2A1F18;border-color:#3D5A86}'
-    +'.brf-cards.brf-auto .brf-av>i{border-color:#8DB8F0}'
-    +'.brf-cards.brf-auto .brf-av.ok>i{background:#8DB8F0}'
-    +'.brf-cards.brf-auto .brf-avt{color:#BFD6F7}'
-    +'.brf-cards.brf-auto .brf-chip.av{background:#14213A;border-color:#3D5A86;color:#D6E4F8}'
-    +'.brf-cards.brf-auto .brf-av small{color:#9DB3D6}'
+    +'.brf-cards.brf-auto .brf-exi.nada b{color:#87786D}'
+    +'.brf-cards.brf-auto .brf-av{background:#2A1F18;border-color:#7D5D46}'
+    +'.brf-cards.brf-auto .brf-av>i{border-color:#DDB68A}'
+    +'.brf-cards.brf-auto .brf-av.ok>i{background:#DDB68A}'
+    +'.brf-cards.brf-auto .brf-avt{color:#E9D9CE}'
+    +'.brf-cards.brf-auto .brf-chip.av{background:#352519;border-color:#7D5D46;color:#F0E6DE}'
+    +'.brf-cards.brf-auto .brf-av small{color:#CFB6A4}'
     +'.brf-cards.brf-auto .brf-ped{background:#372B17;border-color:#5A4522;color:#E9C083}'
     +'.brf-cards.brf-auto .brf-ped.forte{background:#3A1F22;border-color:#5A302C;color:#F3A08F}'
     +'.brf-cards.brf-auto .brf-pedx .brf-chip{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.12);color:inherit}'
-    +'.brf-cards.brf-auto .brf-meds{border-color:#2E3647}'
-    +'.brf-cards.brf-auto .brf-med + .brf-med{border-top-color:#2E3647}'
+    +'.brf-cards.brf-auto .brf-meds{border-color:#46392F}'
+    +'.brf-cards.brf-auto .brf-med + .brf-med{border-top-color:#46392F}'
     +'.brf-cards.brf-auto .brf-med.urg{background:#2E1D20}'
-    +'.brf-cards.brf-auto .brf-med.vazio{color:#8D95A8}'
-    +'.brf-cards.brf-auto .brf-selo{background:#2A3141;color:#B5BAC6}'
+    +'.brf-cards.brf-auto .brf-med.vazio{color:#A7988E}'
+    +'.brf-cards.brf-auto .brf-selo{background:#40342B;color:#C5BCB6}'
     +'.brf-cards.brf-auto .brf-selo.urg{background:#4A2723;color:#F8C9BE}'
     +'.brf-cards.brf-auto .brf-selo.ama{background:#3F3119;color:#F2CF95}'
-    +'.brf-cards.brf-auto .brf-decl{color:#BFD6F7}'
-    +'.brf-cards.brf-auto .brf-mk.dec,.brf-cards.brf-auto .brf-mk.dec + .brf-mk.dec{border-color:#343D50}'
-    +'.brf-cards.brf-auto .brf-fechamento{background:#1D2230}'
+    +'.brf-cards.brf-auto .brf-decl{color:#E9D9CE}'
+    +'.brf-cards.brf-auto .brf-mk.dec,.brf-cards.brf-auto .brf-mk.dec + .brf-mk.dec{border-color:#4F4035}'
+    +'.brf-cards.brf-auto .brf-fechamento{background:#2F251E}'
   +'}'
   ].join('\n');
 
