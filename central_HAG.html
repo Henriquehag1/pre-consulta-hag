@@ -106,6 +106,15 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .card.lst .grupo{margin:10px 0 0}
 .doc .ic{flex:none;display:flex}
 .doc .dt{flex:1;display:flex;flex-direction:column}
+/* HAG_CENTRAL_RECEITAS_v1 */
+.doc.rx .t{font-size:15.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.doc.rx .tp{font-family:var(--r);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--conhaque);margin-bottom:3px}
+.rxd{font-size:13px;color:var(--apoio);padding:12px 0 0}
+.rxant{border-top:1px solid var(--fio);margin-top:4px}
+.rxant summary{list-style:none;cursor:pointer;padding:14px 0;font-family:var(--r);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--conhaque)}
+.rxant summary::-webkit-details-marker{display:none}
+.rxant summary::after{content:" ›";letter-spacing:0}
+.rxant[open] summary::after{content:" ⌄"}
 .equipe{display:flex;align-items:center;gap:14px;margin-top:14px;background:var(--papel);border:1px solid var(--fio);border-radius:6px;padding:14px 16px;text-decoration:none;color:var(--tinta)}
 .equipe .dt{flex:1;display:flex;flex-direction:column}
 .equipe .t{font-size:16px;font-weight:400}.equipe .q{font-size:13px;color:var(--apoio)}
@@ -280,7 +289,7 @@ function nomeCiclo(t){ var m={ciclo_essencial:'Ciclo Essencial',ciclo_reset:'Cic
 
 /* HAG_CENTRAL_INICIO_v2 (11/11/2026). Pedido do Dr.: melhorar estética, organização e navegação da página inicial.
    Ordem pelo uso: (1) onde ele está no ciclo, (2) a próxima consulta com as ações dela, (3) os apps do dia a dia,
-   (4) os documentos, com os dois planos em destaque e as receitas numeradas quando são do mesmo dia, (5) a equipe.
+   (4) os documentos, com os dois planos em destaque e as receitas com os itens à vista, agrupadas por data (HAG_CENTRAL_RECEITAS_v1), (5) a equipe.
    Os quatro blocos coloridos (verde, vinho) saíram: fugiam da paleta da marca 2026. */
 var IC={
   coz:'<svg viewBox="0 0 24 24"><path d="M4 11h16a8 8 0 0 1-16 0Z"/><path d="M8 7c0-1.5 1-2 1-3.5M12 7c0-1.5 1-2 1-3.5M16 7c0-1.5 1-2 1-3.5"/></svg>',
@@ -361,12 +370,26 @@ function painel(d){
     if(dest.length){ h+='<div class="planos n'+dest.length+'">'+dest.map(function(x){
       return '<button class="plano" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="t">'+esc(x.titulo)+'</span><span class="q">Atualizado em '+dataBR(x.data)+'</span><span class="a">Abrir</span></button>';
     }).join('')+'</div>'; }
-    var resto=[]; 
-    var pd={}; g.receita.forEach(function(x){ pd[x.data]=(pd[x.data]||0)+1; });
-    var cnt={}; g.receita.forEach(function(x){ var k=x.data; cnt[k]=(cnt[k]||0)+1; resto.push([x, pd[k]>1?'Receita '+cnt[k]+' de '+pd[k]:'Receita', IC.rx]); });
+    /* HAG_CENTRAL_RECEITAS_v1 (11/11/2026): o Dr. pediu que o paciente saiba o que tem em cada receita sem abrir uma por uma.
+       Cada receita mostra os itens (lidos da prescrição) e o tipo; agrupadas por data; as datas mais antigas ficam recolhidas. */
+    if(g.receita.length){
+      var datas=[], porData={}; g.receita.forEach(function(x){ if(!porData[x.data]){ porData[x.data]=[]; datas.push(x.data); } porData[x.data].push(x); });
+      var linhaRx=function(x){
+        var it=x.itens||[], t=it.length? (it.length>3? it.slice(0,2).join(' · ')+' e mais '+(it.length-2) : it.join(' · ')) : 'Receita';
+        var q=it.length? (x.tipo||'') : 'Abra para ver os itens';
+        return '<li><button class="doc rx" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.rx+'</span><span class="dt">'+(x.tipo&&it.length?'<span class="tp">'+esc(x.tipo)+'</span>':'')+'<span class="t">'+esc(t)+'</span>'+(!it.length?'<span class="q">'+esc(q)+'</span>':'')+'</span><span class="a">Abrir</span></button></li>';
+      };
+      var blocoRx=function(dt){ var l=porData[dt]; return '<div class="rxd">'+dataBR(dt)+' · '+l.length+(l.length>1?' receitas':' receita')+'</div><ul class="lista">'+l.map(linhaRx).join('')+'</ul>'; };
+      var abertas=datas.slice(0,1), velhas=datas.slice(1);
+      h+='<div class="card lst"><div class="grupo">Suas receitas</div>'+abertas.map(blocoRx).join('');
+      if(velhas.length){ var nv=0; velhas.forEach(function(dt){ nv+=porData[dt].length; });
+        h+='<details class="rxant"><summary>Receitas anteriores · '+nv+'</summary>'+velhas.map(blocoRx).join('')+'</details>'; }
+      h+='</div>';
+    }
+    var resto=[];
     g.plano_tratamento.slice(1).concat(g.plano_alimentar.slice(1)).forEach(function(x){ resto.push([x,x.titulo+' anterior',IC.doc]); });
     g.outros.forEach(function(x){ resto.push([x,x.titulo,IC.doc]); });
-    if(resto.length){ h+='<div class="card lst"><div class="grupo">Receitas e outros</div><ul class="lista">'+resto.map(function(r){
+    if(resto.length){ h+='<div class="card lst"><div class="grupo">Outros documentos</div><ul class="lista">'+resto.map(function(r){
       return '<li><button class="doc" data-doc="'+esc(r[0].id)+'"><span class="ic">'+r[2]+'</span><span class="dt"><span class="t">'+esc(r[1])+'</span><span class="q">'+dataBR(r[0].data)+'</span></span><span class="a">Abrir</span></button></li>';
     }).join('')+'</ul></div>'; }
   }
