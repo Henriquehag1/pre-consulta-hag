@@ -1091,14 +1091,19 @@ function soltaTela(){ try{ if(TRAVA) TRAVA.release(); }catch(e){} TRAVA = null; 
 function prontuarios(){
   folha('Prontuários a assinar', '<div class="vazio">Carregando…</div>');
   var de = hojeISO(-45);
-  Promise.all([ api('consultas?select=id,patient_id,patient_nome,data_consulta,etapa&assinado_em=is.null&data_consulta=gte.' + de + '&order=data_consulta.asc&limit=80'),
+  /* HAG_ASSINAR_NA_CONSULTA_v1 (12/11/2026): a lista vem da RPC, que tira a copia identica de uma consulta
+     ja assinada (consulta gravada duas vezes). Sem a RPC no banco, cai na consulta antiga. */
+  Promise.all([ rpc('hag_prontuarios_pendentes', { p_dias: 45 }).catch(function(){
+                  return api('consultas?select=id,patient_id,patient_nome,data_consulta,etapa&assinado_em=is.null&data_consulta=gte.' + de + '&order=data_consulta.asc&limit=80'); }),
                 api('mac_pedidos?select=status,pedido_em,concluido_em,resumo,erro&tipo=eq.assinar_prontuarios&order=id.desc&limit=1').catch(function(){ return []; }) ]).then(function(r){
-    var l = (r[0] || []).filter(function(c){ return /^\d{4}-\d{2}-\d{2}/.test(c.data_consulta || '') && String(c.data_consulta).slice(0,10) <= hojeISO(); }), u = (r[1] || [])[0];
-    var h = '<p class="sub">' + l.length + (l.length === 1 ? ' consulta' : ' consultas') + ' dos últimos 45 dias sem assinatura no banco.</p>'
+    var todos = (r[0] || []).filter(function(c){ return /^\d{4}-\d{2}-\d{2}/.test(c.data_consulta || '') && String(c.data_consulta).slice(0,10) <= hojeISO(); }), u = (r[1] || [])[0];
+    var l = todos.filter(function(c){ return !c.copia_de; }), nCop = todos.length - l.length;
+    var h = '<p class="sub">' + l.length + (l.length === 1 ? ' consulta' : ' consultas') + ' dos últimos 45 dias sem assinatura no banco.'
+      + (nCop ? ' ' + nCop + (nCop === 1 ? ' cópia idêntica de consulta já assinada ficou de fora.' : ' cópias idênticas de consulta já assinada ficaram de fora.') : '') + '</p>'
       + l.map(function(c){ return li(esc(c.patient_nome || ''), diaRot(String(c.data_consulta).slice(0,10)) + (c.etapa ? ' · ' + esc(c.etapa) : '')); }).join('');
     if(u) h += '<div class="msg' + (u.status === 'erro' ? ' erro' : '') + '">Último pedido ao Mac (' + dm(u.pedido_em) + '): ' + esc(u.status === 'feito' ? (u.resumo || 'feito') : u.status === 'erro' ? (u.erro || 'erro') : 'na fila, o Mac pega em até 1 minuto') + '</div>';
     h += '<div class="acoes"><button class="pri" data-prep-mac' + (l.length ? '' : ' disabled') + '>Preparar no Mac</button></div>'
-      + '<div class="meta" style="margin-top:8px">O Mac copia os PDFs para a pasta "Prontuarios para assinar" da Mesa, com o quadro da assinatura pronto. Ao chegar no Mac: libere o VIDaaS no celular e dê dois cliques em "Assinar prontuários". A assinatura em si continua sendo sua, com o e-CPF.</div>';
+      + '<div class="meta" style="margin-top:8px">Consultas novas: no fim da consulta, no motor, toque em <b>Assinar agora</b> depois de Salvar. O Mac gera o PDF, abre no Acrobat e registra sozinho. Atrasados: "Preparar no Mac" copia os PDFs para a pasta "Prontuarios para assinar" da Mesa; ao chegar no Mac, libere o VIDaaS no celular (validade de 12 horas) e dê dois cliques em "Assinar prontuários". A assinatura em si continua sendo sua, com o e-CPF.</div>';
     folha('Prontuários a assinar', h);
   }).catch(function(e){ folha('Prontuários a assinar', '<div class="msg erro">' + esc(e.message) + '</div>'); });
 }
