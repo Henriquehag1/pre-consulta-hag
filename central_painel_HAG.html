@@ -86,7 +86,7 @@ function desenha(){
     var dc = '<span class="chip ne">'+x.docs_visiveis+' documento'+(x.docs_visiveis==1?'':'s')+'</span>'+(x.docs_sem_nuvem>0?'<span class="chip no">'+x.docs_sem_nuvem+' ainda só no Mac</span>':'');
     return '<div class="p" data-id="'+esc(x.patient_id)+'"><div class="cab"><div><div class="nm">'+esc(x.nome)+(x.interno?' <span class="chip ne">interno</span>':'')+'</div><div class="mt">'+st+dc+(x.ultimo_uso?' Último uso '+dt(x.ultimo_uso):'')+'</div></div>'
       +'<div class="acoes">'+(x.token?'<button class="b" data-a="msg">Mensagem</button>':'<button class="b" data-a="gerar">Gerar link</button>')
-      +'<a class="b c" style="text-decoration:none" target="_blank" rel="noopener" href="central_HAG.html?ver=1&p='+encodeURIComponent(x.patient_id)+'">Ver como ele vê</a><button class="b c" data-a="docs">Documentos</button><button class="b c" data-a="log">Registro</button></div></div><div class="det"></div></div>';
+      +'<a class="b c" style="text-decoration:none" target="_blank" rel="noopener" href="central_HAG.html?ver=1&p='+encodeURIComponent(x.patient_id)+'">Ver como ele vê</a><button class="b c" data-a="docs">Documentos</button><button class="b c" data-a="evo">Evolução</button><button class="b c" data-a="log">Registro</button></div></div><div class="det"></div></div>';
   }).join('');
   $('#lista').innerHTML=h||'<p>Nenhum paciente com ciclo ativo.</p>';
 }
@@ -122,6 +122,18 @@ async function abreDocs(box, x){
   }).join(''):'<p class="mt">Nenhum documento.</p>');
 }
 
+/* HAG_CENTRAL_EVOLUCAO_v1 (12/11/2026): o Dr. esconde o peso ou todos os gráficos de evolução de um paciente na central. */
+async function abreEvo(box, x){
+  var det=$('.det',box); det.innerHTML='Carregando…'; det.classList.add('on');
+  var r=await db.from('patients').select('central_ocultar').eq('id',x.patient_id).maybeSingle();
+  if(r.error){ det.textContent='Erro: '+r.error.message; return; }
+  var oc=(r.data&&r.data.central_ocultar)||[], g=oc.indexOf('evolucao')<0, pe=oc.indexOf('peso')<0;
+  det.innerHTML='<h3>Evolução na central</h3>'
+    +'<div class="linha"><span>Gráficos de evolução (bioimpedância)</span><span><span class="vis" style="color:'+(g?'var(--floresta)':'var(--apoio)')+'">'+(g?'Aparece':'Oculto')+'</span> <button class="b c" data-a="evotog" data-k="evolucao">'+(g?'Esconder':'Mostrar')+'</button></span></div>'
+    +'<div class="linha"><span>Peso</span><span><span class="vis" style="color:'+(pe?'var(--floresta)':'var(--apoio)')+'">'+(pe?'Aparece':'Oculto')+'</span> <button class="b c" data-a="evotog" data-k="peso">'+(pe?'Esconder':'Mostrar')+'</button></span></div>'
+    +'<p class="mt" style="margin-top:8px">Para quem tem relação difícil com a balança, esconda só o peso: massa muscular, gordura e visceral continuam.</p>';
+  det._oc=oc;
+}
 async function abreLog(box, x){
   var det=$('.det',box); det.innerHTML='Carregando…'; det.classList.add('on');
   var r=await db.from('central_log').select('acao,doc_id,detalhe,em').eq('patient_id',x.patient_id).order('em',{ascending:false}).limit(30);
@@ -142,12 +154,16 @@ function liga(){
   $('#lista').addEventListener('click',async function(e){
     var bt=e.target.closest('[data-a]'); if(!bt) return;
     var box=bt.closest('.p'), id=box.dataset.id, x=linha(id), a=bt.dataset.a, det=$('.det',box);
-    if(['msg','docs','log'].indexOf(a)>=0 && det.classList.contains('on') && det.dataset.v===a){ det.classList.remove('on'); return; }
+    if(['msg','docs','log','evo'].indexOf(a)>=0 && det.classList.contains('on') && det.dataset.v===a){ det.classList.remove('on'); return; }
     det.dataset.v=a;
     if(a==='gerar'){ bt.disabled=true; var t=await gerar(id,false); if(t){ x.token=t; await carrega(); box=$('.p[data-id="'+CSS.escape(id)+'"]'); abreMsg(box, linha(id)); } return; }
     if(a==='msg') return abreMsg(box,x);
     if(a==='docs') return abreDocs(box,x);
     if(a==='log') return abreLog(box,x);
+    if(a==='evo') return abreEvo(box,x);
+    if(a==='evotog'){ var oc=(det._oc||[]).slice(), k=bt.dataset.k, i=oc.indexOf(k); if(i>=0) oc.splice(i,1); else oc.push(k);
+      var r3=await db.from('patients').update({central_ocultar:oc}).eq('id',id); if(r3.error){ toast('Erro: '+r3.error.message); return; }
+      toast(i>=0?'Agora aparece na central.':'Escondido da central.'); return abreEvo(box,x); }
     if(a==='copiar'){ try{ await navigator.clipboard.writeText($('textarea',box).value); toast('Mensagem copiada.'); }catch(_){ $('textarea',box).select(); toast('Selecionado: use Copiar.'); } return; }
     if(a==='copiarlink'){ try{ await navigator.clipboard.writeText(linkDe(x.token)); toast('Link copiado.'); }catch(_){ toast('Não deu para copiar.'); } return; }
     if(a==='sairtodos' || a==='trocar'){
