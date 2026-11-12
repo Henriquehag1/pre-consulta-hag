@@ -233,7 +233,12 @@ body.descansando .wrap{padding-bottom:190px}
 .navx{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:4px}
 .navx .btn{min-height:52px}
 /* HAG_TREINO_TELA_BLOQUEADA_v1, HAG_TREINO_IMAGEM_v1, HAG_TREINO_PROVA_v1 (12/11/2026) */
-.gbloq{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:10px;text-align:center}
+.gbloq{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;text-align:center}
+.bolso{position:fixed;inset:0;z-index:70;background:#000;color:#6f655b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;padding:24px;text-align:center}
+.bolso .b-rot{font-family:var(--display);font-size:40px;letter-spacing:.04em;color:#8a7c6c}
+.bolso .b-t{font-family:var(--display);font-size:96px;line-height:1;font-variant-numeric:tabular-nums;color:#8a7c6c}
+.bolso .b-p{font-size:22px}.bolso .b-nx{font-size:16px}
+.bolso .b-sair{position:absolute;bottom:28px;font-size:13px;color:#3d3630}
 .imgov{position:fixed;inset:0;z-index:60;background:rgba(10,7,5,.82);display:flex;align-items:flex-end;justify-content:center;padding:16px;overflow:auto}
 .imgbox{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:auto 0}
 .imgprev{border-radius:12px;padding:22px 14px;display:flex;justify-content:center}
@@ -829,7 +834,27 @@ let wakeLock=null, audio=null, tick=null, descanso=null, tickCrono=null;
    de áudio na hora em que a etapa começa, para tocar no tempo certo mesmo com a tela apagada. Efeito colateral: o áudio
    do app pausa a música de outro app, por isso a pessoa pode desligar. Piloto: só perfis internos (CTX.piloto). */
 const piloto = () => !!(CTX && CTX.piloto);
-const bqLigado = () => piloto() && store.get("hagtreino.bloq", true) !== false;
+/* HAG_TREINO_MUSICA_v1 (12/11/2026). Pedido do Dr. Henrique: a música que a pessoa ouve não pode parar.
+   No iPhone uma página web só toca com a tela bloqueada se assumir o áudio do sistema ("playback"), e isso pausa o
+   Spotify; não existe na web o "misturar com outros apps" que um app nativo tem. Então são dois modos:
+   - "Com minha música" (padrão, todos): sessão de áudio "transient" (navigator.audioSession, Safari 17+): os bipes
+     tocam por cima da música, que só abaixa no bipe e volta. A tela fica ligada (wakeLock) e o MODO BOLSO deixa a
+     tela preta, com tempo e pace em cinza e toque travado, para levar no bolso ou na braçadeira gastando pouca bateria.
+   - "Tela bloqueada" (piloto): o modo da v1, com tempo e pace na tela bloqueada e no relógio, pausando a música. */
+const bqLigado = () => piloto() && store.get("hagtreino.audio","musica")==="bloqueio";
+function sessaoAudio(tipo){ try{ if(navigator.audioSession && navigator.audioSession.type!==tipo) navigator.audioSession.type=tipo; }catch(e){} }
+sessaoAudio("transient");
+function bolsoAbrir(){ if(!gAtual()) return; let b=document.getElementById("bolso"); if(!b){ b=document.createElement("div"); b.id="bolso"; b.className="bolso"; b.setAttribute("role","dialog"); b.setAttribute("aria-label","Modo bolso");
+    b.innerHTML='<div class="b-rot"></div><div class="b-t"></div><div class="b-p"></div><div class="b-nx"></div><div class="b-sair">segure 1 segundo para sair</div>';
+    let tm=null; b.addEventListener("pointerdown",e=>{ e.preventDefault(); clearTimeout(tm); tm=setTimeout(bolsoFechar,900); });
+    ["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(tm)));
+    b.addEventListener("click",e=>e.preventDefault()); document.body.appendChild(b); }
+  manterTelaAcesa(); bolsoAtualiza(); }
+function bolsoFechar(){ const b=document.getElementById("bolso"); if(b) b.remove(); if(document.getElementById("gcrono")) render(); }
+function bolsoAtualiza(){ const b=document.getElementById("bolso"); if(!b) return; const g=gAtual(); if(!g){ b.remove(); return; }
+  const s=g.segs[g.k], d=gDecorrido(g), q=c=>b.querySelector(c);
+  q(".b-rot").textContent=(g.pausa?"PAUSA · ":"")+s.rot.toUpperCase(); q(".b-t").textContent=s.seg?mmss(Math.max(0,s.seg-d)):mmss(d);
+  q(".b-p").textContent=paceSegTxt(s)||(s.dist||""); const nx=g.segs[g.k+1]; q(".b-nx").textContent=nx?"Depois: "+gRes(nx):"Última etapa"; }
 let BQ=null;   /* {el, nos:[], seg:-1} */
 const bqAtivo = () => !!(BQ && BQ.el && !BQ.el.paused && gAtual());
 function bqWav(){
@@ -843,6 +868,7 @@ function bqIniciar(){
   if(!bqLigado()||!gAtual()) return;
   try{
     if(!BQ) BQ={el:null, nos:[], seg:-1};
+    sessaoAudio("playback");
     if(!BQ.el){ const a=new Audio(bqWav()); a.loop=true; a.setAttribute("playsinline",""); a.preload="auto"; BQ.el=a; }
     const p=BQ.el.play(); if(p&&p.catch) p.catch(()=>{});
     if("mediaSession" in navigator){
@@ -854,7 +880,7 @@ function bqIniciar(){
   BQ.seg=-1; bqAgenda(); bqMeta(true);
 }
 function bqParar(){
-  bqCancela();
+  bqCancela(); sessaoAudio("transient");
   if(BQ && BQ.el){ try{ BQ.el.pause(); }catch(e){} }
   if("mediaSession" in navigator){ try{ navigator.mediaSession.metadata=null; navigator.mediaSession.playbackState="none"; }catch(e){} }
 }
@@ -894,8 +920,14 @@ function bqMeta(forca){
 function bqPausar(){ const g=gAtual(); if(g&&!g.pausa){ g.pausa=Date.now(); salvarRascunho(); } bqCancela(); bqMeta(true); if(document.getElementById("gcrono")) render(); }
 function bqSeguir(){ const g=gAtual(); if(g&&g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; somPronto(); manterTelaAcesa(); salvarRascunho(); }
   if(BQ&&BQ.el){ const p=BQ.el.play(); if(p&&p.catch) p.catch(()=>{}); } bqAgenda(); bqMeta(true); if(document.getElementById("gcrono")) render(); }
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible" && gAtual() && bqAtivo()){ bqAgenda(); bqMeta(true); } });
-const bloqHTML = () => piloto() ? `<div class="gbloq"><button type="button" class="link" data-a="gbloq">Tela bloqueada e relógio: <b>${bqLigado()?"ligado":"desligado"}</b></button>${bqLigado()?`<span class="note">Mostra tempo e pace com a tela apagada. Pausa a música de outro app.</span>`:""}</div>` : "";
+document.addEventListener("visibilitychange",()=>{ const g=gAtual(); if(!g) return;
+  if(document.visibilityState==="hidden"){ if(!bqAtivo() && !g.pausa) g.saiu=true; return; }
+  if(bqAtivo()){ bqAgenda(); bqMeta(true); } else manterTelaAcesa(); if(document.getElementById("gcrono")) render(); });
+const bloqHTML = () => { const g=gAtual(), b=bqLigado();   /* HAG_TREINO_MUSICA_v1 */
+  return `<div class="gbloq">${piloto()?`<div class="chips" role="group" aria-label="Som" style="justify-content:center"><button type="button" class="chip" data-a="gaudio" data-v="musica" aria-pressed="${!b}">Com minha música</button><button type="button" class="chip" data-a="gaudio" data-v="bloqueio" aria-pressed="${b}">Tela bloqueada</button></div>`:""}
+   <span class="note">${b?"Tempo e pace na tela bloqueada e no relógio. A música de outro app pausa.":"Sua música continua. Os bipes tocam por cima com a tela ligada."}</span>
+   ${b?"":`<button type="button" class="btn ghost small" data-a="gbolso">MODO BOLSO</button>`}
+   ${g&&g.saiu&&!b?`<p class="note" style="color:var(--warn);margin:2px 0 0">A tela apagou e os bipes pararam; o tempo seguiu certo. Use o modo bolso.</p>`:""}</div>`; };
 /* HAG_TREINO_IMAGEM_v1 (12/11/2026). Pedido do Dr. Henrique: ao fim de cada treino, uma imagem PNG com as métricas, para
    salvar no celular e postar. Fundo transparente (escolha dele): a pessoa cola sobre a própria foto, como figurinha.
    Texto claro ou escuro, assinatura "MÉTODO HAG" discreta. Sem nome e sem dado clínico (nada de esforço, dor ou nota). */
@@ -1716,8 +1748,8 @@ function gTick(){
     if(el<s.seg){ const f=Math.ceil(s.seg-el); if(f<=3&&g.ult!==f){ g.ult=f; if(!bqAtivo()) bipCurto(); } break; }
     g.real.push(s.seg); g.ini+=s.seg*1000; g.k++; g.ult=null; mudou=true;
     if(g.k>=g.segs.length){ gEncerrar("fim"); break; } }
-  if(mudou){ if(!g.fim){ if(!bqAtivo()) bip(); salvarRascunho(); bqMeta(true); } if(document.getElementById("gcrono")) render(); return; }
-  bqMeta(false);   /* HAG_TREINO_TELA_BLOQUEADA_v1 */
+  if(mudou){ if(!g.fim){ if(!bqAtivo()) bip(); salvarRascunho(); bqMeta(true); bolsoAtualiza(); } if(document.getElementById("gcrono")) render(); return; }
+  bqMeta(false); bolsoAtualiza();   /* HAG_TREINO_TELA_BLOQUEADA_v1, HAG_TREINO_MUSICA_v1 */
   const el=document.getElementById("gcrono"); if(!el) return; const s=g.segs[g.k], d=gDecorrido(g);
   el.textContent=s.seg?mmss(Math.max(0,s.seg-d)):mmss(d);
   const b=document.getElementById("gbar"); if(b) b.style.width=(s.seg?Math.min(100,100*d/s.seg):0)+"%";
@@ -1726,7 +1758,7 @@ function gTick(){
 function gEncerrar(motivo){
   const g=S.guia; if(!g||g.fim) return;
   if(motivo!=="fim"){ const d=gDecorrido(g); if(d>=1 && g.k<g.segs.length) g.real.push(Math.round(d)); }
-  g.fim=true; g.parou=motivo==="fim"?null:motivo; g.pausa=null; clearInterval(tickGuia); tickGuia=null; bqParar();
+  g.fim=true; g.parou=motivo==="fim"?null:motivo; g.pausa=null; clearInterval(tickGuia); tickGuia=null; bqParar(); { const bo=document.getElementById("bolso"); if(bo) bo.remove(); }
   const tot=g.real.reduce((a,x)=>a+x,0), porItem={}; g.real.forEach((x,j)=>{ const it=(g.segs[j]||{}).item; if(it!=null) porItem[it]=(porItem[it]||0)+x; });
   const ultimo=motivo==="fim" ? g.itens[g.itens.length-1] : (g.segs[Math.min(g.k,g.segs.length-1)]||{}).item;
   for(const j of g.itens){ if(j>ultimo) break; const sec=porItem[j]||0, c=S.cardio[j]||(S.cardio[j]={sup:null,km:"",min:"",fc:"",z2:""});
@@ -1905,7 +1937,7 @@ function pararDescanso(){ clearInterval(tick); descanso=null; elTimer.hidden=tru
 elTimer.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b||!descanso) return; if(b.dataset.t==="mais"){ descanso.fim+=30000; descanso.total+=30; } if(b.dataset.t==="menos") descanso.fim=Math.max(Date.now(),descanso.fim-15000); if(b.dataset.t==="pular") return pararDescanso(); if(b.dataset.t==="fechar") return pararDescanso(); desenharTimer(); });
 async function manterTelaAcesa(){ try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ if(S.fase==="treino") manterTelaAcesa(); desenharTimer(); enviarFila(); } });
-function somPronto(){ if(!audio){ try{ audio=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+function somPronto(){ sessaoAudio(bqLigado()&&gAtual()?"playback":"transient"); if(!audio){ try{ audio=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
 
 function avancar(descansoSeg, deIt){
   /* HAG_TREINO_CIRCUITO_v1: avança para o próximo passo (no circuito, o próximo exercício da volta ou a próxima volta) */
@@ -2013,7 +2045,8 @@ vHoje.addEventListener("click", e=>{
   if(a==="guia"){ const G=gCadeia(S.i); if(G) gIniciar(G); return render(); }
   if(a==="gpausa"){ const g=gAtual(); if(g&&!g.pausa){ g.pausa=Date.now(); salvarRascunho(); } bqCancela(); bqMeta(true); return render(); }
   if(a==="gseguir"){ const g=gAtual(); if(g&&g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; somPronto(); manterTelaAcesa(); salvarRascunho(); } if(BQ&&BQ.el&&bqLigado()) bqSeguir(); else bqIniciar(); return render(); }
-  if(a==="gbloq"){ store.set("hagtreino.bloq", !bqLigado()); if(bqLigado()) bqIniciar(); else bqParar(); return render(); }   /* HAG_TREINO_TELA_BLOQUEADA_v1 */
+  if(a==="gaudio"){ store.set("hagtreino.audio", b.dataset.v==="bloqueio"?"bloqueio":"musica"); if(bqLigado()) bqIniciar(); else { bqParar(); somPronto(); } return render(); }   /* HAG_TREINO_MUSICA_v1 */
+  if(a==="gbolso"){ const g=gAtual(); if(g) g.saiu=false; bolsoAbrir(); return; }
   if(a==="gfiz"||a==="gpula"){ const g=gAtual(); if(g){ if(g.pausa){ g.ini+=Date.now()-g.pausa; g.pausa=null; } const s=g.segs[g.k], d=gDecorrido(g); gAvanca(g, s.seg?Math.min(d,s.seg):d); } return render(); }
   if(a==="gfim"){ gEncerrar("parou"); return render(); }
   if(a==="gdor"){ gEncerrar("dor"); return render(); }
