@@ -990,6 +990,7 @@ const temProvaPlano = c => !!(c && MINPROVA[c.id]);
 const provaDe = c => { const pf=perfilCorrida(), pv=pf&&pf.prova; return pv&&c&&pv.cat===c.id&&piloto()?pv:null; };
 const semanasAte = (data,hoje) => Math.ceil((diaNum(data)-diaNum(hoje)+1)/7);
 const isoDe = n => new Date(n*864e5).toISOString().slice(0,10);
+const provaComecou = c => !!(c && c.inicio && feitasCat(c).some(h=>h.data>=c.inicio));   /* depois de "Recomeçar" a entrada pela prova volta a valer */
 function papelSess(s){ const n=semAc(s.nome||""); if((s.itens||[]).some(it=>/^seus? |^\d+(?:[.,]\d+)?\s*km:\s*teste/i.test(String(it.alvo||"")))) return "prova";
   if(/^longo/.test(n)) return "longo"; if(/qualidade|ritmo|tiros/.test(n)) return "qual"; return "facil"; }
 function planoProva(c, pv, hoje, comecou){
@@ -1049,7 +1050,7 @@ function provaHTML(c){
 }
 function provaFormHTML(c){
   const q=qProva, m=MINPROVA[c.id], ch=(k,v,t)=>`<button type="button" class="chip" data-a="pvc" data-k="${k}" data-v="${v}" aria-pressed="${String(q[k])===String(v)}">${t}</button>`;
-  const ok=q.data&&q.dias&&q.min&&q.longo, pl=ok&&diaNum(q.data)>=diaNum(HOJE())?planoProva(c,q,HOJE(),!!feitasCat(c).length):null;
+  const ok=q.data&&q.dias&&q.min&&q.longo, pl=ok&&diaNum(q.data)>=diaNum(HOJE())?planoProva(c,q,HOJE(),provaComecou(c)):null;
   return `<div class="card qc pvcard"><div class="kicker">Sua prova</div><h3 style="margin-top:4px">Encaixar o programa até a prova</h3>
    <div class="esc"><div class="lbl">Nome da prova (opcional)</div><input class="qin" data-pv="nome" autocomplete="off" maxlength="60" placeholder="ex.: São Silvestre" value="${esc(q.nome||"")}" style="margin-top:6px"></div>
    <div class="esc"><div class="lbl">Data da prova</div><input class="qin" type="date" data-pv="data" min="${HOJE()}" value="${esc(q.data||"")}" style="margin-top:6px"></div>
@@ -1069,7 +1070,7 @@ function provaSalvar(c, aceitou){
   const q=qProva; if(!q||!c) return; q.erro="";
   if(!q.data||diaNum(q.data)<diaNum(HOJE())){ q.erro="Escolha uma data a partir de hoje."; return renderLivre(); }
   if(diaNum(q.data)-diaNum(HOJE())>400){ q.erro="Escolha uma prova dentro dos próximos 12 meses."; return renderLivre(); }
-  const comecou=!!feitasCat(c).length, pl=planoProva(c,q,HOJE(),comecou);
+  const comecou=provaComecou(c), pl=planoProva(c,q,HOJE(),comecou);
   if(pl.abaixo.length && !aceitou){ q.aviso=true; return renderLivre(); }
   const pv={cat:c.id, data:q.data, nome:(q.nome||"").trim().slice(0,60)||null, dias:+q.dias, min:+q.min, longo:+q.longo, sem_ini:pl.sem_ini, abaixo:pl.abaixo, aceitou_abaixo:!!aceitou&&pl.abaixo.length>0};
   if(CTX&&CTX.corrida_perfil) CTX.corrida_perfil={...CTX.corrida_perfil, prova:{...pv, salvo_em:new Date().toISOString()}};
@@ -1083,7 +1084,7 @@ function provaAcao(b){   /* devolve true quando tratou */
   if(a==="pvcancela"){ qProva=null; renderLivre(); return true; }
   if(a==="pvc"&&qProva){ qProva[b.dataset.k]=+b.dataset.v; qProva.aviso=false; qProva.erro=""; renderLivre(); return true; }
   if(a==="pvmin"&&qProva){ const m=MINPROVA[c.id]; qProva.dias=Math.max(+qProva.dias,m.dias); qProva.min=Math.max(+qProva.min,m.min); qProva.longo=Math.max(+qProva.longo,m.longo);
-    const pl=planoProva(c,qProva,HOJE(),!!feitasCat(c).length); if(pl.abaixo.length){ qProva.aviso=true; renderLivre(); return true; } provaSalvar(c,false); return true; }
+    const pl=planoProva(c,qProva,HOJE(),provaComecou(c)); if(pl.abaixo.length){ qProva.aviso=true; renderLivre(); return true; } provaSalvar(c,false); return true; }
   if(a==="pvsalvar"){ provaSalvar(c,false); return true; }
   if(a==="pvseguir"){ provaSalvar(c,true); return true; }
   if(a==="pvremover"){ if(b.dataset.ok!=="1"){ b.dataset.ok="1"; b.textContent="toque de novo para remover"; return true; }
