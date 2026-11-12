@@ -23,9 +23,9 @@ window.HAG_EXIGIR_LOGIN=true;
 </script>
 <script src="hag_auth.js?v=20261021-1353"></script>
 <!-- HAG_DR_BRIEFING_CARDS_v1 (06/11/2026): o mesmo renderizador de cartoes do briefing do Mac (copia identica do HAG_Consultas). -->
-<script src="hag_briefing_cards.js?v=20261107-1"></script>
+<script src="hag_briefing_cards.js?v=20261112-1"></script>
 <!-- HAG_DR_PILARES_v1 (06/11/2026): os 4 pilares do paciente, o mesmo modulo da pagina de briefings do Mac (copia identica do HAG_Consultas). -->
-<script src="hag_pilares_painel.js?v=20261107-1"></script>
+<script src="hag_pilares_painel.js?v=20261112-1"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -41,13 +41,15 @@ window.HAG_EXIGIR_LOGIN=true;
    agenda em linha do tempo, check-ins com faixa de cor por nivel, resumo no topo de Vendas, Financeiro
    com o "entrou na conta" em destaque e grafico vendido x entrou. Modo escuro acompanha o iPhone. */
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--navy:#33251E;--navy2:#4A3A30;--gold:#B98A5E;--gold2:#8C4F2B;--gold-bg:#F4EADC;--line:#ebe6d8;--ink:#17181c;--ink2:#55565c;--ink3:#8c8d93;
-      --bg:#f3f2ee;--card:#ffffff;--sombra:0 1px 2px rgba(34,26,22,.05),0 6px 18px rgba(34,26,22,.06);
-      --verde:#2F6B4A;--verde-bg:#e4f1e9;--verm:#a3322f;--verm-bg:#f9e6e5;--amb:#8C4F2B;--amb-bg:#F4EADC;--azul:#2563a8;--azul-bg:#e8f0fa;
+:root{--navy:#33251E;--navy2:#4A3A30;--gold:#B98A5E;--gold2:#8C4F2B;--gold-bg:#F4EADC;--line:#E3D8C8;--ink:#221A16;--ink2:#5C5048;--ink3:#8F8274;
+      --bg:#F4EEE5;--card:#ffffff;--sombra:0 1px 2px rgba(34,26,22,.05),0 6px 18px rgba(34,26,22,.06);
+      --verde:#2F6B4A;--verde-bg:#e4f1e9;--verm:#a3322f;--verm-bg:#f9e6e5;--amb:#8C4F2B;--amb-bg:#F4EADC;--azul:#6E4A2E;--azul-bg:#F1E6D8;
       --fm:ui-monospace,'SF Mono',Menlo,monospace;--fs:'Bodoni Moda','New York',Georgia,serif;--r:16px}
+/* HAG_MARCA_2026_ESCURO_v1 (12/11/2026): o Dr. viu o app "todo em azul". O modo escuro e os acentos ainda eram da paleta antiga
+   (ardósia e azul); viraram os tons quentes da marca 2026 (couro, conhaque, linho). Verde e vermelho seguem como sinal de estado. */
 @media (prefers-color-scheme: dark){
-  :root{--bg:#0f1219;--card:#1a1f2b;--line:#2a3141;--ink:#eef0f4;--ink2:#b5bac6;--ink3:#8189a0;--gold-bg:#2b261b;--sombra:0 1px 2px rgba(0,0,0,.3);
-        --verde-bg:#1d3327;--verde:#7fcf9f;--verm-bg:#3a1f22;--verm:#f08d86;--amb-bg:#372b17;--amb:#e5b569;--azul-bg:#2A1F18;--azul:#8db8f0;--gold2:#d9b877}
+  :root{--bg:#18130F;--card:#2A211B;--line:#40342B;--ink:#F2ECE4;--ink2:#C5BCB6;--ink3:#9E8E83;--gold-bg:#2b261b;--sombra:0 1px 2px rgba(0,0,0,.3);
+        --verde-bg:#1d3327;--verde:#7fcf9f;--verm-bg:#3a1f22;--verm:#f08d86;--amb-bg:#372b17;--amb:#e5b569;--azul-bg:#2A1F18;--azul:#DDB68A;--gold2:#d9b877}
 }
 html,body{background:var(--bg)}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;color:var(--ink);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
@@ -92,7 +94,7 @@ h2:first-child{margin-top:4px}
 .cabas{display:flex;gap:4px;background:var(--bg);border-radius:12px;padding:3px;margin:0 0 12px}
 .cabas button{flex:1;font:inherit;font-size:13.5px;padding:8px 10px;border:0;border-radius:9px;background:transparent;color:var(--ink2)}
 .cabas button.on{background:var(--navy);color:#fff;font-weight:600}
-@media (prefers-color-scheme: dark){ .cabas button.on{background:var(--gold);color:#1a1f2b} }
+@media (prefers-color-scheme: dark){ .cabas button.on{background:var(--gold);color:#2A211B} }
 @media (max-width:560px){.corpo .cabas{margin:0 4px 12px}.corpo{padding:10px 8px 14px}.corpo .acoes{padding:0 6px}.corpo>.msg{margin:4px 4px 8px}}
 .md h2{margin:14px 0 6px}.md h2::after{display:none}
 .md p{margin:5px 0}.md ul{margin:5px 0 5px 18px}.md li{margin:3px 0}.md .cab{font-family:var(--fs);font-size:18px;margin-bottom:8px}
@@ -130,7 +132,7 @@ h2:first-child{margin-top:4px}
 .hero .l{font-size:13px;color:rgba(255,255,255,.7)}
 .hero .v{font-family:var(--fs);font-size:36px;font-weight:500;color:var(--gold);margin:2px 0 12px;letter-spacing:-.01em}
 .hero .barra{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.12)}
-.hero .barra .p{background:var(--gold)}.hero .barra .c{background:#8fa6d6}
+.hero .barra .p{background:var(--gold)}.hero .barra .c{background:#C9A27A}
 .hero .leg{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.75);margin-top:8px;gap:8px}
 .hero .leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
 .hero .ate{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:8px}
@@ -141,17 +143,17 @@ h2:first-child{margin-top:4px}
 .graf .gb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin-top:3px}
 .graf .gb span{height:8px;border-radius:4px;min-width:3px}
 .graf .gb .vd{background:var(--gold)}.graf .gb .en{background:var(--navy)}
-@media (prefers-color-scheme: dark){ .graf .gb .en{background:#8fa6d6} }
+@media (prefers-color-scheme: dark){ .graf .gb .en{background:#C9A27A} }
 .graf .gb em{font-style:normal;min-width:76px;text-align:right;margin-left:auto}
 .leg2{display:flex;gap:14px;font-size:12px;color:var(--ink3);margin:0 4px 8px}
 .leg2 i{display:inline-block;width:10px;height:8px;border-radius:2px;margin-right:5px}
 .sw-en{background:var(--navy)}
-@media (prefers-color-scheme: dark){ .sw-en{background:#8fa6d6} .dias button.on{background:var(--gold);color:#1a1f2b} }
+@media (prefers-color-scheme: dark){ .sw-en{background:#C9A27A} .dias button.on{background:var(--gold);color:#2A211B} }
 .nego{padding:24px 8px;text-align:center;color:var(--ink2)}
 /* HAG_DR_DETALHE_v2: tudo que tem numero ou nome abre o que esta por tras */
 .kpi[data-det],.row[data-mesdin],.row[data-pac],.row[data-prop],.row[data-conv]{cursor:pointer}
 .kpi[data-det] .l::after{content:' ›';color:var(--ink3);font-weight:400}
-.veu{position:fixed;inset:0;background:rgba(10,14,24,.5);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.veu{position:fixed;inset:0;background:rgba(20,14,10,.5);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .veu[hidden]{display:none}
 .folha{background:var(--bg);width:100%;max-width:720px;max-height:90vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 40px rgba(0,0,0,.2)}
 .folha::before{content:'';width:38px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 0}
@@ -587,7 +589,7 @@ function abaFin(){
     var pPix = entrou ? Math.round(100 * (+d0.entrou_pix || 0) / entrou) : 0;
     h += '<div class="hero" data-det="entradas" data-mes="' + esc(String(d0.mes || '').slice(0,10)) + '"><div class="l">Entrou na conta em ' + mesRot(d0.mes) + ' ›</div><div class="v din">' + brl(entrou) + '</div>'
       + '<div class="barra"><span class="p" style="width:' + pPix + '%"></span><span class="c" style="width:' + (100 - pPix) + '%"></span></div>'
-      + '<div class="leg"><span><i style="background:var(--gold)"></i>Pix <span class="din">' + brl(d0.entrou_pix) + '</span></span><span><i style="background:#8fa6d6"></i>Cartão <span class="din">' + brl(d0.entrou_cartao) + '</span></span></div>'
+      + '<div class="leg"><span><i style="background:var(--gold)"></i>Pix <span class="din">' + brl(d0.entrou_pix) + '</span></span><span><i style="background:#C9A27A"></i>Cartão <span class="din">' + brl(d0.entrou_cartao) + '</span></span></div>'
       + '<div class="ate">Depósitos reais na conta InfinitePay · extrato até ' + dm(d0.extrato_ate) + '</div></div>';
     h += '<div class="kpis">'
       + kp('Vendido no mês', brl(d0.vendido), 'pago ou contratado pelos pacientes, pela data do pagamento (base da nota)', true, 'receita', d0.mes)
