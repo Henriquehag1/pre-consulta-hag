@@ -76,6 +76,20 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .barra{height:4px;background:var(--fio);border-radius:4px;margin:9px 0 6px;overflow:hidden}
 .barra i{display:block;height:100%;background:var(--conhaque);border-radius:4px}
 .ciclo .cq{font-size:13px;color:var(--apoio)}
+/* HAG_CENTRAL_CICLO_CONSULTAS_v1 */
+.ciclo .renov{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:14px;color:var(--suave)}
+.ciclo .renov svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--floresta);stroke-width:1.6;margin-top:1px}
+.ciclo .renov b{color:var(--tinta);font-weight:500}
+.cons{margin-top:12px;border-top:1px solid var(--fio);padding-top:10px}
+.cons .cr{display:flex;justify-content:space-between;font-size:14px;color:var(--suave)}
+.cons .cr b{font-weight:500;color:var(--tinta)}
+.cons ul{list-style:none;margin:6px 0 0;padding:0}
+.cons li{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;padding:6px 0;font-size:14px;color:var(--suave)}
+.cons li .pt{width:14px;height:14px;border:1px solid var(--fio);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.cons li.feita .pt{border:0}.cons li.feita .pt svg{width:18px;height:18px;fill:none;stroke:var(--conhaque);stroke-width:1.6}
+.cons li.feita .nm{color:var(--tinta)}
+.cons li .qd{font-size:13px;color:var(--apoio);text-align:right}
+.cons li.marcada .qd{color:var(--conhaque)}
 .hero{background:var(--choc);color:var(--linho);border-radius:6px;padding:20px 20px 16px;margin-top:20px}
 .hero .rot{color:var(--camurca)}
 .hx{display:flex;gap:16px;align-items:center;margin-top:14px}
@@ -306,18 +320,34 @@ var IC={
 var MAPA={pinheiros:'Av. Brigadeiro Faria Lima, 1461, São Paulo',tatuape:'R. Vilela, 665, Tatuapé, São Paulo'};
 function diasAte(iso){ var a=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); a.setHours(12,0,0,0); return Math.round((new Date(iso+'T12:00:00')-a)/864e5); }
 function quando(n){ return n<=0?'Hoje':n===1?'Amanhã':'Em '+n+' dias'; }
-function progresso(c){
+/* HAG_CENTRAL_CICLO_CONSULTAS_v1 (12/11/2026). Pedido do Dr.: o paciente vê início e término do plano, as consultas
+   feitas com as datas e quantas faltam. Quem já renovou vê "Renovação confirmada" (sem contagem regressiva), para não
+   parecer que o plano está vencendo. Dados de central_dados (consultas, renovacao). */
+function nomeConsulta(x){ if(x.especie==='diagnostica') return 'Consulta diagnóstica'; return String(x.nome||'Consulta'); }
+function consultasHTML(d){
+  var L=(d&&d.consultas)||[]; if(!L.length) return '';
+  var feitas=L.filter(function(x){return x.status==='realizada';}).length, faltou=L.filter(function(x){return x.status==='faltou';}).length, faltam=L.length-feitas-faltou;
+  var li=L.map(function(x){
+    var ok=x.status==='realizada', st=ok?'feita':x.status==='faltou'?'falta':x.status==='agendada'?'marcada':'prevista';
+    var q=ok?dataBR(x.data):x.status==='faltou'?'não compareceu · '+dataBR(x.data):x.status==='agendada'?'marcada · '+dataBR(x.data)+(x.hora?' às '+esc(x.hora):''):(x.data?'a marcar · por volta de '+dataBR(x.data).slice(0,5):'a marcar');
+    return '<li class="'+st+'"><span class="pt">'+(ok?IC.ok:'')+'</span><span class="nm">'+esc(nomeConsulta(x))+'</span><span class="qd">'+q+'</span></li>';
+  }).join('');
+  return '<div class="cons"><div class="cr"><b>'+feitas+' de '+L.length+' consultas feitas</b><span>'+(faltam>0?(faltam===1?'falta 1':'faltam '+faltam):'todas feitas')+'</span></div><ul>'+li+'</ul></div>';
+}
+function progresso(c,d){
   if(!c||!c.inicio||!c.fim) return '';
   var i=new Date(c.inicio+'T12:00:00'), f=new Date(c.fim+'T12:00:00'), tot=Math.max(1,Math.round((f-i)/864e5)), feito=Math.min(tot,Math.max(0,tot-diasAte(c.fim)));
-  var sem=Math.max(1,Math.ceil((feito+1)/7)), sems=Math.max(1,Math.round(tot/7)), pc=Math.round(feito/tot*100);
+  var sem=Math.max(1,Math.ceil((feito+1)/7)), sems=Math.max(1,Math.round(tot/7)), pc=Math.round(feito/tot*100), rv=d&&d.renovacao;
   return '<div class="ciclo"><div class="cl"><span>'+esc(nomeCiclo(c.tipo))+'</span><span>Semana '+Math.min(sem,sems)+' de '+sems+'</span></div>'
-    +'<div class="barra"><i style="width:'+pc+'%"></i></div><div class="cq">Até '+dataBR(c.fim)+'</div></div>';
+    +'<div class="barra"><i style="width:'+pc+'%"></i></div><div class="cq">'+dataBR(c.inicio)+' a '+dataBR(c.fim)+'</div>'
+    +(rv?'<div class="renov">'+IC.ok+'<span><b>Renovação confirmada.</b> '+esc(nomeCiclo(rv.tipo))+' a partir de '+dataBR(rv.inicio)+'.</span></div>':'')
+    +consultasHTML(d)+'</div>';
 }
 function painel(d){
   d=d||{}; var L=d.links||{};
   var h=(VER?'<div class="aviso" style="margin:0 0 14px;border-left-color:#8C4F2B"><b>Visualização da equipe.</b> É assim que o paciente vê a central. Nada aqui fica registrado como acesso dele.</div>':'')
     +'<p class="rot">Seu acompanhamento</p><h1>Olá, '+esc(d.nome||'')+'.</h1>';
-  if(d.ciclo){ h+=progresso(d.ciclo)||('<p class="sub">'+esc(nomeCiclo(d.ciclo.tipo))+(d.ciclo.fim?' · até '+dataBR(d.ciclo.fim):'')+'</p>'); }
+  if(d.ciclo){ h+=progresso(d.ciclo,d)||('<p class="sub">'+esc(nomeCiclo(d.ciclo.tipo))+(d.ciclo.fim?' · até '+dataBR(d.ciclo.fim):'')+'</p>'); }
 
   /* HAG_CENTRAL_CHECKIN_v1: check-in da semana dentro da central, sem CPF */
   var CK=d.checkin||{};
