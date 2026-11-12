@@ -177,6 +177,8 @@ h2:first-child{margin-top:4px}
 .bq{margin-bottom:8px}
 .li.chk{cursor:pointer}.li.chk input{width:20px;height:20px;margin-top:2px}
 .acoes button[disabled]{opacity:.45}
+/* HAG_DR_LIBERAR_APPS_v1 */
+details.maisx{margin:8px 0 4px}details.maisx>summary{cursor:pointer;list-style:none;font-size:14px;font-weight:500;color:var(--gold2);padding:8px 0}details.maisx>summary::-webkit-details-marker{display:none}
 /* HAG_DR_UNICO_v1 */
 button.mini{font:inherit;font-size:13px;font-weight:500;padding:6px 12px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .row .tag{flex:none;margin-left:6px}
@@ -686,7 +688,7 @@ function pacienteCiclo(pid, nome){
     h += '<h2>Último check-in</h2>' + (k ? li(dm(k.data) + ' · ' + esc(k.tipo || ''), (k.peso ? 'peso ' + esc(k.peso) : '') + (t && t.motivo ? (k.peso ? ' · ' : '') + esc(t.motivo) : ''), t && t.status === 'pendente' ? '<a class="tag responder" style="text-decoration:none" href="triagem_HAG.html?id=' + encodeURIComponent(t.id) + '&de=dr">responder ›</a>' : null) : '<div class="vazio">Sem check-in.</div>');
     /* HAG_DR_V3: receitas a renovar, tratamentos terminando, injetaveis, suspensas e as acoes */
     folha(nome || 'Paciente', h + '<div class="vazio" id="pxCarr">Carregando receitas e tratamentos…</div>' + acoesPaciente(pid, nome));
-    return extrasPaciente(pid).catch(function(){ return ''; }).then(function(x){ var c = document.getElementById('pxCarr'); if(c) c.outerHTML = x + '<div id="pxCentral"></div>'; return centralBloco(pid, nome); });   /* HAG_DR_UNICO_v1 */
+    return extrasPaciente(pid).catch(function(){ return ''; }).then(function(x){ var c = document.getElementById('pxCarr'); if(c) c.outerHTML = x + '<div id="pxCentral"></div><div id="pxTreino"></div><div id="pxCozinha"></div>'; treinoBloco(pid, nome); cozinhaBloco(pid, nome); return centralBloco(pid, nome); });   /* HAG_DR_UNICO_v1 */
   }).catch(function(e){ folha(nome || 'Paciente', '<div class="msg erro">Não consegui abrir: ' + esc(e.message) + '</div>'); });
 }
 function propostaDet(id, nome){
@@ -1294,6 +1296,72 @@ function examesEnviadosHtml(){
     return '<h2>Exames enviados pela central</h2>' + l.map(function(x){ return '<div class="card row" data-pac="' + esc(x.patient_id) + '" data-nome="' + esc(x.patient_nome || '') + '"><div class="q"><div class="nome">' + esc(x.patient_nome || '') + '</div><div class="sub">' + dm(x.data_ingestao) + (x.observacoes ? ' · ' + esc(x.observacoes) : '') + (x.caminho_icloud ? ' · arquivado no Mac' : ' · chegando no Mac') + '</div></div><span class="chev">›</span></div>'; }).join('');
   }).catch(function(){ return ''; });
 }
+/* HAG_DR_LIBERAR_APPS_v1 (12/11/2026). Pedido do Dr.: escolher pelo HAG Dr o que liberar do HAG Treino e do HAG Cozinha
+   para cada paciente. Mesmas tabelas e regras dos painéis (treino_catalogo_acesso; cozinha_selecao), só o que já está
+   aprovado. O programa principal do treino e a coleção da Cozinha continuam sendo montados nos painéis do Mac. */
+var COZ_ITENS = null, TRE_CAT = null;
+function treinoBloco(pid, nome){
+  var box = document.getElementById('pxTreino'); if(!box) return;
+  box.innerHTML = '<h2>HAG Treino</h2><div class="vazio">Carregando…</div>';
+  var cat = TRE_CAT ? Promise.resolve(TRE_CAT) : Promise.all([ api('treino_catalogo?select=id,nome,sub,tipo,semanas,trilha,ordem&ativo=is.true&aprovado=is.true&order=ordem'), api('treino_trilhas?select=id,nome,ordem&ativo=is.true&order=ordem').catch(function(){ return []; }) ]).then(function(r){ TRE_CAT = { c: r[0] || [], t: r[1] || [] }; return TRE_CAT; });
+  return Promise.all([ cat, api('treino_catalogo_acesso?patient_id=eq.' + encodeURIComponent(pid) + '&select=catalogo_id,inicio'), api('treino_acessos?patient_id=eq.' + encodeURIComponent(pid) + '&revogado=eq.false&select=token&limit=1').catch(function(){ return []; }) ]).then(function(r){
+    var b2 = document.getElementById('pxTreino'); if(!b2) return;
+    var C = r[0].c, T = r[0].t, ac = {}; (r[1] || []).forEach(function(a){ ac[a.catalogo_id] = a; });
+    var temLink = (r[2] || []).length > 0, id = esc(pid), nm = esc(nome || '');
+    var linha = function(c, lib){ return li(esc(c.nome) + (lib ? ' <span class="tag aceita">liberado</span>' : ''), esc(c.sub || (c.tipo === 'programa' && c.semanas ? c.semanas + ' semanas' : '')) + (lib && ac[c.id].inicio ? ' · começou ' + dm(ac[c.id].inicio) : lib && c.tipo === 'programa' ? ' · ainda não começou' : ''),
+      '<button type="button" class="mini" data-trelib="' + (lib ? '0' : '1') + '" data-cat="' + esc(c.id) + '" data-pid="' + id + '" data-nome="' + nm + '">' + (lib ? 'Retirar' : 'Liberar') + '</button>'); };
+    var libs = C.filter(function(c){ return ac[c.id]; }), resto = C.filter(function(c){ return !ac[c.id]; });
+    var ordT = function(c){ var i = T.findIndex(function(t){ return t.id === c.trilha; }); return (i < 0 ? 999 : i) * 1000 + (c.ordem || 0); };
+    resto.sort(function(a, b){ return ordT(a) - ordT(b); });
+    var h = '<h2>HAG Treino</h2>' + (temLink ? '' : '<div class="msg">Este paciente ainda não tem o link do HAG Treino. O link e o programa principal são feitos no painel do Treino.</div>');
+    h += libs.length ? libs.map(function(c){ return linha(c, true); }).join('') : '<div class="vazio">Nenhum programa do catálogo liberado.</div>';
+    if(resto.length){ var ult = null;
+      h += '<details class="maisx"><summary>Liberar mais programas · ' + resto.length + '</summary>' + resto.map(function(c){ var t = T.find(function(x){ return x.id === c.trilha; }), k = t ? t.id : '_', cab = k !== ult ? '<div class="meta" style="margin:12px 0 0">' + esc(t ? t.nome : 'Outros') + '</div>' : ''; ult = k; return cab + linha(c, false); }).join('') + '</details>'; }
+    h += '<div class="acoes"><a href="treino_painel_HAG.html" target="_blank" rel="noopener">Painel do Treino</a></div>';
+    b2.innerHTML = h;
+  }).catch(function(e){ var b3 = document.getElementById('pxTreino'); if(b3) b3.innerHTML = '<h2>HAG Treino</h2><div class="msg erro">Não consegui ler: ' + esc(e.message) + '</div>'; });
+}
+function treinoLibera(pid, nome, cat, v){
+  var em = (typeof emailLogado === 'function' && emailLogado()) || 'hag_dr';
+  (v ? api('treino_catalogo_acesso', { method:'POST', headers:{ Prefer:'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify({ patient_id: pid, catalogo_id: cat, por: em }) })
+     : api('treino_catalogo_acesso?patient_id=eq.' + encodeURIComponent(pid) + '&catalogo_id=eq.' + encodeURIComponent(cat), { method:'DELETE', headers:{ Prefer:'return=minimal' } }))
+    .then(function(){ aviso(v ? 'Liberado. Aparece no HAG Treino dele na próxima vez que abrir' : 'Retirado. O que ele já fez continua no histórico'); treinoBloco(pid, nome); })
+    .catch(function(e){ aviso('Não gravou: ' + e.message, true); });
+}
+var COZ_SEL = {};
+function cozinhaBloco(pid, nome){
+  var box = document.getElementById('pxCozinha'); if(!box) return;
+  box.innerHTML = '<h2>HAG Cozinha</h2><div class="vazio">Carregando…</div>';
+  var it = COZ_ITENS ? Promise.resolve(COZ_ITENS) : api('cozinha_itens?select=id,tipo,aprovado,resumo&aprovado=is.true&order=ordem,id').then(function(l){ COZ_ITENS = l || []; return COZ_ITENS; });
+  return Promise.all([ it, api('cozinha_selecao?patient_id=eq.' + encodeURIComponent(pid) + '&ativo=is.true&select=item_id,motivo,ordem&order=ordem'), api('cozinha_acessos?patient_id=eq.' + encodeURIComponent(pid) + '&revogado=eq.false&select=token&limit=1').catch(function(){ return []; }) ]).then(function(r){
+    var b2 = document.getElementById('pxCozinha'); if(!b2) return;
+    var I = {}; (r[0] || []).forEach(function(x){ I[x.id] = x; });
+    var sel = r[1] || []; COZ_SEL[pid] = sel;
+    var id = esc(pid), nm = esc(nome || '');
+    var h = '<h2>HAG Cozinha · ' + sel.length + (sel.length === 1 ? ' liberado' : ' liberados') + '</h2>' + ((r[2] || []).length ? '' : '<div class="msg">Este paciente ainda não tem o link da Cozinha. O link é criado no painel da Cozinha.</div>');
+    h += sel.length ? sel.map(function(s){ var x = I[s.item_id] || {}, rs = x.resumo || {}; return li(esc(rs.nome || s.item_id), (x.tipo === 'guia' ? 'guia' : 'receita') + (s.motivo ? ' · ' + esc(s.motivo) : '') + (x.id ? '' : ' · tirado do ar'), '<button type="button" class="mini" data-cozlib="0" data-item="' + esc(s.item_id) + '" data-pid="' + id + '" data-nome="' + nm + '">Retirar</button>'); }).join('') : '<div class="vazio">Nada liberado na Cozinha.</div>';
+    h += '<details class="maisx"' + (COZ_SEL._aberto === pid ? ' open' : '') + '><summary>Liberar mais receitas e guias</summary><input type="search" id="czq" class="bq" placeholder="Buscar receita ou guia" autocomplete="off" data-pid="' + id + '" data-nome="' + nm + '"><input type="text" id="czm" class="bq" maxlength="160" placeholder="Por que (aparece para o paciente; opcional)"><div id="czres"><div class="vazio">Digite pelo menos 2 letras.</div></div></details>';
+    h += '<div class="acoes"><a href="cozinha_painel_HAG.html" target="_blank" rel="noopener">Painel da Cozinha</a></div>';
+    b2.innerHTML = h;
+  }).catch(function(e){ var b3 = document.getElementById('pxCozinha'); if(b3) b3.innerHTML = '<h2>HAG Cozinha</h2><div class="msg erro">Não consegui ler: ' + esc(e.message) + '</div>'; });
+}
+function cozinhaBusca(q, pid, nome){
+  var r = document.getElementById('czres'); if(!r || !COZ_ITENS) return;
+  q = semAcento(q).trim();
+  if(q.length < 2){ r.innerHTML = '<div class="vazio">Digite pelo menos 2 letras.</div>'; return; }
+  var ja = (COZ_SEL[pid] || []).map(function(s){ return s.item_id; });
+  var l = COZ_ITENS.filter(function(x){ var rs = x.resumo || {}; return ja.indexOf(x.id) < 0 && semAcento((rs.nome || '') + ' ' + (rs.resumo || '') + ' ' + x.id).indexOf(q) >= 0; }).slice(0, 12);
+  r.innerHTML = l.length ? l.map(function(x){ var rs = x.resumo || {}; return li(esc(rs.nome || x.id), (x.tipo === 'guia' ? 'guia' : 'receita') + (rs.resumo ? ' · ' + esc(String(rs.resumo).slice(0, 70)) : ''), '<button type="button" class="mini" data-cozlib="1" data-item="' + esc(x.id) + '" data-pid="' + esc(pid) + '" data-nome="' + esc(nome || '') + '">Liberar</button>'); }).join('') : '<div class="vazio">Nada aprovado com essa busca.</div>';
+}
+function cozinhaLibera(pid, nome, item, v){
+  var p;
+  if(v){ var mot = ((document.getElementById('czm') || {}).value || '').trim().slice(0, 160), ord = (COZ_SEL[pid] || []).reduce(function(m, s){ return Math.max(m, s.ordem || 0); }, 0) + 1;
+    p = api('cozinha_selecao?on_conflict=patient_id,item_id', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ patient_id: pid, item_id: item, motivo: mot || null, ordem: ord, consulta_data: null, criado_por: 'hag_dr', ativo: true, criado_em: agoraISO() }]) });
+    COZ_SEL._aberto = pid; }
+  else p = api('cozinha_selecao?patient_id=eq.' + encodeURIComponent(pid) + '&item_id=eq.' + encodeURIComponent(item), { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ ativo: false }) });
+  p.then(function(){ aviso(v ? 'Liberado. Já aparece na Cozinha dele' : 'Retirado da Cozinha dele'); cozinhaBloco(pid, nome); })
+   .catch(function(e){ aviso('Não gravou: ' + e.message, true); });
+}
 function centralVer(pid, nome){
   try{ sessionStorage.setItem('hagdr_volta_pac', JSON.stringify({ id: pid, nome: nome || '' })); sessionStorage.setItem('hagdr_aba', 'pac'); }catch(e){}
   location.href = 'central_HAG.html?ver=1&de=dr&p=' + encodeURIComponent(pid);
@@ -1339,6 +1407,8 @@ document.addEventListener('click', function(e){
   if((a = t.closest('[data-cgerar]'))){ centralGerar(a.getAttribute('data-cgerar'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-cdani]'))){ centralDaniela(a.getAttribute('data-cdani'), a.getAttribute('data-nome'), a.getAttribute('data-tk')); return; }
   if((a = t.closest('[data-ccopia]'))){ centralCopia(a.getAttribute('data-ccopia')); return; }
+  if((a = t.closest('[data-trelib]'))){ treinoLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-cat'), a.getAttribute('data-trelib') === '1'); return; }
+  if((a = t.closest('[data-cozlib]'))){ cozinhaLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-item'), a.getAttribute('data-cozlib') === '1'); return; }
   if((a = t.closest('[data-clib]'))){ centralLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-clib') === '1'); return; }
   if((a = t.closest('[data-cocult]'))){ centralOculta(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-cocult')); return; }
   if((a = t.closest('[data-pend]'))){ abrePend(+a.getAttribute('data-pend')); return; }
@@ -1406,7 +1476,7 @@ document.addEventListener('click', function(e){
 });
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible'){ contaCheckins(); } });
 /* HAG_DR_V3 */
-document.addEventListener('input', function(e){ var t = e.target; if(t && t.id === 'bq') buscaDigita(t.value, t.getAttribute('data-alvo')); if(t && t.id === 'pq') pacLista(t.value); });
+document.addEventListener('input', function(e){ var t = e.target; if(t && t.id === 'bq') buscaDigita(t.value, t.getAttribute('data-alvo')); if(t && t.id === 'pq') pacLista(t.value); if(t && t.id === 'czq') cozinhaBusca(t.value, t.getAttribute('data-pid'), t.getAttribute('data-nome')); });
 document.addEventListener('change', function(e){ var t = e.target; if(t && t.hasAttribute && t.hasAttribute('data-nfsid')){ NFSSEL[t.getAttribute('data-nfsid')] = t.checked; pintaNfse(); } });
 function badgePend(){ NPA = (PEND || []).filter(function(p){ return p.nivel === 'alta'; }).length; pintaBadgeMim(); }
 /* HAG_DR_UNICO_v1: um contador só na aba Para mim (check-ins esperando + pendências que pedem atenção) */
