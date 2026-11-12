@@ -1198,12 +1198,21 @@ function atalhosHtml(){   /* HAG_DR_UNICO_v1: o antigo "Mais" vira o fim da aba 
       + item('data-dita', '✍️', 'Ditar evolução', 'Fica guardada para a próxima consulta')
       + '<h2>Equipe e agenda</h2>'
       + item('data-dani', '📌', 'Pedir à Daniela', 'Vira tarefa no app dela, com aviso')
-      + '<a class="card row" style="text-decoration:none;color:inherit" href="tarefas_HAG.html" target="_blank" rel="noopener"><div class="ic">🗂️</div><div class="q"><div class="nome">Fila da Daniela</div><div class="sub">O Tarefas como ela vê</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="tarefas_HAG.html?de=dr"><div class="ic">🗂️</div><div class="q"><div class="nome">Fila da Daniela</div><div class="sub">O Tarefas como ela vê</div></div><span class="chev">›</span></a>'
       + item('data-fechadia', '🚫', 'Fechar um dia', 'Tira o dia da agenda e avisa a Daniela')
       + item('data-pront', '🖋️', 'Prontuários a assinar', 'Prepara a assinatura no Mac')
       + '<h2>Financeiro</h2>'
       + item('data-nfs', '🧾', 'Pedir notas à Malgo', 'Monta o e-mail com as notas pendentes')
       + item('data-contas', '💳', 'Contas a pagar', 'Marcar o que já foi pago')
+      + '<h2>Painéis</h2>'   /* HAG_DR_PAINEIS_v1 (12/11/2026): tudo o que fica em página própria, aberto aqui com volta para o HAG Dr */
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="central_painel_HAG.html?de=dr"><div class="ic">🔗</div><div class="q"><div class="nome">Central dos pacientes</div><div class="sub">Todos os links, documentos e acessos</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="treino_painel_HAG.html?de=dr"><div class="ic">🏋️</div><div class="q"><div class="nome">Painel do Treino</div><div class="sub">Programa principal, exercícios e catálogo</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="cozinha_painel_HAG.html?de=dr"><div class="ic">🍳</div><div class="q"><div class="nome">Coleção da Cozinha</div><div class="sub">Aprovar receitas e guias</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="cozinha_plano_painel_HAG.html?de=dr"><div class="ic">🥗</div><div class="q"><div class="nome">Plano na Cozinha</div><div class="sub">Plano alimentar dentro da Cozinha</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="orientacoes_painel_HAG.html?de=dr"><div class="ic">📋</div><div class="q"><div class="nome">Orientações</div><div class="sub">O que cada paciente recebe</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="respostas_HAG.html?de=dr"><div class="ic">📝</div><div class="q"><div class="nome">Respostas dos pacientes</div><div class="sub">Formulários e check-ins respondidos</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="leads_HAG.html?de=dr"><div class="ic">🌱</div><div class="q"><div class="nome">Leads</div><div class="sub">Quem chegou e em que etapa está</div></div><span class="chev">›</span></a>'
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="whatsapp_HAG.html?de=dr"><div class="ic">💬</div><div class="q"><div class="nome">WhatsApp</div><div class="sub">Respostas prontas</div></div><span class="chev">›</span></a>'
       + '<h2>Sistema</h2>'
       + item('data-estado', '🩺', 'Estado do sistema', 'Mac, rotinas, extrato e avisos')
       + (pe === 'ligado' ? item('data-avisos', '🔔', 'Avisos ligados neste app', 'O resumo do dia chega às 7h') : item('data-avisos', '🔕', 'Ligar avisos neste app', pe === 'sem' ? 'Este navegador não recebe aviso' : 'Check-ins, WhatsApp clínico e o resumo das 7h'));
@@ -1317,7 +1326,7 @@ function treinoBloco(pid, nome){
     h += libs.length ? libs.map(function(c){ return linha(c, true); }).join('') : '<div class="vazio">Nenhum programa do catálogo liberado.</div>';
     if(resto.length){ var ult = null;
       h += '<details class="maisx"><summary>Liberar mais programas · ' + resto.length + '</summary>' + resto.map(function(c){ var t = T.find(function(x){ return x.id === c.trilha; }), k = t ? t.id : '_', cab = k !== ult ? '<div class="meta" style="margin:12px 0 0">' + esc(t ? t.nome : 'Outros') + '</div>' : ''; ult = k; return cab + linha(c, false); }).join('') + '</details>'; }
-    h += '<div class="acoes"><a href="treino_painel_HAG.html" target="_blank" rel="noopener">Painel do Treino</a></div>';
+    h += '<div class="acoes"><a href="treino_painel_HAG.html?de=dr" data-volta="' + id + '" data-nome="' + nm + '">Painel do Treino</a></div>';
     b2.innerHTML = h;
   }).catch(function(e){ var b3 = document.getElementById('pxTreino'); if(b3) b3.innerHTML = '<h2>HAG Treino</h2><div class="msg erro">Não consegui ler: ' + esc(e.message) + '</div>'; });
 }
@@ -1341,7 +1350,7 @@ function cozinhaBloco(pid, nome){
     var h = '<h2>HAG Cozinha · ' + sel.length + (sel.length === 1 ? ' liberado' : ' liberados') + '</h2>' + ((r[2] || []).length ? '' : '<div class="msg">Este paciente ainda não tem o link da Cozinha. O link é criado no painel da Cozinha.</div>');
     h += sel.length ? sel.map(function(s){ var x = I[s.item_id] || {}, rs = x.resumo || {}; return li(esc(rs.nome || s.item_id), (x.tipo === 'guia' ? 'guia' : 'receita') + (s.motivo ? ' · ' + esc(s.motivo) : '') + (x.id ? '' : ' · tirado do ar'), '<button type="button" class="mini" data-cozlib="0" data-item="' + esc(s.item_id) + '" data-pid="' + id + '" data-nome="' + nm + '">Retirar</button>'); }).join('') : '<div class="vazio">Nada liberado na Cozinha.</div>';
     h += '<details class="maisx"' + (COZ_SEL._aberto === pid ? ' open' : '') + '><summary>Liberar mais receitas e guias</summary><input type="search" id="czq" class="bq" placeholder="Buscar receita ou guia" autocomplete="off" data-pid="' + id + '" data-nome="' + nm + '"><input type="text" id="czm" class="bq" maxlength="160" placeholder="Por que (aparece para o paciente; opcional)"><div id="czres"><div class="vazio">Digite pelo menos 2 letras.</div></div></details>';
-    h += '<div class="acoes"><a href="cozinha_painel_HAG.html" target="_blank" rel="noopener">Painel da Cozinha</a></div>';
+    h += '<div class="acoes"><a href="cozinha_painel_HAG.html?de=dr" data-volta="' + id + '" data-nome="' + nm + '">Painel da Cozinha</a></div>';
     b2.innerHTML = h;
   }).catch(function(e){ var b3 = document.getElementById('pxCozinha'); if(b3) b3.innerHTML = '<h2>HAG Cozinha</h2><div class="msg erro">Não consegui ler: ' + esc(e.message) + '</div>'; });
 }
@@ -1407,6 +1416,7 @@ document.addEventListener('click', function(e){
   if((a = t.closest('[data-cgerar]'))){ centralGerar(a.getAttribute('data-cgerar'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-cdani]'))){ centralDaniela(a.getAttribute('data-cdani'), a.getAttribute('data-nome'), a.getAttribute('data-tk')); return; }
   if((a = t.closest('[data-ccopia]'))){ centralCopia(a.getAttribute('data-ccopia')); return; }
+  if((a = t.closest('[data-volta]'))){ try{ sessionStorage.setItem('hagdr_volta_pac', JSON.stringify({ id: a.getAttribute('data-volta'), nome: a.getAttribute('data-nome') || '' })); sessionStorage.setItem('hagdr_aba', 'pac'); }catch(x){} return; }   /* HAG_VOLTAR_DR_v1 */
   if((a = t.closest('[data-trelib]'))){ treinoLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-cat'), a.getAttribute('data-trelib') === '1'); return; }
   if((a = t.closest('[data-cozlib]'))){ cozinhaLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-item'), a.getAttribute('data-cozlib') === '1'); return; }
   if((a = t.closest('[data-clib]'))){ centralLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-clib') === '1'); return; }
