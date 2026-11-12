@@ -208,7 +208,21 @@ var qs=new URLSearchParams(location.search);
 /* HAG_CENTRAL_VER_EQUIPE_v1: ?ver=1&p=<paciente> abre a visão do paciente com o login da equipe
    (mesmo navegador do painel). Não cria sessão de paciente e não salva nada neste aparelho. */
 var VER=qs.get('ver')==='1'&&qs.get('p')?qs.get('p'):'';
-function jwtEquipe(){ try{ var o=JSON.parse(localStorage.getItem('hag_auth_session')||'null')||JSON.parse(localStorage.getItem('sb-yutcnphwovqeiwcwzzhs-auth-token')||'null'); return (o&&(o.access_token||(o.currentSession&&o.currentSession.access_token)))||''; }catch(e){ return ''; } }
+/* HAG_CENTRAL_VER_SESSAO_v1 (12/11/2026): "Ver como ele vê" dava "seu login expirou" porque a página lia o token salvo
+   sem renovar (o token do login vale 1 hora). Agora, só na visão da equipe, carrega o hag_auth.js do painel, renova a
+   sessão em silêncio pelo refresh token e, se não der, mostra o login ali mesmo. */
+function sessaoEquipe(){
+  return new Promise(function(ok){
+    if(window.HAGAuth) return ok();
+    window.HAG_CFG=Object.assign({}, window.HAG_CFG||{}, {SUPA_URL:'https://yutcnphwovqeiwcwzzhs.supabase.co', SUPA_KEY:KEY});
+    var sc=document.createElement('script'); sc.src='hag_auth.js?v=20260915-2056'; sc.onload=ok; sc.onerror=ok; document.head.appendChild(sc);
+  }).then(function(){
+    var A=window.HAGAuth; if(!A) return jwtEquipe();
+    if(A.valid()) return A.token();
+    return Promise.resolve(A.refresh()).then(function(){ return A.valid()?A.token():''; });
+  });
+}
+function jwtEquipe(){ if(window.HAGAuth&&window.HAGAuth.valid()) return window.HAGAuth.token(); try{ var o=JSON.parse(localStorage.getItem('hag_auth_session')||'null')||JSON.parse(localStorage.getItem('sb-yutcnphwovqeiwcwzzhs-auth-token')||'null'); return (o&&(o.access_token||(o.currentSession&&o.currentSession.access_token)))||''; }catch(e){ return ''; } }
 var TOKEN=qs.get('t')||ls.get('hagcentral.t')||'';
 if(qs.get('t')&&qs.get('t')!==ls.get('hagcentral.t')){ ls.del('hagcentral.s'); ls.set('hagcentral.t',qs.get('t')); }
 var SESSAO=ls.get('hagcentral.s')||'';
@@ -613,8 +627,13 @@ function abrirDoc(id, b){
 
 function inicio(){
   if(VER){
-    if(!jwtEquipe()){ tela.innerHTML='<h1>Entre no painel primeiro.</h1><p class="sub">A visualização da equipe usa o login do painel da central, neste mesmo navegador.</p>'; return; }
-    return api({acao:'ver',patient_id:VER}).then(function(r){
+    return sessaoEquipe().then(function(tk){
+      if(!tk){ tela.innerHTML='<h1>Entre para continuar.</h1><p class="sub">A visualização da equipe usa o mesmo login do painel.</p>';
+        if(window.HAGAuth){ window.HAG_EXIGIR_LOGIN=true; window.HAGAuth.mount(function(){ inicio(); }); } return; }
+      return api({acao:'ver',patient_id:VER});
+    }).then(function(r){
+      if(!r) return;
+      if(!r.ok && r.erro==='equipe' && window.HAGAuth && !inicio._tentou){ inicio._tentou=1; return Promise.resolve(window.HAGAuth.refresh()).then(function(){ return inicio(); }); }
       if(!r.ok){ tela.innerHTML='<h1>Não foi possível abrir.</h1><p class="sub">'+(r.erro==='equipe'?'Seu login expirou. Abra o painel e entre de novo.':'Paciente não encontrado.')+'</p>'; return; }
       painel(r.dados);
       if(!r.aberto){ tela.insertAdjacentHTML('afterbegin','<div class="aviso" style="margin:0 0 14px"><b>Para o paciente, a central está fechada</b> (sem ciclo ativo).</div>'); }
