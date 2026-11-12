@@ -485,6 +485,7 @@ function painel(d){
      (receitas por data; exames por tipo: pedidos, bioimpedância, laboratoriais, imagem, outros e os enviados por ele). */
   var docs=d.documentos||[], g={plano_tratamento:[],plano_alimentar:[],receita:[],exame:[],outros:[]};
   docs.forEach(function(x){ (g[x.categoria]||g.outros).push(x); });
+  g.exame=pedidosAbertos(g.exame);   /* HAG_CENTRAL_PEDIDO_ATENDIDO_v1 */
   d._g=g;
   h+='<h3 class="tit">Seu plano</h3>';
   var cards=[];
@@ -624,6 +625,24 @@ function grupoExame(x){
   if(/laborat/i.test(t)) return 'lab';
   if(/Ultrassom|Resson|Tomogr|Raio-x|Mamogr|Densitom|Doppler|Elastogr|Ecocard|imagem/i.test(t)) return 'img';
   return 'out';
+}
+/* HAG_CENTRAL_PEDIDO_ATENDIDO_v1 (12/11/2026, pedido do Dr.): o pedido de exame fica visível só até chegar o resultado.
+   Sai quando existe resultado com data DEPOIS da data do pedido (no mesmo dia não: costuma ser exame antigo trazido à
+   consulta em que o pedido foi feito). Pedido com tipo no título ("Pedido de exames: ultrassom") só sai com resultado
+   daquele tipo ou com exame enviado pelo paciente; pedido genérico sai com qualquer resultado, menos bioimpedância
+   (que é feita no consultório, não vem de pedido). */
+function pedidosAbertos(L){
+  L=L||[];
+  var res=L.filter(function(x){ return grupoExame(x)!=='ped'; });
+  return L.filter(function(x){
+    if(grupoExame(x)!=='ped') return true;
+    var m=String(x.titulo||'').match(/^Pedido de exames:\s*(.+)$/i), alvo=m?m[1].toLowerCase():'';
+    return !res.some(function(r){
+      if(!(String(r.data||'')>String(x.data||''))) return false;
+      var gr=grupoExame(r); if(gr==='bio') return false;
+      return !alvo || gr==='env' || String(r.titulo||'').toLowerCase().indexOf(alvo)>=0;
+    });
+  });
 }
 var GRUPOS_EX=[['ped','Pedidos de exame'],['lab','Laboratoriais'],['bio','Bioimpedância'],['img','Imagem'],['out','Outros exames'],['env','Enviados por você']];
 function linhaDoc(x){ return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo||'Exame')+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>'; }
