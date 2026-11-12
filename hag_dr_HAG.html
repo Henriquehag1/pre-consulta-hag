@@ -1194,6 +1194,7 @@ function atalhosHtml(){   /* HAG_DR_UNICO_v1: o antigo "Mais" vira o fim da aba 
       + item('data-dita', '✍️', 'Ditar evolução', 'Fica guardada para a próxima consulta')
       + '<h2>Equipe e agenda</h2>'
       + item('data-dani', '📌', 'Pedir à Daniela', 'Vira tarefa no app dela, com aviso')
+      + '<a class="card row" style="text-decoration:none;color:inherit" href="tarefas_HAG.html" target="_blank" rel="noopener"><div class="ic">🗂️</div><div class="q"><div class="nome">Fila da Daniela</div><div class="sub">O Tarefas como ela vê</div></div><span class="chev">›</span></a>'
       + item('data-fechadia', '🚫', 'Fechar um dia', 'Tira o dia da agenda e avisa a Daniela')
       + item('data-pront', '🖋️', 'Prontuários a assinar', 'Prepara a assinatura no Mac')
       + '<h2>Financeiro</h2>'
@@ -1225,9 +1226,9 @@ function pendResumo(){
 }
 function abaMim(){
   W('<div class="vazio">Carregando…</div>');
-  return Promise.all([ abaCheckinsHtml(), carregaPend(), atalhosHtml().catch(function(){ return ''; }) ]).then(function(r){
+  return Promise.all([ abaCheckinsHtml(), carregaPend(), atalhosHtml().catch(function(){ return ''; }), examesEnviadosHtml() ]).then(function(r){
     if(ABA !== 'mim') return;
-    W('<h2>Check-ins</h2>' + r[0] + (PEND && PEND.length ? blocoPend() : '<h2>Pendências</h2><div class="pendok">Nada pendente que o sistema consiga ver. ✓</div>') + r[2]);
+    W('<h2>Check-ins</h2>' + r[0] + r[3] + (PEND && PEND.length ? blocoPend() : '<h2>Pendências</h2><div class="pendok">Nada pendente que o sistema consiga ver. ✓</div>') + r[2]);
     badgePend();
   }).catch(falha);
 }
@@ -1257,13 +1258,15 @@ function pacLista(q){
 function centralBloco(pid, nome){
   var box = document.getElementById('pxCentral'); if(!box) return;
   box.innerHTML = '<h2>Central do paciente</h2><div class="vazio">Carregando…</div>';
-  return Promise.all([ api('v_central_painel?select=token,aparelhos,ultimo_uso,docs_visiveis&patient_id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; }),
-                       api('patients?select=central_ocultar&id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; }) ]).then(function(r){
+  return Promise.all([ api('v_central_painel?select=token,aparelhos,ultimo_uso,docs_visiveis,ciclo&patient_id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; }),
+                       api('patients?select=central_ocultar,central_liberada&id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; }) ]).then(function(r){
     var b2 = document.getElementById('pxCentral'); if(!b2) return;
-    var x = (r[0] || [])[0], oc = ((r[1] || [])[0] || {}).central_ocultar || [];
+    var x = (r[0] || [])[0], pr = (r[1] || [])[0] || {}, oc = pr.central_ocultar || [];
     COC[pid] = oc.slice();
     var nm = esc(nome || ''), id = esc(pid);
-    if(!x){ b2.innerHTML = '<h2>Central do paciente</h2><div class="vazio card">Sem ciclo ativo: a central não está aberta para este paciente.</div>'; return; }
+    /* HAG_CENTRAL_LIBERADA_v1 (12/11/2026): família e não pagantes. O Dr. abre a central de quem não tem ciclo ativo. */
+    if(!x){ b2.innerHTML = '<h2>Central do paciente</h2><div class="vazio card">Sem ciclo ativo: a central está fechada para este paciente.</div><div class="acoes"><button class="pri" data-clib="1" data-pid="' + esc(pid) + '" data-nome="' + esc(nome || '') + '">Liberar a central mesmo sem ciclo</button></div>'; return; }
+    var libSoManual = pr.central_liberada && !x.ciclo;
     var st = !x.token ? 'Ainda sem link' : x.aparelhos > 0 ? 'Ativa em ' + x.aparelhos + (x.aparelhos > 1 ? ' aparelhos' : ' aparelho') + (x.ultimo_uso ? ' · último uso ' + dm(x.ultimo_uso) : '') : 'Link criado, ainda não entrou';
     var g = oc.indexOf('evolucao') < 0, pe = oc.indexOf('peso') < 0;
     b2.innerHTML = '<h2>Central do paciente</h2>'
@@ -1272,8 +1275,22 @@ function centralBloco(pid, nome){
       + li('Peso', pe ? 'aparece' : 'escondido (músculo, gordura e visceral continuam)', '<button type="button" class="mini" data-cocult="peso" data-pid="' + id + '" data-nome="' + nm + '">' + (pe ? 'Esconder' : 'Mostrar') + '</button>')
       + '<div class="acoes">' + (x.token
           ? '<button class="pri" data-cver="' + id + '" data-nome="' + nm + '">Ver como ele vê</button><button data-cdani="' + id + '" data-nome="' + nm + '" data-tk="' + esc(x.token) + '">Daniela manda o link</button><button data-ccopia="' + esc(x.token) + '">Copiar link</button>'
-          : '<button class="pri" data-cgerar="' + id + '" data-nome="' + nm + '">Gerar link da central</button>') + '</div>';
+          : '<button class="pri" data-cgerar="' + id + '" data-nome="' + nm + '">Gerar link da central</button>') + '</div>'
+      + (libSoManual ? '<div class="meta" style="margin-top:8px">Liberada por você, sem ciclo ativo. <button type="button" class="mini" data-clib="0" data-pid="' + id + '" data-nome="' + nm + '">Fechar a central</button></div>' : '');
   });
+}
+function centralLibera(pid, nome, v){
+  api('patients?id=eq.' + encodeURIComponent(pid), { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ central_liberada: !!v }) })
+    .then(function(){ aviso(v ? 'Central liberada' : 'Central fechada'); CPAIN = null; centralBloco(pid, nome); })
+    .catch(function(e){ aviso('Não gravou: ' + e.message, true); });
+}
+/* HAG_CENTRAL_EXAMES_v1: exames que os pacientes enviaram pela central nos últimos 7 dias */
+function examesEnviadosHtml(){
+  var d7 = new Date(Date.now() - 7 * 864e5).toISOString();
+  return api('documentos?select=id,patient_id,patient_nome,data_ingestao,observacoes,caminho_icloud&subcategoria=eq.enviado&data_ingestao=gte.' + encodeURIComponent(d7) + '&order=data_ingestao.desc&limit=20').then(function(l){
+    l = l || []; if(!l.length) return '';
+    return '<h2>Exames enviados pela central</h2>' + l.map(function(x){ return '<div class="card row" data-pac="' + esc(x.patient_id) + '" data-nome="' + esc(x.patient_nome || '') + '"><div class="q"><div class="nome">' + esc(x.patient_nome || '') + '</div><div class="sub">' + dm(x.data_ingestao) + (x.observacoes ? ' · ' + esc(x.observacoes) : '') + (x.caminho_icloud ? ' · arquivado no Mac' : ' · chegando no Mac') + '</div></div><span class="chev">›</span></div>'; }).join('');
+  }).catch(function(){ return ''; });
 }
 function centralVer(pid, nome){
   try{ sessionStorage.setItem('hagdr_volta_pac', JSON.stringify({ id: pid, nome: nome || '' })); sessionStorage.setItem('hagdr_aba', 'pac'); }catch(e){}
@@ -1320,6 +1337,7 @@ document.addEventListener('click', function(e){
   if((a = t.closest('[data-cgerar]'))){ centralGerar(a.getAttribute('data-cgerar'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-cdani]'))){ centralDaniela(a.getAttribute('data-cdani'), a.getAttribute('data-nome'), a.getAttribute('data-tk')); return; }
   if((a = t.closest('[data-ccopia]'))){ centralCopia(a.getAttribute('data-ccopia')); return; }
+  if((a = t.closest('[data-clib]'))){ centralLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-clib') === '1'); return; }
   if((a = t.closest('[data-cocult]'))){ centralOculta(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-cocult')); return; }
   if((a = t.closest('[data-pend]'))){ abrePend(+a.getAttribute('data-pend')); return; }
   if((a = t.closest('[data-dani-pend]'))){ var pp = (PEND || [])[+a.getAttribute('data-dani-pend')] || {}; pedidoDaniela(null, null, 'Identificar e lançar no HAG OS: ' + (pp.itens || []).map(function(x){ return dm(x.data) + ' ' + (x.metodo === 'pix' ? 'Pix' : 'cartão ' + (x.parcelas || 1) + 'x') + ' R$ ' + x.valor + (x.comprador ? ' (' + x.comprador + ')' : ''); }).join('; ') + '.'); return; }
