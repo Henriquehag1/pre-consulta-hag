@@ -674,7 +674,8 @@ function painel(d){
   }
 
   h+=protocoloHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
-  h+=metasHTML(d);
+  /* HAG_CENTRAL_SEM_METAS_v1 (13/11/2026): o Dr. tirou as metas da visão do paciente ("alguns têm metas diversas").
+     As metas seguem no motor e no HAG Dr; metasHTML fica no arquivo para voltar se ele quiser. */
   h+=evolucaoHTML(d);   /* HAG_CENTRAL_EVOLUCAO_v1 */
   h+=resumoHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
 

@@ -746,12 +746,16 @@ function prazoAtivo(){ return !!(PRAZO && MODO==='marcar' && TIPOCON==='retorno'
    Caso Maria Eduarda: indicado sab 28/11, hoje 20/10; o teto cortou a janela em 24/11 e a escada
    ofereceu a segunda 23/11 com as quartas 25/11 e 02/12 vazias. Agora:
    . dia indicado alem do teto: o link diz que o agendamento abre mais perto da data
-     (abre 35 dias antes do indicado);
+     (abre 35 dias antes do indicado; retorno 30 desde HAG_ABRE_30_DIAS_v1);
    . janela cortada pelo teto: a escada nao desce abaixo do degrau de cima (sabado/quarta),
      porque os dias preferidos que faltam ainda vao abrir. */
 var TETO_CORTOU=false;
+/* HAG_ABRE_30_DIAS_v1 (13/11/2026). Regra do Dr. Henrique: consulta em aberto para agendar mostra as datas
+   com 30 dias de antecedência (antes eram 35, 5 semanas). Só para retorno; diagnóstica e aplicação seguem
+   como estavam. Com o dia indicado além de 30 dias, o link diz a data em que abre (TETO_NAO_DESCE). */
+var TETO_RETORNO=30;
 function janelaComTeto(op){
-  var j=capLimite(S.diasElegiveis(ALVO, hojeSP(), op));
+  var j=capLimite(S.diasElegiveis(ALVO, hojeSP(), TIPOCON==='retorno' ? Object.assign({}, op||{}, {teto:TETO_RETORNO}) : op));
   var sem=capLimite(S.diasElegiveis(ALVO, hojeSP(), Object.assign({}, op||{}, {teto:3650})));
   TETO_CORTOU=!!(j && j.situacao==='aberta' && sem && sem.situacao==='aberta' && sem.fim>j.fim);
   return j;
@@ -829,6 +833,12 @@ function iniciar(){
       if(c.agendamento){ telaJaAgendado(); return; }
       falha('Olá, '+esc(c.paciente.primeiro_nome)+'! Não encontrei nenhuma consulta aguardando agendamento para você. Se acha que deveria haver, fale com a equipe pelo WhatsApp.'); return;
     }
+    /* HAG_JA_MARCADA_FECHA_v1 (13/11/2026). Regra do Dr. Henrique: quem já tem consulta marcada fica com a
+       agenda fechada; vê a consulta e a opção de remarcar, e a próxima só abre depois que esta acontecer.
+       A exceção do HAG_LINK_INJETAVEL_v1 continua: APLICAÇÃO marcada não fecha o pedido de consulta em aberto
+       (caso Ana Caroline, aplicação 19/09 e controle 23/09). */
+    if(TIPOCON==='retorno' && c.agendamento && c.agendamento.tipo!=='injetavel' && c.agendamento.tipo!=='diagnostica'
+       && c.agendamento.status!=='pre_reservado'){ telaJaAgendado(); return; }
     /* HAG_ALVO_MEDICO_v1 (28/08/2026): a janela passa a girar em volta do dia
        que o Dr. Henrique mandou para a fila da Daniela, e nao mais da data
        teorica do plano. PORQUE: consulta antecipada por decisao clinica (o
@@ -863,7 +873,10 @@ function iniciar(){
       JANELA={inicio:null, fim:null, motivo:'dia indicado ainda alem das 5 semanas de antecedencia', situacao:'ainda_nao_abriu'};
     }
     if(!JANELA || JANELA.situacao==='ainda_nao_abriu'){
-      ouOJaMarcado(falha, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima '+PAL()+' está prevista para perto de '+dataBR(ALVO)+'. O agendamento abre mais perto da data, e avisaremos você.');
+      /* HAG_ABRE_30_DIAS_v1: diz o dia em que as datas abrem, em vez de "mais perto da data" */
+      var _abre=(TIPOCON==='retorno') ? _somaDias(ALVO, -TETO_RETORNO) : null;
+      ouOJaMarcado(falha, 'Olá, '+esc(c.paciente.primeiro_nome)+'. A sua próxima '+PAL()+' está prevista para perto de '+dataBR(ALVO)+'. '
+        +(_abre && _abre>hojeSP() ? 'As datas para você escolher abrem em '+dataBR(_abre)+', 30 dias antes.' : 'O agendamento abre mais perto da data, e avisaremos você.'));
       return;
     }
     if(JANELA.situacao==='atrasado' && TIPOCON==='retorno' && PRAZO && JANELA.motivo==='janela clínica já passou'){
