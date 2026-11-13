@@ -66,10 +66,10 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function toast(t){var e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(function(){e.style.display='none'},2600)}
 function dt(s){ if(!s) return ''; var d=new Date(s); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function linkDe(t){ return BASE+'central_HAG.html?t='+t; }
-function msgDaniela(nome, t){
-  return 'Oi '+nome+', tudo bem? A partir de agora o seu acompanhamento tem uma central própria: planos, receitas, a Cozinha, o Treino e a agenda num lugar só.\n\n'
-    +'É só abrir este link no celular: '+linkDe(t)+'\n\n'
-    +'No primeiro acesso chega um código de 6 números no seu e-mail. Depois, salve na tela de início para abrir como um app. O link é pessoal, não encaminhe.';
+function msgDaniela(nome, t){   /* HAG_CENTRAL_NIVEL2_v1 (13/11/2026): mais curta, igual à do HAG Dr (brevidade no WhatsApp) */
+  return 'Oi '+nome+', tudo bem? Seu acompanhamento agora tem uma central só sua: planos, receitas, exames e agenda num lugar só.\n\n'
+    +linkDe(t)+'\n\n'
+    +'No primeiro acesso chega um código no seu e-mail. Depois, salve na tela de início. O link é pessoal.';
 }
 var CAT={plano_tratamento:'Plano de tratamento',plano_alimentar:'Plano alimentar',receita:'Receita',exame:'Exame',prontuario:'Prontuário',proposta:'Proposta',nota_fiscal:'Nota fiscal'};
 function padraoVisivel(d){ return ['plano_tratamento','plano_alimentar','receita'].indexOf(d.categoria)>=0 && !d.substituida_por && !d.historico; }
