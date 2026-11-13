@@ -764,7 +764,9 @@ var _MESES_ANT=['janeiro','fevereiro','março','abril','maio','junho','julho','a
 function _mesAno(iso){ var p=String(iso||'').split('-'); return p.length===3 ? _MESES_ANT[+p[1]-1]+' de '+p[0] : ''; }
 function avisoAntecipada(c){
   if(!ANTEC || MODO==='remarcar') return '';
-  var pl=c.plano||null, t='<b>Consulta antecipada.</b> No seu plano, esta consulta estava prevista para <b>'+_mesAno(ANTEC)+'</b> e foi trazida para mais perto.';
+  var pl=c.plano||null, t='<b>Consulta antecipada a seu pedido</b>, com liberação do Dr. Henrique. No seu plano, ela estava prevista para <b>'+_mesAno(ANTEC)+'</b>.';
+  /* HAG_CONSULTA_ANTECIPADA_v2 (13/11/2026): regra do Dr., antecipação é sempre "a pedido, liberada por ele" (a Maria Eduarda pediu
+     no questionário; "antecipada pelo Dr." passava a ideia de iniciativa dele). Se um dia a iniciativa for dele, troca-se no paciente. */
   if(pl && pl.total && pl.realizados!=null){
     var n=(+pl.realizados)+1, resta=(+pl.total)-n, ult=null;
     (pl.itens||[]).forEach(function(i){ if(i.situacao==='pendente' && i.data && i.data>ANTEC) ult=(!ult||i.data>ult)?i.data:ult; });
