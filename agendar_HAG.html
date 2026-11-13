@@ -322,6 +322,24 @@ h1,h2,h3{font-family:'Bodoni Moda',Georgia,serif;font-weight:500;letter-spacing:
         cand.push({ hora: paraHora(depois), posicao: 'depois', primeiroDoDia: false });
       }
 
+      /* HAG_TAPA_BURACO_v1 (13/11/2026). Pedido do Dr. Henrique: o horário da Agatha em 28/11 (Tatuapé)
+         ficou livre quando ela remarcou, e ninguém conseguia marcar nele. Com 11:00, 12:00, 13:00 e 15:00
+         ocupados, a regra de contiguidade só olhava antes do bloco (10:00, fora da janela) e depois dele
+         (16:00, que passa das 16:30): o dia sumia da lista com uma vaga real no meio. Encaixar num buraco
+         que JÁ existe não abre buraco, fecha; então o vão entre dois atendimentos vira candidato, colado no
+         anterior, e vem PRIMEIRO na lista. O servidor (hag_reservar_horario) já aceita, porque ele exige só
+         que o horário encoste em algum atendimento do dia. */
+      var buracos = [];
+      for (var bi = 0; bi < ocup.length - 1; bi++) {
+        var oa = ocup[bi], ob = ocup[bi + 1];
+        if (ob.inicio <= oa.fim) continue;
+        var hb = oa.fim + folgaAntes;
+        var recuoB = (TIPOS[ob.tipo] && TIPOS[ob.tipo].arrumacaoSempre) ? TIPOS[ob.tipo].arrumacao : 0;
+        if (hb < jIni || hb + t.paciente > ob.inicio - recuoB || fimDe(hb) == null) continue;
+        buracos.push({ hora: paraHora(hb), posicao: 'buraco', primeiroDoDia: false });
+      }
+      if (buracos.length) cand = buracos.concat(cand);
+
       if (!cand.length) vazio.motivo = 'sem encaixe contíguo dentro da janela';
     }
 
