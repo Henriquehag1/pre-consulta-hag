@@ -1349,7 +1349,7 @@ function centralBloco(pid, nome){
       + li('Gráficos de evolução', g ? 'aparecem para o paciente' : 'escondidos', '<button type="button" class="mini" data-cocult="evolucao" data-pid="' + id + '" data-nome="' + nm + '">' + (g ? 'Esconder' : 'Mostrar') + '</button>')
       + li('Peso', pe ? 'aparece' : 'escondido (músculo, gordura e visceral continuam)', '<button type="button" class="mini" data-cocult="peso" data-pid="' + id + '" data-nome="' + nm + '">' + (pe ? 'Esconder' : 'Mostrar') + '</button>')
       + '<div class="acoes">' + (x.token
-          ? '<button class="pri" data-cver="' + id + '" data-nome="' + nm + '">Ver como ele vê</button><button data-cdani="' + id + '" data-nome="' + nm + '" data-tk="' + esc(x.token) + '">Daniela manda o link</button><button data-ccopia="' + esc(x.token) + '">Copiar link</button>'
+          ? '<button class="pri" data-cver="' + id + '" data-nome="' + nm + '">Ver como ele vê</button><button data-cdani="' + id + '" data-nome="' + nm + '" data-tk="' + esc(x.token) + '">Daniela manda o link</button><button data-ccopia="' + esc(x.token) + '">Copiar link</button><button data-cqr="' + esc(x.token) + '" data-nome="' + nm + '">QR na consulta</button>'
           : '<button class="pri" data-cgerar="' + id + '" data-nome="' + nm + '">Gerar link da central</button>') + '</div>'
       + (libSoManual ? '<div class="meta" style="margin-top:8px">Liberada por você, sem ciclo ativo. <button type="button" class="mini" data-clib="0" data-pid="' + id + '" data-nome="' + nm + '">Fechar a central</button></div>' : '');
   });
@@ -1507,7 +1507,17 @@ function centralGerar(pid, nome){
 }
 function centralDaniela(pid, nome, tk){
   var pn = String(nome || '').split(' ')[0];
-  pedidoDaniela(pid, nome, 'Mandar para ' + pn + ' o link da central:\n\nOi ' + pn + ', tudo bem? A partir de agora o seu acompanhamento tem uma central própria: planos, receitas, a Cozinha, o Treino e a agenda num lugar só.\n\nÉ só abrir este link no celular: ' + BASE_CENTRAL + tk + '\n\nNo primeiro acesso chega um código de 6 números no seu e-mail. Depois, salve na tela de início para abrir como um app. O link é pessoal, não encaminhe.');
+  /* HAG_CENTRAL_NIVEL2_v1 (13/11/2026): mensagem mais curta (pedido do Dr.: brevidade no WhatsApp) */
+  pedidoDaniela(pid, nome, 'Mandar para ' + pn + ' o link da central:\n\nOi ' + pn + ', tudo bem? Seu acompanhamento agora tem uma central só sua: planos, receitas, exames e agenda num lugar só.\n\n' + BASE_CENTRAL + tk + '\n\nNo primeiro acesso chega um código no seu e-mail. Depois, salve na tela de início. O link é pessoal.');
+}
+/* HAG_CENTRAL_NIVEL2_v1 (13/11/2026): a central chega ao paciente na própria consulta. O Dr. mostra o QR no celular,
+   o paciente aponta a câmera, abre a central e recebe o código no e-mail. Biblioteca carregada só quando precisa. */
+function centralQR(tk, nome){
+  var u = BASE_CENTRAL + tk, pn = String(nome || '').split(' ')[0];
+  folha('Central de ' + pn, '<div id="qrBox" style="background:#fff;padding:14px;border-radius:12px;text-align:center;min-height:120px">Carregando…</div><p class="meta" style="margin-top:12px">Peça para ' + esc(pn) + ' apontar a câmera do celular. A central abre e o código de acesso chega no e-mail dele. Depois, ajude a salvar na tela de início.</p>');
+  var faz = function(){ var b = document.getElementById('qrBox'); if(!b) return; try{ var q = qrcode(0, 'M'); q.addData(u); q.make(); b.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); var sv = b.querySelector('svg'); if(sv){ sv.style.width = '100%'; sv.style.maxWidth = '300px'; sv.style.height = 'auto'; } }catch(e){ b.textContent = 'Não consegui gerar o QR. Use Copiar link.'; } };
+  if(window.qrcode) return faz();
+  var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; sc.onload = faz; sc.onerror = function(){ var b = document.getElementById('qrBox'); if(b) b.textContent = 'Sem internet para gerar o QR. Use Copiar link.'; }; document.head.appendChild(sc);
 }
 function centralCopia(tk){
   var u = BASE_CENTRAL + tk;
@@ -1542,6 +1552,7 @@ document.addEventListener('click', function(e){
   if((a = t.closest('[data-cgerar]'))){ centralGerar(a.getAttribute('data-cgerar'), a.getAttribute('data-nome')); return; }
   if((a = t.closest('[data-cdani]'))){ centralDaniela(a.getAttribute('data-cdani'), a.getAttribute('data-nome'), a.getAttribute('data-tk')); return; }
   if((a = t.closest('[data-ccopia]'))){ centralCopia(a.getAttribute('data-ccopia')); return; }
+  if((a = t.closest('[data-cqr]'))){ centralQR(a.getAttribute('data-cqr'), a.getAttribute('data-nome')); return; }   /* HAG_CENTRAL_NIVEL2_v1 */
   if((a = t.closest('[data-volta]'))){ try{ sessionStorage.setItem('hagdr_volta_pac', JSON.stringify({ id: a.getAttribute('data-volta'), nome: a.getAttribute('data-nome') || '' })); sessionStorage.setItem('hagdr_aba', 'pac'); }catch(x){} return; }   /* HAG_VOLTAR_DR_v1 */
   if((a = t.closest('[data-trelib]'))){ treinoLibera(a.getAttribute('data-pid'), a.getAttribute('data-nome'), a.getAttribute('data-cat'), a.getAttribute('data-trelib') === '1'); return; }
   /* HAG_DR_FICHA_v1 e HAG_DR_COZINHA_CATALOGO_v1 */

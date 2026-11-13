@@ -205,6 +205,35 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .graf{flex:1;display:flex;gap:10px;align-items:flex-end;height:90px}.graf .b{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
 .graf .b i{display:block;width:100%;max-width:28px;background:var(--camurca);border-radius:3px 3px 0 0}.graf .b span{font-size:11px;color:var(--apoio);margin-top:4px}
 
+/* HAG_CENTRAL_NIVEL2_v1 (13/11/2026) */
+.agora{margin-top:18px}
+.agora .ag{display:flex;align-items:center;gap:14px;width:100%;background:var(--papel);border:1px solid var(--fio);border-left:3px solid var(--conhaque);border-radius:4px;padding:15px 16px;margin-top:10px;text-align:left;text-decoration:none;color:var(--tinta);font-family:var(--t);cursor:pointer}
+.agora .ag .ic svg{width:22px;height:22px;fill:none;stroke:var(--conhaque);stroke-width:1.5}
+.agora .ag .dt{flex:1;display:flex;flex-direction:column;gap:2px}
+.agora .ag .t{font-size:16px;font-weight:400}
+.agora .ag .q{font-size:13.5px;color:var(--apoio)}
+.agora .ag .sv svg{width:18px;height:18px;fill:none;stroke:var(--apoio);stroke-width:1.6}
+.lido{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--suave);margin-top:10px}
+.lido svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--floresta);stroke-width:1.6}
+.metas{list-style:none;margin:4px 0 0;padding:0}
+.metas li{display:flex;gap:12px;align-items:baseline;padding:10px 0;border-top:1px solid var(--fio);font-size:16px}
+.metas li:first-child{border-top:0}
+.metas li .n{font-family:var(--d);font-size:20px;color:var(--conhaque);min-width:18px}
+.metas li .pz{display:block;font-size:13px;color:var(--apoio)}
+.metnota{font-size:13px;color:var(--apoio);margin-top:8px}
+.prot{padding:12px 0;border-top:1px solid var(--fio)}
+.prot:first-of-type{border-top:0}
+.prot .pl{display:flex;justify-content:space-between;gap:10px;font-size:15.5px}
+.prot .pl span:last-child{font-size:13.5px;color:var(--apoio);white-space:nowrap}
+.prot .pq{font-size:13.5px;color:var(--apoio);margin-top:4px}
+.resumo .rn{display:flex;gap:10px;margin-top:6px}
+.resumo .rn div{flex:1;border:1px solid var(--fio);border-radius:4px;padding:12px 10px;text-align:center}
+.resumo .rn b{display:block;font-family:var(--d);font-weight:400;font-size:28px;line-height:1.1}
+.resumo .rn span{font-size:12.5px;color:var(--apoio)}
+.resumo p{font-size:14.5px;color:var(--suave);margin-top:12px}
+.avisoscel{display:flex;gap:12px;align-items:center;width:100%;background:none;border:1px dashed var(--camurca);border-radius:4px;padding:14px 16px;margin-top:16px;text-align:left;font-family:var(--t);color:var(--tinta);cursor:pointer}
+.avisoscel svg{width:22px;height:22px;flex:none;fill:none;stroke:var(--conhaque);stroke-width:1.5}
+.avisoscel .q{display:block;font-size:13.5px;color:var(--apoio)}
 </style>
 </head>
 <body>
@@ -452,7 +481,11 @@ var IC={
   cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
   seta:'<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>',
   ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></svg>',
-  ex:'<svg viewBox="0 0 24 24"><path d="M9.5 3.5h5M10.5 3.5v6L5.8 18a1.8 1.8 0 0 0 1.6 2.5h9.2a1.8 1.8 0 0 0 1.6-2.5l-4.7-8.5v-6"/><path d="M8 14.5h8"/></svg>'
+  ex:'<svg viewBox="0 0 24 24"><path d="M9.5 3.5h5M10.5 3.5v6L5.8 18a1.8 1.8 0 0 0 1.6 2.5h9.2a1.8 1.8 0 0 0 1.6-2.5l-4.7-8.5v-6"/><path d="M8 14.5h8"/></svg>',
+  /* HAG_CENTRAL_NIVEL2_v1 */
+  nf:'<svg viewBox="0 0 24 24"><path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/></svg>',
+  sino:'<svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
+  inj:'<svg viewBox="0 0 24 24"><path d="m15 4 5 5M17.5 6.5 9 15l-3-3 8.5-8.5M6 12l-2.5 2.5M9 15l-2.5 2.5M4.5 19.5l2-2"/></svg>'
 };
 var MAPA={pinheiros:'Av. Brigadeiro Faria Lima, 1461, São Paulo',tatuape:'R. Vilela, 665, Tatuapé, São Paulo'};
 function diasAte(iso){ var a=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); a.setHours(12,0,0,0); return Math.round((new Date(iso+'T12:00:00')-a)/864e5); }
@@ -460,18 +493,21 @@ function quando(n){ return n<=0?'Hoje':n===1?'Amanhã':'Em '+n+' dias'; }
 /* HAG_CENTRAL_CICLO_CONSULTAS_v1 (12/11/2026). Pedido do Dr.: o paciente vê início e término do plano, as consultas
    feitas com as datas e quantas faltam. Quem já renovou vê "Renovação confirmada" (sem contagem regressiva), para não
    parecer que o plano está vencendo. Dados de central_dados (consultas, renovacao). */
-function nomeConsulta(x){ if(x.especie==='diagnostica') return 'Consulta diagnóstica'; return String(x.nome||'Consulta'); }
+/* HAG_CENTRAL_NIVEL2_v1: "Controle bimestral (2 meses)" ao lado de uma data que não é do 2º mês confundia (a data segue a
+   agenda real). O número da consulta no ciclo diz o que importa; o "(N meses)" sai. */
+function nomeConsulta(x,i){ if(x.especie==='diagnostica') return 'Consulta diagnóstica'; var n=String(x.nome||'Consulta').replace(/\s*\(\s*\d+\s*(m[eê]s|meses)\s*\)\s*/i,'').trim()||'Consulta'; return (i!=null?(i+1)+'ª · ':'')+n; }
 function consultasHTML(d){
   var L=(d&&d.consultas)||[]; if(!L.length) return '';
   var feitas=L.filter(function(x){return x.status==='realizada';}).length, faltou=L.filter(function(x){return x.status==='faltou';}).length, faltam=L.length-feitas-faltou;
-  var li=L.map(function(x){
+  var li=L.map(function(x,i){
     var ok=x.status==='realizada', st=ok?'feita':x.status==='faltou'?'falta':x.status==='agendada'?'marcada':'prevista';
     var q=ok?dataBR(x.data):x.status==='faltou'?'não compareceu · '+dataBR(x.data):x.status==='agendada'?'marcada · '+dataBR(x.data)+(x.hora?' às '+esc(x.hora):''):'a agendar';   /* HAG_CENTRAL_SO_VIGENTE_v1: a data prevista fica só na visão interna */
-    return '<li class="'+st+'"><span class="pt">'+(ok?IC.ok:'')+'</span><span class="nm">'+esc(nomeConsulta(x))+'</span><span class="qd">'+q+'</span></li>';
+    return '<li class="'+st+'"><span class="pt">'+(ok?IC.ok:'')+'</span><span class="nm">'+esc(nomeConsulta(x,i))+'</span><span class="qd">'+q+'</span></li>';
   }).join('');
   var aAg=L.some(function(x){return x.status==='agendar';});
   return '<div class="cons"><div class="cr"><b>'+feitas+' de '+L.length+' consultas feitas</b><span>'+(faltam>0?(faltam===1?'falta 1':'faltam '+faltam):'todas feitas')+'</span></div><ul>'+li+'</ul>'
-    +(aAg?'<p class="cnota">Nossa equipe entra em contato para agendar as próximas.</p>':'')+'</div>';
+    /* HAG_CENTRAL_NIVEL2_v1: a frase antiga ("Nossa equipe entra em contato para agendar") contradizia o agendamento pelo link */
+    +(aAg?'<p class="cnota">'+(d.links&&d.links.agendar?'Quando chegar a hora, o botão Agendar mostra as datas para você escolher. Se preferir, a equipe te ajuda.':'Quando chegar a hora, a equipe te envia as datas para escolher.')+'</p>':'')+'</div>';
 }
 function hojeSP(){ var a=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); a.setHours(12,0,0,0); return a; }
 function isoD(x){ return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
@@ -514,6 +550,75 @@ function evolucaoHTML(d){
   return '<h3 class="tit">Sua evolução</h3><div class="card evc">'+rec+'<div class="evg">'+cards+'</div>'
     +'<p class="evnota">'+E.length+' bioimpedâncias, de '+dataBR(f.data)+' a '+dataBR(l.data)+'. A leitura clínica é feita em consulta.</p></div>';
 }
+/* HAG_CENTRAL_NIVEL2_v1 (13/11/2026). Pedido do Dr.: "faça agora tudo isso" (claude/central-analise-especialista-13-11-2026.md).
+   Para agora: uma ação por vez, na ordem do que mais importa (questionário, consulta a marcar, exame pedido, tratamento
+   terminando). Metas do ciclo: as que o Dr. escreveu no motor. Protocolo: aplicações feitas e a próxima. Resumo do ciclo:
+   da reta final em diante, a ponte para a conversa do próximo passo. Notas fiscais e avisos no celular.
+   Tudo vem de d.extra (Edge Function central v11). Sem d.extra a página fica como antes. */
+function wppTexto(t){ return WPP+'?text='+encodeURIComponent(t); }
+function agoraHTML(d){
+  var X=d.extra||{}, L=d.links||{}, it=[];
+  if(X.questionario) it.push('<a class="ag atalho" href="'+esc(X.questionario.url)+'"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">Questionário '+(X.questionario.tipo==='trimestral'?'do trimestre':'do mês')+'</span><span class="q">Poucos minutos · o Dr. Henrique lê antes da próxima consulta</span></span><span class="sv">'+IC.seta+'</span></a>');
+  if(X.marcar&&L.agendar) it.push('<a class="ag atalho" href="agendar_HAG.html?t='+encodeURIComponent(L.agendar)+'&de=central"><span class="ic">'+IC.cal+'</span><span class="dt"><span class="t">Marque sua próxima consulta</span><span class="q">'+(X.marcar.atrasada?'A data prevista já passou. Escolha o melhor dia para você':'As datas para você escolher já estão abertas')+'</span></span><span class="sv">'+IC.seta+'</span></a>');
+  var ped=pedidosAbertos((d.documentos||[]).filter(function(x){ return x.categoria==='exame'; })).filter(function(x){ return grupoExame(x)==='ped'; });
+  if(ped.length) it.push('<button class="ag" id="agEx"><span class="ic">'+IC.ex+'</span><span class="dt"><span class="t">Exames pedidos pelo Dr. Henrique</span><span class="q">Quando fizer, envie o resultado por aqui</span></span><span class="sv">'+IC.seta+'</span></button>');
+  (X.receitas_fim||[]).slice(0,1).forEach(function(r){ it.push('<a class="ag atalho" target="_blank" rel="noopener" href="'+wppTexto('Olá! O meu tratamento com '+r.nome+' termina em '+dataBR(r.termina).slice(0,5)+'. Preciso continuar?')+'"><span class="ic">'+IC.rx+'</span><span class="dt"><span class="t">'+esc(r.nome)+' termina em '+dataBR(r.termina).slice(0,5)+'</span><span class="q">Se precisar continuar, fale com a equipe</span></span><span class="sv">'+IC.seta+'</span></a>'); });
+  if(!it.length) return '';
+  return '<div class="agora"><p class="rot">Para agora</p>'+it.slice(0,3).join('')+'</div>';
+}
+function lidoHTML(d){
+  var u=(d.extra||{}).ultimo_checkin; if(!u||!u.lido) return '';
+  var tp=u.tipo==='mensal'?'questionário do mês':u.tipo==='trimestral'?'questionário do trimestre':'check-in';
+  return '<div class="lido">'+IC.ok+'<span>O Dr. Henrique leu o seu '+tp+' de '+dataBR(u.data).slice(0,5)+'.</span></div>';
+}
+function metasHTML(d){
+  var M=(d.extra||{}).metas||[]; if(!M.length) return '';
+  return '<h3 class="tit">Metas do ciclo</h3><div class="card"><ul class="metas">'+M.map(function(m,i){
+    return '<li><span class="n">'+(i+1)+'</span><span>'+esc(m.texto)+(m.prazo?'<span class="pz">Prazo: '+esc(m.prazo)+'</span>':'')+'</span></li>'; }).join('')
+    +'</ul><p class="metnota">Definidas pelo Dr. Henrique na consulta de '+dataBR(d.extra.metas_data)+'. É por elas que ele lê a sua evolução.</p></div>';
+}
+function protocoloHTML(d){
+  var P=(d.extra||{}).protocolos||[]; if(!P.length) return '';
+  return '<h3 class="tit">Seu protocolo</h3><div class="card">'+P.map(function(p){
+    var tot=+p.total||0, f=Math.min(+p.feitas||0, tot||99), pc=tot?Math.round(f/tot*100):0;
+    return '<div class="prot"><div class="pl"><span>'+esc(p.nome)+'</span><span>'+(tot?f+' de '+tot+' aplicações':f+(f===1?' aplicação':' aplicações'))+'</span></div>'
+      +(tot?'<div class="barra"><i style="width:'+pc+'%"></i></div>':'')
+      +'<div class="pq">'+(p.proxima?'Próxima aplicação: '+dataBR(p.proxima):(tot&&f>=tot?'Protocolo concluído':'A equipe combina a próxima aplicação com você'))+'</div></div>';
+  }).join('')+'</div>';
+}
+function resumoHTML(d){
+  var c=d.ciclo, X=d.extra||{}, L=d.consultas||[]; if(!c||!c.inicio||!c.fim||d.renovacao||!L.length||!d.extra) return '';
+  var tot=Math.max(1,(new Date(c.fim+'T12:00:00')-new Date(c.inicio+'T12:00:00'))/864e5), pc=Math.max(0,Math.min(1,1-diasAte(c.fim)/tot));
+  var feitas=L.filter(function(x){return x.status==='realizada';}).length, faltam=L.filter(function(x){return x.status!=='realizada'&&x.status!=='faltou';}).length;
+  if(!(pc>=0.65||(feitas>0&&faltam<=2))) return '';
+  var bios=((d.evolucao||[]).filter(function(e){ return String(e.data||'')>=String(c.inicio); })).length;
+  return '<h3 class="tit">Seu ciclo até aqui</h3><div class="card resumo"><div class="rn"><div><b>'+feitas+'</b><span>'+(feitas===1?'consulta':'consultas')+'</span></div>'
+    +'<div><b>'+(X.checkins_ciclo||0)+'</b><span>check-ins</span></div><div><b>'+bios+'</b><span>'+(bios===1?'bioimpedância':'bioimpedâncias')+'</span></div></div>'
+    +'<p>'+(faltam<=2?'Este ciclo está na reta final. Nas próximas consultas, o Dr. Henrique revisa com você o que mudou e conversa sobre o próximo passo.':'Faltam '+faltam+' consultas até o fim do ciclo.')+'</p></div>';
+}
+function telaNotas(d){
+  var X=d.extra||{}, N=X.notas||[], na=X.notas_ano||{};
+  var corpo=N.length?'<div class="card lst"><ul class="lista">'+N.map(function(x){ return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.nf+'</span><span class="dt"><span class="t">'+esc(x.titulo)+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>'; }).join('')+'</ul></div>'
+    :'<div class="card"><p class="vazio">'+(na.emitidas?na.emitidas+(na.emitidas>1?' notas emitidas':' nota emitida')+' em '+esc(na.ano)+'. As notas vão para o seu e-mail; peça a segunda via abaixo se precisar.':'As notas fiscais aparecem aqui conforme forem emitidas.')+'</p></div>';
+  var ano=(na.ano||String(new Date().getFullYear()));
+  corpo+='<a class="btn claro atalho" style="margin-top:16px" target="_blank" rel="noopener" href="'+wppTexto('Olá! Preciso da declaração de pagamentos de '+ano+' para o imposto de renda.')+'">Pedir declaração para o imposto de renda</a>'
+    +'<a class="btn claro atalho" target="_blank" rel="noopener" href="'+wppTexto('Olá! Preciso da segunda via de uma nota fiscal.')+'">Pedir segunda via de nota</a>';
+  telaSub(d,'Seu plano','Notas fiscais.','<p class="sub">Para reembolso no seu plano de saúde e para o imposto de renda.</p>'+corpo);
+  if(VER) tela.querySelectorAll('a.atalho').forEach(function(a){ a.removeAttribute('href'); a.style.opacity='.55'; });
+}
+/* HAG_CENTRAL_AVISOS_v1: inscrição para avisos no celular (só no app salvo na tela de início, que é onde o iPhone permite) */
+var VAPID_PUB='BE5Sl8gN_vm7fqCK261RE4eZF0FBmIx0-AseQQxoCEY5U8TkkldzjtewOnj8RwTZ_SnRX7OOCZV5xhBpjSb2R7k';
+function podeAvisos(){ return !VER && 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification!=='undefined' && (STANDALONE||!IOS) && Notification.permission!=='denied' && ls.get('hagcentral.avisos')!=='1'; }
+function b64u(s){ var p='='.repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')), a=new Uint8Array(b.length); for(var i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; }
+function ligarAvisos(bt){
+  bt.disabled=true;
+  navigator.serviceWorker.register('sw.js').then(function(){ return navigator.serviceWorker.ready; }).then(function(reg){
+    return Notification.requestPermission().then(function(p){ if(p!=='granted') throw new Error('negado');
+      return reg.pushManager.getSubscription().then(function(s){ return s||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)}); }); });
+  }).then(function(sub){ return api({acao:'push_inscrever',token:TOKEN,sessao:SESSAO,sub:sub.toJSON(),aparelho:navigator.userAgent.slice(0,120)}); })
+  .then(function(r){ if(!r||!r.ok) throw new Error('servidor'); ls.set('hagcentral.avisos','1'); bt.outerHTML='<div class="lido">'+IC.ok+'<span>Avisos ligados neste celular.</span></div>'; })
+  .catch(function(e){ bt.disabled=false; var q=bt.querySelector('.q'); if(q) q.textContent=String(e&&e.message)==='negado'?'O celular não permitiu. Libere as notificações nos Ajustes e tente de novo.':'Não deu certo agora. Tente de novo mais tarde.'; });
+}
 function progresso(c,d){
   if(!c||!c.inicio||!c.fim) return '';
   var i=new Date(c.inicio+'T12:00:00'), f=new Date(c.fim+'T12:00:00'), tot=Math.max(1,Math.round((f-i)/864e5)), feito=Math.min(tot,Math.max(0,tot-diasAte(c.fim)));
@@ -545,7 +650,9 @@ function painel(d){
     else h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+'</span></div>';
   }
 
+  h+=lidoHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
   if(mostraInstalar()) h+=cartaoInstalar();   /* HAG_CENTRAL_INSTALAR_v1 */
+  h+=agoraHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
 
   /* próxima consulta */
   var agd=L.agendar?'agendar_HAG.html?t='+encodeURIComponent(L.agendar)+'&de=central':'';
@@ -558,12 +665,15 @@ function painel(d){
       +(MAPA[loc]?'<a class="hb" target="_blank" rel="noopener" href="https://maps.apple.com/?q='+encodeURIComponent(MAPA[loc])+'">'+IC.pin+'Como chegar</a>':'')
       +(agd?'<a class="hb" href="'+agd+'">'+IC.cal+'Remarcar</a>':'')
       +'</div></section>';
-  } else {
+  } else if(!(d.extra&&d.extra.marcar&&L.agendar)){   /* HAG_CENTRAL_NIVEL2_v1: o "Para agora" já chama para marcar; sem cartão repetido */
     h+='<section class="card vaz"><div class="rot">Próxima consulta</div><p class="vazio" style="margin-top:6px">Nenhuma consulta marcada.</p>'
       +(agd?'<a class="btn" style="margin-top:14px" href="'+agd+'">Agendar</a>':'')+'</section>';
   }
 
+  h+=protocoloHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
+  h+=metasHTML(d);
   h+=evolucaoHTML(d);   /* HAG_CENTRAL_EVOLUCAO_v1 */
+  h+=resumoHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
 
   /* dia a dia */
   var apps=[];
@@ -590,6 +700,8 @@ function painel(d){
     var x=g[k[0]][0]; if(x) cards.push('<button class="plano" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="t">'+esc(x.titulo||k[1])+'</span><span class="q">Atualizado em '+dataBR(x.data)+'</span><span class="a">Abrir</span></button>');
   });
   if(g.receita.length) cards.push('<button class="plano" id="cRx"><span class="ic">'+IC.rx+'</span><span class="t">Receitas</span><span class="q">'+g.receita.length+(g.receita.length>1?' receitas válidas':' receita válida')+'</span><span class="a">Ver</span></button>');
+  var XN=(d.extra||{}), nN=(XN.notas||[]).length, nE=(XN.notas_ano||{}).emitidas||0;   /* HAG_CENTRAL_NIVEL2_v1 */
+  if(nN||nE) cards.push('<button class="plano" id="cNf"><span class="ic">'+IC.nf+'</span><span class="t">Notas fiscais</span><span class="q">'+(nN?nN+(nN>1?' notas':' nota'):nE+(nE>1?' emitidas em ':' emitida em ')+esc(XN.notas_ano.ano))+'</span><span class="a">Ver</span></button>');
   cards.push('<button class="plano" id="cEx"><span class="ic">'+IC.ex+'</span><span class="t">Exames</span><span class="q">'+(g.exame.length?g.exame.length+(g.exame.length>1?' arquivos':' arquivo'):'Envie seus exames por aqui')+'</span><span class="a">Ver</span></button>');
   h+='<div class="planos n'+cards.length+'">'+cards.join('')+'</div>';
   if(!g.plano_tratamento.length&&!g.plano_alimentar.length&&!g.receita.length) h+='<p class="exnota">Os seus planos e receitas aparecem aqui assim que o Dr. Henrique concluir o seu plano.</p>';
@@ -598,6 +710,7 @@ function painel(d){
   }).join('')+'</ul></div>'; }
   h+='<div class="msg" id="mDoc"></div>';
 
+  if(podeAvisos()) h+='<button class="avisoscel" id="bAv">'+IC.sino+'<span><span>Receber avisos no celular</span><span class="q">Consulta amanhã, check-in aberto, questionário e fim de tratamento</span></span></button>';   /* HAG_CENTRAL_AVISOS_v1 */
   /* equipe */
   h+='<a class="equipe" href="'+WPP+'" target="_blank" rel="noopener"><span class="ic">'+IC.chat+'</span><span class="dt"><span class="t">Falar com a equipe</span><span class="q">WhatsApp do consultório</span></span><span class="sv">'+IC.seta+'</span></a>';
 
@@ -608,9 +721,12 @@ function painel(d){
   var bck=$('#bCk'); if(bck) bck.onclick=function(){ telaCheckin(d); };
   var crx=$('#cRx'); if(crx) crx.onclick=function(){ telaReceitas(d); };   /* HAG_CENTRAL_CARTOES_v1 */
   var cex=$('#cEx'); if(cex) cex.onclick=function(){ telaExames(d); };
+  var cnf=$('#cNf'); if(cnf) cnf.onclick=function(){ telaNotas(d); };   /* HAG_CENTRAL_NIVEL2_v1 */
+  var agx=$('#agEx'); if(agx) agx.onclick=function(){ telaExames(d); };
+  var bav=$('#bAv'); if(bav) bav.onclick=function(){ ligarAvisos(bav); };
   /* HAG_CENTRAL_VER_EQUIPE_v2: na visualização da equipe os atalhos levam aos links DO PACIENTE.
      Agendar ali marcaria consulta em nome dele; Treino gravaria registro como se fosse ele. Ficam desligados. */
-  if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app').forEach(function(a){
+  if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app,a.atalho').forEach(function(a){
     a.removeAttribute('href'); a.style.opacity='.55'; a.style.cursor='default';
     a.onclick=function(){ $('#mDoc').textContent='Na visualização da equipe os atalhos ficam desligados: abririam a agenda e os apps em nome do paciente.'; $('#mDoc').scrollIntoView({block:'center'}); };
   }); }
@@ -754,7 +870,7 @@ function telaReceitas(d){
   L.forEach(function(x){ if(!porData[x.data]){ porData[x.data]=[]; datas.push(x.data); } porData[x.data].push(x); });
   var linhaRx=function(x){
     var it=x.itens||[], t=it.length? (it.length>3? it.slice(0,2).join(' · ')+' e mais '+(it.length-2) : it.join(' · ')) : 'Receita';
-    return '<li><button class="doc rx" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.rx+'</span><span class="dt">'+(x.tipo&&it.length?'<span class="tp">'+esc(x.tipo)+'</span>':'')+'<span class="t">'+esc(t)+'</span>'+(!it.length?'<span class="q">Abra para ver os itens</span>':'')+'</span><span class="a">Abrir</span></button></li>';
+    return '<li><button class="doc rx" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.rx+'</span><span class="dt">'+(x.tipo&&it.length?'<span class="tp">'+esc(x.tipo)+'</span>':'')+'<span class="t">'+esc(t)+'</span>'+(!it.length?'<span class="q">Toque para ver os itens e como usar</span>':'')+'</span><span class="a">Abrir</span></button></li>';
   };
   var corpo=datas.map(function(dt,i){ var l=porData[dt];
     return '<div class="card lst"><div class="grupo">'+(i===0?'Da última consulta':'Ainda válidas')+' · '+dataBR(dt)+'</div><ul class="lista">'+l.map(linhaRx).join('')+'</ul></div>'; }).join('');
