@@ -583,7 +583,9 @@ function protocoloHTML(d){
     var tot=+p.total||0, f=Math.min(+p.feitas||0, tot||99), pc=tot?Math.round(f/tot*100):0;
     return '<div class="prot"><div class="pl"><span>'+esc(p.nome)+'</span><span>'+(tot?f+' de '+tot+' aplicações':f+(f===1?' aplicação':' aplicações'))+'</span></div>'
       +(tot?'<div class="barra"><i style="width:'+pc+'%"></i></div>':'')
-      +'<div class="pq">'+(p.proxima?'Próxima aplicação: '+dataBR(p.proxima):(tot&&f>=tot?'Protocolo concluído':'A equipe combina a próxima aplicação com você'))+'</div></div>';
+      +'<div class="pq">'+(tot&&f>=tot?'Protocolo concluído':(p.proxima&&diasAte(p.proxima)>=0?'Próxima aplicação: '+dataBR(p.proxima):'A equipe combina a próxima aplicação com você'))+'</div></div>';
+    /* HAG_CENTRAL_NIVEL2_v2 (13/11): teste ao vivo com a Maria mostrou "8 de 8" com "Próxima aplicação: 22/08" (data passada).
+       Concluído vence a data; data que já passou não aparece como próxima. */
   }).join('')+'</div>';
 }
 function resumoHTML(d){
@@ -594,7 +596,8 @@ function resumoHTML(d){
   var bios=((d.evolucao||[]).filter(function(e){ return String(e.data||'')>=String(c.inicio); })).length;
   return '<h3 class="tit">Seu ciclo até aqui</h3><div class="card resumo"><div class="rn"><div><b>'+feitas+'</b><span>'+(feitas===1?'consulta':'consultas')+'</span></div>'
     +'<div><b>'+(X.checkins_ciclo||0)+'</b><span>check-ins</span></div><div><b>'+bios+'</b><span>'+(bios===1?'bioimpedância':'bioimpedâncias')+'</span></div></div>'
-    +'<p>'+(faltam<=2?'Este ciclo está na reta final. Nas próximas consultas, o Dr. Henrique revisa com você o que mudou e conversa sobre o próximo passo.':'Faltam '+faltam+' consultas até o fim do ciclo.')+'</p></div>';
+    +'<p>'+(faltam<=2&&pc>=0.65?'Este ciclo está na reta final. Nas próximas consultas, o Dr. Henrique revisa com você o que mudou e conversa sobre o próximo passo.':(faltam===1?'Falta 1 consulta até o fim do ciclo.':'Faltam '+faltam+' consultas até o fim do ciclo.'))+'</p></div>';
+  /* HAG_CENTRAL_NIVEL2_v2 (13/11): "reta final" aparecia na Maria na semana 23 de 52 só por faltarem 2 consultas. Agora exige 65% do tempo. */
 }
 function telaNotas(d){
   var X=d.extra||{}, N=X.notas||[], na=X.notas_ano||{};
