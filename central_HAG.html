@@ -710,7 +710,7 @@ function painel(d){
   }).join('')+'</ul></div>'; }
   h+='<div class="msg" id="mDoc"></div>';
 
-  if(podeAvisos()) h+='<button class="avisoscel" id="bAv">'+IC.sino+'<span><span>Receber avisos no celular</span><span class="q">Consulta amanhã, check-in aberto, questionário e fim de tratamento</span></span></button>';   /* HAG_CENTRAL_AVISOS_v1 */
+  if(podeAvisos()&&(d.extra||{}).avisos) h+='<button class="avisoscel" id="bAv">'+IC.sino+'<span><span>Receber avisos no celular</span><span class="q">Consulta amanhã, check-in aberto, questionário e fim de tratamento</span></span></button>';   /* HAG_CENTRAL_AVISOS_v1 */
   /* equipe */
   h+='<a class="equipe" href="'+WPP+'" target="_blank" rel="noopener"><span class="ic">'+IC.chat+'</span><span class="dt"><span class="t">Falar com a equipe</span><span class="q">WhatsApp do consultório</span></span><span class="sv">'+IC.seta+'</span></a>';
 
