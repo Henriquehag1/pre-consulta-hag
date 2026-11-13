@@ -15,8 +15,9 @@ self.addEventListener('push', function(event){
   var titulo = d.titulo || 'Fila de Agendamento';
   var opcoes = {
     body: d.corpo || 'Novidade na fila.',
-    icon: 'icone-192.png',
-    badge: 'icone-192.png',
+    /* HAG_CENTRAL_AVISOS_v1 (13/11/2026): aviso da central do paciente sai com o ícone da central */
+    icon: /central_HAG/.test(d.url || '') ? 'icone-central-192.png' : 'icone-192.png',
+    badge: /central_HAG/.test(d.url || '') ? 'icone-central-192.png' : 'icone-192.png',
     tag: d.tag || 'hag-fila',
     renotify: true,
     /* HAG_PUSH_ALVO_v2 (28/08/2026): o padrao aponta para o Tarefas, que e
@@ -39,7 +40,8 @@ self.addEventListener('notificationclick', function(event){
          triagem. O aviso da fila continua exatamente como era. */
       /* HAG_WPP_AGENTE_v1 (31/10/2026): o aviso do WhatsApp leva a Daniela a
          whatsapp_HAG.html?id=... e o Dr. a hag_dr_HAG.html; mesma regra da triagem. */
-      if (/triagem_HAG|whatsapp_HAG|hag_dr_HAG/.test(alvo)){
+      /* HAG_CENTRAL_AVISOS_v1: o aviso da central do paciente abre a central (o app dele da tela de início) */
+      if (/triagem_HAG|whatsapp_HAG|hag_dr_HAG|central_HAG/.test(alvo)){
         for (var j = 0; j < lista.length; j++){
           if ('navigate' in lista[j]) return lista[j].navigate(alvo).then(function(c){ return c && c.focus ? c.focus() : c; });
         }

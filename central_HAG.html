@@ -64,27 +64,6 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .vazio{color:var(--apoio);font-size:15px;padding:6px 0}
 .rodape{margin-top:34px;padding-top:18px;border-top:1px solid var(--fio);font-size:13px;color:var(--apoio);line-height:1.6}
 .rodape .rot{color:var(--apoio);font-size:10.5px}
-/* HAG_CENTRAL_INSTALAR_v1 */
-.inst{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:center;background:var(--papel);border:1px solid var(--fio);border-radius:6px;padding:16px;margin-top:16px}
-.inst-ic img{width:52px;height:52px;border-radius:12px;display:block;box-shadow:0 2px 8px rgba(34,26,22,.12)}
-.inst-tx{flex:1;min-width:180px;display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--suave)}
-.inst-tx b{font-family:var(--d);font-weight:400;font-size:19px;color:var(--tinta);line-height:1.2}
-.inst [hidden]{display:none!important}
-.inst-bt{width:100%}.inst-bt .btn{padding:14px 16px}.inst-bt .btn+.btn{margin-top:8px}
-.inst-lk{display:flex;justify-content:center;gap:22px;margin-top:10px}
-.instov{position:fixed;inset:0;z-index:50;background:rgba(34,26,22,.55);display:flex;align-items:center;justify-content:center;padding:24px}
-.instov[hidden]{display:none}
-.instov-c{background:var(--linho);border-radius:10px;padding:24px 22px 18px;max-width:380px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.25)}
-.instov-c h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.2;margin:10px 0 8px}
-.instov-c .sub{margin-bottom:16px}
-.instov-ic{width:58px;height:58px;border-radius:14px;background:var(--papel);border:1px solid var(--fio);display:flex;align-items:center;justify-content:center;margin-top:6px}
-.instov-ic svg{width:30px;height:30px;fill:none;stroke:var(--conhaque);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.instov-seta{position:fixed;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;color:#fff;font-family:var(--r);font-size:12px;letter-spacing:.2em;text-transform:uppercase;animation:instpula 1.1s ease-in-out infinite}
-.instov-seta svg{width:44px;height:44px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.instov-seta.baixo{bottom:calc(10px + env(safe-area-inset-bottom))}
-.instov-seta.cima{top:calc(8px + env(safe-area-inset-top));flex-direction:column-reverse}
-.instov-seta.cima svg{transform:rotate(180deg)}
-@keyframes instpula{0%,100%{margin-bottom:0;margin-top:0}50%{margin-bottom:-8px;margin-top:-8px}}
 .aviso{background:#fff;border:1px solid var(--fio);border-left:3px solid var(--camurca);padding:14px 16px;margin-top:16px;font-size:14.5px;color:var(--suave);border-radius:3px}
 .aviso b{font-weight:600;color:var(--tinta)}
 .esconde{display:none!important}
@@ -149,11 +128,6 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .rxant{border-top:1px solid var(--fio);margin-top:4px}
 .rxant summary{list-style:none;cursor:pointer;padding:14px 0;font-family:var(--r);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--conhaque)}
 .rxant summary::-webkit-details-marker{display:none}
-/* HAG_CENTRAL_EXAMES_v1 */
-.exbtn{margin:12px 0 4px;padding:13px 16px}
-.exnota{font-size:14px;color:var(--apoio);margin:10px 0 4px;line-height:1.45}
-.exl{display:block;font-size:13.5px;color:var(--apoio);margin-top:12px}
-.exl input{display:block;width:100%;margin-top:6px;border:1px solid var(--fio);border-radius:4px;background:#fff;padding:10px 12px;font:inherit;font-size:15.5px;color:var(--tinta)}
 .rxant summary::after{content:" ›";letter-spacing:0}
 .rxant[open] summary::after{content:" ⌄"}
 .equipe{display:flex;align-items:center;gap:14px;margin-top:14px;background:var(--papel);border:1px solid var(--fio);border-radius:6px;padding:14px 16px;text-decoration:none;color:var(--tinta)}
@@ -234,8 +208,6 @@ var qs=new URLSearchParams(location.search);
 /* HAG_CENTRAL_VER_EQUIPE_v1: ?ver=1&p=<paciente> abre a visão do paciente com o login da equipe
    (mesmo navegador do painel). Não cria sessão de paciente e não salva nada neste aparelho. */
 var VER=qs.get('ver')==='1'&&qs.get('p')?qs.get('p'):'';
-/* HAG_CENTRAL_VOLTA_DR_v1 (12/11/2026): aberta pela ficha do paciente no HAG Dr, a visão da equipe volta para lá */
-var VOLTA_DR=VER&&qs.get('de')==='dr'?'<a href="hag_dr_HAG.html" style="display:inline-block;margin:0 0 10px;font-size:14px;font-weight:600;color:#8C4F2B;text-decoration:none">‹ HAG Dr</a>':'';
 /* HAG_CENTRAL_VER_SESSAO_v1 (12/11/2026): "Ver como ele vê" dava "seu login expirou" porque a página lia o token salvo
    sem renovar (o token do login vale 1 hora). Agora, só na visão da equipe, carrega o hag_auth.js do painel, renova a
    sessão em silêncio pelo refresh token e, se não der, mostra o login ali mesmo. */
@@ -270,84 +242,6 @@ function poeManifesto(k){
     var l=document.createElement('link');l.rel='manifest';l.id='hagMan';l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));document.head.appendChild(l);
   }catch(e){}
 }
-/* HAG_CENTRAL_INSTALAR_v1 (12/11/2026). Pedido do Dr.: guiar o paciente, passo a passo, a pôr a central na tela de início,
-   "e até fazendo por ele". O que dá para fazer por ele:
-   - Android (Chrome, Samsung): o próprio navegador oferece a instalação (beforeinstallprompt); um toque em "Colocar agora"
-     abre a confirmação do sistema e o ícone entra sozinho.
-   - iPhone: a Apple não deixa nenhum site instalar o ícone por conta própria. O guia mostra uma tela por passo, com uma
-     seta apontando onde tocar (barra de baixo no Safari; canto de cima no Chrome) e, se a página abriu dentro do WhatsApp
-     ou do Instagram, primeiro ensina a abrir no Safari (ali dentro não existe "Adicionar à Tela de Início").
-   O cartão some quando ele confirma ("Já coloquei"), quando abre pelo ícone, ou por 14 dias em "Agora não".
-   A passagem do iPhone (HAG_CENTRAL_PONTE_v1) continua: o ícone salvo em até 30 min entra sem pedir código. */
-var UA=navigator.userAgent||'';
-var ANDROID=/Android/.test(UA), IOS_CHROME=/CriOS|FxiOS|EdgiOS/.test(UA), DENTRO=/FBAN|FBAV|Instagram|Line\/|WhatsApp|; wv\)|GSA\//.test(UA);
-var PEDIDO_INST=null;
-window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); PEDIDO_INST=e; var b=$('#instJa'); if(b){ b.hidden=false; var g=$('#instGuia'); if(g) g.classList.add('claro'); } });
-window.addEventListener('appinstalled',function(){ ls.set('hagcentral.salvou','1'); var c=$('#avInst'); if(c) c.remove(); });
-function mostraInstalar(){
-  if(VER||STANDALONE||!(IOS||ANDROID)) return false;
-  if(ls.get('hagcentral.salvou')==='1') return false;
-  var adi=+(ls.get('hagcentral.instAdiado')||0); if(adi&&Date.now()-adi<14*864e5) return false;
-  return true;
-}
-function cartaoInstalar(){
-  return '<div class="inst" id="avInst"><div class="inst-ic"><img src="icone-central-180.png" alt=""></div><div class="inst-tx"><b>Deixe a central na tela de início</b>'
-    +'<span>Fica como um app no seu celular e abre direto no seu acompanhamento'+(IOS?', sem pedir código de novo':'')+'.</span></div>'
-    +'<div class="inst-bt"><button class="btn" id="instJa"'+(ANDROID&&PEDIDO_INST?'':' hidden')+'>Colocar agora</button>'
-    +'<button class="btn'+(ANDROID&&PEDIDO_INST?' claro':'')+'" id="instGuia">Me mostre como</button>'
-    +'<div class="inst-lk"><button class="link" id="instFeito">Já coloquei</button><button class="link" id="instDepois">Agora não</button></div></div></div>';
-}
-function ligaInstalar(d){
-  var c=$('#avInst'); if(!c) return;
-  var ja=$('#instJa'); if(ja){ if(ANDROID&&PEDIDO_INST){ ja.hidden=false; } ja.onclick=function(){ if(!PEDIDO_INST) return guiaInstalar(d,0);
-    PEDIDO_INST.prompt(); Promise.resolve(PEDIDO_INST.userChoice).then(function(r){ if(r&&r.outcome==='accepted'){ ls.set('hagcentral.salvou','1'); var c2=$('#avInst'); if(c2) c2.remove(); } PEDIDO_INST=null; }); }; }
-  $('#instGuia').onclick=function(){ guiaInstalar(d,0); };
-  $('#instFeito').onclick=function(){ ls.set('hagcentral.salvou','1'); c.remove(); try{ history.replaceState(null,'',enderecoCom('')); }catch(e){} poeManifesto(''); };
-  $('#instDepois').onclick=function(){ ls.set('hagcentral.instAdiado',String(Date.now())); c.remove(); };
-}
-var SV={
-  share:'<svg viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></svg>',
-  dots:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>',
-  vdots:'<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>',
-  plus:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>',
-  out:'<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg>',
-  ok:'<svg viewBox="0 0 24 24"><path d="M5 12.5 10 17l9-10"/></svg>',
-  seta:'<svg viewBox="0 0 24 24"><path d="M12 4v15M6 13l6 6 6-6"/></svg>'
-};
-function passosInstalar(){
-  var P=[];
-  if(DENTRO) P.push({ic:SV.out,t:'Abra no '+(IOS?'Safari':'Chrome'),s:'A central abriu dentro de outro app, e ali não dá para salvar o ícone. Toque nos três pontinhos ou no ícone de bússola do app e escolha "Abrir no '+(IOS?'Safari':'navegador')+'". Depois toque de novo em "Me mostre como".',onde:IOS?'cima':'cima',copiar:true});
-  if(IOS&&IOS_CHROME){
-    P.push({ic:SV.share,t:'Toque em Compartilhar',s:'É o quadrado com a seta para cima, no canto de cima, ao lado do endereço.',onde:'cima'});
-    P.push({ic:SV.plus,t:'Toque em "Adicionar à Tela de Início"',s:'Role a lista para baixo se não aparecer de primeira.',onde:''});
-    P.push({ic:SV.ok,t:'Toque em "Adicionar"',s:'Pronto: o ícone HAG aparece na tela do seu celular.',onde:'cima'});
-  } else if(IOS){
-    P.push({ic:SV.share,t:'Toque em Compartilhar',s:'Na barra de baixo do Safari: o quadrado com a seta para cima. Se não aparecer, toque nos três pontinhos ••• e depois em Compartilhar.',onde:'baixo'});
-    P.push({ic:SV.plus,t:'Toque em "Adicionar à Tela de Início"',s:'Role a lista para baixo se não aparecer de primeira. Se surgir "Abrir como app", deixe ligado.',onde:''});
-    P.push({ic:SV.ok,t:'Toque em "Adicionar"',s:'No canto de cima da tela. Pronto: o ícone HAG aparece na tela do seu celular e abre direto, sem pedir código.',onde:'cima'});
-  } else {
-    P.push({ic:SV.vdots,t:'Toque no menu ⋮',s:'Os três pontinhos no canto de cima do navegador.',onde:'cima'});
-    P.push({ic:SV.plus,t:'Toque em "Adicionar à tela inicial"',s:'Em alguns celulares aparece como "Instalar app".',onde:''});
-    P.push({ic:SV.ok,t:'Confirme em "Adicionar" ou "Instalar"',s:'Pronto: o ícone HAG aparece na tela do seu celular.',onde:''});
-  }
-  return P;
-}
-function guiaInstalar(d,i){
-  var P=passosInstalar(), p=P[i]; if(!p) return;
-  var ov=$('#instOv'); if(!ov){ ov=document.createElement('div'); ov.id='instOv'; ov.className='instov'; document.body.appendChild(ov); }
-  var ult=i===P.length-1;
-  ov.innerHTML='<div class="instov-c"><p class="rot">Passo '+(i+1)+' de '+P.length+'</p><div class="instov-ic">'+p.ic+'</div><h2>'+p.t+'</h2><p class="sub">'+p.s+'</p>'
-    +(p.copiar?'<button class="btn claro" id="instCop">Copiar o link</button>':'')
-    +'<button class="btn" id="instProx">'+(ult?'Já coloquei':'Próximo')+'</button>'
-    +'<div class="inst-lk">'+(i>0?'<button class="link" id="instAnt">Voltar</button>':'')+'<button class="link" id="instFecha">Fechar</button></div></div>'
-    +(p.onde?'<div class="instov-seta '+p.onde+'">'+SV.seta+'<span>'+(p.onde==='baixo'?'aqui embaixo':'aqui em cima')+'</span></div>':'');
-  ov.hidden=false;
-  $('#instFecha').onclick=function(){ ov.hidden=true; };
-  if($('#instAnt')) $('#instAnt').onclick=function(){ guiaInstalar(d,i-1); };
-  if($('#instCop')) $('#instCop').onclick=function(){ var u=BASE+enderecoCom(''); (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(function(){ $('#instCop').textContent='Link copiado'; }).catch(function(){ $('#instCop').textContent='Não deu para copiar'; }); };
-  $('#instProx').onclick=function(){ if(!ult) return guiaInstalar(d,i+1); ov.hidden=true; ls.set('hagcentral.salvou','1'); var c=$('#avInst'); if(c) c.remove(); };
-}
-
 function aplicaPonte(k){
   if(!k) return;
   try{ history.replaceState(null,'',enderecoCom(k)); }catch(e){}
@@ -451,8 +345,7 @@ var IC={
   pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
   seta:'<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>',
-  ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></svg>',
-  ex:'<svg viewBox="0 0 24 24"><path d="M9.5 3.5h5M10.5 3.5v6L5.8 18a1.8 1.8 0 0 0 1.6 2.5h9.2a1.8 1.8 0 0 0 1.6-2.5l-4.7-8.5v-6"/><path d="M8 14.5h8"/></svg>'
+  ok:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></svg>'
 };
 var MAPA={pinheiros:'Av. Brigadeiro Faria Lima, 1461, São Paulo',tatuape:'R. Vilela, 665, Tatuapé, São Paulo'};
 function diasAte(iso){ var a=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); a.setHours(12,0,0,0); return Math.round((new Date(iso+'T12:00:00')-a)/864e5); }
@@ -525,7 +418,7 @@ function progresso(c,d){
 }
 function painel(d){
   d=d||{}; var L=d.links||{};
-  var h=VOLTA_DR+(VER?'<div class="aviso" style="margin:0 0 14px;border-left-color:#8C4F2B"><b>Visualização da equipe.</b> É assim que o paciente vê a central. Nada aqui fica registrado como acesso dele.</div>':'')
+  var h=(VER?'<div class="aviso" style="margin:0 0 14px;border-left-color:#8C4F2B"><b>Visualização da equipe.</b> É assim que o paciente vê a central. Nada aqui fica registrado como acesso dele.</div>':'')
     +'<p class="rot">Seu acompanhamento</p><h1>Olá, '+esc(d.nome||'')+'.</h1>';
   if(d.ciclo){ h+=progresso(d.ciclo,d)||('<p class="sub">'+esc(nomeCiclo(d.ciclo.tipo))+(d.ciclo.fim?' · até '+dataBR(d.ciclo.fim):'')+'</p>'); }
 
@@ -545,7 +438,9 @@ function painel(d){
     else h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+'</span></div>';
   }
 
-  if(mostraInstalar()) h+=cartaoInstalar();   /* HAG_CENTRAL_INSTALAR_v1 */
+  if(querPonte()){
+    h+='<div class="aviso" id="avInst"><b>Deixe na tela de início.</b> Agora, no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". O ícone já abre entrando, sem pedir código de novo. <button class="link" id="bJa">Já salvei</button></div>';
+  }
 
   /* próxima consulta */
   var agd=L.agendar?'agendar_HAG.html?t='+encodeURIComponent(L.agendar)+'&de=central':'';
@@ -577,25 +472,38 @@ function painel(d){
   }
 
   /* documentos */
-  /* HAG_CENTRAL_CARTOES_v1 (12/11/2026, pedido do Dr.): quatro cartões, como já eram os dois planos: Plano de tratamento,
-     Plano alimentar, Receitas e Exames. Os planos abrem o PDF; Receitas e Exames abrem uma tela com tudo organizado
-     (receitas por data; exames por tipo: pedidos, bioimpedância, laboratoriais, imagem, outros e os enviados por ele). */
-  var docs=d.documentos||[], g={plano_tratamento:[],plano_alimentar:[],receita:[],exame:[],outros:[]};
+  var docs=d.documentos||[], g={plano_tratamento:[],plano_alimentar:[],receita:[],outros:[]};
   docs.forEach(function(x){ (g[x.categoria]||g.outros).push(x); });
-  g.exame=pedidosAbertos(g.exame);   /* HAG_CENTRAL_PEDIDO_ATENDIDO_v1 */
-  d._g=g;
   h+='<h3 class="tit">Seu plano</h3>';
-  var cards=[];
-  [['plano_tratamento','Plano de tratamento'],['plano_alimentar','Plano alimentar']].forEach(function(k){
-    var x=g[k[0]][0]; if(x) cards.push('<button class="plano" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="t">'+esc(x.titulo||k[1])+'</span><span class="q">Atualizado em '+dataBR(x.data)+'</span><span class="a">Abrir</span></button>');
-  });
-  if(g.receita.length) cards.push('<button class="plano" id="cRx"><span class="ic">'+IC.rx+'</span><span class="t">Receitas</span><span class="q">'+g.receita.length+(g.receita.length>1?' receitas válidas':' receita válida')+'</span><span class="a">Ver</span></button>');
-  cards.push('<button class="plano" id="cEx"><span class="ic">'+IC.ex+'</span><span class="t">Exames</span><span class="q">'+(g.exame.length?g.exame.length+(g.exame.length>1?' arquivos':' arquivo'):'Envie seus exames por aqui')+'</span><span class="a">Ver</span></button>');
-  h+='<div class="planos n'+cards.length+'">'+cards.join('')+'</div>';
-  if(!g.plano_tratamento.length&&!g.plano_alimentar.length&&!g.receita.length) h+='<p class="exnota">Os seus planos e receitas aparecem aqui assim que o Dr. Henrique concluir o seu plano.</p>';
-  if(g.outros.length){ h+='<div class="card lst"><div class="grupo">Outros documentos</div><ul class="lista">'+g.outros.map(function(x){
-    return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo)+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>';
-  }).join('')+'</ul></div>'; }
+  if(!docs.length){ h+='<div class="card"><p class="vazio">Os seus documentos aparecem aqui assim que o Dr. Henrique concluir o seu plano.</p></div>'; }
+  else {
+    var dest=[g.plano_tratamento[0],g.plano_alimentar[0]].filter(Boolean);
+    if(dest.length){ h+='<div class="planos n'+dest.length+'">'+dest.map(function(x){
+      return '<button class="plano" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="t">'+esc(x.titulo)+'</span><span class="q">Atualizado em '+dataBR(x.data)+'</span><span class="a">Abrir</span></button>';
+    }).join('')+'</div>'; }
+    /* HAG_CENTRAL_RECEITAS_v1 (11/11/2026): o Dr. pediu que o paciente saiba o que tem em cada receita sem abrir uma por uma.
+       Cada receita mostra os itens (lidos da prescrição) e o tipo; agrupadas por data; as datas mais antigas ficam recolhidas. */
+    if(g.receita.length){
+      var datas=[], porData={}; g.receita.forEach(function(x){ if(!porData[x.data]){ porData[x.data]=[]; datas.push(x.data); } porData[x.data].push(x); });
+      var linhaRx=function(x){
+        var it=x.itens||[], t=it.length? (it.length>3? it.slice(0,2).join(' · ')+' e mais '+(it.length-2) : it.join(' · ')) : 'Receita';
+        var q=it.length? (x.tipo||'') : 'Abra para ver os itens';
+        return '<li><button class="doc rx" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.rx+'</span><span class="dt">'+(x.tipo&&it.length?'<span class="tp">'+esc(x.tipo)+'</span>':'')+'<span class="t">'+esc(t)+'</span>'+(!it.length?'<span class="q">'+esc(q)+'</span>':'')+'</span><span class="a">Abrir</span></button></li>';
+      };
+      var blocoRx=function(dt){ var l=porData[dt]; return '<div class="rxd">'+dataBR(dt)+' · '+l.length+(l.length>1?' receitas':' receita')+'</div><ul class="lista">'+l.map(linhaRx).join('')+'</ul>'; };
+      var abertas=datas.slice(0,1), velhas=datas.slice(1);
+      h+='<div class="card lst"><div class="grupo">Suas receitas</div>'+abertas.map(blocoRx).join('');
+      if(velhas.length){ var nv=0; velhas.forEach(function(dt){ nv+=porData[dt].length; });
+        h+='<details class="rxant"><summary>Ainda válidas, de consultas anteriores · '+nv+'</summary>'+velhas.map(blocoRx).join('')+'</details>'; }
+      h+='</div>';
+    }
+    var resto=[];
+    /* HAG_CENTRAL_SO_VIGENTE_v1 (12/11/2026, decisão do Dr.): o paciente vê só o plano de tratamento e o plano alimentar atuais; os anteriores ficam com a clínica */
+    g.outros.forEach(function(x){ resto.push([x,x.titulo,IC.doc]); });
+    if(resto.length){ h+='<div class="card lst"><div class="grupo">Outros documentos</div><ul class="lista">'+resto.map(function(r){
+      return '<li><button class="doc" data-doc="'+esc(r[0].id)+'"><span class="ic">'+r[2]+'</span><span class="dt"><span class="t">'+esc(r[1])+'</span><span class="q">'+dataBR(r[0].data)+'</span></span><span class="a">Abrir</span></button></li>';
+    }).join('')+'</ul></div>'; }
+  }
   h+='<div class="msg" id="mDoc"></div>';
 
   /* equipe */
@@ -606,15 +514,13 @@ function painel(d){
 
   tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
   var bck=$('#bCk'); if(bck) bck.onclick=function(){ telaCheckin(d); };
-  var crx=$('#cRx'); if(crx) crx.onclick=function(){ telaReceitas(d); };   /* HAG_CENTRAL_CARTOES_v1 */
-  var cex=$('#cEx'); if(cex) cex.onclick=function(){ telaExames(d); };
   /* HAG_CENTRAL_VER_EQUIPE_v2: na visualização da equipe os atalhos levam aos links DO PACIENTE.
      Agendar ali marcaria consulta em nome dele; Treino gravaria registro como se fosse ele. Ficam desligados. */
   if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app').forEach(function(a){
     a.removeAttribute('href'); a.style.opacity='.55'; a.style.cursor='default';
     a.onclick=function(){ $('#mDoc').textContent='Na visualização da equipe os atalhos ficam desligados: abririam a agenda e os apps em nome do paciente.'; $('#mDoc').scrollIntoView({block:'center'}); };
   }); }
-  ligaInstalar(d);   /* HAG_CENTRAL_INSTALAR_v1 */
+  var bj=$('#bJa'); if(bj) bj.onclick=function(){ ls.set('hagcentral.salvou','1'); $('#avInst').remove(); try{ history.replaceState(null,'',enderecoCom('')); }catch(e){} poeManifesto(''); };
   if($('#bSair')) $('#bSair').onclick=function(){ api({acao:'sair',sessao:SESSAO}).then(function(){ ls.del('hagcentral.s'); SESSAO=''; inicio(); }); };
 }
 
@@ -711,102 +617,6 @@ function telaCheckinFeito(d, score, emerg){
   window.scrollTo(0,0); $('#ckOk').onclick=function(){ painel(d); };
 }
 
-/* HAG_CENTRAL_EXAMES_v1 (12/11/2026, decisões do Dr.): os exames que a clínica já tem (resultados e pedidos) aparecem só
-   pelo título, nunca pelo nome do arquivo; o paciente envia exame novo por aqui (PDF ou foto). O arquivo sobe direto para o
-   Storage por URL assinada, entra na lista na hora, o Mac arquiva na pasta Exames dele e o Dr. recebe aviso no HAG Dr. */
-function grupoExame(x){
-  var t=String(x.titulo||'');
-  if(x.enviado) return 'env';
-  if(x.pedido||/^Pedido/.test(t)) return 'ped';
-  if(/Bioimped/.test(t)) return 'bio';
-  if(/laborat/i.test(t)) return 'lab';
-  if(/Ultrassom|Resson|Tomogr|Raio-x|Mamogr|Densitom|Doppler|Elastogr|Ecocard|imagem/i.test(t)) return 'img';
-  return 'out';
-}
-/* HAG_CENTRAL_PEDIDO_ATENDIDO_v1 (12/11/2026, pedido do Dr.): o pedido de exame fica visível só até chegar o resultado.
-   Sai quando existe resultado com data DEPOIS da data do pedido (no mesmo dia não: costuma ser exame antigo trazido à
-   consulta em que o pedido foi feito). Pedido com tipo no título ("Pedido de exames: ultrassom") só sai com resultado
-   daquele tipo ou com exame enviado pelo paciente; pedido genérico sai com qualquer resultado, menos bioimpedância
-   (que é feita no consultório, não vem de pedido). */
-function pedidosAbertos(L){
-  L=L||[];
-  var res=L.filter(function(x){ return grupoExame(x)!=='ped'; });
-  return L.filter(function(x){
-    if(grupoExame(x)!=='ped') return true;
-    var m=String(x.titulo||'').match(/^Pedido de exames:\s*(.+)$/i), alvo=m?m[1].toLowerCase():'';
-    return !res.some(function(r){
-      if(!(String(r.data||'')>String(x.data||''))) return false;
-      var gr=grupoExame(r); if(gr==='bio') return false;
-      return !alvo || gr==='env' || String(r.titulo||'').toLowerCase().indexOf(alvo)>=0;
-    });
-  });
-}
-var GRUPOS_EX=[['ped','Pedidos de exame'],['lab','Laboratoriais'],['bio','Bioimpedância'],['img','Imagem'],['out','Outros exames'],['env','Enviados por você']];
-function linhaDoc(x){ return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo||'Exame')+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>'; }
-function telaSub(d, rot, tit, corpo){
-  window.scrollTo(0,0);
-  tela.innerHTML=VOLTA_DR+'<button class="link" id="subV">‹ Voltar</button><p class="rot" style="margin-top:10px">'+rot+'</p><h1>'+tit+'</h1>'+corpo+'<div class="msg" id="mDoc"></div>';
-  $('#subV').onclick=function(){ painel(d); };
-  tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
-}
-function telaReceitas(d){
-  var L=(d._g&&d._g.receita)||[], datas=[], porData={};
-  L.forEach(function(x){ if(!porData[x.data]){ porData[x.data]=[]; datas.push(x.data); } porData[x.data].push(x); });
-  var linhaRx=function(x){
-    var it=x.itens||[], t=it.length? (it.length>3? it.slice(0,2).join(' · ')+' e mais '+(it.length-2) : it.join(' · ')) : 'Receita';
-    return '<li><button class="doc rx" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.rx+'</span><span class="dt">'+(x.tipo&&it.length?'<span class="tp">'+esc(x.tipo)+'</span>':'')+'<span class="t">'+esc(t)+'</span>'+(!it.length?'<span class="q">Abra para ver os itens</span>':'')+'</span><span class="a">Abrir</span></button></li>';
-  };
-  var corpo=datas.map(function(dt,i){ var l=porData[dt];
-    return '<div class="card lst"><div class="grupo">'+(i===0?'Da última consulta':'Ainda válidas')+' · '+dataBR(dt)+'</div><ul class="lista">'+l.map(linhaRx).join('')+'</ul></div>'; }).join('');
-  telaSub(d,'Seu plano','Suas receitas.', '<p class="sub">Só as receitas válidas. Use cada uma como o Dr. Henrique orientou.</p>'+(corpo||'<div class="card"><p class="vazio">Nenhuma receita válida no momento.</p></div>'));
-}
-function telaExames(d){
-  var L=(d._g&&d._g.exame)||[], por={};
-  L.forEach(function(x){ var k=grupoExame(x); (por[k]=por[k]||[]).push(x); });
-  var corpo=(VER?'<p class="exnota">O paciente vê aqui o botão para enviar exame.</p>':'<button class="btn" id="bExEnv">Enviar um exame</button>');
-  if(!L.length) corpo+='<div class="card"><p class="vazio">Quando você fizer exames, envie por aqui. Eles ficam guardados neste lugar para você e para o Dr. Henrique.</p></div>';
-  GRUPOS_EX.forEach(function(gx){ var l=por[gx[0]]; if(!l||!l.length) return;
-    l.sort(function(a,b){ return String(b.data||'').localeCompare(String(a.data||'')); });
-    if(gx[0]==='env') l=l.map(function(x){ return Object.assign({},x,{titulo:String(x.titulo||'').replace(/^Enviado por você:?\s*/,'')||'Exame enviado'}); });
-    corpo+='<div class="card lst"><div class="grupo">'+gx[1]+' · '+l.length+'</div><ul class="lista">'+l.slice(0,4).map(linhaDoc).join('')+'</ul>'
-      +(l.length>4?'<details class="rxant"><summary>Mais '+(l.length-4)+'</summary><ul class="lista">'+l.slice(4).map(linhaDoc).join('')+'</ul></details>':'')+'</div>'; });
-  telaSub(d,'Seu plano','Seus exames.','<p class="sub">Pedidos e resultados, separados por tipo. A leitura clínica é feita em consulta.</p>'+corpo);
-  var bex=$('#bExEnv'); if(bex) bex.onclick=function(){ formExame(d); };
-}
-function formExame(d){
-  window.scrollTo(0,0);
-  var hoje=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})), mx=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
-  tela.innerHTML='<p class="rot">Seus exames</p><h1>Enviar um exame.</h1><p class="sub">PDF ou foto do resultado. Se tiver várias páginas em fotos, envie uma de cada vez.</p>'
-    +'<div class="card"><label class="exl">Arquivo<input type="file" id="exArq" accept="application/pdf,image/jpeg,image/png,image/heic,.pdf,.jpg,.jpeg,.png,.heic"></label>'
-    +'<label class="exl">Data do exame (se souber)<input type="date" id="exData" max="'+mx+'"></label>'
-    +'<label class="exl">O que é (opcional)<input type="text" id="exDesc" maxlength="120" placeholder="Ex.: hemograma, ultrassom de abdômen"></label>'
-    +'<button class="btn" id="exEnviar" style="margin-top:16px">Enviar</button><button class="btn claro" id="exVoltar">Voltar</button><p class="msg" id="exMsg"></p></div>';
-  $('#exVoltar').onclick=function(){ telaExames(d); };
-  $('#exEnviar').onclick=function(){
-    var f=($('#exArq').files||[])[0], m=$('#exMsg'), bt=$('#exEnviar');
-    if(!f){ m.textContent='Escolha o arquivo do exame.'; return; }
-    if(f.size>25*1024*1024){ m.textContent='O arquivo passa de 25 MB. Envie um PDF menor ou uma foto.'; return; }
-    var tipo=(f.type||'').toLowerCase(); if(!tipo&&/\.heic$/i.test(f.name)) tipo='image/heic'; if(tipo==='image/heif') tipo='image/heic';
-    bt.disabled=true; bt.textContent='Enviando…'; m.textContent='';
-    var falha=function(t){ bt.disabled=false; bt.textContent='Enviar'; m.textContent=t||'Não foi possível enviar agora. Tente de novo em alguns minutos.'; };
-    api({acao:'exame_url',token:TOKEN,sessao:SESSAO,tipo:tipo,tamanho:f.size,nome:f.name}).then(function(r){
-      if(r.fechado) return fechado(r.motivo);
-      if(!r.ok){ if(r.erro==='sessao'){ ls.del('hagcentral.s'); return inicio(); }
-        return falha(r.erro==='tipo'?'Envie em PDF, JPG, PNG ou HEIC.':r.erro==='tamanho'?'O arquivo passa de 25 MB.':r.erro==='limite'?'Você já enviou muitos arquivos hoje. Fale com a equipe pelo WhatsApp.':null); }
-      return fetch(r.url,{method:'PUT',headers:{'Content-Type':r.tipo||tipo||'application/octet-stream','x-upsert':'false'},body:f}).then(function(up){
-        if(!up.ok) return falha();
-        return api({acao:'exame_ok',token:TOKEN,sessao:SESSAO,path:r.path,data:$('#exData').value||'',descricao:$('#exDesc').value||''}).then(function(k){
-          if(!k.ok) return falha();
-          tela.innerHTML='<p class="rot">Seus exames</p><h1>Exame recebido.</h1><p class="sub">Ele já está na sua lista, e o Dr. Henrique foi avisado. A leitura do resultado é feita em consulta.</p>'
-            +'<button class="btn" id="exMais">Enviar outro</button><button class="btn claro" id="exFim">Ver meus exames</button>';
-          var volta=function(fn){ api({acao:'dados',token:TOKEN,sessao:SESSAO}).then(function(x){ var nd=(x&&x.ok&&x.dados)||d; fn(nd); }); };
-          $('#exMais').onclick=function(){ volta(formExame); }; $('#exFim').onclick=function(){ volta(function(nd){ painel(nd); var ce=$('#cEx'); if(ce) ce.click(); }); };
-        });
-      });
-    }).catch(function(){ falha(); });
-  };
-}
-
 function abrirDoc(id, b){
   var w=null; try{ w=window.open('', '_blank'); }catch(e){}
   var a=b.querySelector('.a'); a.textContent='Abrindo…';
@@ -827,7 +637,7 @@ function inicio(){
     }).then(function(r){
       if(!r) return;
       if(!r.ok && r.erro==='equipe' && window.HAGAuth && !inicio._tentou){ inicio._tentou=1; return Promise.resolve(window.HAGAuth.refresh()).then(function(){ return inicio(); }); }
-      if(!r.ok){ tela.innerHTML=VOLTA_DR+'<h1>Não foi possível abrir.</h1><p class="sub">'+(r.erro==='equipe'?'Seu login expirou. Abra o painel e entre de novo.':'Paciente não encontrado.')+'</p>'; return; }
+      if(!r.ok){ tela.innerHTML='<h1>Não foi possível abrir.</h1><p class="sub">'+(r.erro==='equipe'?'Seu login expirou. Abra o painel e entre de novo.':'Paciente não encontrado.')+'</p>'; return; }
       painel(r.dados);
       if(!r.aberto){ tela.insertAdjacentHTML('afterbegin','<div class="aviso" style="margin:0 0 14px"><b>Para o paciente, a central está fechada</b> (sem ciclo ativo).</div>'); }
     });
