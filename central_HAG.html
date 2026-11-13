@@ -559,7 +559,7 @@ function wppTexto(t){ return WPP+'?text='+encodeURIComponent(t); }
 function agoraHTML(d){
   var X=d.extra||{}, L=d.links||{}, it=[];
   if(X.questionario) it.push('<a class="ag atalho" href="'+esc(X.questionario.url)+'"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">Questionário '+(X.questionario.tipo==='trimestral'?'do trimestre':'do mês')+'</span><span class="q">Poucos minutos · o Dr. Henrique lê antes da próxima consulta</span></span><span class="sv">'+IC.seta+'</span></a>');
-  if(X.marcar&&L.agendar) it.push('<a class="ag atalho" href="agendar_HAG.html?t='+encodeURIComponent(L.agendar)+'&de=central"><span class="ic">'+IC.cal+'</span><span class="dt"><span class="t">Marque sua próxima consulta</span><span class="q">'+(X.marcar.atrasada?'A data prevista já passou. Escolha o melhor dia para você':'As datas para você escolher já estão abertas')+'</span></span><span class="sv">'+IC.seta+'</span></a>');
+  if(X.marcar&&L.agendar) it.push('<a class="ag atalho" href="agendar_HAG.html?t='+encodeURIComponent(L.agendar)+'&de=central"><span class="ic">'+IC.cal+'</span><span class="dt"><span class="t">Marque sua próxima consulta</span><span class="q">'+(X.marcar.antecipada_de?'Antecipada pelo Dr. Henrique; no plano era '+mesAnoC(X.marcar.antecipada_de)+'. As datas já estão abertas':X.marcar.atrasada?'A data prevista já passou. Escolha o melhor dia para você':'As datas para você escolher já estão abertas')+'</span></span><span class="sv">'+IC.seta+'</span></a>');
   var ped=pedidosAbertos((d.documentos||[]).filter(function(x){ return x.categoria==='exame'; })).filter(function(x){ return grupoExame(x)==='ped'; });
   if(ped.length) it.push('<button class="ag" id="agEx"><span class="ic">'+IC.ex+'</span><span class="dt"><span class="t">Exames pedidos pelo Dr. Henrique</span><span class="q">Quando fizer, envie o resultado por aqui</span></span><span class="sv">'+IC.seta+'</span></button>');
   (X.receitas_fim||[]).slice(0,1).forEach(function(r){ it.push('<a class="ag atalho" target="_blank" rel="noopener" href="'+wppTexto('Olá! O meu tratamento com '+r.nome+' termina em '+dataBR(r.termina).slice(0,5)+'. Preciso continuar?')+'"><span class="ic">'+IC.rx+'</span><span class="dt"><span class="t">'+esc(r.nome)+' termina em '+dataBR(r.termina).slice(0,5)+'</span><span class="q">Se precisar continuar, fale com a equipe</span></span><span class="sv">'+IC.seta+'</span></a>'); });
@@ -577,6 +577,8 @@ function metasHTML(d){
     return '<li><span class="n">'+(i+1)+'</span><span>'+esc(m.texto)+(m.prazo?'<span class="pz">Prazo: '+esc(m.prazo)+'</span>':'')+'</span></li>'; }).join('')
     +'</ul><p class="metnota">Definidas pelo Dr. Henrique na consulta de '+dataBR(d.extra.metas_data)+'. É por elas que ele lê a sua evolução.</p></div>';
 }
+/* HAG_CONSULTA_ANTECIPADA_v1 (13/11/2026): "Para agora" diz quando a consulta foi antecipada pelo Dr. (caso Maria Eduarda) */
+function mesAnoC(iso){ var M=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'], p=String(iso||'').split('-'); return p.length===3?M[+p[1]-1]+' de '+p[0]:''; }
 function protocoloHTML(d){
   var P=(d.extra||{}).protocolos||[]; if(!P.length) return '';
   return '<h3 class="tit">Seu protocolo</h3><div class="card">'+P.map(function(p){
