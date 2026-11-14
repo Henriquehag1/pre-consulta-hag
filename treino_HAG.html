@@ -1323,6 +1323,7 @@ function render(){
   if(CTX.ok===false) return vHoje.innerHTML=`<div class="card"><h3>Link não reconhecido</h3><p class="sub">Peça um link novo ao consultório do Dr. Henrique.</p></div>`;
   if(pausado()) return vHoje.innerHTML=`${filaHTML()}${pausaHTML()}`;   /* HAG_TREINO_PAUSA_v1 */
   if(S.fase==="ativ") return renderAtiv();
+  if(S.fase==="relogio" && S.rel) return renderRel();   /* HAG_TREINO_RELOGIO_v1 */
   if(S.fase==="fim" && S.salvo) return renderSalvo();
   if(S.livre && !livreDia(S.livre)) S.livre=null;
   if(S.livre){ const r0=sessCat(S.livre); if(r0 && r0.s.mente) return renderMente(r0); }   /* HAG_TREINO_MENTE_v1 */
@@ -1367,7 +1368,7 @@ function renderInicio(){
   const completo=Object.values(S.pront).every(v=>v!=null);
   if(S.nfAberto) return vHoje.innerHTML=nfEscolhaHTML();   /* HAG_TREINO_NAO_FIZ_v1 */
   const treinouHoje=historico().some(x=>x.data===HOJE());
-  const extra=`${catLib().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">${catLib().some(c=>c.id==="em_casa")?"Sem academia? Em casa · ":""}Programas</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade hoje</button>${!nfHoje()&&!treinouHoje?`<button type="button" class="link" data-a="nfabre" style="align-self:center">Não vou treinar hoje</button>`:""}`;
+  const extra=`${catLib().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">${catLib().some(c=>c.id==="em_casa")?"Sem academia? Em casa · ":""}Programas</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade · importar do relógio</button>${!nfHoje()&&!treinouHoje?`<button type="button" class="link" data-a="nfabre" style="align-self:center">Não vou treinar hoje</button>`:""}`;
   if(!S.prontOk && !S.prontPulou){
     const esc_=(k,t,de,ate,e,dd)=>`<div class="esc"><div class="t">${t}</div><div class="g" style="grid-template-columns:repeat(${ate-de+1},1fr)">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div><div class="l"><span>${de} = ${e}</span><span>${ate} = ${dd}</span></div></div>`;
     vHoje.innerHTML=`${filaHTML()}${nfAvisoHTML()}
@@ -1891,11 +1892,173 @@ function renderHyrox(it,ex,its,barra){
   </div>${rodapeTreino()}`;
   clearInterval(tickCrono); if(rodando) tickCrono=setInterval(()=>{ const el=document.getElementById("crono"); if(el&&S.crono) el.textContent=mmss((Date.now()-S.crono.t0)/1000); },500);
 }
+/* HAG_TREINO_RELOGIO_v1 (14/11/2026). Pedido do Dr. Henrique: caminho para quem não tem iPhone (e para todos) trazer o treino do
+   relógio sem Strava (a API do Strava passou a exigir assinatura). O paciente exporta a atividade (Garmin Connect, Strava, Coros,
+   Polar, Suunto, Samsung...) como GPX, TCX ou FIT e escolhe o arquivo aqui. Tudo é lido no próprio celular; só o resumo
+   (tipo, data, duração, distância, FC média e máxima) vai para hag_treino_salvar. client_id = arq_<hash do arquivo>: importar
+   o mesmo arquivo duas vezes não duplica. */
+const RELOGIO=(()=>{
+  const FIT_EPOCH=631065600; /* 31/12/1989 UTC em segundos unix */
+  const TIPOS={corrida:"Corrida",caminhada:"Caminhada",bike:"Bicicleta",spinning:"Bike de spinning",natacao:"Natação",remo_erg:"Remo",eliptico:"Elíptico",escada:"Escada",outro:"Outra atividade"};
+  function tipoDeTexto(t){ t=String(t||"").toLowerCase();
+    if(/trail|run|corr|^1$|^9$/.test(t)) return "corrida";
+    if(/walk|camin|hik|trek|^11$|^17$/.test(t)) return "caminhada";
+    if(/spin|indoor.?cycl|virtual.?ride/.test(t)) return "spinning";
+    if(/bik|cycl|ride|pedal|^2$/.test(t)) return "bike";
+    if(/swim|nata|^5$/.test(t)) return "natacao";
+    if(/row|remo|^15$/.test(t)) return "remo_erg";
+    if(/ellip/.test(t)) return "eliptico";
+    if(/stair|escad/.test(t)) return "escada";
+    return "outro"; }
+  function hav(a,b){ const R=6371000, r=Math.PI/180, dl=(b.lat-a.lat)*r, dn=(b.lon-a.lon)*r;
+    const x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(x))); }
+  const filhos=(el,nome)=>[...el.children].filter(c=>c.localName===nome);
+  const filho=(el,nome)=>filhos(el,nome)[0]||null;
+  const num=x=>{ const v=parseFloat(x); return isFinite(v)?v:null; };
+
+  function lerGPX(doc){
+    const trk=doc.getElementsByTagNameNS("*","trk")[0];
+    const tipo=tipoDeTexto(trk&&filho(trk,"type")?filho(trk,"type").textContent:"");
+    const pts=[...doc.getElementsByTagNameNS("*","trkpt")].map(p=>{ const t=p.getElementsByTagNameNS("*","time")[0], hr=p.getElementsByTagNameNS("*","hr")[0];
+      return {lat:num(p.getAttribute("lat")), lon:num(p.getAttribute("lon")), t:t?Date.parse(t.textContent):NaN, hr:hr?num(hr.textContent):null}; })
+      .filter(p=>p.lat!=null&&p.lon!=null&&isFinite(p.t));
+    if(pts.length<2) throw new Error("sem_pontos");
+    let m=0, mov=0; for(let i=1;i<pts.length;i++){ const d=hav(pts[i-1],pts[i]), dt=(pts[i].t-pts[i-1].t)/1000; m+=d; if(dt>0&&dt<=30&&d/dt>=0.3) mov+=dt; }
+    const hrs=pts.map(p=>p.hr).filter(v=>v>0);
+    const total=(pts[pts.length-1].t-pts[0].t)/1000;
+    return {tipo, inicio:new Date(pts[0].t), seg:Math.round(mov||total), total:Math.round(total), km:m/1000,
+      fc:hrs.length?Math.round(hrs.reduce((a,b)=>a+b,0)/hrs.length):null, fcmax:hrs.length?Math.max(...hrs):null, fonte:"GPX"};
+  }
+  function lerTCX(doc){
+    const at=doc.getElementsByTagNameNS("*","Activity")[0]; if(!at) throw new Error("sem_atividade");
+    const laps=[...doc.getElementsByTagNameNS("*","Lap")]; if(!laps.length) throw new Error("sem_voltas");
+    let seg=0, m=0, fcSoma=0, fcSeg=0, fcmax=null;
+    laps.forEach(l=>{ const s=num(filho(l,"TotalTimeSeconds")&&filho(l,"TotalTimeSeconds").textContent)||0; seg+=s;
+      m+=num(filho(l,"DistanceMeters")&&filho(l,"DistanceMeters").textContent)||0;
+      const a=filho(l,"AverageHeartRateBpm"), x=filho(l,"MaximumHeartRateBpm");
+      const av=a&&filho(a,"Value")?num(filho(a,"Value").textContent):null, mx=x&&filho(x,"Value")?num(filho(x,"Value").textContent):null;
+      if(av){ fcSoma+=av*s; fcSeg+=s; } if(mx) fcmax=Math.max(fcmax||0,mx); });
+    const ini=Date.parse(laps[0].getAttribute("StartTime")||(filho(at,"Id")||{}).textContent);
+    if(!isFinite(ini)) throw new Error("sem_data");
+    return {tipo:tipoDeTexto(at.getAttribute("Sport")), inicio:new Date(ini), seg:Math.round(seg), total:Math.round(seg), km:m/1000,
+      fc:fcSeg?Math.round(fcSoma/fcSeg):null, fcmax:fcmax?Math.round(fcmax):null, fonte:"TCX"};
+  }
+  /* FIT: só o necessário. Lê as mensagens de sessão (18) e, se não houver, os registros (20). */
+  function lerFIT(buf){
+    const dv=new DataView(buf), hs=dv.getUint8(0);
+    if(buf.byteLength<14||String.fromCharCode(dv.getUint8(8),dv.getUint8(9),dv.getUint8(10),dv.getUint8(11))!==".FIT") throw new Error("nao_fit");
+    const fim=Math.min(buf.byteLength, hs+dv.getUint32(4,true));
+    const defs={}, sess=[], regs=[]; let o=hs, ultimoTs=0;
+    const SZ={0:1,1:1,2:1,3:2,4:2,5:4,6:4,7:1,8:4,9:8,10:1,11:2,12:4,13:1,14:8,15:8,16:8};
+    function valor(pos,size,base,le){ const b=base&0x1f;
+      if(size===1){ const v=dv.getUint8(pos); return (b===1?(v===0x7f?null:dv.getInt8(pos)):(v===0xff&&b!==10&&b!==13?null:v)); }
+      if(size===2){ const v=dv.getUint16(pos,le); return (b===3?(v===0x7fff?null:dv.getInt16(pos,le)):(v===0xffff?null:v)); }
+      if(size===4){ if(b===8){ const f=dv.getFloat32(pos,le); return isFinite(f)?f:null; } const v=dv.getUint32(pos,le); return (b===5?(v===0x7fffffff?null:dv.getInt32(pos,le)):(v===0xffffffff?null:v)); }
+      return null; }
+    while(o<fim){
+      const h=dv.getUint8(o++);
+      if(h&0x80){ /* cabeçalho de tempo comprimido: mensagem de dados */
+        const loc=(h>>5)&3, d=defs[loc]; if(!d) throw new Error("fit_def");
+        const off=h&0x1f; let ts=(ultimoTs&~0x1f)+off; if(off<(ultimoTs&0x1f)) ts+=0x20; ultimoTs=ts;
+        const msg=lerDados(d); if(msg.f[253]==null) msg.f[253]=ts; guardar(d.g,msg.f); continue; }
+      const loc=h&0x0f;
+      if(h&0x40){ o++; const le=dv.getUint8(o++)===0; const g=dv.getUint16(o,le); o+=2; const n=dv.getUint8(o++); const fs=[];
+        for(let i=0;i<n;i++){ fs.push({n:dv.getUint8(o),s:dv.getUint8(o+1),b:dv.getUint8(o+2)}); o+=3; }
+        let dev=0; if(h&0x20){ const nd=dv.getUint8(o++); for(let i=0;i<nd;i++){ dev+=dv.getUint8(o+1); o+=3; } }
+        defs[loc]={g,le,fs,dev}; continue; }
+      const d=defs[loc]; if(!d) throw new Error("fit_def");
+      const msg=lerDados(d); if(msg.f[253]!=null) ultimoTs=msg.f[253]; guardar(d.g,msg.f);
+    }
+    function lerDados(d){ const f={}; d.fs.forEach(x=>{ if(o+x.s>fim) throw new Error("fit_curto"); const sz=SZ[x.b&0x1f]||1;
+        if(x.s===sz) f[x.n]=valor(o,x.s,x.b,d.le); o+=x.s; }); o+=d.dev; return {f}; }
+    function guardar(g,f){ if(g===18) sess.push(f); else if(g===20) regs.push(f); }
+    if(sess.length){
+      const s0=sess[0]; let seg=0,tot=0,m=0,fcS=0,fcT=0,fcmax=null;
+      sess.forEach(s=>{ const tt=(s[8]!=null?s[8]:s[7]||0)/1000; seg+=tt; tot+=(s[7]||s[8]||0)/1000; m+=(s[9]||0)/100;
+        if(s[16]){ fcS+=s[16]*tt; fcT+=tt; } if(s[17]) fcmax=Math.max(fcmax||0,s[17]); });
+      const sport=s0[5], sub=s0[6];
+      let tipo=tipoDeTexto(sport); if(sport===4||sport===0||sport===10){ tipo=sub===15?"eliptico":sub===16?"escada":sub===14?"remo_erg":sub===6?"spinning":sub===1?"corrida":tipo; }
+      if(sport===2&&sub===6) tipo="spinning";
+      const st=s0[2]!=null?s0[2]:(regs[0]&&regs[0][253]); if(st==null) throw new Error("sem_data");
+      return {tipo, inicio:new Date((st+FIT_EPOCH)*1000), seg:Math.round(seg), total:Math.round(tot), km:m/1000,
+        fc:fcT?Math.round(fcS/fcT):null, fcmax:fcmax, fonte:"FIT"};
+    }
+    const rs=regs.filter(r=>r[253]!=null); if(rs.length<2) throw new Error("sem_sessao");
+    const hrs=rs.map(r=>r[3]).filter(v=>v>0), ds=rs.map(r=>r[5]).filter(v=>v!=null);
+    const total=rs[rs.length-1][253]-rs[0][253];
+    return {tipo:"outro", inicio:new Date((rs[0][253]+FIT_EPOCH)*1000), seg:total, total, km:ds.length?Math.max(...ds)/100000:0,
+      fc:hrs.length?Math.round(hrs.reduce((a,b)=>a+b,0)/hrs.length):null, fcmax:hrs.length?Math.max(...hrs):null, fonte:"FIT"};
+  }
+  async function hash(buf){ try{ const h=await crypto.subtle.digest("SHA-256",buf); return [...new Uint8Array(h)].slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join(""); }
+    catch(e){ let a=0; new Uint8Array(buf).forEach((b,i)=>{ a=(a*31+b+i)|0; }); return "x"+(a>>>0).toString(16)+buf.byteLength; } }
+  async function ler(file){
+    if(!file) throw new Error("sem_arquivo");
+    if(file.size>40*1024*1024) throw new Error("grande");
+    const buf=await file.arrayBuffer(); const nome=(file.name||"").toLowerCase(); let r;
+    const cab=new Uint8Array(buf.slice(0,12)); const ehFit=cab.length>=12&&String.fromCharCode(cab[8],cab[9],cab[10],cab[11])===".FIT";
+    if(ehFit||nome.endsWith(".fit")) r=lerFIT(buf);
+    else { const txt=new TextDecoder().decode(buf); const doc=new DOMParser().parseFromString(txt,"application/xml");
+      if(doc.getElementsByTagName("parsererror").length) throw new Error("ilegivel");
+      const raiz=doc.documentElement.localName;
+      if(raiz==="gpx") r=lerGPX(doc); else if(raiz==="TrainingCenterDatabase") r=lerTCX(doc); else throw new Error("formato"); }
+    if(!r.seg||r.seg<60) throw new Error("curto");
+    r.km=r.km>0.05?Math.round(r.km*100)/100:null;
+    r.data=r.inicio.toLocaleDateString("sv-SE",{timeZone:"America/Sao_Paulo"});
+    r.cid="arq_"+await hash(buf);
+    return r;
+  }
+  const ERROS={sem_arquivo:"Nenhum arquivo escolhido.",grande:"Arquivo grande demais.",nao_fit:"Esse arquivo não parece ser um FIT.",fit_def:"Não consegui ler esse FIT.",fit_curto:"O arquivo FIT está incompleto.",
+    ilegivel:"Não consegui ler esse arquivo.",formato:"Formato não reconhecido. Use GPX, TCX ou FIT.",sem_pontos:"O arquivo não tem o percurso.",sem_atividade:"O arquivo não tem atividade.",
+    sem_voltas:"O arquivo não tem as voltas da atividade.",sem_data:"O arquivo não tem a data do treino.",sem_sessao:"O arquivo não tem o resumo do treino.",curto:"Atividade com menos de 1 minuto."};
+  return {ler, TIPOS, erro:e=>ERROS[e&&e.message]||"Não consegui ler esse arquivo."};
+})();
+
+/* HAG_TREINO_RELOGIO_v1: tela de conferência do arquivo importado. O arquivo não traz esforço: o paciente marca. */
+function relCard(){ return `<div class="card"><div class="lbl">Veio do relógio ou de outro app?</div>
+  <p class="note" style="margin-top:4px">No Garmin Connect, Strava, Coros, Polar ou Suunto, exporte a atividade como arquivo <b>GPX, TCX ou FIT</b> e escolha o arquivo aqui. Vale para iPhone e Android.</p>
+  <label class="btn small ghost" style="margin-top:10px;display:inline-flex;align-items:center;cursor:pointer">${S.relLendo?"Lendo o arquivo…":"Importar arquivo do treino"}<input type="file" data-rel="arq" style="display:none"></label>
+  ${S.relErro?`<div class="note" style="color:var(--bad);margin-top:8px">${esc(S.relErro)}</div>`:""}</div>`; }
+function renderRel(){
+  const R=S.rel; const ritmo=(R.km&&(R.tipo==="corrida"||R.tipo==="caminhada"))?fmtT(R.seg/R.km)+" /km":null;
+  const dd=R.data.split("-").reverse().join("/");
+  vHoje.innerHTML=`<div><div class="kicker">Treino do relógio · ${esc(R.fonte)}</div><h2>Confira e salve</h2><p class="sub">${dd} · entra no seu histórico e na carga da semana.</p></div>
+   <div class="card"><div class="lbl">O que foi?</div><div class="chips" style="margin-top:6px">${Object.keys(RELOGIO.TIPOS).map(k=>`<button type="button" class="chip" data-a="reltipo" data-v="${k}" aria-pressed="${R.tipo===k}">${RELOGIO.TIPOS[k]}</button>`).join("")}</div></div>
+   <div class="card"><div class="row between"><span class="lbl">Tempo em movimento</span><b>${fmtT(R.seg)}</b></div>
+     ${R.km?`<div class="row between" style="margin-top:6px"><span class="lbl">Distância</span><b>${String(R.km).replace(".",",")} km</b></div>`:""}
+     ${ritmo?`<div class="row between" style="margin-top:6px"><span class="lbl">Ritmo médio</span><b>${ritmo}</b></div>`:""}
+     ${R.fc?`<div class="row between" style="margin-top:6px"><span class="lbl">FC média · máxima</span><b>${R.fc}${R.fcmax?" · "+R.fcmax:""} bpm</b></div>`:""}</div>
+   <div class="card"><label for="rrpe" class="lbl">Quão pesado foi? (0 a 10)</label><div class="row" style="margin-top:6px"><input type="range" id="rrpe" min="0" max="10" value="${R.rpe}" style="flex:1"><div class="big" id="rrpe-v">${R.rpe}</div></div><div class="note" id="rrpe-t">${rpeTexto(R.rpe)}</div></div>
+   <button type="button" class="btn wide" data-a="relsalvar">SALVAR TREINO</button>
+   <button type="button" class="link" data-a="relvolta" style="align-self:center">voltar</button>`;
+}
+function relArquivo(inp){
+  const f=inp.files&&inp.files[0]; inp.value=""; if(!f) return;
+  S.relErro=""; S.relLendo=true; render();
+  RELOGIO.ler(f).then(r=>{
+    S.relLendo=false;
+    const hoje=HOJE(), lim=addD(hoje,-30);
+    if(r.data>addD(hoje,1)) { S.relErro="A data desse treino está no futuro. Confira o arquivo."; return render(); }
+    if(r.data<lim) { S.relErro="Esse treino é de mais de 30 dias atrás. Importe treinos dos últimos 30 dias."; return render(); }
+    if(historico().some(s=>s.client_id===r.cid)||FILA.some(p=>p.client_id===r.cid)) { S.relErro="Esse treino já está no seu histórico."; return render(); }
+    r.rpe=5; S.rel=r; S.fase="relogio"; render();
+  }).catch(e=>{ S.relLendo=false; S.relErro=RELOGIO.erro(e); render(); });
+}
+function salvarRel(){
+  const R=S.rel; if(!R) return;
+  const ex=R.tipo==="outro"?null:R.tipo, nome=RELOGIO.TIPOS[R.tipo]+" (relógio)";
+  const dur=Math.max(1,Math.min(600,Math.round(R.seg/60)));
+  FILA.push({client_id:R.cid, data:R.data, dia_id:null, dia:nome, tipo:"Relógio", inicio:R.inicio.toISOString(), dur, rpe:R.rpe, pront:null, cv:false, series:[],
+    cardio:ex?[{ex, km:R.km, seg:R.seg, fc:R.fc, fcmax:R.fcmax}]:[], hyrox:[], nota:"Importado de arquivo "+R.fonte});
+  store.set("hagtreino.fila",FILA);
+  S=novoEstado(); S.fase="fim"; S.salvo={n:0,um:0,rpe:R.rpe,dur,ci:R.rpe*dur,rec:[],dor:[],prox:[],cv:false,partes:nome,enviada:false,cid:R.cid};
+  render(); enviarFila().then(()=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
+}
 /* Esporte e aula não são exercício do catálogo: registram-se por tempo e esforço, e entram na carga da semana. */
 const ATIVS=["Futebol","Futsal","Basquete","Vôlei","Handebol","Tênis","Padel","Beach tennis","Boxe","Muay thai","Jiu-jitsu","Judô","MMA","Escalada","Pilates","Yoga","Dança","Natação livre","Pedal na rua","Trilha ou trekking","Aula de crossfit","Aula de funcional","Corrida livre","Caminhada livre","Musculação fora do programa","Outra"];
 function renderAtiv(){
   const A=S.ativ||(S.ativ={nome:null,min:60,rpe:6});
   vHoje.innerHTML=`<div><div class="kicker">Outra atividade</div><h2>O que você fez hoje?</h2><p class="sub">Esporte, aula, extra · entra na carga da semana.</p></div>
+   ${relCard()}
    <div class="card"><div class="chips">${ATIVS.map(n=>`<button type="button" class="chip" data-a="atv" data-v="${n}" aria-pressed="${A.nome===n}">${n}</button>`).join("")}</div></div>
    <div class="card row between"><div class="lbl">Duração (min)</div><div class="step"><button type="button" data-a="am-" aria-label="Menos 5 minutos">−</button><output>${A.min}</output><button type="button" data-a="am+" aria-label="Mais 5 minutos">+</button></div></div>
    <div class="card"><label for="arpe" class="lbl">Quão pesado foi? (0 a 10)</label><div class="row" style="margin-top:6px"><input type="range" id="arpe" min="0" max="10" value="${A.rpe}" style="flex:1"><div class="big" id="arpe-v">${A.rpe}</div></div><div class="note" id="arpe-t">${rpeTexto(A.rpe)}</div></div>
@@ -2090,6 +2253,9 @@ vHoje.addEventListener("click", e=>{
   if(a==="atv"){ S.ativ.nome=b.dataset.v; return render(); }
   if(a==="am-"||a==="am+"){ S.ativ.min=Math.max(5,Math.min(600,S.ativ.min+(a==="am+"?5:-5))); return render(); }
   if(a==="asalvar") return salvarAtiv();
+  if(a==="reltipo"){ S.rel.tipo=b.dataset.v; return render(); }   /* HAG_TREINO_RELOGIO_v1 */
+  if(a==="relsalvar") return salvarRel();
+  if(a==="relvolta"){ S.rel=null; S.fase="ativ"; S.ativ=S.ativ||null; return render(); }
   if(a==="enviar") return enviarFila().then(render);
   if(a==="pr"){ S.pront[b.dataset.k]=+b.dataset.v; return render(); }
   if(a==="leve"){ S.leve=!S.leve; salvarRascunho(); return render(); }   /* HAG_TREINO_ONDAS_v1: versão leve */
@@ -2172,11 +2338,12 @@ function cargaDigitada(t){
     const novo=Math.round(n*100)/100; if(novo===S.cargaHx.kg) return;
     S.cargaHx.kg=novo; return render(); }
 }
-vHoje.addEventListener("change", e=>{ if(e.target.dataset && e.target.dataset.in) cargaDigitada(e.target); });
+vHoje.addEventListener("change", e=>{ if(e.target.dataset && e.target.dataset.in) cargaDigitada(e.target); if(e.target.dataset && e.target.dataset.rel==="arq") relArquivo(e.target); });   /* HAG_TREINO_RELOGIO_v1 */
 vHoje.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.dataset && e.target.dataset.in){ e.preventDefault(); e.target.blur(); } });
 vHoje.addEventListener("focusin", e=>{ if(e.target.classList && e.target.classList.contains("stepin")) setTimeout(()=>{ try{ e.target.select(); }catch(_){} },0); });
 vHoje.addEventListener("input", e=>{
   const t=e.target;
+  if(t.id==="rrpe" && S.rel){ S.rel.rpe=+t.value; document.getElementById("rrpe-v").textContent=t.value; document.getElementById("rrpe-t").textContent=rpeTexto(+t.value); }   /* HAG_TREINO_RELOGIO_v1 */
   if(t.id==="arpe" && S.ativ){ S.ativ.rpe=+t.value; document.getElementById("arpe-v").textContent=t.value; document.getElementById("arpe-t").textContent=rpeTexto(+t.value); }
   if(t.id==="rpe"){ document.getElementById("rpe-v").textContent=t.value; document.getElementById("rpe-t").textContent=rpeTexto(+t.value); }
   if(t.dataset.c && S.cardio[S.i]) S.cardio[S.i][t.dataset.c]=t.value;
@@ -2406,7 +2573,9 @@ const postarHTML = r => (!SOC||!SOC.membro||VER||!r.cid||r.cv||/por dor/.test(r.
 
 /* ===== HAG_TREINO_STRAVA_v1 (14/11/2026): conectar o Strava (Onda 3). Só no piloto até o Dr. cadastrar o app na API do Strava. ===== */
 let STV=null;
-function stravaCarregar(){ if(!piloto()||VER||!TOKEN) return; rpc("hag_treino_strava",{p_token:TOKEN,p:{}}).then(r=>{ STV=r; renderEvo(); }).catch(()=>{}); }
+/* HAG_TREINO_RELOGIO_v1 (14/11): a API do Strava passou a exigir conta assinante; o bloco fica desligado até o Dr. decidir. O caminho é importar o arquivo. */
+const STRAVA_LIGADO=false;
+function stravaCarregar(){ if(!STRAVA_LIGADO||!piloto()||VER||!TOKEN) return; rpc("hag_treino_strava",{p_token:TOKEN,p:{}}).then(r=>{ STV=r; renderEvo(); }).catch(()=>{}); }
 function stravaHTML(){ if(!piloto()||VER||!STV||STV.ok===false) return "";
   const qs=new URLSearchParams(location.search).get("strava"), msg={ok:"Strava conectado.",negado:"Você não autorizou o Strava.",sem_permissao:"Para importar, autorize a leitura das atividades.",expirou:"O pedido expirou. Tente de novo.",falhou:"Não deu certo agora.",sem_config:"A conexão com o Strava ainda não foi ativada pelo consultório."}[qs||""];
   return `<div class="card strava"><div class="kicker">Strava</div>${msg?`<p class="note">${msg}</p>`:""}
