@@ -234,11 +234,14 @@ body.descansando .wrap{padding-bottom:190px}
 .navx .btn{min-height:52px}
 /* HAG_TREINO_TELA_BLOQUEADA_v1, HAG_TREINO_IMAGEM_v1, HAG_TREINO_PROVA_v1 (12/11/2026) */
 .gbloq{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;text-align:center}
-.bolso{position:fixed;inset:0;z-index:70;background:#000;color:#6f655b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;padding:24px;text-align:center}
+.bolso{position:fixed;inset:0;z-index:100000;background:#000;color:#6f655b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;padding:24px;text-align:center}
 .bolso .b-rot{font-family:var(--display);font-size:40px;letter-spacing:.04em;color:#8a7c6c}
 .bolso .b-t{font-family:var(--display);font-size:96px;line-height:1;font-variant-numeric:tabular-nums;color:#8a7c6c}
 .bolso .b-p{font-size:22px}.bolso .b-nx{font-size:16px}
-.bolso .b-sair{position:absolute;bottom:28px;font-size:13px;color:#3d3630}
+.bolso .b-sair{position:absolute;bottom:calc(env(safe-area-inset-bottom, 0px) + 34px);font-family:var(--label,Jost),sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#7a6e62}
+.bolso .b-barra{position:absolute;bottom:calc(env(safe-area-inset-bottom, 0px) + 22px);left:50%;width:170px;height:3px;background:#221d19;transform:translateX(-50%)}
+.bolso .b-barra i{display:block;height:100%;width:0;background:#8a7c6c}
+.bolso.segurando .b-barra i{width:100%;transition:width .9s linear}   /* HAG_TREINO_BOLSO_SAIR_v1 */
 .imgov{position:fixed;inset:0;z-index:60;background:rgba(10,7,5,.82);display:flex;align-items:flex-end;justify-content:center;padding:16px;overflow:auto}
 .imgbox{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:auto 0}
 .imgprev{border-radius:12px;padding:22px 14px;display:flex;justify-content:center}
@@ -845,11 +848,17 @@ const bqLigado = () => piloto() && store.get("hagtreino.audio","musica")==="bloq
 function sessaoAudio(tipo){ try{ if(navigator.audioSession && navigator.audioSession.type!==tipo) navigator.audioSession.type=tipo; }catch(e){} }
 sessaoAudio("transient");
 function bolsoAbrir(){ if(!gAtual()) return; let b=document.getElementById("bolso"); if(!b){ b=document.createElement("div"); b.id="bolso"; b.className="bolso"; b.setAttribute("role","dialog"); b.setAttribute("aria-label","Modo bolso");
-    b.innerHTML='<div class="b-rot"></div><div class="b-t"></div><div class="b-p"></div><div class="b-nx"></div><div class="b-sair">segure 1 segundo para sair</div>';
-    let tm=null; b.addEventListener("pointerdown",e=>{ e.preventDefault(); clearTimeout(tm); tm=setTimeout(bolsoFechar,900); });
-    ["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(tm)));
+    b.innerHTML='<div class="b-rot"></div><div class="b-t"></div><div class="b-p"></div><div class="b-nx"></div><div class="b-sair">Sair do modo bolso: segure 1 s</div><div class="b-barra"><i></i></div>';
+    let tm=null; b.addEventListener("pointerdown",e=>{ e.preventDefault(); clearTimeout(tm); b.classList.add("segurando"); tm=setTimeout(bolsoFechar,900); });
+    ["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>{ clearTimeout(tm); b.classList.remove("segurando"); }));
     b.addEventListener("click",e=>e.preventDefault()); document.body.appendChild(b); }
   manterTelaAcesa(); bolsoAtualiza(); }
+/* HAG_TREINO_BOLSO_SAIR_v1 (14/11/2026). Pedido do Dr. Henrique: no modo bolso so aparecia o "‹ Central" (faixa de
+   hag_voltar_central.js, z-index 99990, acima do bolso que era 70) e o toque saia do app no meio da corrida. Agora o
+   bolso cobre a tela inteira (z-index 100000), o "sair do modo bolso" ficou legivel com barra de progresso ao segurar e,
+   com corrida guiada em andamento, o "‹ Central" pede confirmacao antes de sair. */
+document.addEventListener("click",e=>{ const a=e.target.closest&&e.target.closest("#hagVoltarCentral"); if(!a||!gAtual()) return;
+  if(!confirm("A corrida guiada está em andamento. Sair para a central agora? O tempo fica salvo neste aparelho.")){ e.preventDefault(); e.stopPropagation(); } }, true);
 function bolsoFechar(){ const b=document.getElementById("bolso"); if(b) b.remove(); if(document.getElementById("gcrono")) render(); }
 function bolsoAtualiza(){ const b=document.getElementById("bolso"); if(!b) return; const g=gAtual(); if(!g){ b.remove(); return; }
   const s=g.segs[g.k], d=gDecorrido(g), q=c=>b.querySelector(c);
@@ -1887,7 +1896,7 @@ function renderFim(){
    <div class="card"><div class="lbl">Quão pesado foi o treino inteiro?</div><p class="note" style="margin:2px 0 0">0 = repouso · 10 = máximo · o treino todo.</p>
      <div class="rpe-g">${Array.from({length:11},(_,v)=>`<button type="button" class="chip" data-a="rpe" data-v="${v}" aria-pressed="${S.rpe===v}">${v}</button>`).join("")}</div>
      <div class="note" style="margin-top:6px">${S.rpe!=null?`<b>${S.rpe}</b> · ${rpeTexto(S.rpe)}`:"Toque em um número."}</div></div>
-   <div class="card row between"><div><div class="lbl">Duração (min)</div><div class="note">medida pelo relógio do treino</div></div><div class="step"><button type="button" data-a="d-" aria-label="Menos 5 minutos">−</button><output id="dur">${S.durAj!=null?S.durAj:dur}</output><button type="button" data-a="d+" aria-label="Mais 5 minutos">+</button></div></div>
+   <div class="card row between"><div><div class="lbl">Duração (min)</div><div class="note">medida pelo relógio do treino</div></div><div class="step"><button type="button" data-a="d-" aria-label="Menos 1 minuto">−</button><input class="stepin" id="dur" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" data-in="dur" value="${S.durAj!=null?S.durAj:dur}" aria-label="Duração em minutos: toque para digitar"><button type="button" data-a="d+" aria-label="Mais 1 minuto">+</button></div></div>
    <button type="button" class="btn wide" data-a="salvar" ${(series.length||cardio.length||hyrox.length||S.cv)&&(S.rpe!=null||S.cv)?"":"disabled"}>${(S.rpe!=null||S.cv)?"SALVAR SESSÃO":"Escolha o esforço para salvar"}</button>
    <button type="button" class="link" data-a="voltartreino" style="align-self:center">voltar ao treino</button>
    <button type="button" class="link" data-a="descartar" style="align-self:center;color:var(--crit)">descartar esta sessão</button>`;
@@ -2010,7 +2019,7 @@ function enviarFila(){
   }).catch(()=>{ enviarFila.ocupado=false; return false; });
 }
 function salvar(){
-  const rpe=S.rpe!=null?S.rpe:(S.cv?5:null), dur=+document.getElementById("dur").textContent||0; if(rpe==null) return; const d=diaAtual(); const its=itens();
+  const rpe=S.rpe!=null?S.rpe:(S.cv?5:null), dur=durLida(); if(rpe==null) return; const d=diaAtual(); const its=itens();
   const {series,cardio,hyrox}=coletar();
   const antes={}; for(const s of historico()) for(const x of s.series){ if(x.trab) continue; const v=e1rm(x.kg,x.reps,x.rir); if(v&&(!antes[x.ex]||v>antes[x.ex])) antes[x.ex]=v; }
   const pr=(!S.prontPulou && Object.values(S.pront).every(v=>v!=null))?{...S.pront}:null;
@@ -2104,7 +2113,7 @@ vHoje.addEventListener("click", e=>{
   if(a==="cv"){ S.cv=true; return render(); }
   if(a==="cvno"){ S.cv=false; return render(); }
   if(a==="cvok"){ pararDescanso(); S.crono=null; S.fase="fim"; return render(); }
-  if(a==="d-"||a==="d+"){ const o=document.getElementById("dur"); S.durAj=Math.max(1,(+o.textContent||0)+(a==="d+"?5:-5)); o.textContent=S.durAj; return; }
+  if(a==="d-"||a==="d+"){ const o=document.getElementById("dur"); S.durAj=Math.min(600,Math.max(1,(parseInt(o.value,10)||0)+(a==="d+"?1:-1))); o.value=S.durAj; return; }   /* HAG_TREINO_DURACAO_DIGITAR_v1: de 1 em 1 (era 5) e o numero pode ser digitado */
   if(a==="voltartreino"){ S.fase="treino"; return render(); }
   if(a==="descartar"){ if(b.dataset.c==="1"){ store.del("hagtreino.rascunho"); pararDescanso(); S=novoEstado(); return render(); } b.dataset.c="1"; b.textContent="toque de novo para descartar"; return; }
   if(a==="salvar") return salvar();
@@ -2113,7 +2122,11 @@ vHoje.addEventListener("click", e=>{
 /* HAG_TREINO_CARGA_DIGITAR_v1 (28/10/2026): a carga tambem se digita. Grava ao confirmar (Enter, OK do
    teclado ou sair do campo), nao a cada tecla, para o campo nao perder o foco no meio da digitacao.
    Aceita virgula. Vazio ou invalido volta ao valor anterior. Teto de 500 kg contra erro de digitacao. */
+/* HAG_TREINO_DURACAO_DIGITAR_v1 (14/11/2026). Pedido do Dr. Henrique: a duracao do fim do treino so andava de 5 em 5 e nao
+   dava para digitar. Agora e campo de numero (1 a 600 min); invalido volta ao valor anterior. */
+function durLida(){ const o=document.getElementById("dur"); if(!o) return 0; const n=parseInt(String(o.value||"").replace(/\D/g,""),10); return (n>=1&&n<=600)?n:(S.durAj!=null?S.durAj:0); }
 function cargaDigitada(t){
+  if(t.dataset.in==="dur"){ const n=parseInt(String(t.value||"").replace(/\D/g,""),10); if(n>=1&&n<=600){ S.durAj=n; t.value=n; } else t.value=S.durAj!=null?S.durAj:(t.defaultValue||""); return; }
   const v=String(t.value||"").trim().replace(",",".");
   const n=v===""?NaN:+v;
   if(t.dataset.in==="kg"){ const A=S.ajuste; if(!A) return;
