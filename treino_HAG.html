@@ -242,9 +242,9 @@ body.descansando .wrap{padding-bottom:190px}
 .imgov{position:fixed;inset:0;z-index:60;background:rgba(10,7,5,.82);display:flex;align-items:flex-end;justify-content:center;padding:16px;overflow:auto}
 .imgbox{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:auto 0}
 .imgprev{border-radius:12px;padding:22px 14px;display:flex;justify-content:center}
-.imgprev.claro{background:linear-gradient(160deg,#6f7f8c 0%,#4b4036 55%,#2c241e 100%)}
+.imgprev.claro{background:radial-gradient(120% 90% at 60% 30%,#6b6156 0%,#3a3129 50%,#16110e 100%)}   /* HAG_TREINO_IMAGEM_v2: couro, sem o azul da paleta antiga */
 .imgprev.escuro{background:linear-gradient(160deg,#f3ede3 0%,#dccfbd 60%,#c9b79f 100%)}
-.imgprev img{width:100%;height:auto;display:block}
+.imgprev img{max-width:100%;max-height:46vh;width:auto;height:auto;display:block}
 .pvcard .pvbig{font-family:var(--display);font-size:22px;margin:2px 0 4px}
 .pvcard .pvbig b{font-size:34px}
 .pvaviso{border:1px solid var(--warn);background:var(--warn-bg);border-radius:12px;padding:12px;margin:4px 0 6px}
@@ -937,61 +937,101 @@ function imgDados(d, series, cardio, dur){
   const exs=new Set(series.map(x=>x.ex)).size, corrida=cardio.some(c=>c.ex==="corrida"||c.ex==="caminhada");
   return {nome:String(d.nome||"Treino"), data:HOJE(), semana:d.semana||null, km:Math.round(km*100)/100, seg, dur, series:fs.length, vol:Math.round(vol), exs, corrida};
 }
-function imgMetricas(m){
-  const nf=(x,c)=>x.toLocaleString("pt-BR",{maximumFractionDigits:c,minimumFractionDigits:c});
-  if(m.km>0 && m.seg>0){ const p=m.seg/m.km;
-    return [["Distância", nf(m.km, m.km<10?2:1)+" km"], ["Tempo", fTempo(m.seg)], ["Pace", (p>=150&&p<=1500?fPace(p):"–")+" /km"]]; }
-  if(m.km>0) return [["Distância", nf(m.km, m.km<10?2:1)+" km"], ["Tempo", m.dur+" min"]];
-  if(m.seg>0 && !m.series) return [["Tempo", fTempo(m.seg)], ["Duração", m.dur+" min"]];
-  const L=[["Tempo", m.dur+" min"]];
-  if(m.series) L.push(["Séries", String(m.series)]);
-  if(m.vol>0) L.push(["Volume", nf(m.vol,0)+" kg"]); else if(m.exs) L.push(["Exercícios", String(m.exs)]);
-  return L;
-}
-function imgEspacado(ctx, t, x, y, esp, alinha){
-  const ls=[...t], larg=ls.reduce((a,ch)=>a+ctx.measureText(ch).width,0)+esp*(ls.length-1);
-  let cx=alinha==="center"?x-larg/2:x; const al=ctx.textAlign; ctx.textAlign="left";
-  for(const ch of ls){ ctx.fillText(ch,cx,y); cx+=ctx.measureText(ch).width+esp; } ctx.textAlign=al; return larg;
-}
-function imgQuebra(ctx, t, max){ const ps=String(t).split(" "), L=[]; let l="";
-  for(const p of ps){ const tt=l?l+" "+p:p; if(ctx.measureText(tt).width>max && l){ L.push(l); l=p; } else l=tt; } if(l) L.push(l); return L.slice(0,3); }
-function imgDesenha(m, tom){
-  const W=1080, cv=document.createElement("canvas"), ctx=cv.getContext("2d"), cor=tom==="escuro"?"#1A1411":"#FFFFFF", ouro="#C99A6B";
-  const sombra=()=>{ if(tom==="escuro"){ ctx.shadowColor="rgba(255,255,255,0)"; ctx.shadowBlur=0; } else { ctx.shadowColor="rgba(0,0,0,.38)"; ctx.shadowBlur=18; ctx.shadowOffsetY=2; } };
-  const met=imgMetricas(m), nm=m.nome.replace(/\s*·\s*/g," · ");
-  ctx.font='400 66px "Bodoni Moda", Georgia, serif'; const tl=imgQuebra(ctx, nm, W-200);
-  const H=110+50+tl.length*78+70+250+110; cv.width=W; cv.height=H; ctx.textBaseline="alphabetic";
-  sombra(); ctx.fillStyle=cor; ctx.textAlign="center";
-  const dt=new Date(m.data+"T12:00:00"), mes=["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"][dt.getMonth()];
-  ctx.font='500 28px "Hanken Grotesk", Arial, sans-serif'; ctx.globalAlpha=.85;
-  imgEspacado(ctx, `HAG TREINO · ${dt.getDate()} ${mes} ${dt.getFullYear()}${m.semana?` · SEMANA ${m.semana}`:""}`, W/2, 110, 7, "center"); ctx.globalAlpha=1;
-  ctx.font='400 66px "Bodoni Moda", Georgia, serif'; let y=110+50+60; for(const l of tl){ ctx.fillText(l, W/2, y); y+=78; }
-  y+=10; ctx.shadowBlur=0; ctx.fillStyle=ouro; ctx.fillRect(W/2-60, y, 120, 3); sombra(); ctx.fillStyle=cor; y+=60;
-  const n=met.length, col=(W-120)/n;
-  met.forEach(([rot,val],i)=>{ const cx=60+col*i+col/2;
-    ctx.font='500 26px "Hanken Grotesk", Arial, sans-serif'; ctx.globalAlpha=.8; imgEspacado(ctx, rot.toUpperCase(), cx, y+40, 6, "center"); ctx.globalAlpha=1;
-    let fs=n>2?92:110; ctx.font=`300 ${fs}px "Hanken Grotesk", Arial, sans-serif`; while(ctx.measureText(val).width>col-24 && fs>48){ fs-=4; ctx.font=`300 ${fs}px "Hanken Grotesk", Arial, sans-serif`; }
-    ctx.fillText(val, cx, y+40+20+fs*.82); });
-  y+=250;
-  ctx.font='600 26px "Hanken Grotesk", Arial, sans-serif'; ctx.globalAlpha=.9; imgEspacado(ctx, "MÉTODO HAG", W/2, y+40, 12, "center"); ctx.globalAlpha=1;
-  return cv;
-}
+/* HAG_TREINO_IMAGEM_v2 (14/11/2026). Pedido do Dr. Henrique: a imagem do treino com a identidade da marca nova
+   (monograma HA, Bodoni Moda com a unidade em italico na cor acento, Jost nos rotulos, fio fino, canto reto, sem sombra,
+   couro e linho) e cinco modelos para a pessoa escolher, inspirados no ateliê e nao no Strava: Ficha de medida,
+   Etiqueta de couro, Fita metrica, Frase e Assinatura. tom "claro" = texto linho para foto escura; "escuro" = tinta
+   para foto clara. Sem nome e sem dado clinico, como na v1. Prototipo e analise: claude/hag-treino-imagem-modelos-strava-14-11-2026.md */
+const IMGM=(()=>{
+const MONO=new Path2D("M741.0 50.0V62.5H651.0V787.5H741.0V800.0H442.0V787.5H539.5V436.5H226.5V787.5H323.5V800.0H24.5V787.5H114.0V62.5H24.5V50.0H323.5V62.5H226.5V423.5H539.5V62.5H442.0V50.0Z M456.0 800.0 897.0 35.5H923.5L1018.5 800.0H896.5L832.5 171.0L470.0 800.0ZM374.5 800.0V787.5H594.5V800.0ZM781.5 800.0V787.5H1088.5V800.0ZM605.0 561.5V549.0H934.0V561.5Z");
+const D='"Bodoni Moda", Georgia, serif', T='"Hanken Grotesk", Arial, sans-serif', R='Jost, "Hanken Grotesk", Arial, sans-serif';
+const DIAS=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"], DIAC=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+const MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"], MES3=["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+function pal(tom){ return tom==="escuro" ? {t:"#1A1411", a:"#8C4F2B", f:"rgba(26,20,17,.32)", s:"#6B5D50", fundo:"#EEE7DC", sup:"#F5F0E8"} : {t:"#EEE7DC", a:"#B98A5E", f:"rgba(238,231,220,.42)", s:"#D8CDBE", fundo:"#1A1411", sup:"#33251E"}; }
+function cv(w,h){ const c=document.createElement("canvas"); c.width=w; c.height=h; const x=c.getContext("2d"); x.textBaseline="alphabetic"; return [c,x]; }
+function sp(x,t,X,Y,e,al){ const ls=[...t], w=ls.reduce((a,ch)=>a+x.measureText(ch).width,0)+e*(ls.length-1); let cx=al==="center"?X-w/2:al==="right"?X-w:X; const o=x.textAlign; x.textAlign="left"; for(const ch of ls){ x.fillText(ch,cx,Y); cx+=x.measureText(ch).width+e; } x.textAlign=o; return w; }
+function mono(x,X,Y,h,cor,al){ const s=h/844.5, w=1144*s; x.save(); x.translate(al==="center"?X-w/2:al==="right"?X-w:X, Y); x.scale(s,s); x.translate(15.5,4.5); x.fillStyle=cor; x.fill(MONO); x.restore(); return w; }
+function fio(x,x1,y,x2,cor,lw){ x.save(); x.fillStyle=cor; x.fillRect(x1,y,x2-x1,lw||2); x.restore(); }
+function dt(m){ const d=new Date(m.data+"T12:00:00"); return {dia:DIAS[d.getDay()], diac:DIAC[d.getDay()], longo:`${d.getDate()} de ${MESES[d.getMonth()]}`, caps:`${d.getDate()} ${MES3[d.getMonth()]} ${d.getFullYear()}`, pts:`${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`}; }
+function nf(x,c){ return x.toLocaleString("pt-BR",{maximumFractionDigits:c,minimumFractionDigits:c}); }
+function tempo(s){ s=Math.round(s); const h=Math.floor(s/3600), mi=Math.floor(s%3600/60), x=String(s%60).padStart(2,"0"); return h?`${h}:${String(mi).padStart(2,"0")}:${x}`:`${mi}:${x}`; }
+/* metricas como {r rotulo, n numero, u unidade} */
+function mets(m){ if(m.km>0&&m.seg>0){ const p=m.seg/m.km; return [{r:"Distância",n:nf(m.km,m.km<10?2:1),u:"km"},{r:"Tempo",n:tempo(m.seg),u:""},{r:"Pace",n:fPace(p),u:"/km"}]; }
+  const L=[{r:"Tempo",n:String(m.dur),u:"min"}]; if(m.series) L.push({r:"Séries",n:String(m.series),u:""}); if(m.vol>0) L.push({r:"Volume",n:nf(m.vol,0),u:"kg"}); else if(m.exs) L.push({r:"Exercícios",n:String(m.exs),u:""}); return L; }
+/* numero em Bodoni + unidade em italico acento; devolve largura */
+function num(x,v,X,Y,fs,p,al,med){ x.font=`400 ${fs}px ${D}`; const wn=x.measureText(v.n).width; x.font=`italic 400 ${Math.round(fs*.5)}px ${D}`; const wu=v.u?x.measureText(" "+v.u).width:0; const w=wn+wu;
+  if(med) return w; let cx=al==="center"?X-w/2:al==="right"?X-w:X; x.textAlign="left"; x.fillStyle=p.t; x.font=`400 ${fs}px ${D}`; x.fillText(v.n,cx,Y);
+  if(v.u){ x.fillStyle=p.a; x.font=`italic 400 ${Math.round(fs*.5)}px ${D}`; x.fillText(" "+v.u,cx+wn,Y); } x.fillStyle=p.t; return w; }
+function rot(x,t,X,Y,fs,cor,al,e){ x.font=`500 ${fs}px ${R}`; x.fillStyle=cor; return sp(x,t.toUpperCase(),X,Y,e||fs*.3,al); }
+function titulo(m){ const ps=String(m.nome||"Treino").split(/\s*·\s*/); return {a:ps[0], b:ps.slice(1).join(" · ")}; }
+
+/* 1. FICHA DE MEDIDA: como a ficha do alfaiate. Marcas de corte nos cantos, linhas finas, numeros diagramados. */
+function mFicha(m,tom){ const p=pal(tom), L=mets(m), W=820, P=40, rowH=128, tt=titulo(m), d=dt(m);
+  const H=P+70+30+70+(tt.b?56:0)+30+L.length*rowH+30+60+P; const [c,x]=cv(W,H);
+  const k=26; [[0,0,1,1],[W,0,-1,1],[0,H,1,-1],[W,H,-1,-1]].forEach(([X,Y,sx,sy])=>{ fio(x,Math.min(X,X+sx*k),Y-(sy<0?2:0),Math.max(X,X+sx*k),p.a,2); x.fillStyle=p.a; x.fillRect(X-(sx<0?2:0),Math.min(Y,Y+sy*k),2,k); });
+  let y=P+10; mono(x,P+6,y,58,p.a,"left"); rot(x,"Ficha de treino",W-P-6,y+24,20,p.s,"right"); rot(x,m.semana?`Semana ${String(m.semana).padStart(2,"0")}`:d.caps,W-P-6,y+56,20,p.t,"right");
+  y+=70+30; fio(x,P,y,W-P,p.f); y+=70; x.textAlign="left"; x.fillStyle=p.t; x.font=`400 58px ${D}`; x.fillText(tt.a,P+6,y);
+  if(tt.b){ y+=56; x.fillStyle=p.a; x.font=`italic 400 46px ${D}`; x.fillText(tt.b,P+6,y); } y+=30;
+  for(const v of L){ fio(x,P,y,W-P,p.f); rot(x,v.r,P+6,y+rowH/2+8,21,p.s,"left"); num(x,v,W-P-6,y+rowH/2+30,84,p,"right"); y+=rowH; }
+  fio(x,P,y,W-P,p.f); y+=30+30; rot(x,`${d.diac} · ${d.caps}`,P+6,y,19,p.s,"left"); rot(x,"Método HAG",W-P-6,y,19,p.a,"right"); return c; }
+
+/* 2. ETIQUETA DE COURO: peca solida (couro chocolate ou linho) com costura tracejada e ilhos, como a etiqueta de uma peca feita sob medida. */
+function mEtiqueta(m,tom){ const p=pal(tom==="escuro"?"escuro":"claro"), W=460, H=660, d=dt(m), v=mets(m)[0]; const [c,x]=cv(W,H);
+  x.fillStyle=tom==="escuro"?p.fundo:p.sup; x.fillRect(0,0,W,H);
+  x.save(); x.strokeStyle=p.a; x.lineWidth=2.5; x.setLineDash([14,9]); x.strokeRect(18,18,W-36,H-36); x.restore();
+  x.save(); x.strokeStyle=p.a; x.lineWidth=3; x.beginPath(); x.arc(W/2,62,13,0,Math.PI*2); x.stroke(); x.restore();
+  mono(x,W/2,108,88,p.a,"center"); rot(x,"Método HAG",W/2,250,19,p.t,"center",7); fio(x,W/2-40,276,W/2+40,p.a,2);
+  x.fillStyle=p.t; x.textAlign="center"; x.font=`italic 400 64px ${D}`; x.fillText(d.diac,W/2,364); rot(x,d.caps,W/2,404,18,p.s,"center",5);
+  num(x,v,W/2,530,96,p,"center"); rot(x,v.r,W/2,578,18,p.s,"center",6); return c; }
+
+/* 3. FITA METRICA: a regua da costura marcando o que foi feito. Corrida em km; forca em series. */
+function mRegua(m,tom){ const p=pal(tom), L=mets(m), W=1000, H=380, d=dt(m), cor=m.km>0; const [c,x]=cv(W,H);
+  num(x,L[0],0,128,140,p,"left"); rot(x,L[0].r,4,172,20,p.s,"left");
+  L.slice(1,3).forEach((v,i)=>{ const X=W-(i?0:300); rot(x,v.r,X,56,19,p.s,"right"); num(x,v,X,128,64,p,"right"); });
+  const y0=250, x0=4, x1=W-4; fio(x,x0,y0,x1,p.f,2);
+  const tot=cor?Math.max(1,Math.ceil(m.km)):Math.max(1,m.series), feito=cor?m.km:m.series, sub=cor?10:1, n=tot*sub, dx=(x1-x0)/n;
+  for(let i=0;i<=n;i++){ const X=x0+i*dx, maj=i%sub===0, mid=cor&&i%5===0; x.fillStyle=p.t; x.globalAlpha=maj?1:.55; x.fillRect(X-1,y0-(maj?34:mid?22:14),2,maj?34:mid?22:14); x.globalAlpha=1;
+    if(maj&&(cor||i%3===0||i===n)){ x.font=`500 18px ${R}`; x.textAlign="center"; x.fillStyle=p.s; x.fillText(String(i/sub),X,y0+34); } }
+  const xf=x0+(x1-x0)*Math.min(1,feito/tot); x.fillStyle=p.a; x.fillRect(x0,y0-2,xf-x0,6); x.beginPath(); x.moveTo(xf,y0-44); x.lineTo(xf-10,y0-60); x.lineTo(xf+10,y0-60); x.closePath(); x.fill();
+  rot(x,`Método HAG · ${d.diac} · ${d.caps}`,0,H-20,19,p.a,"left",6); rot(x,cor?"km":"séries",W,H-20,19,p.s,"right",6); return c; }
+
+/* 4. FRASE: o mesmo desenho dos posts da marca. Numero principal, depois uma palavra em italico na cor acento. */
+function mFrase(m,tom){ const p=pal(tom), L=mets(m), W=900, H=520, d=dt(m), v=L[0]; const [c,x]=cv(W,H);
+  mono(x,0,0,46,p.a,"left"); x.textAlign="left"; x.fillStyle=p.t; x.font=`400 112px ${D}`; const w=num(x,v,0,190,112,p,"left"); x.fillStyle=p.t; x.font=`400 112px ${D}`; x.fillText(".",w,190);
+  x.fillStyle=p.a; x.font=`italic 400 112px ${D}`; x.fillText("sob medida.",0,312);
+  fio(x,0,360,120,p.a,2); x.font=`500 21px ${R}`; let X=0; L.slice(1).forEach((u,i)=>{ X+=rot(x,`${u.r} ${u.n}${u.u?" "+u.u:""}`,X,420,21,p.t,"left",6)+ (i<L.length-2?40:0); if(i<L.length-2){ x.fillStyle=p.a; x.fillRect(X-22,411,4,4); } });
+  rot(x,`Método HAG · ${d.pts}`,0,470,19,p.s,"left",6); return c; }
+
+/* 5. ASSINATURA: o monograma no centro, como a placa do consultorio; tres medidas com fios verticais. */
+function mAssinatura(m,tom){ const p=pal(tom), L=mets(m), W=960, H=640, d=dt(m), tt=titulo(m); const [c,x]=cv(W,H);
+  mono(x,W/2,0,170,p.a,"center"); rot(x,"Método HAG",W/2,232,22,p.t,"center",9); x.textAlign="center"; x.fillStyle=p.s; x.font=`italic 400 36px ${D}`; x.fillText(tt.a+(tt.b?" · "+tt.b:""),W/2,290);
+  fio(x,0,330,W,p.f); const n=L.length, col=W/n;
+  L.forEach((v,i)=>{ const X=col*i+col/2; rot(x,v.r,X,384,19,p.s,"center",6); let fs=76; while(num(x,v,0,0,fs,p,"left",true)>col-30&&fs>44) fs-=4; num(x,v,X,474,fs,p,"center"); if(i) fio(x,col*i-1,362,col*i+1,p.f) || x.fillRect(col*i-1,362,2,130); });
+  x.fillStyle=p.f; for(let i=1;i<n;i++) x.fillRect(col*i-1,362,2,130);
+  fio(x,0,520,W,p.f); rot(x,`${d.dia} · ${d.longo}`,W/2,578,20,p.s,"center",6); return c; }
+
+
+const MODS={ficha:mFicha, etiqueta:mEtiqueta, regua:mRegua, frase:mFrase, assinatura:mAssinatura};
+return {desenha:(m,tom,mod)=>(MODS[mod]||mFicha)(m,tom), nomes:[["ficha","Ficha"],["etiqueta","Etiqueta"],["regua","Fita"],["frase","Frase"],["assinatura","Assinatura"]]};
+})();
+function imgDesenha(m, tom, mod){ return IMGM.desenha(m, tom, mod); }
 let IMG=null;   /* {m, tom, cv} */
 function imgAbrir(){
-  const r=S.salvo; if(!r||!r.img) return; IMG={m:r.img, tom:store.get("hagtreino.imgtom","claro"), cv:null};
-  const pr=(document.fonts&&document.fonts.load)?Promise.all(['400 66px "Bodoni Moda"','300 100px "Hanken Grotesk"','500 26px "Hanken Grotesk"','600 26px "Hanken Grotesk"'].map(f=>document.fonts.load(f).catch(()=>{}))):Promise.resolve();
+  const r=S.salvo; if(!r||!r.img) return; IMG={m:r.img, tom:store.get("hagtreino.imgtom","claro"), mod:store.get("hagtreino.imgmod","ficha"), cv:null};   /* HAG_TREINO_IMAGEM_v2: modelo guardado no aparelho */
+  const pr=(document.fonts&&document.fonts.load)?Promise.all(['400 66px "Bodoni Moda"','italic 400 66px "Bodoni Moda"','500 20px Jost','300 100px "Hanken Grotesk"','500 26px "Hanken Grotesk"'].map(f=>document.fonts.load(f).catch(()=>{}))):Promise.resolve();
   pr.then(imgRender);
 }
 function imgRender(){
-  if(!IMG) return; IMG.cv=imgDesenha(IMG.m, IMG.tom); IMG.blob=null; IMG.cv.toBlob(bl=>{ if(IMG) IMG.blob=bl; },"image/png");   /* pronto antes do toque: o iPhone só abre o compartilhar dentro do toque */
+  if(!IMG) return; IMG.cv=imgDesenha(IMG.m, IMG.tom, IMG.mod); IMG.blob=null; IMG.cv.toBlob(bl=>{ if(IMG) IMG.blob=bl; },"image/png");   /* pronto antes do toque: o iPhone só abre o compartilhar dentro do toque */
   let ov=document.getElementById("imgov"); if(!ov){ ov=document.createElement("div"); ov.id="imgov"; ov.className="imgov"; document.body.appendChild(ov); ov.addEventListener("click", imgAcao); }
   const pode=!!(navigator.clipboard&&window.ClipboardItem);
   ov.innerHTML=`<div class="imgbox" role="dialog" aria-label="Imagem do treino">
    <div class="imgprev ${IMG.tom}"><img alt="Prévia da imagem do treino" src="${IMG.cv.toDataURL("image/png")}"></div>
-   <div class="chips" role="group" aria-label="Cor do texto" style="justify-content:center"><button type="button" class="chip" data-i="tom" data-v="claro" aria-pressed="${IMG.tom==="claro"}">Texto claro</button><button type="button" class="chip" data-i="tom" data-v="escuro" aria-pressed="${IMG.tom==="escuro"}">Texto escuro</button></div>
+   <div class="chips" role="group" aria-label="Modelo" style="justify-content:center">${IMGM.nomes.map(([v,t])=>`<button type="button" class="chip" data-i="mod" data-v="${v}" aria-pressed="${IMG.mod===v}">${t}</button>`).join("")}</div>
+   <div class="chips" role="group" aria-label="Cor" style="justify-content:center"><button type="button" class="chip" data-i="tom" data-v="claro" aria-pressed="${IMG.tom==="claro"}">Foto escura</button><button type="button" class="chip" data-i="tom" data-v="escuro" aria-pressed="${IMG.tom==="escuro"}">Foto clara</button></div>
    <button type="button" class="btn wide" data-i="salvar">SALVAR IMAGEM</button>
    ${pode?`<button type="button" class="btn ghost wide" data-i="copiar">COPIAR PARA COLAR NA FOTO</button>`:""}
-   <p class="note" id="imgmsg" style="margin:0;text-align:center">Fundo transparente: cole sobre a sua foto nos stories.</p>
+   <p class="note" id="imgmsg" style="margin:0;text-align:center">${IMG.mod==="etiqueta"?"Etiqueta pronta":"Fundo transparente"}: cole sobre a sua foto nos stories.</p>
    <button type="button" class="link" data-i="fechar" style="align-self:center">fechar</button></div>`;
 }
 function imgBlob(){ return new Promise(res=>IMG.cv.toBlob(res,"image/png")); }
@@ -1000,6 +1040,7 @@ function imgAcao(e){
   const a=b.dataset.i, msg=t=>{ const el=document.getElementById("imgmsg"); if(el) el.textContent=t; };
   if(a==="fechar"){ IMG=null; document.getElementById("imgov").remove(); return; }
   if(a==="tom"){ IMG.tom=b.dataset.v; store.set("hagtreino.imgtom",IMG.tom); return imgRender(); }
+  if(a==="mod"){ IMG.mod=b.dataset.v; store.set("hagtreino.imgmod",IMG.mod); return imgRender(); }   /* HAG_TREINO_IMAGEM_v2 */
   if(a==="copiar"){ try{ navigator.clipboard.write([new ClipboardItem({"image/png":imgBlob()})]).then(()=>msg("Copiada. No Instagram, abra a sua foto nos stories e cole.")).catch(()=>msg("Não consegui copiar. Use Salvar imagem.")); }catch(x){ msg("Não consegui copiar. Use Salvar imagem."); } return; }
   if(a==="salvar"){ const bl=IMG.blob; if(!bl){ msg("Preparando a imagem. Toque de novo."); return; } const nome=`HAG Treino ${IMG.m.data}.png`, f=new File([bl],nome,{type:"image/png"});
       if(navigator.canShare && navigator.canShare({files:[f]})){ navigator.share({files:[f]}).then(()=>msg("Pronto.")).catch(()=>{}); return; }
