@@ -127,6 +127,7 @@ input[type=text],input[type=number],input[type=search],select,textarea{backgroun
     <button role="tab" aria-selected="true" data-v="pac">Paciente</button>
     <button role="tab" aria-selected="false" data-v="mod">Modelos da casa</button>
     <button role="tab" aria-selected="false" data-v="exs">Exercícios e vídeos</button>
+    <button role="tab" aria-selected="false" data-v="turma">Turma</button><!-- HAG_TREINO_SOCIAL_v1 -->
   </nav>
 </div></header>
 <script>
@@ -515,12 +516,26 @@ async function carregarPaciente(){ E.P=null; E.livre=null; render(); if(!E.pid) 
    Liberar grava uma linha em treino_livre_acesso; o app do paciente passa a mostrar a aba "Qualquer lugar" com as sessões
    aprovadas (treino_livres.aprovado). Retirar apaga a linha. */
 async function lerLivre(){ try{ const r=await api(`treino_livre_acesso?patient_id=eq.${encodeURIComponent(E.pid)}&select=liberado_em`); E.livre={on:!!(r&&r.length), em:r&&r[0]?r[0].liberado_em:null}; }catch(e){ E.livre={erro:e.message}; } }
-function render(){ if(E.aba==="pac") renderPaciente(); else if(E.aba==="mod") renderModelos(); else renderExs(); }
+function render(){ if(E.aba==="pac") renderPaciente(); else if(E.aba==="mod") renderModelos(); else if(E.aba==="turma") renderTurmaMod(); else renderExs(); }
+/* HAG_TREINO_SOCIAL_v1 (14/11/2026): moderação da Turma do HAG Treino. O paciente aparece para os outros só pelo apelido;
+   aqui a equipe vê o nome real, suspende quem precisar e oculta post. Nada clínico entra no post (só tipo, minutos, km, séries). */
+async function lerTurma(){ const [pf,po]=await Promise.all([api("treino_social_perfil?select=*&order=criado_em.desc"), api("treino_social_posts?select=id,patient_id,cartao,criado_em,oculto&order=criado_em.desc&limit=60")]);
+  const ids=[...new Set(pf.map(x=>x.patient_id))]; const nomes=ids.length?await api("patients?select=id,nome&id=in.("+ids.map(encodeURIComponent).join(",")+")"):[];
+  E.turma={pf, po, nome:Object.fromEntries(nomes.map(n=>[n.id,n.nome]))}; }
+function renderTurmaMod(){
+  if(!E.turma){ main.innerHTML=`<p class="note">Carregando a Turma…</p>`; acao(lerTurma); return; }
+  const T=E.turma, ap=Object.fromEntries(T.pf.map(x=>[x.patient_id,x.apelido])), d=x=>x?new Date(x).toLocaleDateString("pt-BR"):"";
+  main.innerHTML=`<div><div class="kicker">Turma do HAG Treino</div><h2>${T.pf.filter(x=>x.ativo&&!x.bloqueado).length} participantes</h2><p class="note">Opt-in com aceite (versão do aviso e data ficam gravadas). Os outros pacientes veem só o apelido. Treino importado do Strava não entra.</p></div>${msgHTML()}
+   <div class="card"><div class="kicker">Participantes</div>${T.pf.map(x=>`<div class="row between" style="padding:10px 0;border-top:1px solid var(--line)"><div><b>${esc(x.apelido)}</b> <span class="note">${esc(T.nome[x.patient_id]||x.patient_id)}</span><div class="note">aceite ${esc(x.aceite_versao)} em ${d(x.aceite_em)}${!x.ativo?" · saiu "+d(x.saiu_em):""}${x.bloqueado?" · SUSPENSO":""}</div></div>${x.bloqueado?`<button class="btn small ghost" data-a="tdesbloq" data-v="${esc(x.patient_id)}">Reativar</button>`:`<button class="btn small ghost" data-a="tbloq" data-v="${esc(x.patient_id)}">Suspender</button>`}</div>`).join("")||`<p class="note">Ninguém entrou ainda.</p>`}</div>
+   <div class="card"><div class="kicker">Posts recentes</div>${T.po.map(p=>`<div class="row between" style="padding:10px 0;border-top:1px solid var(--line)${p.oculto?";opacity:.5":""}"><div><b>${esc(ap[p.patient_id]||"?")}</b> <span class="note">${esc(T.nome[p.patient_id]||"")}</span><div class="note">${esc(p.cartao.tipo)} · ${p.cartao.min} min${p.cartao.km?" · "+p.cartao.km+" km":""} · ${d(p.criado_em)}${p.oculto?" · oculto":""}</div></div><button class="btn small ghost" data-a="${p.oculto?"tmostrar":"tocultar"}" data-v="${p.id}">${p.oculto?"Mostrar":"Ocultar"}</button></div>`).join("")||`<p class="note">Sem posts.</p>`}</div>`;
+}
 async function acao(fn,okMsg){ try{ await fn(); if(okMsg) E.msg={tipo:"ok",texto:okMsg}; }catch(e){ E.msg={tipo:"err",texto:e.message||String(e)}; } render(); }
 const mover=(arr,i,d)=>{ const j=i+d; if(j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],arr[i]]; };
 
 main.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b||!b.dataset.a) return; const a=b.dataset.a, v=b.dataset.v, di=+b.dataset.d, ii=+b.dataset.i, p=E.edit;
+  if(a==="tbloq"||a==="tdesbloq"){ const s=Auth.session&&Auth.session(); if(a==="tbloq"&&!confirm("Suspender este paciente da Turma? Os posts dele somem para os outros.")) return; return acao(async()=>{ await api(`treino_social_perfil?patient_id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:a==="tbloq"?{bloqueado:true,bloqueado_por:(s&&s.user)||"painel",bloqueado_em:new Date().toISOString()}:{bloqueado:false,bloqueado_por:null,bloqueado_em:null}}); await lerTurma(); }, a==="tbloq"?"Suspenso da Turma.":"Reativado na Turma."); }
+  if(a==="tocultar"||a==="tmostrar"){ const s=Auth.session&&Auth.session(); return acao(async()=>{ await api(`treino_social_posts?id=eq.${encodeURIComponent(v)}`,{method:"PATCH",body:a==="tocultar"?{oculto:true,oculto_por:(s&&s.user)||"painel",oculto_em:new Date().toISOString()}:{oculto:false,oculto_por:null,oculto_em:null}}); await lerTurma(); }, a==="tocultar"?"Post oculto.":"Post visível de novo."); }
   if(a==="editar"||a==="ver") return abrirEditor(v);
   if(a==="fechar"){ E.edit=null; E.msg=null; E.publicar=null; if(E.aba==="pac") return carregarPaciente(); return acao(carregarBase); }
   if(a==="novaversao") return acao(async()=>{ const id=await rpc("hag_treino_clonar",{p_programa:v,p_patient_id:E.pid,p_modo:"paciente"}); await abrirEditor(id); },"Rascunho da nova versão criado. O paciente continua vendo a versão atual até você publicar.");
@@ -575,7 +590,7 @@ main.addEventListener("change",e=>{
   if(E.edit && t.dataset.k==="ex"){ E.edit.dias[+t.dataset.d].itens[+t.dataset.i].ex=t.value; return render(); }
 });
 const tabs=[...document.querySelectorAll("nav.tabs button")];
-tabs.forEach(t=>t.addEventListener("click",()=>{ tabs.forEach(x=>x.setAttribute("aria-selected",String(x===t))); E.aba=t.dataset.v; E.edit=null; E.msg=null; E.publicar=null; render(); }));
+tabs.forEach(t=>t.addEventListener("click",()=>{ tabs.forEach(x=>x.setAttribute("aria-selected",String(x===t))); E.aba=t.dataset.v; E.edit=null; E.msg=null; E.publicar=null; if(E.aba==="turma") E.turma=null; render(); }));
 
 async function boot(){
   for(let k=0;k<8 && !(Auth.valid&&Auth.valid());k++) await new Promise(r=>setTimeout(r,400));
