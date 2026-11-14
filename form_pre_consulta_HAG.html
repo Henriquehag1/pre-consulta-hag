@@ -1912,6 +1912,9 @@ function buildSoapText(){
     'Sexo: '+fv('f_sexo')+' · E-mail: '+fv('f_email'),
     '',L,
     'DADOS PARA NOTA FISCAL',
+    /* HAG_PRECONSULTA_DOC_NO_TEXTO_v1 (14/11/2026): o texto nunca citava o documento (ele vai direto para o cadastro),
+       e no caso Thais pareceu que o CPF nao tinha chegado. Mostra so o tipo e os 2 ultimos digitos (LGPD, minimizacao). */
+    (function(){ var t=((document.getElementById('f_doc_tipo')||{}).value||'cpf'); var d=String((window.cpfGetCleanDigits&&window.cpfGetCleanDigits())||''); var n={cpf:'CPF',rg:'RG',passaporte:'Passaporte'}[t]||'Documento'; return d ? n+': no cadastro, final '+d.slice(-2) : n+': não informado'; })(),
     'CEP: '+fv('f_cep'),
     'Endereço: '+fv('f_rua')+', '+fv('f_numero')+(fv('f_complemento')!=='—'?' · '+fv('f_complemento'):''),
     'Bairro: '+fv('f_bairro')+' · Cidade: '+fv('f_cidade_nf')+' / '+fv('f_estado'),
