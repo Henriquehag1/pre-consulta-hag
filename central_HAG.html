@@ -175,6 +175,26 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .suppq{font-size:13px;color:var(--apoio);margin-top:6px;line-height:1.4}
 /* HAG_SUPLEMENTOS_FAIXA_MOTOR_v1 */
 .supind{font-family:var(--r);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--conhaque);font-weight:600}
+/* HAG_SUPLEMENTOS_LAYOUT_v2 */
+.supres{list-style:none;margin:2px 0 0;padding:0}
+.supres li{border-top:1px solid var(--fio)}.supres li:first-child{border-top:0}
+.supres button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:12px 0;text-align:left;font-family:var(--t);color:var(--tinta);cursor:pointer}
+.supres .n{flex:1;font-size:15px;line-height:1.35}.supres .n small{display:block;font-size:12.5px;color:var(--apoio)}
+.supres .tg{font-family:var(--r);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--conhaque);border:1px solid var(--conhaque);border-radius:20px;padding:2px 8px;white-space:nowrap}
+.supres .sv{color:var(--apoio);font-size:18px}
+.supc{scroll-margin-top:14px}
+.suptabs{display:flex;gap:5px;margin:12px 0 2px}
+.suptabs button{flex:1;min-width:0;border:1px solid var(--fio);background:transparent;border-radius:20px;padding:9px 2px;font-family:var(--t);font-size:12px;font-weight:500;letter-spacing:0;color:var(--suave);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suptabs button.on{background:var(--choc);border-color:var(--choc);color:var(--linho)}
+.suptabs button.ind{border-color:var(--conhaque);color:var(--conhaque)}.suptabs button.ind.on{background:var(--conhaque);color:#fff}
+.supc .supop{border-top:0;grid-template-columns:96px 1fr;padding:14px 0 4px}
+.supc .supop[hidden]{display:none}
+.supc .supft{width:96px;height:96px}.supc .supft img{max-width:90px;max-height:90px}
+.supdose{margin-top:10px;background:#fff;border:1px solid var(--fio);border-left:3px solid var(--camurca);border-radius:3px;padding:9px 12px}
+.supdose .k{font-family:var(--r);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--camurca)}
+.supdose .v{font-size:15px;color:var(--tinta);margin-top:2px}
+.supmais summary{list-style:none;cursor:pointer;font-family:var(--r);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--conhaque);padding:10px 0 2px}
+.supmais summary::-webkit-details-marker{display:none}
 /* HAG_CENTRAL_CHECKIN_v1 */
 /* HAG_CHECKIN_SOB_MEDIDA_v1 */
 .ckops.nums button{min-width:34px}.ckops.nums button span{font-size:9.5px;min-height:11px}
@@ -903,30 +923,60 @@ function telaReceitas(d){
    marcas aprovadas por ele em três faixas (premium, intermediário, custo-benefício), com foto e como medir. A dose é
    sempre a da prescrição; aqui só está como cada produto mede. Medicamento aparece sem foto. Dados: central_dados.suplementos. */
 var SUP_FX={premium:'Premium',intermediario:'Intermediário',custo_beneficio:'Custo-benefício',unica:'Opção',medicamento:'Medicamento'};
+/* HAG_SUPLEMENTOS_LAYOUT_v2 (15/11/2026). Pedido do Dr. Henrique: melhorar a forma de mostrar. Antes, cada item listava
+   as três marcas inteiras, uma embaixo da outra (45 blocos para 15 itens). Agora: no topo, "Sua lista" com cada item e a
+   marca indicada; em cada item, as faixas viram abas e só uma marca aparece por vez, com foto maior; e "Na sua dose" mostra a
+   medida e a duração quando a dose prescrita (g, mg, mcg ou UI) bate com uma linha do produto. O resto fica em "Outras medidas". */
+function supToks(s){ var out=[]; String(s||'').toLowerCase().replace(/(\d)\.(\d{3})/g,'$1$2').replace(/,/g,'.')
+  .replace(/(\d+(?:\.\d+)?)\s*(mcg|mg|ui|g)(?![a-z])/g,function(_,n,u){ out.push(parseFloat(n)+u); return _; }); return out; }
+function supDoseDe(item,p){
+  var it=supToks(item); if(!it.length) return null;
+  var L=(p.posologias||[]).filter(function(x){ return x&&x.rotulo; });
+  for(var i=0;i<L.length;i++){ var t=supToks(L[i].rotulo); for(var j=0;j<t.length;j++) if(it.indexOf(t[j])>=0) return L[i]; }
+  return null;
+}
 function telaSuplementos(d){
   var S=d.suplementos||{}, L=S.itens||[];
-  var op=function(p){
+  var linhas=function(ps){ return ps.map(function(x){
+      return '<tr><td>'+esc(x.rotulo||'')+'</td><td>'+esc([x.quanto,x.rende].filter(Boolean).join(' · '))+'</td></tr>'; }).join(''); };
+  var op=function(item,p,i,k,vis){
     var ft=p.foto?'<img src="'+esc(p.foto)+'" alt="'+esc(p.marca)+'" loading="lazy">':'<span>'+(p.medicamento?'medicamento':'sem foto')+'</span>';
-    var tb=(p.posologias||[]).filter(function(x){ return x&&(x.quanto||x.rende); }).map(function(x){
-      return '<tr><td>'+esc(x.rotulo||'')+'</td><td>'+esc([x.quanto,x.rende].filter(Boolean).join(' · '))+'</td></tr>'; }).join('');
-    return '<div class="supop"><div class="supft">'+ft+'</div><div><div class="supfx">'+(p.escolhida?'<span class="supind">Indicação do Dr. Henrique</span>':esc(SUP_FX[p.faixa]||''))+'</div><div class="supmc">'+esc(p.marca)+'</div><div class="suppr">'+esc(p.produto)+'</div>'
-      +(p.porcao?'<div class="suppc">'+esc(p.porcao)+'</div>':'')+(tb?'<table class="suptb"><tbody>'+tb+'</tbody></table>':'')
+    var pos=(p.posologias||[]).filter(function(x){ return x&&(x.quanto||x.rende); });
+    var dose=supDoseDe(item,p), outras=dose?pos.filter(function(x){ return x!==dose; }):pos;
+    var bDose=dose?'<div class="supdose"><div class="k">Na sua dose</div><div class="v">'+esc([dose.quanto||dose.rotulo,dose.rende?('rende '+dose.rende):''].filter(Boolean).join(' · '))+'</div></div>':'';
+    var bOutras=outras.length?(dose
+      ?'<details class="supmais"><summary>Outras medidas ›</summary><table class="suptb"><tbody>'+linhas(outras)+'</tbody></table></details>'
+      :'<table class="suptb"><tbody>'+linhas(outras)+'</tbody></table>'):'';
+    return '<div class="supop" data-supop="'+i+'|'+k+'"'+(vis?'':' hidden')+'><div class="supft">'+ft+'</div><div>'
+      +'<div class="supfx">'+(p.escolhida?'<span class="supind">Indicação do Dr. Henrique</span>':esc(SUP_FX[p.faixa]||''))+'</div>'
+      +'<div class="supmc">'+esc(p.marca)+'</div><div class="suppr">'+esc(p.produto)+'</div>'
+      +(p.porcao?'<div class="suppc">'+esc(p.porcao)+'</div>':'')+bDose+bOutras
       +(p.porque?'<div class="suppq">'+esc(p.porque)+'</div>':'')+'</div></div>';
   };
-  /* HAG_SUPLEMENTOS_FAIXA_MOTOR_v1 (15/11/2026): quando o Dr. Henrique indica a marca no motor, ela vem primeiro com o
-     selo; as outras opções aprovadas ficam recolhidas. Sem indicação, tudo aparece como antes. */
   var algumaInd=L.some(function(it){ return it.indicada; });
-  var corpo=L.map(function(it){
-    var ps=it.produtos||[], esc1=ps.filter(function(p){ return p.escolhida; }), resto=ps.filter(function(p){ return !p.escolhida; });
-    var lista=esc1.length
-      ? esc1.map(op).join('')+(resto.length?'<details class="rxant"><summary>Outras opções aprovadas · '+resto.length+'</summary>'+resto.map(op).join('')+'</details>':'')
-      : ps.map(op).join('');
-    return '<div class="card lst"><div class="grupo">'+esc(it.categoria)+'</div><p class="supitem">Na sua prescrição: <b>'+esc(it.item)+'</b></p>'+lista+'</div>';
+  var resumo=L.length>1?'<div class="card lst"><div class="grupo">Sua lista · '+L.length+'</div><ul class="supres">'+L.map(function(it,i){
+      var e=(it.produtos||[]).filter(function(p){ return p.escolhida; })[0];
+      return '<li><button data-supir="'+i+'"><span class="n">'+esc(it.item)+'</span>'
+        +(e?'<span class="tg">'+esc(e.marca)+'</span>':'')+'<span class="sv">›</span></button></li>'; }).join('')+'</ul></div>':'';
+  var corpo=L.map(function(it,i){
+    var ps=it.produtos||[];
+    var abas=ps.length>1?'<div class="suptabs">'+ps.map(function(p,k){
+        return '<button class="'+(k===0?'on':'')+(p.escolhida?' ind':'')+'" data-suptab="'+i+'|'+k+'">'+(p.escolhida?'Indicada':esc(SUP_FX[p.faixa]||p.marca))+'</button>'; }).join('')+'</div>':'';
+    return '<div class="card lst supc" id="sup_'+i+'"><div class="grupo">'+esc(it.categoria)+'</div><p class="supitem">Sua prescrição: <b>'+esc(it.item)+'</b></p>'
+      +abas+ps.map(function(p,k){ return op(it.item,p,i,k,k===0); }).join('')+'</div>';
   }).join('');
   telaSub(d,'Seu plano','Seus suplementos.',
-    '<p class="sub">Do seu plano de '+dataBR(S.data)+'. Para cada suplemento, as marcas que o Dr. Henrique aprovou, em três faixas de preço. '+(algumaInd?'Quando ele indicou uma marca para você, ela aparece primeiro. Tome':'Escolha a que preferir: tome')+' sempre a dose da sua prescrição; aqui está como cada produto mede e quanto dura.</p>'
-    +(corpo||'<div class="card"><p class="vazio">Nenhum suplemento com marca sugerida na sua prescrição atual.</p></div>')
+    '<p class="sub">Do seu plano de '+dataBR(S.data)+'. Para cada suplemento, até três marcas aprovadas pelo Dr. Henrique, de faixas de preço diferentes. '
+    +(algumaInd?'Quando ele indicou uma marca para você, ela vem marcada como indicada. ':'')+'A dose é sempre a da sua prescrição.</p>'
+    +(corpo?resumo+corpo:'<div class="card"><p class="vazio">Nenhum suplemento com marca sugerida na sua prescrição atual.</p></div>')
     +'<p class="exnota">Sugestões do consultório, sem vínculo comercial com as marcas. Outra marca de qualidade equivalente também serve; na dúvida, fale com a equipe.</p>');
+  tela.querySelectorAll('[data-suptab]').forEach(function(b){ b.onclick=function(){
+    var pz=b.getAttribute('data-suptab').split('|');
+    tela.querySelectorAll('#sup_'+pz[0]+' [data-suptab]').forEach(function(x){ x.classList.toggle('on', x===b); });
+    tela.querySelectorAll('#sup_'+pz[0]+' [data-supop]').forEach(function(x){ x.hidden = x.getAttribute('data-supop')!==pz[0]+'|'+pz[1]; });
+  }; });
+  tela.querySelectorAll('[data-supir]').forEach(function(b){ b.onclick=function(){
+    var c=document.getElementById('sup_'+b.getAttribute('data-supir')); if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); }; });
 }
 function telaExames(d){
   var L=(d._g&&d._g.exame)||[], por={};
