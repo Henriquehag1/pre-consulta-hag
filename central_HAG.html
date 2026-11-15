@@ -193,6 +193,11 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .supdose{margin-top:10px;background:#fff;border:1px solid var(--fio);border-left:3px solid var(--camurca);border-radius:3px;padding:9px 12px}
 .supdose .k{font-family:var(--r);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--camurca)}
 .supdose .v{font-size:15px;color:var(--tinta);margin-top:2px}
+/* HAG_SNACKS_v1 */
+.snk{display:grid;grid-template-columns:96px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--fio)}.snk:first-of-type{border-top:0}
+.snk .supft{width:96px;height:96px}.snk .supft img{max-width:90px;max-height:90px}
+.snknum{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.snknum span{font-size:12.5px;background:#fff;border:1px solid var(--fio);border-radius:20px;padding:3px 10px;color:var(--suave)}.snknum b{color:var(--tinta);font-weight:600}
 .supmais summary{list-style:none;cursor:pointer;font-family:var(--r);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--conhaque);padding:10px 0 2px}
 .supmais summary::-webkit-details-marker{display:none}
 /* HAG_CENTRAL_CHECKIN_v1 */
@@ -510,6 +515,7 @@ var IC={
   doc:'<svg viewBox="0 0 24 24"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8Z"/><path d="M14 3v5h5M8.5 13h7M8.5 16.5h5"/></svg>',
   rx:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h3a2 2 0 0 1 0 4H8V8Zm0 4v4M10.5 12l3.5 4M13 14l3-2"/></svg>',
   sup:'<svg viewBox="0 0 24 24"><rect x="3.2" y="8.5" width="17.6" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="m9.6 8.6 4.8 6.8"/></svg>',   /* HAG_SUPLEMENTOS_MARCAS_v1 */
+  snk:'<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="2"/><path d="M8 8v8M16 8v8"/></svg>',   /* HAG_SNACKS_v1 */
   chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5Z"/></svg>',
   pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
@@ -741,7 +747,9 @@ function painel(d){
   });
   if(g.receita.length) cards.push('<button class="plano" id="cRx"><span class="ic">'+IC.rx+'</span><span class="t">Receitas</span><span class="q">'+g.receita.length+(g.receita.length>1?' receitas válidas':' receita válida')+'</span><span class="a">Ver</span></button>');
   var SUP=((d.suplementos||{}).itens)||[];   /* HAG_SUPLEMENTOS_MARCAS_v1 */
+  var SNK=d.snacks||[];   /* HAG_SNACKS_v1: lanches proteicos, para todos os pacientes */
   if(SUP.length) cards.push('<button class="plano" id="cSup"><span class="ic">'+IC.sup+'</span><span class="t">Suplementos</span><span class="q">'+SUP.length+(SUP.length>1?' itens · marcas e medidas':' item · marcas e medidas')+'</span><span class="a">Ver</span></button>');
+  if(SNK.length) cards.push('<button class="plano" id="cSnk"><span class="ic">'+IC.snk+'</span><span class="t">Lanches proteicos</span><span class="q">'+SNK.length+' opções que valem a pena</span><span class="a">Ver</span></button>');   /* HAG_SNACKS_v1 */
   var XN=(d.extra||{}), nN=(XN.notas||[]).length, nE=(XN.notas_ano||{}).emitidas||0;   /* HAG_CENTRAL_NIVEL2_v1 */
   if(nN||nE) cards.push('<button class="plano" id="cNf"><span class="ic">'+IC.nf+'</span><span class="t">Notas fiscais</span><span class="q">'+(nN?nN+(nN>1?' notas':' nota'):nE+(nE>1?' emitidas em ':' emitida em ')+esc(XN.notas_ano.ano))+'</span><span class="a">Ver</span></button>');
   cards.push('<button class="plano" id="cEx"><span class="ic">'+IC.ex+'</span><span class="t">Exames</span><span class="q">'+(g.exame.length?g.exame.length+(g.exame.length>1?' arquivos':' arquivo'):'Envie seus exames por aqui')+'</span><span class="a">Ver</span></button>');
@@ -763,6 +771,7 @@ function painel(d){
   var bck=$('#bCk'); if(bck) bck.onclick=function(){ telaCheckin(d); };
   var crx=$('#cRx'); if(crx) crx.onclick=function(){ telaReceitas(d); };   /* HAG_CENTRAL_CARTOES_v1 */
   var csp=$('#cSup'); if(csp) csp.onclick=function(){ telaSuplementos(d); };   /* HAG_SUPLEMENTOS_MARCAS_v1 */
+  var csk=$('#cSnk'); if(csk) csk.onclick=function(){ telaSnacks(d); };   /* HAG_SNACKS_v1 */
   var cex=$('#cEx'); if(cex) cex.onclick=function(){ telaExames(d); };
   var cnf=$('#cNf'); if(cnf) cnf.onclick=function(){ telaNotas(d); };   /* HAG_CENTRAL_NIVEL2_v1 */
   var agx=$('#agEx'); if(agx) agx.onclick=function(){ telaExames(d); };
@@ -977,6 +986,23 @@ function telaSuplementos(d){
   }; });
   tela.querySelectorAll('[data-supir]').forEach(function(b){ b.onclick=function(){
     var c=document.getElementById('sup_'+b.getAttribute('data-supir')); if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); }; });
+}
+/* HAG_SNACKS_v1 (15/11/2026). Pedido do Dr. Henrique: snacks proteicos saudáveis "que realmente valem a pena", para todos
+   os pacientes, separados da prescrição. Critério: 10 g de proteína ou mais por porção, até 1 g de açúcar adicionado, até 250 kcal.
+   Dados: central_dados.snacks (tabela snacks_hag). Campo vazio não aparece. */
+function telaSnacks(d){
+  var L=d.snacks||[];
+  var item=function(x){
+    var ft=x.foto?'<img src="'+esc(x.foto)+'" alt="'+esc(x.marca)+'" loading="lazy">':'<span>sem foto</span>';
+    var nums=[['Proteína',x.proteina],['Energia',x.energia],['Açúcar adicionado',x.acucar]].filter(function(n){ return n[1]; })
+      .map(function(n){ return '<span>'+n[0]+' <b>'+esc(n[1])+'</b></span>'; }).join('');
+    return '<div class="snk"><div class="supft">'+ft+'</div><div><div class="supfx">'+esc(x.tipo||'')+'</div><div class="supmc">'+esc(x.marca)+'</div><div class="suppr">'+esc(x.produto)+'</div>'
+      +(nums?'<div class="snknum">'+nums+'</div>':'')+(x.obs?'<div class="suppq">'+esc(x.obs)+'</div>':'')+'</div></div>';
+  };
+  telaSub(d,'Seu plano','Lanches proteicos.',
+    '<p class="sub">Opções práticas para quando faltar tempo, escolhidas pelo Dr. Henrique: pelo menos 10 g de proteína por porção, quase sem açúcar adicionado e até 250 kcal. Use dentro do que o seu plano alimentar prevê para o lanche.</p>'
+    +(L.length?'<div class="card lst">'+L.map(item).join('')+'</div>':'<div class="card"><p class="vazio">Nenhuma opção disponível agora.</p></div>')
+    +'<p class="exnota">Sugestões do consultório, sem vínculo comercial com as marcas. Testes independentes mostram que a proteína real de produtos prontos pode ficar um pouco abaixo do rótulo; comida de verdade continua sendo a base.</p>');
 }
 function telaExames(d){
   var L=(d._g&&d._g.exame)||[], por={};
