@@ -18,7 +18,9 @@ concurrency:
 jobs:
   verify:
     name: Testes e integridade
-    runs-on: ubuntu-latest
+    # HAG_CI_UBUNTU_FIXO_v1 (15/11/2026): o passo "Instalar Playwright" (playwright 1.56) comecou a falhar
+    # nos PR #85 e #86, junto do aviso do GitHub de que o ubuntu-latest migra para o Ubuntu 26. Fixado no 24.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - name: Checkout
