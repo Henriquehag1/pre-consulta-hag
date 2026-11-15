@@ -2067,9 +2067,10 @@ function renderAtiv(){
 }
 function salvarAtiv(){
   const A=S.ativ; if(!A||!A.nome) return;
-  FILA.push({client_id:uid(), data:HOJE(), dia_id:null, dia:A.nome, tipo:"Atividade", inicio:null, dur:A.min, rpe:A.rpe, pront:null, cv:false, series:[], cardio:[], hyrox:[]});
+  const cidA=uid();   /* HAG_TREINO_POSTAR_FEED_v1: sem cid o botão de postar não aparecia em Outra atividade */
+  FILA.push({client_id:cidA, data:HOJE(), dia_id:null, dia:A.nome, tipo:"Atividade", inicio:null, dur:A.min, rpe:A.rpe, pront:null, cv:false, series:[], cardio:[], hyrox:[]});
   store.set("hagtreino.fila",FILA);
-  S=novoEstado(); S.fase="fim"; S.salvo={n:0,um:0,rpe:A.rpe,dur:A.min,ci:A.rpe*A.min,rec:[],dor:[],prox:[],cv:false,partes:A.nome,enviada:false};
+  S=novoEstado(); S.fase="fim"; S.salvo={n:0,um:0,rpe:A.rpe,dur:A.min,ci:A.rpe*A.min,rec:[],dor:[],prox:[],cv:false,partes:A.nome,enviada:false,cid:cidA};
   render(); enviarFila().then(()=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
 }
 const rpeTexto = v => ["repouso","muito, muito leve","muito leve","leve","moderado","um pouco pesado","pesado","pesado","muito pesado","muito, muito pesado","máximo"][v];
@@ -2484,6 +2485,13 @@ function leveHTML(){ if(!S.prontOk||!leveOferta()) return "";
    cartão do treino (tipo, minutos, km, séries), entrada por opt-in com aceite e ranking de constância e de volume.
    Ninguém vê esforço, dor, prontidão, peso, exames ou o programa. Treino importado do Strava não entra (termos da API).
    Banco: hag_treino_social(token, {acao}); a equipe modera pelo painel. */
+/* HAG_TREINO_POSTAR_FEED_v1 (15/11/2026): pedido do Dr. "não vi a forma de postar no feed".
+   O POSTAR NA TURMA só existia na tela logo depois de salvar. Agora o Feed abre com "Postar um treino":
+   os treinos dos últimos 7 dias ainda não postados, vindos de hag_treino_social_postaveis (o histórico do app não traz client_id). */
+let SOCP=null, socPostando="";
+function socPostaveis(){ if(!TOKEN||VER) return; return rpc("hag_treino_social_postaveis",{p_token:TOKEN}).then(r=>{ SOCP=(r&&r.ok&&r.membro)?(r.treinos||[]):[]; renderTurma(); }).catch(()=>{ SOCP=[]; renderTurma(); }); }
+function socPostar(cid){ socPostando=cid; renderTurma();
+  return socRpc({acao:"postar", client_id:cid}).then(()=>{ socPostando=""; return socPostaveis(); }); }
 let SOC=null, socAba="feed", socRank="constancia", socDu={metrica:"constancia", dias:7}, socEntrar={apelido:"", avatar:"a1", aceite:false}, socMsg="";
 const AVATAR_COR={a1:"#C99A6B",a2:"#8C4F2B",a3:"#2E3A2D",a4:"#5B2529",a5:"#A69886",a6:"#33251E",a7:"#6B7F5E",a8:"#B98A5E"};
 const avatarHTML = (a,ap,cls) => `<span class="av ${cls||""}" style="background:${AVATAR_COR[a]||AVATAR_COR.a1}" aria-hidden="true">${esc(String(ap||"?").trim().charAt(0).toUpperCase())}</span>`;
@@ -2518,9 +2526,15 @@ function renderTurma(){
   let corpo="";
   if(socAba==="feed"){
     const f=SOC.feed||[];
-    corpo=f.length?f.map(p=>`<div class="card socpost"><div class="row" style="gap:10px;align-items:center">${avatarHTML(p.avatar,p.apelido)}<div style="flex:1"><b>${esc(p.apelido)}</b><div class="note">${quando(p.em)} · ${br(p.cartao.data)}</div></div>${p.meu?`<button type="button" class="link" data-s="apagar" data-v="${p.id}">apagar</button>`:""}</div>
+    if(SOCP===null) socPostaveis();
+    const P=SOCP||[], pkm=t=>+t.km>0?` · ${fmt(+t.km,+t.km<10?2:1)} km`:"";
+    corpo=`<div class="card"><div class="kicker">Postar um treino</div>${SOCP===null?`<p class="note" style="margin:6px 0 0">Carregando seus treinos…</p>`
+      : P.length?P.map(t=>`<div class="row" style="gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)"><div style="flex:1"><b>${esc(t.dia||t.tipo||"Treino")}</b><div class="note">${br(t.data)} · ${t.min} min${pkm(t)}</div></div><button type="button" class="btn small" data-s="postar" data-v="${esc(t.cid)}" ${socPostando?"disabled":""}>${socPostando===t.cid?"Postando…":"Postar"}</button></div>`).join("")
+      : `<p class="note" style="margin:6px 0 0">Nenhum treino dos últimos 7 dias para postar. Um treino recém-salvo aparece aqui assim que for enviado.</p>`}
+      <p class="note" style="margin:8px 0 0">Vai só o tipo de treino, os minutos e os km. Nada de esforço, dor ou programa.</p></div>`
+     + (f.length?f.map(p=>`<div class="card socpost"><div class="row" style="gap:10px;align-items:center">${avatarHTML(p.avatar,p.apelido)}<div style="flex:1"><b>${esc(p.apelido)}</b><div class="note">${quando(p.em)} · ${br(p.cartao.data)}</div></div>${p.meu?`<button type="button" class="link" data-s="apagar" data-v="${p.id}">apagar</button>`:""}</div>
       ${cartaoHTML(p.cartao)}<div class="row" style="gap:10px;margin-top:8px">${p.meu?`<span class="note">${p.curtidas} ${p.curtidas===1?"aplauso":"aplausos"}</span>`:`<button type="button" class="chip" data-s="${p.curti?"descurtir":"curtir"}" data-v="${p.id}" aria-pressed="${p.curti}">Aplaudir · ${p.curtidas}</button>`}</div></div>`).join("")
-      : `<div class="card"><p class="sub" style="margin:0">Ninguém postou ainda. Ao salvar um treino, toque em <b>POSTAR NA TURMA</b>.</p></div>`;
+      : `<div class="card"><p class="sub" style="margin:0">Ninguém postou ainda. Seja a primeira pessoa: escolha um treino acima e toque em <b>Postar</b>.</p></div>`);
   } else if(socAba==="rank"){
     const L=socRank==="constancia"?(SOC.ranking_constancia||[]):(SOC.ranking_volume||[]);
     corpo=`<div class="chips" style="margin-bottom:8px"><button type="button" class="chip" data-s="rank" data-v="constancia" aria-pressed="${socRank==="constancia"}">Constância</button><button type="button" class="chip" data-s="rank" data-v="volume" aria-pressed="${socRank==="volume"}">Volume</button></div>
@@ -2553,7 +2567,8 @@ function turmaClique(e){
   if(a==="entrar"){ return socRpc({acao:"entrar", apelido:socEntrar.apelido.trim(), avatar:socEntrar.avatar, aceite:socEntrar.aceite?"v1":""}); }
   if(a==="aba"){ socAba=val; return renderTurma(); }
   if(a==="rank"){ socRank=val; return renderTurma(); }
-  if(a==="atualizar") return socRpc({});
+  if(a==="atualizar"){ SOCP=null; return socRpc({}); }
+  if(a==="postar"){ if(socPostando) return; return socPostar(val); }   /* HAG_TREINO_POSTAR_FEED_v1 */
   if(a==="curtir"||a==="descurtir"||a==="apagar"){ if(a==="apagar"&&!confirm("Apagar este post da Turma?")) return; return socRpc({acao:a, post:val}); }
   if(a==="daceitar"||a==="drecusar") return socRpc({acao:"duelo_responder", duelo:val, resposta:a==="daceitar"?"aceitar":"recusar"});
   if(a==="dcancelar") return socRpc({acao:"duelo_cancelar", duelo:val});
@@ -2566,7 +2581,7 @@ function turmaInput(e){ if(e.target.id==="socap"){ socEntrar.apelido=e.target.va
   if(e.target.id==="socaceite"){ socEntrar.aceite=e.target.checked; renderTurma(); } }
 /* depois de salvar: postar o cartão na Turma */
 function postarTurma(){ const r=S.salvo; if(!r||!r.cid) return; r.postando=true; render();
-  rpc("hag_treino_social",{p_token:TOKEN,p:{acao:"postar", client_id:r.cid}}).then(x=>{ r.postando=false; if(x&&x.ok&&!x.erro&&x.membro){ r.postado=true; SOC=x; } else r.postErro=x&&x.erro?(SOC_ERRO[x.erro]||"Não deu certo agora."):"Não deu certo agora."; render(); })
+  rpc("hag_treino_social",{p_token:TOKEN,p:{acao:"postar", client_id:r.cid}}).then(x=>{ r.postando=false; if(x&&x.ok&&!x.erro&&x.membro){ r.postado=true; SOC=x; SOCP=null; } else r.postErro=x&&x.erro?(SOC_ERRO[x.erro]||"Não deu certo agora."):"Não deu certo agora."; render(); })
     .catch(()=>{ r.postando=false; r.postErro="Sem conexão agora."; render(); }); }
 const postarHTML = r => (!SOC||!SOC.membro||VER||!r.cid||r.cv||/por dor/.test(r.nota||"")) ? "" : r.postado ? `<p class="note" style="text-align:center">Postado na Turma.</p>`
   : `<button type="button" class="btn ghost wide" data-a="postar" ${(!r.enviada||r.postando)?"disabled":""}>${r.postando?"POSTANDO…":r.enviada?"POSTAR NA TURMA":"POSTAR NA TURMA (enviando o treino…)"}</button>${r.postErro?`<p class="note" style="color:var(--warn);text-align:center">${esc(r.postErro)}</p>`:""}`;
