@@ -312,10 +312,8 @@ body>.hagi{width:calc(100% - 32px);max-width:528px}
 header.top{background:var(--bg);color:var(--ink);padding:calc(16px + env(safe-area-inset-top)) 16px 0}
 .brand{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:.28em;color:var(--ink)}
 .brand::first-line{color:var(--ink)}
-/* HAG_TREINO_TITULO_LEGIVEL_v1 (15/11/2026): o Dr. Henrique achou os titulos pouco legiveis. Bodoni Moda em caixa alta
-   (hastes finas, letras espremidas) virou Bodoni Moda 600 em caixa normal, como a Central e a marca 2026 usam. */
-h1{font-family:var(--display);font-weight:600;font-size:30px;letter-spacing:0;line-height:1.08}
-h2{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.08;letter-spacing:0}
+h1{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.01em;text-transform:uppercase;line-height:1}
+h2{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.01em}
 h3{font-family:var(--body);font-weight:700;font-size:17px}
 .kicker,.lbl,.grupo,.serie .k,.timer .lb,.iso .lb{font-family:var(--body);font-weight:700;letter-spacing:.14em}
 .kicker{color:var(--gold)}
@@ -342,7 +340,7 @@ body.emtreino header.top{padding-top:calc(4px + env(safe-area-inset-top))}
 .esc .g .chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold)}
 .prog i{background:#33251E}
 .prog i.d{background:var(--good)} .prog i.c{background:var(--ink)}
-.exname{font-family:var(--display);font-size:40px;font-weight:600;line-height:1.02;letter-spacing:0;margin-top:6px}
+.exname{font-family:var(--display);font-size:42px;font-weight:700;line-height:.95;text-transform:uppercase;letter-spacing:.01em;margin-top:6px}
 .cue{color:var(--ink-2)}
 .serie{padding:20px 4px 8px}
 .serie .alvo{font-family:var(--display);font-size:56px;font-weight:600;line-height:.95;letter-spacing:.005em}
@@ -496,6 +494,13 @@ details.mais p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.45}
 .medalhas{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:10px}.med{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;opacity:.38}.med.ok{opacity:1}
 .medc{width:52px;height:52px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font:400 18px/1 var(--display)}.med.ok .medc{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}.med b{font-size:12.5px}
 .stvbtn{background:#FC4C02;color:#fff}
+</style>
+<style id="hag-titulo-legivel">/* HAG_TREINO_TITULO_LEGIVEL_v2 (15/11/2026): o Dr. Henrique achou pouco legiveis os titulos
+   ("TREINO DE HENRIQUE", "OI, HENRIQUE. COMO VOCE CHEGA HOJE?") em Bodoni Moda caixa alta, de hastes finas.
+   Comparadas Bodoni sem caixa alta, Jost e Hanken Grotesk: a fonte de exibicao do app passa a ser a Hanken Grotesk
+   (a fonte de texto da marca 2026), mantendo peso e caixa alta. A imagem do treino (canvas) segue com a Bodoni. */
+:root{--display:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif}
+h1,h2,.exname{letter-spacing:0}
 </style>
 </head>
 <body>
