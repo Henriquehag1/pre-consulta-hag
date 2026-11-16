@@ -209,7 +209,13 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .ckmeds .ckops.uso{margin-top:8px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{background:var(--linho);border:1px solid var(--fio);border-radius:999px;padding:8px 12px;font:inherit;font-size:13.5px;color:var(--tinta);cursor:pointer}
 .chips button.on{background:var(--choc);border-color:var(--choc);color:var(--linho)}
-.ck{display:flex;align-items:center;gap:14px;width:100%;margin-top:18px;background:var(--papel);border:1px solid var(--camurca);border-radius:6px;padding:15px 16px;text-align:left;cursor:pointer;font-family:var(--t);color:var(--tinta)}
+.ck{display:flex;align-items:center;gap:14px;width:100%;margin-top:18px;background:var(--conhaque);border:1px solid var(--conhaque);border-radius:6px;padding:15px 16px;text-align:left;cursor:pointer;font-family:var(--t);color:var(--linho);box-shadow:0 8px 22px rgba(140,79,43,.22)}
+/* HAG_CHECKIN_DESTAQUE_v1 (16/11/2026, pedido do Dr.): quando há check-in para responder, o cartão sai em conhaque com o selo "Aberto" */
+.ck .t{color:var(--linho)!important}.ck .q{color:#EAD9C6!important}.ck .sv svg,.ck .ic svg{stroke:var(--linho)!important}
+.ckselo{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin-bottom:4px;font-family:var(--r);font-weight:500;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--linho);background:rgba(244,238,229,.16);border-radius:999px;padding:3px 9px 3px 7px}
+.ckselo i{width:7px;height:7px;border-radius:50%;background:#F4EEE5;animation:ckpulsa 1.6s ease-in-out infinite}
+@keyframes ckpulsa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+@media (prefers-reduced-motion:reduce){.ckselo i{animation:none}}
 .ck .dt{flex:1;display:flex;flex-direction:column}.ck .t{font-family:var(--d);font-size:19px}.ck .q{font-size:13px;color:var(--apoio)}
 .ck .sv svg{width:18px;height:18px;fill:none;stroke:var(--conhaque);stroke-width:1.6}
 .ckfeito{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;color:var(--suave)}
@@ -686,15 +692,26 @@ function painel(d){
      Dados: 49% respondem na segunda, 27% na terça, 15% na quarta; a janela cobre 97%. O balanço antes da consulta
      substitui o check-in daquela semana. Fase quinzenal: semanas alternadas. O banco recusa uma segunda resposta na semana. */
   var JC=janelaCheckin(CK);
-  var nProx=d.proxima?diasAte(d.proxima.data):99, balanco=CK.elegivel&&nProx>=0&&nProx<=7&&!JC.feitaSemana;
+  var nProx=d.proxima?diasAte(d.proxima.data):99, balanco=CK.elegivel&&!CK.periodo&&nProx>=0&&nProx<=7&&!JC.feitaSemana;
   d._balanco=balanco;
-  if(CK.elegivel){
+  var SELO='<span class="ckselo"><i></i>Aberto</span>';
+  /* HAG_CHECKIN_PERIODICO_v1 (16/11/2026, decisão do Dr.): Manutenção Premium e Plus com check-in mensal e Base com trimestral,
+     nos meses sem consulta (o servidor lê o marco de questionário do plano). Com consulta em até 7 dias, não abre. */
+  var ckAberto=false;
+  if(CK.elegivel&&CK.periodo){
+    var nomeP=CK.periodo==='trimestral'?'do trimestre':'do mês';
+    if((CK.pendente&&!(nProx>=0&&nProx<=7))||VER){ ckAberto=CK.pendente&&!VER;
+      h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt">'+SELO+'<span class="t">Check-in '+nomeP+'</span><span class="q">2 minutos · o Dr. Henrique acompanha por aqui</span></span><span class="sv">'+IC.seta+'</span></button>'; }
+    else if(!CK.pendente) h+='<div class="ckfeito">'+IC.ok+'<span>Check-in '+nomeP+' feito. Obrigado.</span></div>';
+  } else if(CK.elegivel){
     if(!JC.devida&&!balanco&&!VER){ h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+(CK.cadencia==='quinzenal'?' · o próximo é em '+dataBR(JC.proxima).slice(0,5):'')+'</span></div>'; }
     else if(!JC.aberta&&!balanco&&!VER){ h+='<div class="ckfeito ckespera">'+IC.cal+'<span>Check-in da semana abre na segunda, '+dataBR(JC.proxima).slice(0,5)+'</span></div>'; }
-    else if(JC.devida||balanco||VER) h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">'+(balanco?'Balanço antes da consulta':'Check-in da semana')+'</span><span class="q">'+(balanco?'2 minutos · o Dr. Henrique lê antes de te ver':'1 minuto · o Dr. Henrique acompanha por aqui')+'</span></span><span class="sv">'+IC.seta+'</span></button>';
+    else if(JC.devida||balanco||VER){ ckAberto=!VER; h+='<button class="ck" id="bCk"><span class="ic">'+IC.ok+'</span><span class="dt">'+SELO+'<span class="t">'+(balanco?'Balanço antes da consulta':'Check-in da semana')+'</span><span class="q">'+(balanco?'2 minutos · o Dr. Henrique lê antes de te ver':'1 minuto · o Dr. Henrique acompanha por aqui')+'</span></span><span class="sv">'+IC.seta+'</span></button>'; }
     else h+='<div class="ckfeito">'+IC.ok+'<span>Check-in desta semana feito'+(CK.sequencia>1?' · '+CK.sequencia+' semanas seguidas':'')+'</span></div>';
   }
 
+  /* HAG_CHECKIN_DESTAQUE_v1: no ícone salvo na tela de início, um selo "1" enquanto houver check-in aberto (iPhone com avisos ligados e Android) */
+  if(!VER){ try{ if(ckAberto&&navigator.setAppBadge) navigator.setAppBadge(1).catch(function(){}); else if(navigator.clearAppBadge) navigator.clearAppBadge().catch(function(){}); }catch(e){} }
   h+=lidoHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
   if(mostraInstalar()) h+=cartaoInstalar();   /* HAG_CENTRAL_INSTALAR_v1 */
   h+=agoraHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
@@ -799,11 +816,14 @@ function escQ(e){ return '<div class="card ckq" data-k="'+e[0]+'"><div class="ck
       +(e[4]?'<button data-v="na" class="na"><span>'+e[4]+'</span></button>':'')+'</div></div>'; }
 /* HAG_CHECKIN_SOB_MEDIDA_v1: com plano, as perguntas saem dele (metas, dieta, exercícios, cada medicação e os efeitos dela) */
 function telaCheckin(d){
-  var CK=d.checkin||{}, P=CK.plano, R={metas:{},exercicios:{},meds:{}}, ab=CK.semana_par?['acerto','O que mais te ajudou esta semana?']:['obstaculo','O que mais atrapalhou esta semana?'];
+  var CK=d.checkin||{}, P=CK.plano, R={metas:{},exercicios:{},meds:{}};
+  /* HAG_CHECKIN_PERIODICO_v1: no mensal e no trimestral as perguntas falam do período, e o treino vira média por semana */
+  var PER=CK.periodo||'', NESTE=PER==='trimestral'?'nestes três meses':PER==='mensal'?'neste mês':'esta semana';
+  var ab=CK.semana_par?['acerto','O que mais te ajudou '+NESTE+'?']:['obstaculo','O que mais atrapalhou '+NESTE+'?'];
   var CINCO=['Nada','Pouco','Metade','Quase','Bem','Tudo'];
   var BAL=!!d._balanco;
-  var h='<button class="link" id="ckV">‹ Voltar</button><p class="rot" style="margin-top:10px">'+(BAL?'Balanço antes da consulta':'Check-in da semana')+'</p><h1>'+(BAL?'Como foi a <em>fase</em>?':'Como foi a <em>semana</em>?')+'</h1>'
-    +'<p class="sub">'+(P?'Perguntas do seu plano'+(P.data&&!P.teste?' de '+dataBR(P.data):'')+'. ':'')+(BAL?'Leva 2 minutos.':'Leva 1 minuto.')+'</p>'
+  var h='<button class="link" id="ckV">‹ Voltar</button><p class="rot" style="margin-top:10px">'+(BAL?'Balanço antes da consulta':PER==='trimestral'?'Check-in do trimestre':PER==='mensal'?'Check-in do mês':'Check-in da semana')+'</p><h1>'+(BAL?'Como foi a <em>fase</em>?':PER==='trimestral'?'Como foram os <em>últimos meses</em>?':PER==='mensal'?'Como foi o <em>mês</em>?':'Como foi a <em>semana</em>?')+'</h1>'
+    +'<p class="sub">'+(P?'Perguntas do seu plano'+(P.data&&!P.teste?' de '+dataBR(P.data):'')+'. ':'')+(BAL||PER?'Leva 2 minutos.':'Leva 1 minuto.')+'</p>'
     +(VER?'<div class="aviso" style="margin-top:12px">Pré-visualização da equipe: é isto que o paciente responde. Nada é enviado.</div>':'');
   if(P){
     h+=escQ(['s_dieta','Alimentação',P.dieta?esc(P.dieta):'Seguiu o plano?',CINCO]);
@@ -811,7 +831,7 @@ function telaCheckin(d){
       +['Nada','Pouco','Metade','Quase','Bem','Bati'].map(function(l,i){ return '<button data-v="'+i+'"><b>'+i+'</b><span>'+l+'</span></button>'; }).join('')+'</div></div>'; });
     (P.exercicios||[]).forEach(function(e){ var mx=Math.max(7,(e.meta||0)); var o='';
       for(var i=0;i<=mx;i++) o+='<button data-v="'+i+'"><b>'+i+'</b><span>'+(e.meta&&i===e.meta?'meta':(i===0?'vezes':''))+'</span></button>';
-      h+='<div class="card ckq" data-ex="'+e.id+'"><div class="ckt"><b>'+esc(e.nome)+'</b><span>Quantas vezes nesta semana'+(e.meta?' (meta '+e.meta+')':(e.momento?' ('+esc(e.momento)+')':''))+'</span></div><div class="ckops nums">'+o+'</div></div>'; });
+      h+='<div class="card ckq" data-ex="'+e.id+'"><div class="ckt"><b>'+esc(e.nome)+'</b><span>'+(PER?'Em média, quantas vezes por semana':'Quantas vezes nesta semana')+(e.meta?' (meta '+e.meta+')':(e.momento?' ('+esc(e.momento)+')':''))+'</span></div><div class="ckops nums">'+o+'</div></div>'; });
   } else {
     h+=escQ(['s_dieta','Alimentação','Seguiu o plano?',CINCO])+escQ(['s_treino','Treino','Cumpriu a meta?',CINCO]);
   }
@@ -822,7 +842,7 @@ function telaCheckin(d){
   if(P&&(P.meds||[]).length){ temMed=true;
     /* uma lista só de efeitos, juntando as medicações (check-in curto); o servidor sabe de qual remédio é cada um */
     P.meds.forEach(function(m){ (m.efeitos?m.efeitos.ops:[]).forEach(function(o){ if(EFS.indexOf(o)<0) EFS.push(o); }); });
-    h+='<div class="card ckmeds"><div class="ckt"><b>Suas medicações</b><span>Como foi o uso nesta semana?</span></div>'
+    h+='<div class="card ckmeds"><div class="ckt"><b>Suas medicações</b><span>Como foi o uso '+NESTE.replace('esta semana','nesta semana')+'?</span></div>'
       +P.meds.map(function(m){ return '<div class="ckmed" data-med="'+m.id+'"><div class="mn"><b>'+esc(m.nome)+'</b>'+(m.dose?'<span>'+esc(m.dose)+'</span>':'')+'</div>'
         +'<div class="ckops uso">'+[['sim','Tomei certo'],['esqueci','Esqueci alguma vez'],['parei','Parei']].map(function(u){ return '<button data-uso="'+u[0]+'"><span>'+u[1]+'</span></button>'; }).join('')+'</div></div>'; }).join('')
       +(EFS.length?'<span class="ckl" style="margin:16px 0 8px">Sentiu algo destes?</span><div class="chips">'+EFS.map(function(o){ return '<button data-ef="'+esc(o)+'">'+esc(o)+'</button>'; }).join('')+'<button data-ef="" class="nenhum">Nenhum</button></div>':'')
@@ -831,7 +851,7 @@ function telaCheckin(d){
   h+='<div class="card"><label class="ckl">'+(P&&(P.meds||[]).some(function(m){return m.efeitos;})?'Algo mais diferente no corpo ou no intestino?':'Efeitos, sintomas novos ou intestino diferente?')+' <span>(se tiver)</span></label><textarea id="ck_colateral" rows="2"></textarea>'
     +'<label class="ckl">'+ab[1]+' <span>(uma frase)</span></label><textarea id="ck_aberta" rows="2"></textarea>'
     +'<label class="ckl">Peso ou como as roupas estão <span>(opcional)</span></label><input id="ck_peso" type="text" inputmode="decimal">'
-    +(temMed?'<label class="ckl">Medicação e suplementos dão para 7 dias?</label><div class="ckops est">'
+    +(temMed?'<label class="ckl">Medicação e suplementos dão para '+(PER?'o próximo mês':'7 dias')+'?</label><div class="ckops est">'
       +[['Sim, estoque suficiente','Sim'],['Preciso renovar em breve','Renovar em breve'],['Estou sem, preciso com urgência','Estou sem']].map(function(o){ return '<button data-est="'+o[0]+'"><span>'+o[1]+'</span></button>'; }).join('')+'</div>':'')
     +'<label class="ckl">'+(BAL?'O que você quer levar para a consulta?':'Algo para o Dr. Henrique?')+' <span>(opcional)</span></label><textarea id="ck_msg" rows="'+(BAL?3:2)+'"></textarea></div>'
     +'<div class="msg" id="ckM"></div><button class="btn" id="ckEnviar" style="margin-top:14px"'+(VER?' disabled':'')+'>'+(VER?'Pré-visualização':'Enviar check-in')+'</button>';
@@ -862,7 +882,7 @@ function telaCheckin(d){
       if(x.fechado) return fechado(x.motivo);
       if(!x.ok){ b.disabled=false; b.textContent='Enviar check-in';
         if(x.erro==='sessao'){ ls.del('hagcentral.s'); return inicio(); }
-        $('#ckM').textContent= x.erro==='ja_enviado'?'O check-in desta semana já chegou. Obrigado.':x.erro==='incompleto'?'Responda pelo menos três linhas.':'Não foi possível enviar agora. Tente de novo.'; return; }
+        $('#ckM').textContent= x.erro==='ja_enviado'?(PER?'Este check-in já chegou. Obrigado.':'O check-in desta semana já chegou. Obrigado.'):x.erro==='sem_checkin'?'Não há check-in aberto agora.':x.erro==='incompleto'?'Responda pelo menos três linhas.':'Não foi possível enviar agora. Tente de novo.'; return; }
       d.checkin=x.checkin; telaCheckinFeito(d, x.score, x.emergencia);
     });
   };
@@ -873,10 +893,11 @@ function telaCheckinFeito(d, score, emerg){
   tela.innerHTML='<p class="rot">Check-in recebido</p><h1>Obrigado.</h1><p class="sub">O Dr. Henrique vê as suas respostas antes da próxima consulta.</p>'
     +(emerg?'<div class="aviso" style="margin-top:14px;border-left-color:#8a2e2e"><b>Se for intenso ou piorar, procure um pronto-atendimento.</b></div>':'')
     +(CK.cadencia==='quinzenal'?'<p class="sub" style="font-size:14px;margin-top:8px">Sua fase está estável: o próximo check-in vem em duas semanas.</p>':'')
-    +'<div class="card"><div class="ckres"><div><b>'+(CK.sequencia||1)+'</b><span>'+((CK.sequencia||1)>1?'semanas seguidas':'semana')+'</span></div>'
-    +(hs.length>1?'<div class="graf">'+barras+'</div>':'')+'</div></div>'
+    +(CK.periodo?'':'<div class="card"><div class="ckres"><div><b>'+(CK.sequencia||1)+'</b><span>'+((CK.sequencia||1)>1?'semanas seguidas':'semana')+'</span></div>'
+    +(hs.length>1?'<div class="graf">'+barras+'</div>':'')+'</div></div>')
     +'<button class="btn claro" id="ckOk" style="margin-top:14px">Voltar ao início</button>';
   window.scrollTo(0,0); $('#ckOk').onclick=function(){ painel(d); };
+  try{ if(navigator.clearAppBadge) navigator.clearAppBadge().catch(function(){}); }catch(e){}
 }
 
 /* HAG_CENTRAL_EXAMES_v1 (12/11/2026, decisões do Dr.): os exames que a clínica já tem (resultados e pedidos) aparecem só
