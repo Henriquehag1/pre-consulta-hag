@@ -69,7 +69,7 @@ function linkDe(t){ return BASE+'central_HAG.html?t='+t; }
 function msgDaniela(nome, t){   /* HAG_CENTRAL_NIVEL2_v1 (13/11/2026): mais curta, igual à do HAG Dr (brevidade no WhatsApp) */
   return 'Oi '+nome+', tudo bem? Seu acompanhamento agora tem uma central só sua: planos, receitas, exames e agenda num lugar só.\n\n'
     +linkDe(t)+'\n\n'
-    +'No primeiro acesso chega um código no seu e-mail. Depois, salve na tela de início. O link é pessoal.';
+    +'No primeiro acesso chega um código no seu e-mail. Depois, toque em "Me mostre como" e deixe o ícone na tela do seu celular. O link é pessoal.';
 }
 var CAT={plano_tratamento:'Plano de tratamento',plano_alimentar:'Plano alimentar',receita:'Receita',exame:'Exame',prontuario:'Prontuário',proposta:'Proposta',nota_fiscal:'Nota fiscal'};
 function padraoVisivel(d){ return ['plano_tratamento','plano_alimentar','receita'].indexOf(d.categoria)>=0 && !d.substituida_por && !d.historico; }
