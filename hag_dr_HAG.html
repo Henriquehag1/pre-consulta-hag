@@ -1629,7 +1629,7 @@ function centralGerar(pid, nome){
 function centralDaniela(pid, nome, tk){
   var pn = String(nome || '').split(' ')[0];
   /* HAG_CENTRAL_NIVEL2_v1 (13/11/2026): mensagem mais curta (pedido do Dr.: brevidade no WhatsApp) */
-  pedidoDaniela(pid, nome, 'Mandar para ' + pn + ' o link da central:\n\nOi ' + pn + ', tudo bem? Seu acompanhamento agora tem uma central só sua: planos, receitas, exames e agenda num lugar só.\n\n' + BASE_CENTRAL + tk + '\n\nNo primeiro acesso chega um código no seu e-mail. Depois, salve na tela de início. O link é pessoal.');
+  pedidoDaniela(pid, nome, 'Mandar para ' + pn + ' o link da central:\n\nOi ' + pn + ', tudo bem? Seu acompanhamento agora tem uma central só sua: planos, receitas, exames e agenda num lugar só.\n\n' + BASE_CENTRAL + tk + '\n\nNo primeiro acesso chega um código no seu e-mail. Depois, toque em "Me mostre como" e deixe o ícone na tela do seu celular. O link é pessoal.');
 }
 /* HAG_CENTRAL_NIVEL2_v1 (13/11/2026): a central chega ao paciente na própria consulta. O Dr. mostra o QR no celular,
    o paciente aponta a câmera, abre a central e recebe o código no e-mail. Biblioteca carregada só quando precisa. */
