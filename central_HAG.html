@@ -275,7 +275,7 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .resumo .rn b{display:block;font-family:var(--d);font-weight:400;font-size:28px;line-height:1.1}
 .resumo .rn span{font-size:12.5px;color:var(--apoio)}
 .resumo p{font-size:14.5px;color:var(--suave);margin-top:12px}
-.avisoscel{display:flex;gap:12px;align-items:center;width:100%;background:none;border:1px dashed var(--camurca);border-radius:4px;padding:14px 16px;margin-top:16px;text-align:left;font-family:var(--t);color:var(--tinta);cursor:pointer}
+.avisoscel{display:flex;gap:12px;align-items:center;width:100%;background:var(--papel);border:1px solid var(--conhaque);border-radius:4px;padding:14px 16px;margin-top:16px;text-align:left;font-family:var(--t);color:var(--tinta);cursor:pointer}
 .avisoscel svg{width:22px;height:22px;flex:none;fill:none;stroke:var(--conhaque);stroke-width:1.5}
 .avisoscel .q{display:block;font-size:13.5px;color:var(--apoio)}
 </style>
@@ -714,6 +714,9 @@ function painel(d){
   if(!VER){ try{ if(ckAberto&&navigator.setAppBadge) navigator.setAppBadge(1).catch(function(){}); else if(navigator.clearAppBadge) navigator.clearAppBadge().catch(function(){}); }catch(e){} }
   h+=lidoHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
   if(mostraInstalar()) h+=cartaoInstalar();   /* HAG_CENTRAL_INSTALAR_v1 */
+  /* HAG_CENTRAL_AVISOS_v2 (16/11/2026, decisão do Dr.: o check-in chega pelo aviso, sem a Daniela mandar link): o convite
+     para ligar os avisos sobe para o topo e explica o ganho. Quem não ligar recebe o aviso do check-in por e-mail. */
+  if(podeAvisos()&&(d.extra||{}).avisos) h+='<button class="avisoscel" id="bAv">'+IC.sino+'<span><span>Ligue os avisos no celular</span><span class="q">O check-in, a véspera da consulta e o fim do tratamento chegam direto aqui, sem precisar de mensagem.</span></span></button>';
   h+=agoraHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
 
   /* próxima consulta */
@@ -777,7 +780,6 @@ function painel(d){
   }).join('')+'</ul></div>'; }
   h+='<div class="msg" id="mDoc"></div>';
 
-  if(podeAvisos()&&(d.extra||{}).avisos) h+='<button class="avisoscel" id="bAv">'+IC.sino+'<span><span>Receber avisos no celular</span><span class="q">Consulta amanhã, check-in aberto, questionário e fim de tratamento</span></span></button>';   /* HAG_CENTRAL_AVISOS_v1 */
   /* equipe */
   h+='<a class="equipe" href="'+WPP+'" target="_blank" rel="noopener"><span class="ic">'+IC.chat+'</span><span class="dt"><span class="t">Falar com a equipe</span><span class="q">WhatsApp do consultório</span></span><span class="sv">'+IC.seta+'</span></a>';
 
