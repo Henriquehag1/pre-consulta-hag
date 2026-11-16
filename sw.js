@@ -25,7 +25,9 @@ self.addEventListener('push', function(event){
        redireciona, entao aviso antigo tambem cai no lugar certo. */
     data: { url: d.url || 'tarefas_HAG.html' }
   };
-  event.waitUntil(self.registration.showNotification(titulo, opcoes));
+  /* HAG_CHECKIN_DESTAQUE_v1 (16/11/2026): aviso de check-in da central põe o selo "1" no ícone da tela de início */
+  var selo = (/central_HAG/.test(d.url || '') && /check-in/i.test(titulo) && self.navigator && self.navigator.setAppBadge) ? self.navigator.setAppBadge(1).catch(function(){}) : Promise.resolve();
+  event.waitUntil(Promise.all([self.registration.showNotification(titulo, opcoes), selo]));
 });
 
 self.addEventListener('notificationclick', function(event){
