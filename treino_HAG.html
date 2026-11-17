@@ -242,6 +242,11 @@ body.descansando .wrap{padding-bottom:190px}
 .bolso .b-barra{position:absolute;bottom:calc(env(safe-area-inset-bottom, 0px) + 22px);left:50%;width:170px;height:3px;background:#221d19;transform:translateX(-50%)}
 .bolso .b-barra i{display:block;height:100%;width:0;background:#8a7c6c}
 .bolso.segurando .b-barra i{width:100%;transition:width .9s linear}   /* HAG_TREINO_BOLSO_SAIR_v1 */
+/* HAG_TREINO_SERIE_CLARA_v1: trilha de séries, aviso de série registrada e destaque da série nova */
+.strack{display:flex;gap:6px;justify-content:center;margin:10px 0 2px}.strack i{width:26px;height:6px;border-radius:3px;background:var(--line)}.strack i.ok{background:var(--gold)}.strack i.at{background:transparent;box-shadow:inset 0 0 0 1.5px var(--gold)}
+.sflash{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--gold-soft);color:var(--gold);font-weight:600;font-size:15px}.sflash b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--gold);color:var(--bg,#1A1411);font-size:13px}
+.serie.nova .k{animation:snova 1.4s ease-out}@keyframes snova{0%{color:var(--gold);transform:scale(1.25)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.serie.nova .k{animation:none}}
 .imgov{position:fixed;inset:0;z-index:60;background:rgba(10,7,5,.82);display:flex;align-items:flex-end;justify-content:center;padding:16px;overflow:auto}
 .imgbox{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:auto 0}
 .imgprev{border-radius:12px;padding:22px 14px;display:flex;justify-content:center}
@@ -787,10 +792,10 @@ function opcoesReg(tp, alvoRir, un){
   if(tp==="reab") return {q:"Teve dor durante a série?", h:"Dor de até 2 é aceitável na reabilitação", o:[R("Sem dor","0",Math.min(alvoRir,4),0,false),R("Leve","1 a 2",Math.min(alvoRir,4),2,false),R("Moderada","3 a 4",Math.min(alvoRir,4),4,false),R("Forte","5 ou mais",Math.min(alvoRir,4),6,false)]};
   return null;
 }
-function registroHTML(tp, un, alvoRir){
+function registroHTML(tp, un, alvoRir, nS){
   if(tp==="aquec"||tp==="mob") return `<div style="margin-top:12px"><button type="button" class="btn wide" data-a="reg" data-rir="5" style="min-height:56px">✓ FEITO</button></div>`;
   const op=opcoesReg(tp, alvoRir, un);
-  if(op) return `<div class="rirq">${op.q}</div><div class="rirh">${op.h}</div>
+  if(op) return `<div class="rirq">${(tp==="carga"&&nS)?`Como foi a série ${nS}?`:op.q}</div><div class="rirh">${op.h}</div>
      <div class="rirbtns" style="grid-template-columns:repeat(${op.o.length},1fr)">${op.o.map(x=>`<button type="button" data-a="reg" data-rir="${x.rir}"${x.dor!=null?` data-dor="${x.dor}"`:""} class="${x.alvo?"alvo":""}" style="font-size:17px;line-height:1.15;padding:6px 4px">${esc(x.t)}${x.sub?`<small>${esc(x.sub)}</small>`:""}</button>`).join("")}</div>`;
   return `<div class="rirq">Quantas ainda sairiam?</div>
      <div class="rirh">Toque para registrar · alvo ${alvoRir}</div>
@@ -1516,10 +1521,11 @@ function renderItem(){
      ${cabecalhoItem(it,ex,S.i+1,its.length)}
      ${sg.trava?`<div class="lock" style="margin-top:10px">${esc(sg.motivo)}</div>`:""}
      ${it.nota?`<div class="aviso" style="margin-top:10px">${esc(it.nota)}</div>`:""}
-     <div class="serie"><div class="k">${circ?`${nomeBloco(it.bloco)} · volta ${S.vc||1} de ${circ.V}`:`Série ${k+1} de ${it.ns}`}</div><div class="alvo">${alvoTxt}</div>${!sg.trava&&k===0&&sg.motivo?`<div class="motivo">${esc(sg.motivo)}</div>`:""}</div>
+     ${(S.flash&&Date.now()<S.flash.ate)?`<div class="sflash" role="status"><b aria-hidden="true">✓</b>${esc(S.flash.t)}</div>`:""}
+     <div class="serie${(S.flash&&Date.now()<S.flash.ate)?" nova":""}"><div class="k">${circ?`${nomeBloco(it.bloco)} · volta ${S.vc||1} de ${circ.V}`:`Série ${k+1} de ${it.ns}`}</div>${(!circ&&it.ns>1)?`<div class="strack" aria-hidden="true">${Array.from({length:it.ns},(_,j)=>`<i class="${j<k?"ok":j===k?"at":""}"></i>`).join("")}</div>`:""}<div class="alvo">${alvoTxt}</div>${!sg.trava&&k===0&&sg.motivo?`<div class="motivo">${esc(sg.motivo)}</div>`:""}</div>
      ${(un==="seg"||trab)?isoHTML(ex,a,trab):""}
      <div ${isoRodando()?"hidden":""}>
-     ${trab?trabRegHTML(a):registroHTML(tp, un, alvoRir)}
+     ${trab?trabRegHTML(a):registroHTML(tp, un, alvoRir, (!circ&&it.ns>1)?k+1:0)}
      </div>
      <div class="row between" style="margin-top:8px"><button type="button" class="link" data-a="ajustar" aria-expanded="${S.abrirAjuste}">${tp==="aquec"||tp==="mob"?`${un==="seg"?"Tempo":"Reps"} · dor`:un==="kg"?`Alterar carga · reps · dor`:`Alterar ${un==="seg"?"tempo":"reps"} · dor`}</button>${a.mexeu?`<span class="lbl" style="color:var(--warn)">ajustado</span>`:""}</div>
      ${S.abrirAjuste?`<div class="ajuste">
@@ -2207,6 +2213,12 @@ function registrar(rir){
   const its=itens(), it=its[S.i], a=S.ajuste; somPronto();
   (S.feitas[S.i] ||= []).push({ex:it.id, orig:it.orig!==it.id?it.orig:null, kg:a.kg, reps:a.reps, rir, dor:a.dor, local:a.local, lado:a.lado, tipo:a.tipo, sug:a.sug, um:!a.mexeu, trab:ehTrab(it,EX(it.id))?it.trab:null});
   S.abrirAjuste=false; salvarRascunho();
+  /* HAG_TREINO_SERIE_CLARA_v1 (17/11/2026). Pedido do Dr. Henrique: a pessoa toca Leve/No ponto/No limite e não percebe que a
+     série já mudou. Agora aparece "✓ Série 1 registrada · no ponto" por 3,5 s, o rótulo da série nova pisca, a trilha de
+     séries mostra o progresso e a pergunta traz o número ("Como foi a série 2?"). No fim do exercício: "✓ <exercício> concluído". */
+  { const nS=S.feitas[S.i].length, op=opcoesReg(tipoReg(it,EX(it.id)), it.rir==null?2:it.rir, EX(it.id).un||"kg"), o=op&&op.o.find(x=>x.rir===rir);
+    S.flash={t: nS>=it.ns&&!it.bloco ? `${EX(it.id).nome} concluído` : `Série ${nS} registrada${o?" · "+o.t.toLowerCase():""}`, ate:Date.now()+3500};
+    clearTimeout(registrar.tf); registrar.tf=setTimeout(()=>{ if(S.fase==="treino") render(); },3600); }
   const n=S.feitas[S.i].length, tpR=tipoReg(it,EX(it.id)), descR=(tpR==="aquec"||tpR==="mob")?0:it.desc; /* aquecimento e mobilidade: sem relógio de descanso entre um e outro */
   if(it.bloco){ const ps=passos(); avancar(descansoApos(ps,passoAtual(ps)), it); } /* HAG_TREINO_CIRCUITO_v1 */
   else if(n>=it.ns) avancar(descR, it); else { const kgTxt=EX(it.id).un==="kg"?`${fkg(a.kg)} kg × ${a.reps}`:`${a.reps}`; S.ajuste=null; iniciarDescanso(descR, `Próxima: série ${n+1} · ${kgTxt}`); }
