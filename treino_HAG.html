@@ -971,11 +971,11 @@ const bloqHTML = () => { const g=gAtual(), b=bqLigado();   /* HAG_TREINO_MUSICA_
 /* HAG_TREINO_IMAGEM_v1 (12/11/2026). Pedido do Dr. Henrique: ao fim de cada treino, uma imagem PNG com as métricas, para
    salvar no celular e postar. Fundo transparente (escolha dele): a pessoa cola sobre a própria foto, como figurinha.
    Texto claro ou escuro, assinatura "MÉTODO HAG" discreta. Sem nome e sem dado clínico (nada de esforço, dor ou nota). */
-function imgDados(d, series, cardio, dur){
+function imgDados(d, series, cardio, dur, data){
   const km=cardio.reduce((a,c)=>a+(+c.km>0?+c.km:0),0), seg=cardio.reduce((a,c)=>a+(+c.seg>0?+c.seg:0),0);
   const fs=series.filter(x=>!x.trab), vol=fs.reduce((a,x)=>a+((+x.kg>0&&+x.reps>0)?x.kg*x.reps:0),0);
   const exs=new Set(series.map(x=>x.ex)).size, corrida=cardio.some(c=>c.ex==="corrida"||c.ex==="caminhada");
-  return {nome:String(d.nome||"Treino"), data:HOJE(), semana:d.semana||null, km:Math.round(km*100)/100, seg, dur, series:fs.length, vol:Math.round(vol), exs, corrida};
+  return {nome:String(d.nome||"Treino"), data:data||HOJE(), semana:d.semana||null, km:Math.round(km*100)/100, seg, dur, series:fs.length, vol:Math.round(vol), exs, corrida};
 }
 /* HAG_TREINO_IMAGEM_v2 (14/11/2026). Pedido do Dr. Henrique: a imagem do treino com a identidade da marca nova
    (monograma HA, Bodoni Moda com a unidade em italico na cor acento, Jost nos rotulos, fio fino, canto reto, sem sombra,
@@ -1056,8 +1056,12 @@ return {desenha:(m,tom,mod)=>(MODS[mod]||mFicha)(m,tom), nomes:[["ficha","Ficha"
 })();
 function imgDesenha(m, tom, mod){ return IMGM.desenha(m, tom, mod); }
 let IMG=null;   /* {m, tom, cv} */
-function imgAbrir(){
-  const r=S.salvo; if(!r||!r.img) return; IMG={m:r.img, tom:store.get("hagtreino.imgtom","claro"), mod:store.get("hagtreino.imgmod","ficha"), cv:null};   /* HAG_TREINO_IMAGEM_v2: modelo guardado no aparelho */
+/* HAG_TREINO_IMAGEM_HIST_v1 (17/11/2026). Pedido do Dr. Henrique: depois de concluir o treino, a pessoa volta em outro
+   momento e gera a imagem daquele treino. Antes a imagem so existia na tela de fim (S.salvo). Agora a aba Evolucao lista
+   "Seus treinos" e cada um tem o botao Imagem, que monta os mesmos dados (imgDados) a partir do historico. */
+function imgDeSessao(h){ return imgDados({nome:h.dia||"Treino"}, (h.series||[]).map(x=>({...x, kg:+x.kg||0, reps:+x.reps||0})), (h.cardio||[]).map(c=>({...c, km:+c.km||0, seg:+c.seg||0})), +h.dur||0, h.data); }
+function imgAbrir(m0){
+  const r=S.salvo, mm=m0||(r&&r.img); if(!mm) return; IMG={m:mm, tom:store.get("hagtreino.imgtom","claro"), mod:store.get("hagtreino.imgmod","ficha"), cv:null};   /* HAG_TREINO_IMAGEM_v2: modelo guardado no aparelho */
   const pr=(document.fonts&&document.fonts.load)?Promise.all(['400 66px "Bodoni Moda"','italic 400 66px "Bodoni Moda"','500 20px Jost','300 100px "Hanken Grotesk"','500 26px "Hanken Grotesk"'].map(f=>document.fonts.load(f).catch(()=>{}))):Promise.resolve();
   pr.then(imgRender);
 }
@@ -2371,6 +2375,14 @@ function barrasAlvo(v){
    ${ks.map((k,i)=>{ const y=8+i*rowH,[a,b]=ALVO[k],val=v[k]||0,cor=val>=a&&val<=b?"var(--good)":val<a?"var(--warn)":"var(--crit)"; return `<text x="${L-8}" y="${y+14}" font-size="12" text-anchor="end" fill="var(--ink)">${MUSC[k]}</text><rect x="${X(a)}" y="${y+2}" width="${X(b)-X(a)}" height="18" fill="var(--chart-2)" fill-opacity=".16" rx="3"/><rect x="${L}" y="${y+6}" width="${Math.max(2,X(Math.min(val,max))-L)}" height="10" fill="${cor}" rx="2"/><text x="${X(Math.min(val,max))+6}" y="${y+15}" font-size="11.5" fill="var(--ink)">${fmt(val,1)}</text>`; }).join("")}</svg>`;
 }
 let exSel=null;
+/* HAG_TREINO_IMAGEM_HIST_v1: "Seus treinos", do mais recente para o mais antigo; 5 a vista, o resto em "Ver todos" */
+let evoTodos=false, H_IMG=[];
+function treinosHTML(h){
+  H_IMG=h; const idx=h.map((s,i)=>i).reverse(), vis=evoTodos?idx:idx.slice(0,5);
+  const lin=i=>{ const s=h[i], m=imgDeSessao(s), resumo=(m.km>0&&m.seg>0)?`${fmt(m.km,m.km<10?2:1)} km · ${fPace(m.seg/m.km)}/km`:[m.dur?`${m.dur} min`:"", m.series?`${m.series} ${m.series===1?"série":"séries"}`:"", (!m.series&&m.km>0)?`${fmt(m.km)} km`:""].filter(Boolean).join(" · ");
+    return `<div class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line)"><div style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.dia||"Treino")}</b><span class="note">${br(s.data)}${resumo?" · "+resumo:""}${s.pendente?" · enviando":""}</span></div><button type="button" class="chip" data-a="himg" data-v="${i}" aria-label="Gerar imagem do treino de ${br(s.data)}">Imagem</button></div>`; };
+  return `<div class="card"><div class="kicker">Seus treinos</div><h3>Gere a imagem de qualquer treino</h3>${vis.map(lin).join("")}${idx.length>5?`<button type="button" class="link" data-a="htodos" style="margin-top:8px">${evoTodos?"ver menos":`ver todos (${idx.length})`}</button>`:""}</div>`;
+}
 /* ===== HAG_TREINO_ONDAS_v1 (14/11/2026) =====
    Pedido do Dr. Henrique depois do estudo de TrainingPeaks, Strava, Fika e Garmin (claude/benchmark-apps-treino-14-11-2026.md):
    Onda 1 (só tela): perfil de intensidade em barras, semana em números, constância, "se a prova fosse hoje", régua de esforço colorida.
@@ -2618,7 +2630,7 @@ function renderEvo(){
   const pts=exSel?serieE1(exSel):[], ganho=pts.length>1?(pts.at(-1).y/pts[0].y-1)*100:0;
   const titulo = g.length ? `${sobe>=g.length/2?"Sim":"Ainda pouco"}: sua força estimada subiu em ${sobe} de ${g.length} exercícios desde ${br(h[0].data)}` : `${h.length} ${h.length===1?"sessão registrada":"sessões registradas"} desde ${br(h[0].data)}`;
   vEvo.innerHTML=`<div><div class="kicker">Estou evoluindo?</div><h2>${titulo}</h2><p class="sub">Força estimada pela melhor série de cada sessão · sem teste de máximo.</p></div>
-   ${semanaNumerosHTML(h)}${constanciaHTML(h)}${cargaFaixaHTML(h)}${distribuicaoHTML(h)}${cargaProntHTML(h)}${provaHojeHTML(h)}   <!-- HAG_TREINO_ONDAS_v1 -->
+   ${treinosHTML(h)}${semanaNumerosHTML(h)}${constanciaHTML(h)}${cargaFaixaHTML(h)}${distribuicaoHTML(h)}${cargaProntHTML(h)}${provaHojeHTML(h)}   <!-- HAG_TREINO_ONDAS_v1 -->
    ${exSel?`<div class="card"><div class="row between"><label for="exsel" class="lbl">Exercício</label><select id="exsel">${comE1.map(k=>`<option value="${k}"${k===exSel?" selected":""}>${esc(EX(k).nome)}</option>`).join("")}</select></div>
      <div class="row" style="gap:24px;margin:10px 0 4px"><div><div class="big">${pts.length?fmt(pts.at(-1).y,0):"-"} kg</div><div class="note">última sessão</div></div>${pts.length>1?`<div><div class="big ${ganho>=0?"pos":"neg"}">${ganho>=0?"+":""}${fmt(ganho)}%</div><div class="note">desde ${pts[0].x}</div></div>`:""}</div>
      ${linha(pts,{rot:"Força estimada em kg por sessão"})}</div>`:""}
@@ -2628,7 +2640,9 @@ function renderEvo(){
    ${stravaHTML()}`;
 }
 vEvo.addEventListener("change",e=>{ if(e.target.id==="exsel"){ exSel=e.target.value; renderEvo(); } });
-vEvo.addEventListener("click",e=>{ const b=e.target.closest("[data-a]"); if(b&&/^stv/.test(b.dataset.a)) stravaAcao(b.dataset.a); });   /* HAG_TREINO_STRAVA_v1 */
+vEvo.addEventListener("click",e=>{ const b=e.target.closest("[data-a]"); if(b&&/^stv/.test(b.dataset.a)) stravaAcao(b.dataset.a);
+  if(b&&b.dataset.a==="himg"){ const s=H_IMG[+b.dataset.v]; if(s) imgAbrir(imgDeSessao(s)); }   /* HAG_TREINO_IMAGEM_HIST_v1 */
+  if(b&&b.dataset.a==="htodos"){ evoTodos=!evoTodos; renderEvo(); } });   /* HAG_TREINO_STRAVA_v1 */
 
 /* ---------- HAG_TREINO_PROGRAMA_v1 (13/10/2026): aba "Meu programa" ----------
    Pedido do Dr. Henrique: o paciente vê o resumo do programa prescrito inteiro, como prévia: cada treino com os
