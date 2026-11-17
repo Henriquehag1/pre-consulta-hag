@@ -780,6 +780,10 @@ function opcoesReg(tp, alvoRir, un){
   if(tp==="pot" && un==="kg") return {q:"Como saiu o movimento?", h:"Se perder a técnica, pare a série ali", o:[R("Rápido e firme","explosivo até o fim",4,null,true),R("Perdeu velocidade","os últimos saíram lentos",2,null,false),R("Perdi a técnica","pare a série aqui",0,null,false)]};
   if(tp==="pot") return {q:"Como saíram os saltos?", h:"Se perder a qualidade, pare a série ali", o:[R("Todos bons","explosivos e aterrissagem macia",4,null,true),R("Caiu no fim","os últimos saíram mais fracos",2,null,false),R("Perdi qualidade","pare a série aqui",0,null,false)]};
   if(tp==="equil") return {q:"Precisou apoiar o outro pé ou as mãos?", h:"Toque para registrar a série", o:[R("Nenhuma vez","",4,null,false),R("1 ou 2 vezes","",2,null,false),R("Várias vezes","",0,null,false)]};
+  /* HAG_TREINO_ESFORCO_3_v1 (17/11/2026). Pedido do Dr. Henrique: "quantas repetições ainda sairiam" (0 a 4+) confunde e
+     agrega pouco para quem não é atleta. Vira três toques. Por baixo continua gravando o RIR, que é o que a regra de
+     progressão e a força estimada leem: Leve = 3 ou mais sobrando; No ponto = o alvo do exercício; No limite = 0. */
+  if(tp==="carga"){ const np=Math.max(1,Math.min(alvoRir,3)); return {q:"Como foi a série?", h:"Toque para registrar", o:[R("Leve","sobrava fácil",Math.min(4,Math.max(3,np+2)),null,false),R("No ponto","pesado, técnica boa",np,null,true),R("No limite","não saía mais nenhuma",0,null,false)]}; }
   if(tp==="reab") return {q:"Teve dor durante a série?", h:"Dor de até 2 é aceitável na reabilitação", o:[R("Sem dor","0",Math.min(alvoRir,4),0,false),R("Leve","1 a 2",Math.min(alvoRir,4),2,false),R("Moderada","3 a 4",Math.min(alvoRir,4),4,false),R("Forte","5 ou mais",Math.min(alvoRir,4),6,false)]};
   return null;
 }
@@ -797,7 +801,7 @@ function rotuloFeita(x, tp, un, alvoRir){
   const q = un==="seg" ? x.reps+"s" : (x.kg ? fkg(x.kg)+"×"+x.reps : x.reps+" reps");
   if(tp==="aquec"||tp==="mob") return q+" · feito";
   if(tp==="reab") return q+" · dor "+(x.dor||0);
-  const op=opcoesReg(tp,alvoRir==null?2:alvoRir,un); if(op){ const o=op.o.find(o=>o.rir===x.rir); return q+(o?" · "+o.t.toLowerCase():""); }
+  const op=opcoesReg(tp,alvoRir==null?2:alvoRir,un); if(op){ const o=op.o.find(o=>o.rir===x.rir); return q+(o?" · "+o.t.toLowerCase():(tp==="carga"&&x.rir!=null?" · "+(x.rir>=3?"leve":x.rir===0?"no limite":"no ponto"):"")); }   /* HAG_TREINO_ESFORCO_3_v1 */
   return q+" · "+(x.rir===4?"4+":x.rir);
 }
 
@@ -829,6 +833,8 @@ function sugestao(it){
   if(tr) return {kg, reps:ser[0].reps, trava:true, motivo:`Dor ${tr.dor} em ${quando}: a carga fica igual até o Dr. Henrique liberar.`};
   const alvoJ=j=>{ const r=repsVolta(it,j+1); return r!=null?r:hi; }; /* HAG_TREINO_CIRCUITO_v1: com reps por volta, cada volta tem o seu alvo */
   const topo=ser.every((x,j)=>x.reps>=alvoJ(j) && (x.rir==null || x.rir>=(it.rir==null?2:it.rir)));
+  /* HAG_TREINO_ESFORCO_3_v1: todas as séries "Leve" (3 ou mais sobrando) já no mínimo da faixa: a carga sobe, sem esperar o topo */
+  const leve=!topo && un==="kg" && (it.rir==null||it.rir<3) && !(Array.isArray(it.rv)&&it.rv.length) && ser.every(x=>x.rir!=null && x.rir>=3 && x.rir<5 && x.reps>=lo);
   if(Array.isArray(it.rv) && it.rv.length && !topo) return {kg, reps:repsVolta(it,1), motivo:`Em ${quando} você fez ${feito}${kg?` com ${fkg(kg)} kg`:""}. Buscar ${it.rv.join(" / ")} (a carga sobe quando todas as voltas baterem o alvo).`};
   if(un!=="kg"){ /* peso do corpo ou tempo: só sobe a repetição ou o tempo */
     if(tp==="reab"){ const duas=h.slice(-2); if(duas.some(s=>s.series.filter(so).some(x=>(x.dor||0)>2))){ const r=Math.max(lo,Math.min(hi,ser[0].reps)); return {kg, reps:r, motivo:`Dor acima de 2 em uma das duas últimas sessões: mantenha ${r} ${u}.`}; } }
@@ -840,12 +846,12 @@ function sugestao(it){
     const duas=h.slice(-2); const semDor=duas.every(s=>s.series.filter(x=>x.ex===exId).every(x=>(x.dor||0)<=2));
     if(!semDor) return {kg, reps:Math.min(hi,Math.max(lo,ser[0].reps)), motivo:`Dor acima de 2 em uma das duas últimas sessões: a carga fica em ${fkg(kg)} kg.`};
   }
-  if(topo){
+  if(topo||leve){
     let novo;
     if(regra==="forca"){ const best=Math.max(...ser.map(x=>e1rm(x.kg,x.reps,x.rir)||0)); const alvo=best/(1+(lo+(it.rir==null?2:it.rir))/30); novo=roundTo(Math.min(Math.max(alvo,kg+inc),kg*1.05+inc/2),inc); if(novo<=kg) novo=kg+inc;
       return {kg:novo, reps:lo, sobe:true, de:kg, motivo:`Em ${quando} você fez ${ser.length} × ${feito} com ${fkg(kg)} kg, força estimada de ${fmt(best,0)} kg: a carga sobe para ${fkg(novo)} kg e ${Array.isArray(it.rv)&&it.rv.length?`as voltas seguem em ${it.rv.join(" / ")}`:`as repetições voltam a ${lo}`}.`}; }
     novo=roundTo(Math.max(kg+inc,kg*1.025),inc);
-    return {kg:novo, reps:lo, sobe:true, de:kg, motivo:`Em ${quando} você fez ${ser.length} × ${feito} com 2 ou mais repetições sobrando: a carga sobe de ${fkg(kg)} para ${fkg(novo)} kg e ${Array.isArray(it.rv)&&it.rv.length?`as voltas seguem em ${it.rv.join(" / ")}`:`as repetições voltam a ${lo}`}.`};
+    return {kg:novo, reps:lo, sobe:true, de:kg, motivo:`Em ${quando} você fez ${ser.length} × ${feito}${leve?", todas leves":", no ponto"}: a carga sobe de ${fkg(kg)} para ${fkg(novo)} kg e ${Array.isArray(it.rv)&&it.rv.length?`as voltas seguem em ${it.rv.join(" / ")}`:`as repetições voltam a ${lo}`}.`};
   }
   const r=Math.min(hi, Math.max(lo, Math.max(...ser.map(x=>x.reps))+1));
   return {kg, reps:r, motivo:`Em ${quando} você fez ${ser.length} × ${feito} com ${fkg(kg)} kg. Mesma carga, buscando ${r} (a carga sobe quando todas chegarem a ${hi}).`};
@@ -1397,7 +1403,7 @@ function renderInicio(){
   ${feitoHoje?`<div class="aviso">Você já registrou este treino hoje.</div>`:""}
   ${S.prontOk?`<div class="prontr">${sm?`<span class="semaforo ${sm.c}" style="padding:6px 10px;flex:1"><i></i><span>${sm.t}</span></span>`:`<span>Respostas de hoje registradas.</span>`}<button type="button" class="link" data-a="prontedit">alterar</button></div>`:""}
   ${leveHTML()}<div class="card pdia">${perfilDia(its)}${listaItensHTML(its,"hoje:"+d.id)}</div>
-  ${temCarga&&!visto?`<div class="onb"><div class="kicker">Como registrar · 10 s</div><p style="margin:6px 0 0;font-size:15px">Após cada série com carga: <b>quantas ainda sairiam com boa técnica?</b><br>Nenhuma = 0 · duas = 2 · na dúvida, o menor.<br>É o que sobe a carga.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`:""}
+  ${temCarga&&!visto?`<div class="onb"><div class="kicker">Como registrar · 10 s</div><p style="margin:6px 0 0;font-size:15px">Após cada série com carga: <b>Leve, No ponto ou No limite?</b><br>No ponto = pesado, com técnica boa · na dúvida, No ponto.<br>É o que sobe a carga.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`:""}
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
   ${extra}`;
 }
