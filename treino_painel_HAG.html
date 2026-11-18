@@ -258,6 +258,8 @@ function historia(P){
   /* HAG_TREINO_CORRIDA_GUIADA_v1: corrida guiada parada por dor (vem na nota da sessão) */
   const dorC=h.filter(s=>/por dor/i.test(s.nota||"") && diasAtras(s.data)<=60);
   const dorF=h.filter(s=>s.tipo==="Atividade" && /fim: com dor/i.test(s.nota||"") && diasAtras(s.data)<28);   /* HAG_TREINO_FORA_v1 */
+  const alF=(E.fotos||[]).filter(x=>x.foto_leitura&&Array.isArray(x.foto_leitura.alertas)&&x.foto_leitura.alertas.length&&diasAtras(x.data)<14);   /* HAG_TREINO_FOTO_LEITURA_v1 */
+  if(alF.length) L.push({c:"y",t:`Leitura da foto de treino fora do programa com alerta em ${alF.map(x=>br(x.data)).join(", ")} (ver o cartão Treinos fora do programa).`});
   if(dorF.length) L.push({c:"y",t:`Terminou com dor um treino fora do programa em ${dorF.map(s=>`${br(s.data)} (${s.dia||"atividade"})`).join(", ")}.`});
   if(dorC.length) L.push({c:"r",t:`Corrida parada por dor em ${dorC.map(s=>br(s.data)).join(", ")}. Última: ${dorC.at(-1).nota}`});
   /* janela = desde a primeira sessão, no máximo 28 dias: programa novo não nasce devendo */
@@ -286,7 +288,7 @@ function historia(P){
 function foraPainelHTML(hist){
   const f=hist.filter(s=>s.tipo==="Atividade" && diasAtras(s.data)<28).slice().reverse();
   if(!f.length) return "";
-  const fotos=E.fotos||[], fotoDe=s=>{ const x=fotos.find(y=>(s.client_id&&y.client_id===s.client_id)||(!s.client_id&&y.data===s.data&&y.dia_nome===s.dia)); return x?x.foto_path:null; };
+  const fotos=E.fotos||[], fotoReg=s=>fotos.find(y=>(s.client_id&&y.client_id===s.client_id)||(!s.client_id&&y.data===s.data&&y.dia_nome===s.dia))||null, fotoDe=s=>{ const x=fotoReg(s); return x?x.foto_path:null; };
   const min=f.reduce((a,s)=>a+(s.dur||0),0), ci=f.reduce((a,s)=>a+(s.dur||0)*(s.rpe||0),0);
   const tot=hist.filter(s=>diasAtras(s.data)<28).reduce((a,s)=>a+(s.dur||0)*(s.rpe||0),0);
   return `<div class="card"><h3>Treinos fora do programa · 28 dias</h3>
@@ -294,8 +296,29 @@ function foraPainelHTML(hist){
     <div class="scroll"><table><thead><tr><th>Data</th><th>Treino</th><th>Min</th><th>Esforço</th><th>Carga</th><th>Como terminou · resultado</th><th></th></tr></thead><tbody>
     ${f.map(s=>{ const fp=fotoDe(s); return `<tr><td class="mono">${br(s.data)}</td><td>${esc(s.dia||"")}</td><td class="mono">${s.dur??""}</td><td class="mono">${s.rpe??""}</td><td class="mono">${fmt((s.dur||0)*(s.rpe||0),0)}</td>
       <td>${s.nota?`<span style="color:${/com dor/i.test(s.nota)?"var(--crit)":"inherit"}">${esc(s.nota)}</span>`:`<span class="note">sem nota</span>`}</td>
-      <td>${fp?`<button class="btn small" data-a="fotofora" data-v="${esc(fp)}">Ver foto</button>`:""}</td></tr>`; }).join("")}
+      <td>${fp?`<button class="btn small" data-a="fotofora" data-v="${esc(fp)}">Ver foto</button>`:""}</td></tr>${fp?foraLeituraHTML(fotoReg(s)):""}`; }).join("")}
     </tbody></table></div></div>`;
+}
+/* HAG_TREINO_FOTO_LEITURA_v1 (18/11/2026): leitura automática da foto do quadro ou da planilha. Quem lê é uma rotina
+   agendada da conta Claude do Dr. Henrique (assinatura, sem gasto de API), duas vezes ao dia, pelo Mac
+   (~/Scripts/HAG/hag_treino_fotos_leitura.py). Grava em treino_sessoes.foto_leitura. É leitura de máquina: conferir na foto. */
+function foraLeituraHTML(x){
+  const L=x&&x.foto_leitura;
+  if(!L) return `<tr><td colspan="7" style="border-top:0;padding-top:0"><span class="note">Leitura automática da foto pendente (roda duas vezes ao dia).</span></td></tr>`;
+  if(L.legivel==="nao") return `<tr><td colspan="7" style="border-top:0;padding-top:0"><span class="note">Leitura automática: foto ilegível${L.transcricao?" · "+esc(L.transcricao):""}</span></td></tr>`;
+  const A=L.analise||{}, bl=Array.isArray(L.blocos)?L.blocos:[], al=Array.isArray(L.alertas)?L.alertas:[];
+  const it=i=>[i.movimento,i.reps,i.carga,i.distancia].filter(Boolean).map(esc).join(" · ");
+  const cab=[L.formato?esc(L.formato):"", L.time_cap_min?`cap ${esc(String(L.time_cap_min))} min`:"", A.impacto?`impacto ${esc(A.impacto)}`:"", A.corrida_m?`${fmt(A.corrida_m,0)} m de corrida`:""].filter(Boolean).join(" · ");
+  return `<tr><td colspan="7" style="border-top:0;padding-top:0"><details${al.length?" open":""}><summary class="note" style="cursor:pointer">Leitura do treino (automática, conferir na foto)${cab?" · "+cab:""}${L.legivel==="parcial"?" · leitura parcial":""}</summary>
+    <div style="padding:6px 0 4px;font-size:13px">
+      ${A.resumo?`<p style="margin:0 0 6px">${esc(A.resumo)}</p>`:""}
+      ${bl.map(b=>`<div style="margin:0 0 4px"><b>${esc(b.nome||"")}</b>${(b.itens||[]).length?": "+(b.itens||[]).map(it).join("; "):""}</div>`).join("")}
+      ${(A.grupos||[]).length?`<div class="note">Grupos: ${(A.grupos||[]).map(esc).join(", ")}${(A.padroes||[]).length?" · Padrões: "+(A.padroes||[]).map(esc).join(", "):""}</div>`:""}
+      ${A.volume?`<div class="note">Volume: ${esc(A.volume)}</div>`:""}
+      ${al.map(a=>`<div style="color:var(--warn);margin-top:4px">${esc(a)}</div>`).join("")}
+      ${L.transcricao?`<details style="margin-top:6px"><summary class="note" style="cursor:pointer">Texto do quadro</summary><pre style="white-space:pre-wrap;font-size:12px;margin:4px 0 0">${esc(L.transcricao)}</pre></details>`:""}
+      <div class="note" style="margin-top:4px">Lida em ${br(String(x.foto_lida_em||"").slice(0,10))}${L.confianca?" · confiança "+esc(L.confianca):""}</div>
+    </div></details></td></tr>`;
 }
 async function foraFotoAbrir(path){
   const w=window.open("","_blank");
@@ -542,7 +565,7 @@ async function carregarBase(){
 }
 async function carregarPaciente(){ E.P=null; E.livre=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } await lerLivre(); await lerCat();
   /* HAG_TREINO_FORA_v1: fotos do quadro ou da planilha dos treinos feitos fora do programa */
-  try{ E.fotos=await api(`treino_sessoes?select=client_id,data,dia_nome,foto_path&patient_id=eq.${encodeURIComponent(E.pid)}&foto_path=not.is.null&order=data.desc&limit=60`)||[]; }catch(e){ E.fotos=[]; }
+  try{ E.fotos=await api(`treino_sessoes?select=client_id,data,dia_nome,foto_path,foto_leitura,foto_lida_em&patient_id=eq.${encodeURIComponent(E.pid)}&foto_path=not.is.null&order=data.desc&limit=60`)||[]; }catch(e){ E.fotos=[]; }
   render(); }
 /* HAG_TREINO_LIVRE_v1 (13/10/2026): treino em qualquer lugar (peso do corpo), liberado paciente a paciente pelo Dr. Henrique.
    Liberar grava uma linha em treino_livre_acesso; o app do paciente passa a mostrar a aba "Qualquer lugar" com as sessões
