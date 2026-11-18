@@ -525,6 +525,7 @@ var IC={
   rx:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h3a2 2 0 0 1 0 4H8V8Zm0 4v4M10.5 12l3.5 4M13 14l3-2"/></svg>',
   sup:'<svg viewBox="0 0 24 24"><rect x="3.2" y="8.5" width="17.6" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="m9.6 8.6 4.8 6.8"/></svg>',   /* HAG_SUPLEMENTOS_MARCAS_v1 */
   snk:'<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="2"/><path d="M8 8v8M16 8v8"/></svg>',   /* HAG_SNACKS_v1 */
+  rec:'<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>',   /* HAG_RECUPERACAO_CENTRAL_v1 */
   chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5Z"/></svg>',
   pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
@@ -772,6 +773,9 @@ function painel(d){
   var SUP=((d.suplementos||{}).itens)||[];   /* HAG_SUPLEMENTOS_MARCAS_v1 */
   var SNK=d.snacks||[];   /* HAG_SNACKS_v1: lanches proteicos, para todos os pacientes */
   if(SUP.length) cards.push('<button class="plano" id="cSup"><span class="ic">'+IC.sup+'</span><span class="t">Suplementos</span><span class="q">'+SUP.length+(SUP.length>1?' itens · marcas e medidas':' item · marcas e medidas')+'</span><span class="a">Ver</span></button>');
+  /* HAG_RECUPERACAO_CENTRAL_v1: o bloco de sono e descanso do Plano da última consulta */
+  var REC=d.recuperacao||null;
+  if(REC) cards.push('<button class="plano" id="cRec"><span class="ic">'+IC.rec+'</span><span class="t">Sono e descanso</span><span class="q">'+esc([REC.sono_horas?REC.sono_horas+' por noite':'',REC.deitar?'deitar '+REC.deitar:''].filter(Boolean).join(' · ')||((REC.orientacoes||[]).length+' orientações'))+'</span><span class="a">Ver</span></button>');
   if(SNK.length) cards.push('<button class="plano" id="cSnk"><span class="ic">'+IC.snk+'</span><span class="t">Lanches proteicos</span><span class="q">'+SNK.length+' opções que valem a pena</span><span class="a">Ver</span></button>');   /* HAG_SNACKS_v1 */
   var XN=(d.extra||{}), nN=(XN.notas||[]).length, nE=(XN.notas_ano||{}).emitidas||0;   /* HAG_CENTRAL_NIVEL2_v1 */
   if(nN||nE) cards.push('<button class="plano" id="cNf"><span class="ic">'+IC.nf+'</span><span class="t">Notas fiscais</span><span class="q">'+(nN?nN+(nN>1?' notas':' nota'):nE+(nE>1?' emitidas em ':' emitida em ')+esc(XN.notas_ano.ano))+'</span><span class="a">Ver</span></button>');
@@ -794,6 +798,7 @@ function painel(d){
   var crx=$('#cRx'); if(crx) crx.onclick=function(){ telaReceitas(d); };   /* HAG_CENTRAL_CARTOES_v1 */
   var csp=$('#cSup'); if(csp) csp.onclick=function(){ telaSuplementos(d); };   /* HAG_SUPLEMENTOS_MARCAS_v1 */
   var csk=$('#cSnk'); if(csk) csk.onclick=function(){ telaSnacks(d); };   /* HAG_SNACKS_v1 */
+  var crc=$('#cRec'); if(crc) crc.onclick=function(){ telaRecuperacao(d); };   /* HAG_RECUPERACAO_CENTRAL_v1 */
   var cex=$('#cEx'); if(cex) cex.onclick=function(){ telaExames(d); };
   var cnf=$('#cNf'); if(cnf) cnf.onclick=function(){ telaNotas(d); };   /* HAG_CENTRAL_NIVEL2_v1 */
   var agx=$('#agEx'); if(agx) agx.onclick=function(){ telaExames(d); };
@@ -840,8 +845,14 @@ function telaCheckin(d){
   } else {
     h+=escQ(['s_dieta','Alimentação','Seguiu o plano?',CINCO])+escQ(['s_treino','Treino','Cumpriu a meta?',CINCO]);
   }
-  h+=escQ(['s_sono','Sono','Acordou descansado?',['Péssimo','Ruim','Regular','Ok','Bom','Ótimo']])
-    +escQ(['s_fome','Fome','Controle do apetite e do doce',['Sem controle','Difícil','Regular','Ok','Bom','Ótimo']])
+  h+=escQ(['s_sono','Sono','Acordou descansado?',['Péssimo','Ruim','Regular','Ok','Bom','Ótimo']]);
+  /* HAG_RECUPERACAO_CENTRAL_v1: com o bloco de sono e descanso no plano, perguntas sobre ele */
+  var PR=P&&P.recuperacao;
+  if(PR&&PR.sono_horas){ var on=''; for(var ni=0;ni<=7;ni++) on+='<button data-v="'+ni+'"><b>'+ni+'</b><span>'+(ni===0?'noites':ni===7?'todas':'')+'</span></button>';
+    h+='<div class="card ckq" data-rec="noites"><div class="ckt"><b>Noites de sono</b><span>'+(PER?'Numa semana típica, quantas noites':'Quantas noites nesta semana')+' você dormiu '+esc(PR.sono_horas)+'?</span></div><div class="ckops nums">'+on+'</div></div>'; }
+  if(PR&&(PR.orientacoes||[]).length) h+='<div class="card ckq" data-rec="orient"><div class="ckt"><b>Sono e descanso</b><span>Seguiu as orientações do plano?</span></div><div class="ckops">'
+    +CINCO.map(function(l,i){ return '<button data-v="'+i+'"><b>'+i+'</b><span>'+l+'</span></button>'; }).join('')+'</div></div>';
+  h+=escQ(['s_fome','Fome','Controle do apetite e do doce',['Sem controle','Difícil','Regular','Ok','Bom','Ótimo']])
     +escQ(['s_energia','Energia','Disposição no dia a dia',['Esgotado','Baixa','Regular','Ok','Boa','Ótima']]);
   var temMed=false, EFS=[];
   if(P&&(P.meds||[]).length){ temMed=true;
@@ -868,7 +879,8 @@ function telaCheckin(d){
     var v=b.getAttribute('data-v');
     if(q.dataset.k){ if(v==='na') delete R[q.dataset.k]; else R[q.dataset.k]=+v; }
     if(q.dataset.meta) R.metas[q.dataset.meta]=+v;
-    if(q.dataset.ex) R.exercicios[q.dataset.ex]=+v; }; }); });
+    if(q.dataset.ex) R.exercicios[q.dataset.ex]=+v;
+    if(q.dataset.rec){ R.recuperacao=R.recuperacao||{}; R.recuperacao[q.dataset.rec]=+v; } }; }); });   /* HAG_RECUPERACAO_CENTRAL_v1 */
   tela.querySelectorAll('.ckmed').forEach(function(q){ var id=q.dataset.med;
     q.querySelectorAll('[data-uso]').forEach(function(b){ b.onclick=function(){ q.querySelectorAll('[data-uso]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); q.classList.add('feita'); R.meds[id]=b.dataset.uso; }; }); });
   tela.querySelectorAll('[data-ef]').forEach(function(b){ b.onclick=function(){
@@ -1016,6 +1028,20 @@ function telaSuplementos(d){
 /* HAG_SNACKS_v1 (15/11/2026). Pedido do Dr. Henrique: snacks proteicos saudáveis "que realmente valem a pena", para todos
    os pacientes, separados da prescrição. Critério: 10 g de proteína ou mais por porção, até 1 g de açúcar adicionado, até 250 kcal.
    Dados: central_dados.snacks (tabela snacks_hag). Campo vazio não aparece. */
+/* HAG_RECUPERACAO_CENTRAL_v1 (18/11/2026): sono e descanso do plano, como o Dr. Henrique combinou na consulta */
+function telaRecuperacao(d){
+  var R=d.recuperacao||{}, li=[];
+  if(R.sono_horas) li.push(['Sono por noite', R.sono_horas]);
+  if(R.deitar) li.push(['Deitar', R.deitar]);
+  if(R.acordar) li.push(['Acordar', R.acordar]);
+  if(R.descanso) li.push(['Descanso do treino', R.descanso]);
+  var O=R.orientacoes||[];
+  telaSub(d,'Seu plano','Sono e <em>descanso</em>.',
+    '<p class="sub">O que o Dr. Henrique combinou com você'+(R.data?' na consulta de '+dataBR(R.data):'')+'. A recuperação faz parte do tratamento, junto com a alimentação e o treino.</p>'
+    +(li.length?'<div class="card lst"><ul class="lista">'+li.map(function(x){ return '<li><div class="doc" style="cursor:default"><span class="dt"><span class="q">'+esc(x[0])+'</span><span class="t">'+esc(x[1])+'</span></span></div></li>'; }).join('')+'</ul></div>':'')
+    +(O.length?'<div class="card lst"><div class="grupo">Para dormir e recuperar melhor</div><ul class="lista">'+O.map(function(t){ return '<li><div class="doc" style="cursor:default"><span class="ic">'+IC.ok+'</span><span class="dt"><span class="t">'+esc(t)+'</span></span></div></li>'; }).join('')+'</ul></div>':'')
+    +'<p class="exnota">No check-in, você conta como foram as noites. Dúvidas, fale com a equipe.</p>');
+}
 function telaSnacks(d){
   var L=d.snacks||[];
   var item=function(x){
