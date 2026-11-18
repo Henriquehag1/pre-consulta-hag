@@ -1383,7 +1383,7 @@ function renderInicio(){
   const completo=Object.values(S.pront).every(v=>v!=null);
   if(S.nfAberto) return vHoje.innerHTML=nfEscolhaHTML();   /* HAG_TREINO_NAO_FIZ_v1 */
   const treinouHoje=historico().some(x=>x.data===HOJE());
-  const extra=`${catLib().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">${catLib().some(c=>c.id==="em_casa")?"Sem academia? Em casa · ":""}Programas</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Fiz outra atividade · importar do relógio</button>${!nfHoje()&&!treinouHoje?`<button type="button" class="link" data-a="nfabre" style="align-self:center">Não vou treinar hoje</button>`:""}`;
+  const extra=`${catLib().length?`<button type="button" class="link" data-a="irlivre" style="align-self:center">${catLib().some(c=>c.id==="em_casa")?"Sem academia? Em casa · ":""}Programas</button>`:""}<button type="button" class="link" data-a="ativ" style="align-self:center">Treinei fora · box, aula, esporte, relógio</button>${!nfHoje()&&!treinouHoje?`<button type="button" class="link" data-a="nfabre" style="align-self:center">Não vou treinar hoje</button>`:""}`;
   if(!S.prontOk && !S.prontPulou){
     const esc_=(k,t,de,ate,e,dd)=>`<div class="esc"><div class="t">${t}</div><div class="g" style="grid-template-columns:repeat(${ate-de+1},1fr)">${Array.from({length:ate-de+1},(_,i)=>de+i).map(v=>`<button type="button" class="chip" data-a="pr" data-k="${k}" data-v="${v}" aria-pressed="${S.pront[k]===v}">${v}</button>`).join("")}</div><div class="l"><span>${de} = ${e}</span><span>${ate} = ${dd}</span></div></div>`;
     vHoje.innerHTML=`${filaHTML()}${nfAvisoHTML()}
@@ -2070,24 +2070,65 @@ function salvarRel(){
   render(); enviarFila().then(()=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
 }
 /* Esporte e aula não são exercício do catálogo: registram-se por tempo e esforço, e entram na carga da semana. */
-const ATIVS=["Futebol","Futsal","Basquete","Vôlei","Handebol","Tênis","Padel","Beach tennis","Boxe","Muay thai","Jiu-jitsu","Judô","MMA","Escalada","Pilates","Yoga","Dança","Natação livre","Pedal na rua","Trilha ou trekking","Aula de crossfit","Aula de funcional","Corrida livre","Caminhada livre","Musculação fora do programa","Outra"];
+/* HAG_TREINO_FORA_v1 (18/11/2026). Pedido do Dr. Henrique: quem treina em box de CrossFit ou HYROX registra o treino do
+   coach aqui (tipo, duração, esforço, como terminou, resultado) e pode guardar a FOTO do quadro ou da planilha do dia.
+   Continua sendo sessão "Atividade" (fora da adesão ao programa, dentro da carga da semana). A foto sobe depois que a
+   sessão chega ao banco: o banco entrega um caminho de uso único (hag_treino_foto), o celular grava a imagem já
+   reduzida no bucket privado treino-fotos e o caminho fica na sessão. Só a equipe vê a foto, no painel. */
+const ATIVS_BOX=["CrossFit / WOD","HYROX","Força no box"];
+const FORA_FIM={bem:"Terminei bem",cansado:"Muito cansado",dor:"Com dor"};
+const ATIVS=["Futebol","Futsal","Basquete","Vôlei","Handebol","Tênis","Padel","Beach tennis","Boxe","Muay thai","Jiu-jitsu","Judô","MMA","Escalada","Pilates","Yoga","Dança","Natação livre","Pedal na rua","Trilha ou trekking","Aula de funcional","Corrida livre","Caminhada livre","Musculação fora do programa","Outra"];
 function renderAtiv(){
-  const A=S.ativ||(S.ativ={nome:null,min:60,rpe:6});
-  vHoje.innerHTML=`<div><div class="kicker">Outra atividade</div><h2>O que você fez hoje?</h2><p class="sub">Esporte, aula, extra · entra na carga da semana.</p></div>
+  const A=S.ativ||(S.ativ={nome:null,min:60,rpe:6,fim:null,res:"",foto:null,fotoUrl:null});
+  const box=ATIVS_BOX.includes(A.nome);
+  vHoje.innerHTML=`<div><div class="kicker">Treino fora do programa</div><h2>O que você fez hoje?</h2><p class="sub">Box, aula, esporte · entra na carga da semana.</p></div>
    ${relCard()}
-   <div class="card"><div class="chips">${ATIVS.map(n=>`<button type="button" class="chip" data-a="atv" data-v="${n}" aria-pressed="${A.nome===n}">${n}</button>`).join("")}</div></div>
+   <div class="card"><div class="lbl">Box</div><div class="chips" style="margin-top:6px">${ATIVS_BOX.map(n=>`<button type="button" class="chip" data-a="atv" data-v="${n}" aria-pressed="${A.nome===n}">${n}</button>`).join("")}</div>
+     <div class="lbl" style="margin-top:12px">Outros</div><div class="chips" style="margin-top:6px">${ATIVS.map(n=>`<button type="button" class="chip" data-a="atv" data-v="${n}" aria-pressed="${A.nome===n}">${n}</button>`).join("")}</div></div>
    <div class="card row between"><div class="lbl">Duração (min)</div><div class="step"><button type="button" data-a="am-" aria-label="Menos 5 minutos">−</button><output>${A.min}</output><button type="button" data-a="am+" aria-label="Mais 5 minutos">+</button></div></div>
    <div class="card"><label for="arpe" class="lbl">Quão pesado foi? (0 a 10)</label><div class="row" style="margin-top:6px"><input type="range" id="arpe" min="0" max="10" value="${A.rpe}" style="flex:1"><div class="big" id="arpe-v">${A.rpe}</div></div><div class="note" id="arpe-t">${rpeTexto(A.rpe)}</div></div>
-   <button type="button" class="btn wide" data-a="asalvar" ${A.nome?"":"disabled"}>SALVAR ATIVIDADE</button>
+   <div class="card"><div class="lbl">Como terminou?</div><div class="chips" style="margin-top:6px">${Object.entries(FORA_FIM).map(([k,t])=>`<button type="button" class="chip" data-a="afim" data-v="${k}" aria-pressed="${A.fim===k}">${t}</button>`).join("")}</div>
+     ${A.fim==="dor"?`<p class="note" style="margin-top:6px;color:var(--crit)">Se a dor continuar, avise o consultório.</p>`:""}</div>
+   <div class="card"><label for="ares" class="lbl">Resultado <span class="note">opcional · tempo, rounds, carga</span></label><input id="ares" class="stepin" type="text" maxlength="80" value="${esc(A.res||"")}" placeholder="${box?"Ex.: 18:42 · 5 rounds + 12 · 60 kg":"Ex.: 2 sets, 1 h de jogo"}" style="width:100%;margin-top:6px;text-align:left"></div>
+   <div class="card"><div class="lbl">Foto do quadro ou da planilha <span class="note">opcional</span></div>
+     ${A.fotoUrl?`<img src="${A.fotoUrl}" alt="Foto do treino" style="width:100%;max-height:260px;object-fit:contain;border-radius:10px;margin-top:8px;background:#0003"><button type="button" class="link" data-a="afototira" style="margin-top:4px">tirar a foto</button>`
+       :`<label class="btn ghost wide" for="afoto" style="margin-top:8px;display:block;text-align:center;cursor:pointer">${A.fotoProc?"Preparando…":"Tirar ou escolher foto"}</label>`}
+     <input id="afoto" type="file" accept="image/*" style="display:none">
+     <p class="note" style="margin-top:6px">Só o Dr. Henrique vê.</p></div>
+   <button type="button" class="btn wide" data-a="asalvar" ${A.nome&&!A.fotoProc?"":"disabled"}>SALVAR TREINO</button>
    <button type="button" class="link" data-a="acancela" style="align-self:center">voltar</button>`;
 }
 function salvarAtiv(){
   const A=S.ativ; if(!A||!A.nome) return;
   const cidA=uid();   /* HAG_TREINO_POSTAR_FEED_v1: sem cid o botão de postar não aparecia em Outra atividade */
-  FILA.push({client_id:cidA, data:HOJE(), dia_id:null, dia:A.nome, tipo:"Atividade", inicio:null, dur:A.min, rpe:A.rpe, pront:null, cv:false, series:[], cardio:[], hyrox:[]});
+  /* HAG_TREINO_FORA_v1: como terminou e o resultado viajam na nota da sessão */
+  const notaA=[A.fim?"Fim: "+FORA_FIM[A.fim].toLowerCase():"", (A.res||"").trim()?"Resultado: "+(A.res||"").trim().slice(0,80):""].filter(Boolean).join(" · ");
+  FILA.push({client_id:cidA, data:HOJE(), dia_id:null, dia:A.nome, tipo:"Atividade", inicio:null, dur:A.min, rpe:A.rpe, pront:null, cv:false, nota:notaA||null, series:[], cardio:[], hyrox:[]});
   store.set("hagtreino.fila",FILA);
-  S=novoEstado(); S.fase="fim"; S.salvo={n:0,um:0,rpe:A.rpe,dur:A.min,ci:A.rpe*A.min,rec:[],dor:[],prox:[],cv:false,partes:A.nome,enviada:false,cid:cidA};
-  render(); enviarFila().then(()=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
+  const foto=A.foto;
+  S=novoEstado(); S.fase="fim"; S.salvo={n:0,um:0,rpe:A.rpe,dur:A.min,ci:A.rpe*A.min,rec:[],dor:[],prox:[],fimDor:A.fim==="dor",cv:false,partes:A.nome,enviada:false,cid:cidA,fora:true,foto:foto?"enviando":null};
+  render(); enviarFila().then(()=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); }
+    if(foto && S.salvo && S.salvo.cid===cidA){ if(FILA.some(x=>x.client_id===cidA)){ S.salvo.foto="sem_sinal"; return render(); }
+      foraFotoEnviar(cidA, foto).then(ok=>{ if(S.salvo && S.salvo.cid===cidA){ S.salvo.foto=ok?"ok":"erro"; render(); } }); } });
+}
+/* HAG_TREINO_FORA_v1: a foto é reduzida no próprio celular (lado maior 1600 px, JPEG 0,8) antes de subir */
+function foraFotoPreparar(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file), im=new Image();
+    im.onload=()=>{ try{ const k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)), w=Math.round(im.naturalWidth*k), h=Math.round(im.naturalHeight*k);
+      const c=document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(im,0,0,w,h); URL.revokeObjectURL(url);
+      c.toBlob(b=>b?res(b):rej(new Error("foto")),"image/jpeg",0.8); }catch(e){ rej(e); } };
+    im.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("foto")); };
+    im.src=url;
+  });
+}
+function foraFotoEnviar(cid, blob){
+  if(VER) return Promise.resolve(true);
+  return rpc("hag_treino_foto",{p_token:TOKEN,p:{acao:"ticket"}}).then(t=>{
+    if(!t||!t.ok||!t.path) return false;
+    return fetch(SURL+"/storage/v1/object/treino-fotos/"+t.path,{method:"POST",headers:{apikey:SKEY,Authorization:"Bearer "+SKEY,"Content-Type":"image/jpeg","x-upsert":"false"},body:blob})
+      .then(r=>r.ok ? rpc("hag_treino_foto",{p_token:TOKEN,p:{acao:"vincular",path:t.path,client_id:cid}}).then(v=>!!(v&&v.ok)) : false);
+  }).catch(()=>false);
 }
 const rpeTexto = v => ["repouso","muito, muito leve","muito leve","leve","moderado","um pouco pesado","pesado","pesado","muito pesado","muito, muito pesado","máximo"][v];
 function coletar(){
@@ -2117,6 +2158,8 @@ function renderSalvo(){
   vHoje.innerHTML=`${filaHTML()}<div class="result"><b>Sessão ${r.enviada?"salva":"guardada neste aparelho"}.</b> ${r.partes} · ${r.dur} min · esforço ${r.rpe} de 10.
      ${r.n?`<br><span class="note">${r.um} de ${r.n} séries registradas com um toque.</span>`:""}
      ${r.enviada?"":`<br><span class="note">Sem sinal · envia sozinha quando voltar.</span>`}
+     ${r.foto==="enviando"?`<br><span class="note">Enviando a foto…</span>`:r.foto==="ok"?`<br><span class="note">Foto enviada ao Dr. Henrique.</span>`:r.foto==="erro"?`<br><span class="note" style="color:var(--crit)">A foto não foi enviada. O treino ficou salvo.</span>`:r.foto==="sem_sinal"?`<br><span class="note">Sem sinal: a foto não foi junto. O treino ficou guardado.</span>`:""}
+     ${r.fimDor?`<p style="color:var(--crit);margin:6px 0 0">Terminou com dor. Se continuar, avise o consultório.</p>`:""}
      ${r.rec.length?`<ul>${r.rec.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
      ${r.dor.length?`<p style="color:var(--crit);margin:6px 0 0">Dor 4 ou mais em ${r.dor.map(esc).join(", ")}: carga travada até o Dr. Henrique liberar.</p>`:""}
      ${/por dor/.test(r.nota||"")?`<p style="color:var(--crit);margin:6px 0 0">Corrida interrompida por dor. Não retome hoje; se a dor continuar, fale com o consultório.</p>`:""}
@@ -2254,6 +2297,13 @@ function salvar(){
   enviarFila().then(ok=>{ if(S.salvo){ S.salvo.enviada=!FILA.length; render(); renderEvo(); } });
 }
 
+/* HAG_TREINO_FORA_v1: foto escolhida */
+vHoje.addEventListener("change", e=>{
+  const t=e.target; if(!t || t.id!=="afoto" || !S.ativ || !t.files || !t.files[0]) return;
+  S.ativ.fotoProc=true; render();
+  foraFotoPreparar(t.files[0]).then(b=>{ if(!S.ativ) return; S.ativ.foto=b; S.ativ.fotoUrl=URL.createObjectURL(b); S.ativ.fotoProc=false; render(); })
+    .catch(()=>{ if(S.ativ){ S.ativ.fotoProc=false; render(); } });
+});
 vHoje.addEventListener("click", e=>{
   const b=e.target.closest("button"); if(!b) return; const a=b.dataset.a; if(!a) return;
   if(a==="recarregar") return carregar();
@@ -2274,6 +2324,8 @@ vHoje.addEventListener("click", e=>{
   if(a==="nfdesfaz") return nfDesfazer();
   if(a==="acancela"){ S=novoEstado(); return render(); }
   if(a==="atv"){ S.ativ.nome=b.dataset.v; return render(); }
+  if(a==="afim"){ S.ativ.fim=S.ativ.fim===b.dataset.v?null:b.dataset.v; return render(); }   /* HAG_TREINO_FORA_v1 */
+  if(a==="afototira"){ if(S.ativ.fotoUrl) URL.revokeObjectURL(S.ativ.fotoUrl); S.ativ.foto=null; S.ativ.fotoUrl=null; return render(); }
   if(a==="am-"||a==="am+"){ S.ativ.min=Math.max(5,Math.min(600,S.ativ.min+(a==="am+"?5:-5))); return render(); }
   if(a==="asalvar") return salvarAtiv();
   if(a==="reltipo"){ S.rel.tipo=b.dataset.v; return render(); }   /* HAG_TREINO_RELOGIO_v1 */
@@ -2367,6 +2419,7 @@ vHoje.addEventListener("focusin", e=>{ if(e.target.classList && e.target.classLi
 vHoje.addEventListener("input", e=>{
   const t=e.target;
   if(t.id==="rrpe" && S.rel){ S.rel.rpe=+t.value; document.getElementById("rrpe-v").textContent=t.value; document.getElementById("rrpe-t").textContent=rpeTexto(+t.value); }   /* HAG_TREINO_RELOGIO_v1 */
+  if(t.id==="ares" && S.ativ){ S.ativ.res=t.value; }   /* HAG_TREINO_FORA_v1 */
   if(t.id==="arpe" && S.ativ){ S.ativ.rpe=+t.value; document.getElementById("arpe-v").textContent=t.value; document.getElementById("arpe-t").textContent=rpeTexto(+t.value); }
   if(t.id==="rpe"){ document.getElementById("rpe-v").textContent=t.value; document.getElementById("rpe-t").textContent=rpeTexto(+t.value); }
   if(t.dataset.c && S.cardio[S.i]) S.cardio[S.i][t.dataset.c]=t.value;

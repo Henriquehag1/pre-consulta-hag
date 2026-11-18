@@ -257,6 +257,8 @@ function historia(P){
   if(cv.length) L.push({c:"r",t:`Sintoma cardiovascular registrado em ${cv.map(s=>br(s.data)).join(", ")}. A sessão foi encerrada e a tarefa foi criada.`});
   /* HAG_TREINO_CORRIDA_GUIADA_v1: corrida guiada parada por dor (vem na nota da sessão) */
   const dorC=h.filter(s=>/por dor/i.test(s.nota||"") && diasAtras(s.data)<=60);
+  const dorF=h.filter(s=>s.tipo==="Atividade" && /fim: com dor/i.test(s.nota||"") && diasAtras(s.data)<28);   /* HAG_TREINO_FORA_v1 */
+  if(dorF.length) L.push({c:"y",t:`Terminou com dor um treino fora do programa em ${dorF.map(s=>`${br(s.data)} (${s.dia||"atividade"})`).join(", ")}.`});
   if(dorC.length) L.push({c:"r",t:`Corrida parada por dor em ${dorC.map(s=>br(s.data)).join(", ")}. Última: ${dorC.at(-1).nota}`});
   /* janela = desde a primeira sessão, no máximo 28 dias: programa novo não nasce devendo */
   const alvo=(prog&&prog.sessoes_semana)||3, jan=Math.min(28,diasAtras(h[0].data)+1), esp=Math.max(1,Math.round(alvo*jan/7)), s28=h.filter(s=>diasAtras(s.data)<jan&&s.tipo!=="Atividade").length, ad=s28/esp;
@@ -278,6 +280,32 @@ function historia(P){
   return L;
 }
 
+/* HAG_TREINO_FORA_v1 (18/11/2026): treinos feitos fora do programa (box de CrossFit, HYROX, aula, esporte), registrados
+   pelo paciente em "Treinei fora". Entram na carga interna da semana e ficam fora da conta de adesão. A foto do quadro
+   ou da planilha fica no bucket privado treino-fotos e abre aqui com link assinado de 5 minutos. */
+function foraPainelHTML(hist){
+  const f=hist.filter(s=>s.tipo==="Atividade" && diasAtras(s.data)<28).slice().reverse();
+  if(!f.length) return "";
+  const fotos=E.fotos||[], fotoDe=s=>{ const x=fotos.find(y=>(s.client_id&&y.client_id===s.client_id)||(!s.client_id&&y.data===s.data&&y.dia_nome===s.dia)); return x?x.foto_path:null; };
+  const min=f.reduce((a,s)=>a+(s.dur||0),0), ci=f.reduce((a,s)=>a+(s.dur||0)*(s.rpe||0),0);
+  const tot=hist.filter(s=>diasAtras(s.data)<28).reduce((a,s)=>a+(s.dur||0)*(s.rpe||0),0);
+  return `<div class="card"><h3>Treinos fora do programa · 28 dias</h3>
+    <p class="note" style="margin:0 0 6px">${f.length} ${f.length===1?"treino":"treinos"} · ${fmt(min,0)} min · carga ${fmt(ci,0)}${tot>0?` (${fmt(ci/tot*100,0)}% da carga do período)`:""}. Box, aula ou esporte registrados pelo paciente.</p>
+    <div class="scroll"><table><thead><tr><th>Data</th><th>Treino</th><th>Min</th><th>Esforço</th><th>Carga</th><th>Como terminou · resultado</th><th></th></tr></thead><tbody>
+    ${f.map(s=>{ const fp=fotoDe(s); return `<tr><td class="mono">${br(s.data)}</td><td>${esc(s.dia||"")}</td><td class="mono">${s.dur??""}</td><td class="mono">${s.rpe??""}</td><td class="mono">${fmt((s.dur||0)*(s.rpe||0),0)}</td>
+      <td>${s.nota?`<span style="color:${/com dor/i.test(s.nota)?"var(--crit)":"inherit"}">${esc(s.nota)}</span>`:`<span class="note">sem nota</span>`}</td>
+      <td>${fp?`<button class="btn small" data-a="fotofora" data-v="${esc(fp)}">Ver foto</button>`:""}</td></tr>`; }).join("")}
+    </tbody></table></div></div>`;
+}
+async function foraFotoAbrir(path){
+  const w=window.open("","_blank");
+  try{
+    const r=await fetch(SURL+"/storage/v1/object/sign/treino-fotos/"+path.split("/").map(encodeURIComponent).join("/"),{method:"POST",headers:hd(),body:JSON.stringify({expiresIn:300})});
+    const j=await r.json(); if(!r.ok||!j.signedURL) throw new Error(j.message||("erro "+r.status));
+    const u=SURL+"/storage/v1"+(j.signedURL.startsWith("/")?"":"/")+j.signedURL;
+    if(w) w.location.href=u; else location.href=u;
+  }catch(e){ if(w) w.close(); E.msg={tipo:"err",texto:"Não consegui abrir a foto: "+e.message}; render(); }
+}
 /* ---------- aba paciente ---------- */
 function seletor(){
   const f=E.filtro.toLowerCase(); const lista=E.pacientes.filter(p=>!f||p.nome.toLowerCase().includes(f)).sort((a,b)=>(E.comProg.has(b.id)-E.comProg.has(a.id))||a.nome.localeCompare(b.nome)).slice(0,300);
@@ -316,6 +344,7 @@ function renderPaciente(){
    <div class="card"><h3>Últimas sessões</h3><div class="scroll"><table><thead><tr><th>Data</th><th>Treino</th><th>Min</th><th>Esforço</th><th>Registros</th><th>Dor máx.</th><th>Prontidão</th><th></th></tr></thead><tbody>
      ${hist.slice(-12).reverse().map(s=>{ const dm=Math.max(0,...s.series.map(x=>x.dor||0)); return `<tr><td class="mono">${br(s.data)}</td><td>${esc(s.dia||"")}<div class="note">v${s.versao||""}</div>${s.nota?`<div class="note" style="color:${/por dor/i.test(s.nota)?"var(--crit)":"inherit"}">${esc(s.nota)}</div>`:""}</td><td class="mono">${s.dur??""}</td><td class="mono">${s.rpe??""}</td><td class="mono">${[s.series.length?s.series.length+" séries":"",(s.cardio||[]).map(c=>`${c.km!=null?fmt(c.km)+" km":""}${c.seg?" "+Math.round(c.seg/60)+" min":""}`).join(", "),(s.hyrox||[]).length?(s.hyrox.length+" tempos"):""].filter(Boolean).join(" · ")}</td><td>${dm?`<span class="tag ${dm>=4?"r":"y"}">${dm}</span>`:""}</td><td class="mono">${s.pront?(s.pront.sono+s.pront.energia+(5-s.pront.musc)+(5-s.pront.art))+"/20":""}</td><td>${s.cv?`<span class="tag r">sintoma</span>`:""}</td></tr>`; }).join("")}
    </tbody></table></div></div>`;
+  h+=foraPainelHTML(hist);   /* HAG_TREINO_FORA_v1 */
   h+=corridaPainelHTML(P);   /* HAG_TREINO_CORRIDA_PERFIL_v1 */
   h+=`<div class="grid">
    <div class="card"><h3>Programas</h3>
@@ -511,7 +540,10 @@ async function carregarBase(){
   E.pacientes=pac||[]; E.modelos=(progs||[]).filter(p=>p.modelo); E.comProg=new Set((progs||[]).filter(p=>!p.modelo).map(p=>p.patient_id));
   E.metodos=mets||[]; E.exs=exs||[]; E.exMap=Object.fromEntries(E.exs.map(e=>[e.id,e]));
 }
-async function carregarPaciente(){ E.P=null; E.livre=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } await lerLivre(); await lerCat(); render(); }
+async function carregarPaciente(){ E.P=null; E.livre=null; render(); if(!E.pid) return; try{ E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); }catch(e){ E.msg={tipo:"err",texto:"Não consegui ler o painel: "+e.message}; } await lerLivre(); await lerCat();
+  /* HAG_TREINO_FORA_v1: fotos do quadro ou da planilha dos treinos feitos fora do programa */
+  try{ E.fotos=await api(`treino_sessoes?select=client_id,data,dia_nome,foto_path&patient_id=eq.${encodeURIComponent(E.pid)}&foto_path=not.is.null&order=data.desc&limit=60`)||[]; }catch(e){ E.fotos=[]; }
+  render(); }
 /* HAG_TREINO_LIVRE_v1 (13/10/2026): treino em qualquer lugar (peso do corpo), liberado paciente a paciente pelo Dr. Henrique.
    Liberar grava uma linha em treino_livre_acesso; o app do paciente passa a mostrar a aba "Qualquer lugar" com as sessões
    aprovadas (treino_livres.aprovado). Retirar apaga a linha. */
@@ -541,6 +573,7 @@ main.addEventListener("click",e=>{
   if(a==="novaversao") return acao(async()=>{ const id=await rpc("hag_treino_clonar",{p_programa:v,p_patient_id:E.pid,p_modo:"paciente"}); await abrirEditor(id); },"Rascunho da nova versão criado. O paciente continua vendo a versão atual até você publicar.");
   if(a==="demodelo") return acao(async()=>{ const m=document.getElementById("modsel").value; if(!m) throw new Error("escolha um modelo"); const id=await rpc("hag_treino_clonar",{p_programa:m,p_patient_id:E.pid,p_modo:"paciente"}); E.comProg.add(E.pid); await abrirEditor(id); },"Rascunho criado a partir do modelo. Ajuste e publique.");
   if(a==="duplicar") return acao(async()=>{ await rpc("hag_treino_clonar",{p_programa:v,p_patient_id:null,p_modo:"modelo"}); await carregarBase(); },"Modelo duplicado.");
+  if(a==="fotofora") return foraFotoAbrir(v);   /* HAG_TREINO_FORA_v1 */
   if(a==="liberar") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_liberacoes",{method:"POST",body:{patient_id:E.pid,exercicio_id:v,por:(s&&s.user)||"painel"}}); E.P=await rpc("hag_treino_painel",{p_patient_id:E.pid}); },"Progressão liberada.");
   if(a==="livreon") return acao(async()=>{ const s=Auth.session&&Auth.session(); await api("treino_livre_acesso",{method:"POST",body:{patient_id:E.pid,por:(s&&s.user)||"painel"},prefer:"resolution=ignore-duplicates"}); await lerLivre(); },"Treinos Em viagem liberados. Aparecem no app do paciente na próxima vez que ele abrir.");
   if(a==="livreoff") return acao(async()=>{ await api(`treino_livre_acesso?patient_id=eq.${encodeURIComponent(E.pid)}`,{method:"DELETE"}); await lerLivre(); },"Treinos Em viagem retirados deste paciente.");
