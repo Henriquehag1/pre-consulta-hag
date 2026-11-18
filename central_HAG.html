@@ -466,7 +466,10 @@ function fechado(motivo){
 function telaEntrar(r){
   tela.innerHTML='<p class="rot">Seu acompanhamento</p><h1>Olá'+(r.nome?', '+esc(r.nome):'')+'.</h1>'
     +'<p class="sub">Aqui ficam os seus planos, receitas, a Cozinha, o Treino e a agenda. No primeiro acesso de cada aparelho, enviamos um código para o seu e-mail.</p>'
-    +'<div class="card"><button class="btn" id="bPedir">Enviar código'+(r.email?' para '+esc(r.email):'')+'</button><div class="msg" id="m"></div></div>';
+    +'<div class="card"><button class="btn" id="bPedir">Enviar código'+(r.email?' para '+esc(r.email):'')+'</button><div class="msg" id="m"></div></div>'
+    /* HAG_CENTRAL_DICA_ICONE_v1 (18/11/2026): paciente reclamou do código toda vez. O código vale por aparelho e por app;
+       quem abre sempre pelo link do WhatsApp cai num navegador que não guarda a entrada. No iPhone fora do ícone, a dica. */
+    +((IOS&&!STANDALONE)?'<p class="sub" style="margin-top:14px;font-size:14px">Para não pedir código de novo: depois de entrar, coloque a central na tela de início e abra sempre pelo ícone. Vale por 6 meses.</p>':'');
   $('#bPedir').onclick=pedir;
 }
 
