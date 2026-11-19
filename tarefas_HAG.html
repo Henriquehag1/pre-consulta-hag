@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261112-1711"></script>
+<script src="hag_auth.js?v=20261119-1303"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -1359,7 +1359,7 @@ var DAN_TPL=[
      Corrigidos junto: links do GitHub trocados por clinicahag.com (formulario e check-in), "Aqui e a Daniela" fora dos
      combinados (HAG_MSG_SEM_APRESENTACAO_v1), Pix que faltava em "Escolheu a taxa". Diretrizes intactas ate o Juridico. */
   {id:'saudacao_inicial',cat:'pre_consulta',nome:'Passo 1 · Saudação (só se a automática não saiu)',sub:'O WhatsApp já envia sozinho no primeiro contato; use só se não tiver saído',texto:'Olá, [nome], seja bem-vindo(a) ao consultório do Dr. Henrique Alves.\n\nMe conta em uma mensagem o que te trouxe (emagrecimento, saúde hormonal ou outro motivo) e se prefere Tatuapé, Pinheiros ou online.\n\nSe quiser saber como é a consulta: https://clinicahag.com/consulta'},
-  {id:'cadastro_form',cat:'pre_consulta',nome:'Passo 2 · Formulário pré-consulta',sub:'Depois que o paciente disse o motivo e o local · cria o cadastro e põe na fila',texto:'[nome], o próximo passo é o formulário pré-consulta. Ele faz o seu cadastro e libera a sua agenda, sem dado sensível circular por aqui:\n\nhttps://clinicahag.com/preconsulta\n\nSe tiver exames dos últimos 6 meses, pode mandar em PDF por aqui. Se não tiver, tudo bem: depois da confirmação, se o Dr. Henrique precisar, eu te envio o pedido.'},
+  {id:'cadastro_form',cat:'pre_consulta',nome:'Passo 2 · Formulário pré-consulta',sub:'Depois que o paciente disse o motivo e o local · cria o cadastro e põe na fila',texto:'[nome], o próximo passo é o formulário pré-consulta. Ele faz o seu cadastro e, ao terminar, a própria tela já abre a agenda para você escolher o horário, sem dado sensível circular por aqui:\n\nhttps://clinicahag.com/preconsulta\n\nSe tiver exames dos últimos 6 meses, pode mandar em PDF por aqui. Se não tiver, tudo bem: depois da confirmação, se o Dr. Henrique precisar, eu te envio o pedido.'},
   /* HAG_DIAG_JANELA_POR_EXAMES_v1 (21/09/2026): o Passo 3 virou dois, porque a data
      minima depende dos exames. Ao abrir ou copiar, o painel grava na tarefa diagnostica
      o modo e a data do meio (envio+10 ou envio+21); a pagina oferece 7 dias para cada
@@ -1368,7 +1368,7 @@ var DAN_TPL=[
   /* HAG_MSG_CURTA_v1 (09/11/2026): pedido do Dr., mensagens longas demais para WhatsApp (revisao da conversa da
      lead Thais). Passos 3, 4 e 5 encurtados, mesmas regras: horario so pelo link, sinal no Pix da tela, diretrizes
      intactas (espelham o contrato; mudam so depois do Projeto Juridico HAG). */
-  {id:'opcoes_horario',cat:'pre_consulta',modo:'ja_tem',nome:'Passo 3 · Link para agendar · TEM exames recentes',sub:'Prefira o botão da fila, que já traz o link · datas a partir de 3 dias',texto:'[nome], recebi o seu formulário. Pelo link você escolhe o dia e o horário da sua consulta diagnóstica:\n\n[link]\n\nO horário fica guardado no seu nome, e o sinal, no Pix da própria tela, confirma a reserva. Se tiver exames recentes, pode me mandar em PDF por aqui.\n\nGuarde o link: ele também serve para remarcar.'},
+  {id:'opcoes_horario',cat:'pre_consulta',modo:'ja_tem',nome:'Passo 3 · Link para agendar · TEM exames recentes',sub:'Paciente novo já recebe o link na tela final do formulário (tarefa fica em Comunicado); use para reenviar · datas a partir de 3 dias',texto:'[nome], recebi o seu formulário. Pelo link você escolhe o dia e o horário da sua consulta diagnóstica:\n\n[link]\n\nO horário fica guardado no seu nome, e o sinal, no Pix da própria tela, confirma a reserva. Se tiver exames recentes, pode me mandar em PDF por aqui.\n\nGuarde o link: ele também serve para remarcar.'},
   /* HAG_FLUXO_SINAL_v1 (07/10/2026): este modelo levava o PDF do pedido de exames ANTES do sinal. Decisao do Dr. Henrique: pedido so
      depois do sinal pago. O modo 'pedido' continua sendo a janela longa (14 a 28 dias), agora para quem respondeu no formulario que
      NAO tem exames recentes; o pedido em si sai no Passo 6. */
@@ -3258,7 +3258,11 @@ function blocoSinais(){
         +'<div style="font-size:.76rem;color:#6b6b63">'+quando+' · '+onde+' · sinal de '+_brl(x.sinal_valor)+'</div>'
         +'<div style="font-size:.74rem;color:'+(x.vencida?'#a3392f':'#6E3E22')+'">'
           +(x.vencida?'prazo vencido, o horário já foi liberado':('guardado até '+prazo))+'</div>'
+        /* HAG_SINAL_COMPROVANTE_LINK_v1 (19/11/2026): o paciente pode mandar o comprovante pela tela do link */
+        +(x.comprovante_path?'<div style="font-size:.76rem;font-weight:700;color:#1D6B45;margin-top:2px">Comprovante enviado pelo link'
+          +(x.comprovante_em?' em '+_sinalPrazo(x.comprovante_em):'')+'. Confira o valor no banco.</div>':'')
       +'</div>'
+      +(x.comprovante_path?'<button onclick="verComprovanteSinal(\''+x.id+'\')" title="Abre o comprovante enviado pelo paciente" style="border:1px solid #1D6B45;background:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;color:#1D6B45">Ver comprovante</button>':'')
       +'<button onclick="whatsSinal(\''+x.id+'\')" title="Abre o WhatsApp para pedir o comprovante" style="border:1px solid #ddd0a8;background:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;color:#6E3E22">Cobrar comprovante</button>'
       +'<button onclick="confirmarSinal(\''+x.id+'\')" title="O comprovante chegou: confirma o agendamento e cria a tarefa de lançar na Livance" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer">Sinal recebido</button>'
       +'</div>';
@@ -3268,6 +3272,16 @@ function blocoSinais(){
     +'Sinal a confirmar · '+_sinais.length+'</div>'
     +'<div style="font-size:.74rem;color:#6b6b63;margin-bottom:2px">Horário guardado. Vira agendamento quando o comprovante chegar.</div>'
     +linhas+'</div>';
+}
+/* HAG_SINAL_COMPROVANTE_LINK_v1: link assinado de 5 minutos, so com login da equipe */
+async function verComprovanteSinal(id){
+  var x=(_sinais||[]).find(function(y){return String(y.id)===String(id);}); if(!x||!x.comprovante_path) return;
+  var w=window.open('','_blank');
+  try{
+    var r=await db.storage.from('comprovantes-sinal').createSignedUrl(x.comprovante_path, 300);
+    if(r.error||!r.data||!r.data.signedUrl) throw (r.error||new Error('sem link'));
+    if(w) w.location.href=r.data.signedUrl; else location.href=r.data.signedUrl;
+  }catch(e){ if(w) w.close(); toast('Não consegui abrir o comprovante: '+(e.message||e),'err'); }
 }
 async function whatsSinal(id){
   var x=(_sinais||[]).find(function(y){return String(y.id)===String(id);}); if(!x) return;
@@ -5071,7 +5085,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261112-1711';
+  var VERSAO = '20261119-1303';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
