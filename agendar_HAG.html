@@ -1345,7 +1345,7 @@ function telaConfirma(dia,slot){
     +'<div class="conf-linha"><span>Onde</span><b>'+(TAB==='online'?'Online, o link chega pelo WhatsApp':LOCAIS[dia.local])+'</b></div>'
     +((TIPOCON==='diagnostica'&&c.sinal&&c.sinal.valor)
         ? '<div class="conf-linha"><span>Para confirmar</span><b>sinal de '+brl(c.sinal.valor)+(sinalCartao(c.sinal)?' no Pix':'')+'</b></div>'
-          +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Guardamos o horário para você e mostramos o Pix na tela seguinte.'
+          +'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Guardamos o horário para você'+(c.sinal.horas?' por '+c.sinal.horas+' horas':'')+' e mostramos o Pix na tela seguinte.'   /* HAG_SINAL_COMPROVANTE_LINK_v1 */
           +(sinalCartao(c.sinal)?' Se preferir o cartão, o sinal é '+sinalCartao(c.sinal)+'.':'')
           +' O sinal já faz parte do valor da consulta: no dia você acerta só o restante.</p>' /* HAG_SINAL_CARTAO_v1 · HAG_SINAL_ABATIDO_v1 */
         : '')
@@ -1415,10 +1415,20 @@ function telaSinal(info){
         +esc(String(sn.whatsapp||'5511977962914').replace(/\D/g,''))+'?text='+encodeURIComponent('Olá, reservei meu horário pelo link e prefiro pagar o sinal no cartão.')
         +'">Pedir o link do cartão</a></div>'
       : '')
-    +'<div class="cartao"><p style="font-size:14px;color:var(--ink3);margin:0">'
-    +'Depois de pagar, mande o comprovante para o WhatsApp do consultório. A Daniela confirma e o seu horário fica garantido.'
-    +(prazo?' Se o comprovante não chegar até as '+prazo+', o horário volta para a agenda.':'')
-    +'</p></div>');
+    /* HAG_SINAL_COMPROVANTE_LINK_v1 (19/11/2026). Pedido do Dr. Henrique: o comprovante pode ir pela propria tela.
+       Foto vira JPEG reduzido no celular; PDF vai como esta. Sobe no bucket privado comprovantes-sinal com caminho de
+       uso unico (hag_sinal_comprovante), abre a tarefa "Conferir sinal" com aviso para a Daniela e segura a vaga por
+       mais 24 h. Quem confirma continua sendo a Daniela, depois de ver o valor no banco. */
+    +'<div class="cartao" id="compCartao"><p style="font-size:15.5px;font-weight:600;color:var(--ink2,#2b2a26);margin:0 0 6px">Já pagou? Envie o comprovante</p>'
+    +'<p style="font-size:14px;color:var(--ink3);margin:0 0 12px">Pode ser a foto da tela ou o PDF do banco. A Daniela confere e confirma a sua consulta.</p>'
+    +'<label class="btn" for="compArq" style="display:block;text-align:center;cursor:pointer" id="compBotao">Enviar comprovante</label>'
+    +'<input type="file" id="compArq" accept="image/*,application/pdf" style="display:none" onchange="HAGpg.comprovante(this)">'
+    +'<p id="compAviso" style="font-size:13.5px;color:var(--ink3);margin:10px 0 0"></p>'
+    +'<a class="btn claro" style="display:block;text-align:center;text-decoration:none;margin-top:10px" target="_blank" rel="noopener" href="https://wa.me/'
+      +esc(String(sn.whatsapp||'5511977962914').replace(/\D/g,''))+'?text='+encodeURIComponent('Olá, segue o comprovante do sinal da minha consulta de '+dataBR(info.data)+' às '+hhmm(info.inicio)+'.')
+      +'">Prefiro mandar pelo WhatsApp</a>'
+    +(prazo?'<p style="font-size:13px;color:var(--ink4);margin:10px 0 0">Se o comprovante não chegar até as '+prazo+', o horário volta para a agenda.</p>':'')
+    +'</div>');
   window.HAGpg._pix=codigo;
 }
 
@@ -1665,6 +1675,54 @@ window.HAGpg={
       .catch(function(){ diz('Não consegui enviar agora. Tente de novo ou mande pelo WhatsApp.'); });
     };
     fr.readAsDataURL(f);
+  },
+  /* HAG_SINAL_COMPROVANTE_LINK_v1 */
+  _compPreparar:function(f){
+    var ehPdf=(f.type==='application/pdf')||/\.pdf$/i.test(f.name||'');
+    if(ehPdf) return Promise.resolve({blob:f, tipo:'pdf'});
+    return new Promise(function(res,rej){
+      var url=URL.createObjectURL(f), im=new Image();
+      im.onload=function(){ try{ var k=Math.min(1,1800/Math.max(im.naturalWidth,im.naturalHeight)), w=Math.round(im.naturalWidth*k), h=Math.round(im.naturalHeight*k);
+        var c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(im,0,0,w,h); URL.revokeObjectURL(url);
+        c.toBlob(function(b){ b?res({blob:b, tipo:'jpg'}):rej(new Error('foto')); },'image/jpeg',0.85); }catch(e){ rej(e); } };
+      im.onerror=function(){ URL.revokeObjectURL(url); rej(new Error('foto')); };
+      im.src=url;
+    });
+  },
+  comprovante:function(inp){
+    var f=inp&&inp.files&&inp.files[0]; if(!f) return;
+    var aviso=document.getElementById('compAviso'), bt=document.getElementById('compBotao');
+    function diz(t,cor){ if(aviso){ aviso.textContent=t; aviso.style.color=cor||''; } }
+    if(f.size>20*1024*1024){ diz('O arquivo é grande demais. Envie uma foto da tela ou mande pelo WhatsApp.','#a3392f'); return; }
+    if(DEMO){ diz('Comprovante recebido (demonstração).'); return; }
+    if(bt) bt.style.opacity='.5';
+    diz('Enviando o comprovante...');
+    var self=this, prep=null;
+    this._compPreparar(f).then(function(p){
+      prep=p;
+      if(p.blob.size>6*1024*1024) throw new Error('grande');
+      return rpc('hag_sinal_comprovante',{p_token:TOKEN, p:{acao:'ticket', tipo:p.tipo}});
+    }).then(function(t){
+      if(!t||!t.ok||!t.path) throw new Error((t&&t.erro)||'ticket');
+      return fetch(SURL+'/storage/v1/object/comprovantes-sinal/'+t.path,{method:'POST',
+        headers:{apikey:SKEY,Authorization:'Bearer '+SKEY,'Content-Type':(prep.tipo==='pdf'?'application/pdf':'image/jpeg'),'x-upsert':'false'},body:prep.blob})
+        .then(function(r){ if(!r.ok) throw new Error('upload'); return rpc('hag_sinal_comprovante',{p_token:TOKEN, p:{acao:'vincular', path:t.path}}); });
+    }).then(function(v){
+      if(!v||!v.ok) throw new Error((v&&v.erro)||'vincular');
+      var c=document.getElementById('compCartao');
+      if(c) c.innerHTML='<div class="ok-selo">✓</div><h2 style="text-align:center;margin:6px 0">Comprovante recebido</h2>'
+        +'<p style="font-size:14px;color:var(--ink3);margin:0;text-align:center">A Daniela confere o pagamento e confirma a sua consulta pelo WhatsApp. '
+        +'Enquanto isso, o seu horário continua guardado'+(v.segura_ate?' até as '+quandoBR(v.segura_ate):'')+'.</p>';
+    }).catch(function(e){
+      if(bt) bt.style.opacity='';
+      var m=String(e&&e.message||'');
+      diz(m==='grande'?'O arquivo é grande demais. Envie uma foto da tela ou mande pelo WhatsApp.'
+        : m==='foto'?'Não consegui abrir essa imagem. Tente uma foto da tela (print) ou mande pelo WhatsApp.'
+        : m==='limite'?'Recebemos vários envios hoje. Mande pelo WhatsApp, por favor.'
+        : m==='sem_reserva'?'Não encontrei uma reserva aguardando o sinal neste link. Mande pelo WhatsApp que a Daniela confere.'
+        : 'Não consegui enviar agora. Tente de novo ou mande pelo WhatsApp.','#a3392f');
+      try{ inp.value=''; }catch(x){}
+    });
   },
   copiarPix:function(){
     var cod=this._pix||'', aviso=document.getElementById('pixAviso');

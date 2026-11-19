@@ -1627,7 +1627,14 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
     <div class="success-rule"></div>
 
     <!-- Mensagem principal -->
-    <p class="success-msg">Suas respostas chegaram ao Dr. Henrique.<br>A equipe fala com você em breve.</p>
+    <p class="success-msg" id="succMsg">Suas respostas chegaram ao Dr. Henrique.<br>A equipe fala com você em breve.</p>
+
+    <!-- HAG_LINK_NO_FORMULARIO_v1 (19/11/2026): paciente novo escolhe o horario aqui mesmo, sem esperar a mensagem -->
+    <div id="agendaPronta" style="display:none;max-width:440px;margin:-1.25rem auto 2.25rem;text-align:center">
+      <a class="btn-next" id="agendaBtn" href="#" style="text-decoration:none;justify-content:center;width:100%;box-sizing:border-box">Escolher meu horário <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <p style="font-size:13px;color:var(--ink3);font-weight:300;line-height:1.7;margin:1rem 0 0">O horário que você escolher fica guardado no seu nome e se confirma com o sinal, no Pix da própria tela. Lá mesmo você envia o comprovante.</p>
+      <p style="font-size:12.5px;color:var(--ink3);font-weight:300;line-height:1.7;margin:.75rem 0 0">Guarde o link, ele também serve para remarcar: <button type="button" id="agendaCopiar" style="background:none;border:0;padding:0;color:#B98A5E;text-decoration:underline;font:inherit;cursor:pointer">copiar o link</button></p>
+    </div>
 
     <!-- 3 passos -->
     <div class="success-steps">
@@ -1642,8 +1649,8 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
       <div class="ss-item">
         <div class="ss-num">02</div>
         <div class="ss-text">
-          <strong>Contato da equipe</strong>
-          A equipe envia o link para você escolher o horário
+          <strong id="ss2Tit">Contato da equipe</strong>
+          <span id="ss2Txt">A equipe envia o link para você escolher o horário</span>
         </div>
       </div>
       <div class="ss-divider"></div>
@@ -2090,6 +2097,7 @@ async function submitForm(){
         if(_rpc.ok){
           var _rj = await _rpc.json().catch(function(){return null;});
           if(_rj && _rj.patient_id) patId = _rj.patient_id;
+          if(_rj && _rj.agendar_token) window.HAG_AGENDAR_TOKEN = String(_rj.agendar_token);   /* HAG_LINK_NO_FORMULARIO_v1 */
           _rpcOK = true; _hagGravouOK = true;
           console.log('[HAG] Gravado via upsert_pre_consulta', _rj);
         } else {
@@ -2262,6 +2270,24 @@ async function submitForm(){
     }));
   }catch(eSupa){console.warn('HAG OS pre-consulta save:', eSupa);}
 
+  /* HAG_LINK_NO_FORMULARIO_v1 */
+  try{
+    if(window.HAG_AGENDAR_TOKEN){
+      var _url='https://clinicahag.com/agendar?t='+encodeURIComponent(window.HAG_AGENDAR_TOKEN);
+      document.getElementById('agendaBtn').href=_url;
+      document.getElementById('agendaPronta').style.display='block';
+      document.getElementById('succMsg').innerHTML='Suas respostas chegaram ao Dr. Henrique.<br>A sua agenda já está liberada: escolha agora o dia e o horário da sua consulta.';
+      document.getElementById('ss2Tit').textContent='Escolha do horário';
+      document.getElementById('ss2Txt').textContent='Você escolhe o dia pelo link e confirma com o sinal';
+      var _fc=document.querySelector('.sf-close'); if(_fc) _fc.style.display='none';
+      var _cp=document.getElementById('agendaCopiar');
+      if(_cp) _cp.onclick=function(){ var t=this; function ok(){ t.textContent='link copiado'; }
+        if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(_url).then(ok).catch(function(){ prompt('Copie o link:', _url); });
+        else prompt('Copie o link:', _url); };
+    }
+  }catch(eAg){ console.warn('[HAG] link na tela final:', eAg); }
+  var _hagAgendaOK = !!(window.HAG_AGENDAR_TOKEN && _hagGravouOK);
+
   // ── PASSO 3: Enviar via Web3Forms ────────────────────────────────────────
   if(!WEB3FORMS_KEY||WEB3FORMS_KEY==='SEU_ACCESS_KEY_AQUI'){
     document.getElementById('screenSending').style.display='none';
@@ -2285,10 +2311,11 @@ async function submitForm(){
     var resp=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({access_key:WEB3FORMS_KEY,subject:'Pré-Consulta HAG — '+fv('f_nome')+' ('+new Date().toLocaleDateString('pt-BR')+')',from_name:'Formulário HAG — '+fv('f_nome'),message:msg})});
     var result=await resp.json();
     document.getElementById('screenSending').style.display='none';
-    if(result.success){document.getElementById('screenSuccess').style.display='block';}
+    if(result.success || _hagAgendaOK){document.getElementById('screenSuccess').style.display='block';}
     else{var errEl=document.getElementById('errorMsg');if(errEl)errEl.textContent='Erro: '+(result.message||'Tente novamente.');document.getElementById('screenError').style.display='block';}
   }catch(err){
     document.getElementById('screenSending').style.display='none';
+    if(_hagAgendaOK){ document.getElementById('screenSuccess').style.display='block'; return; }   /* HAG_LINK_NO_FORMULARIO_v1 */
     var errEl=document.getElementById('errorMsg');if(errEl)errEl.textContent='Sem conexão.';document.getElementById('screenError').style.display='block';
   }
 }
