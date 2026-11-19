@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261119-1303"></script>
+<script src="hag_auth.js?v=20261119-1431"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -1359,7 +1359,7 @@ var DAN_TPL=[
      Corrigidos junto: links do GitHub trocados por clinicahag.com (formulario e check-in), "Aqui e a Daniela" fora dos
      combinados (HAG_MSG_SEM_APRESENTACAO_v1), Pix que faltava em "Escolheu a taxa". Diretrizes intactas ate o Juridico. */
   {id:'saudacao_inicial',cat:'pre_consulta',nome:'Passo 1 · Saudação (só se a automática não saiu)',sub:'O WhatsApp já envia sozinho no primeiro contato; use só se não tiver saído',texto:'Olá, [nome], seja bem-vindo(a) ao consultório do Dr. Henrique Alves.\n\nMe conta em uma mensagem o que te trouxe (emagrecimento, saúde hormonal ou outro motivo) e se prefere Tatuapé, Pinheiros ou online.\n\nSe quiser saber como é a consulta: https://clinicahag.com/consulta'},
-  {id:'cadastro_form',cat:'pre_consulta',nome:'Passo 2 · Formulário pré-consulta',sub:'Depois que o paciente disse o motivo e o local · cria o cadastro e põe na fila',texto:'[nome], o próximo passo é o formulário pré-consulta. Ele faz o seu cadastro e, ao terminar, a própria tela já abre a agenda para você escolher o horário, sem dado sensível circular por aqui:\n\nhttps://clinicahag.com/preconsulta\n\nSe tiver exames dos últimos 6 meses, pode mandar em PDF por aqui. Se não tiver, tudo bem: depois da confirmação, se o Dr. Henrique precisar, eu te envio o pedido.'},
+  {id:'cadastro_form',cat:'pre_consulta',nome:'Passo 2 · Formulário pré-consulta',sub:'Depois que o paciente disse o motivo e o local · cria o cadastro e põe na fila',texto:'[nome], o próximo passo é o formulário pré-consulta. Ele faz o seu cadastro e, ao terminar, a própria tela já abre a agenda: você escolhe o horário e paga o sinal no Pix ali mesmo, sem dado sensível circular por aqui:\n\nhttps://clinicahag.com/preconsulta\n\nSe tiver exames dos últimos 6 meses, pode mandar em PDF por aqui. Se não tiver, tudo bem: depois da confirmação, se o Dr. Henrique precisar, eu te envio o pedido.'},
   /* HAG_DIAG_JANELA_POR_EXAMES_v1 (21/09/2026): o Passo 3 virou dois, porque a data
      minima depende dos exames. Ao abrir ou copiar, o painel grava na tarefa diagnostica
      o modo e a data do meio (envio+10 ou envio+21); a pagina oferece 7 dias para cada
@@ -1368,15 +1368,15 @@ var DAN_TPL=[
   /* HAG_MSG_CURTA_v1 (09/11/2026): pedido do Dr., mensagens longas demais para WhatsApp (revisao da conversa da
      lead Thais). Passos 3, 4 e 5 encurtados, mesmas regras: horario so pelo link, sinal no Pix da tela, diretrizes
      intactas (espelham o contrato; mudam so depois do Projeto Juridico HAG). */
-  {id:'opcoes_horario',cat:'pre_consulta',modo:'ja_tem',nome:'Passo 3 · Link para agendar · TEM exames recentes',sub:'Paciente novo já recebe o link na tela final do formulário (tarefa fica em Comunicado); use para reenviar · datas a partir de 3 dias',texto:'[nome], recebi o seu formulário. Pelo link você escolhe o dia e o horário da sua consulta diagnóstica:\n\n[link]\n\nO horário fica guardado no seu nome, e o sinal, no Pix da própria tela, confirma a reserva. Se tiver exames recentes, pode me mandar em PDF por aqui.\n\nGuarde o link: ele também serve para remarcar.'},
+  {id:'opcoes_horario',cat:'pre_consulta',modo:'ja_tem',nome:'Passo 3 · Link para agendar · TEM exames recentes',sub:'Paciente novo já recebe o link na tela final do formulário (tarefa fica em Comunicado); use para reenviar · datas a partir de 3 dias',texto:'[nome], recebi o seu formulário. Pelo link você escolhe o dia e o horário da sua consulta diagnóstica:\n\n[link]\n\nO horário fica guardado no seu nome, e o sinal, no Pix da própria tela, confirma a reserva. Lá mesmo você envia o comprovante. Se tiver exames recentes, pode me mandar em PDF por aqui.\n\nGuarde o link: ele também serve para remarcar.'},
   /* HAG_FLUXO_SINAL_v1 (07/10/2026): este modelo levava o PDF do pedido de exames ANTES do sinal. Decisao do Dr. Henrique: pedido so
      depois do sinal pago. O modo 'pedido' continua sendo a janela longa (14 a 28 dias), agora para quem respondeu no formulario que
      NAO tem exames recentes; o pedido em si sai no Passo 6. */
-  {id:'opcoes_horario_pedido',cat:'pre_consulta',modo:'pedido',nome:'Passo 3 · Link para agendar · SEM exames recentes',sub:'Prefira o botão da fila · datas a partir de 14 dias · pedido de exames só depois do sinal',texto:'[nome], recebi o seu formulário. Pelo link você escolhe o dia e o horário da sua consulta diagnóstica. As datas começam em duas semanas, para dar tempo dos exames:\n\n[link]\n\nO horário fica guardado no seu nome, e o sinal, no Pix da própria tela, confirma a reserva. Com a consulta confirmada, se o Dr. Henrique indicar exames, te envio o pedido por aqui.\n\nGuarde o link: ele também serve para remarcar.'},
+  {id:'opcoes_horario_pedido',cat:'pre_consulta',modo:'pedido',nome:'Passo 3 · Link para agendar · SEM exames recentes',sub:'Paciente novo já recebe o link na tela final do formulário (tarefa fica em Comunicado); use para reenviar · datas a partir de 14 dias · pedido de exames só depois do sinal',texto:'[nome], recebi o seu formulário. Pelo link você escolhe o dia e o horário da sua consulta diagnóstica. As datas começam em duas semanas, para dar tempo dos exames:\n\n[link]\n\nO horário fica guardado no seu nome, e o sinal, no Pix da própria tela, confirma a reserva. Lá mesmo você envia o comprovante. Com a consulta confirmada, se o Dr. Henrique indicar exames, te envio o pedido por aqui.\n\nGuarde o link: ele também serve para remarcar.'},
   /* HAG_SINAL_QUALQUER_MEIO_v1 (07/10/2026): antes da consulta e so o sinal, R$ 450, no Pix ou no cartao (link de R$ 450, ate 3x).
      O restante e do dia da consulta. Saldo: presencial R$ 450 no Pix ou R$ 510 no cartao; online R$ 300 no Pix ou R$ 360 no cartao
      (total sempre R$ 900 / R$ 960 e R$ 750 / R$ 810, os precos publicados). Preco mora em hag_precos.js: mudou la, muda aqui. */
-  {id:'sinal_50',cat:'pre_consulta',nome:'Passo 4 · Sinal de reserva',sub:'Só se não pagou pela tela do link ou se quer cartão · link do cartão: R$ 480, você assume as taxas, até 3x',texto:'[nome], para confirmar o seu horário, o sinal é R$ 450 no Pix ou R$ 480 no cartão, em até 3x.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nSe preferir o cartão, me avisa que te envio o link na hora. O sinal já faz parte do valor da consulta; o restante fica para o dia.'},
+  {id:'sinal_50',cat:'pre_consulta',nome:'Passo 4 · Sinal de reserva',sub:'Só se não pagou pela tela do link ou se quer cartão · link do cartão: R$ 480, você assume as taxas, até 3x',texto:'[nome], para confirmar o seu horário, o sinal é R$ 450 no Pix ou R$ 480 no cartão, em até 3x.\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\n\nSe preferir o cartão, me avisa que te envio o link na hora. O sinal já faz parte do valor da consulta; o restante fica para o dia. Depois, me manda o comprovante por aqui ou pela tela do agendamento.'}   /* HAG_MSG_AGENDA_NO_FORMULARIO_v1 (19/11/2026) */,
   /* HAG_FLUXO_SINAL_v1: o Passo 5 avisa que a analise do formulario comeca agora e leva as diretrizes de reagendamento junto
      ([diretrizes] e trocado logo abaixo da lista pelo texto do modelo 'diretrizes', para a regra morar num lugar so). */
   {id:'pos_pagamento',cat:'pre_consulta',nome:'Passo 5 · Sinal recebido: consulta confirmada e diretrizes',sub:'Depois de clicar em Sinal recebido e de registrar no Recebimento',texto:'[nome], pagamento recebido! Sua consulta está confirmada, e no dia fica só o restante.\n\nO Dr. Henrique vai analisar o seu formulário; se ele pedir exames antes, te envio o pedido por aqui.\n\n[diretrizes]\n\nNa véspera te mando as orientações e o endereço.'},
@@ -3290,7 +3290,7 @@ async function whatsSinal(id){
   /* HAG_MSG_DANIELA_v2: mesma voz da mensagem de agendamento, sem emoji. */
   var msg='Olá, '+primeiro+', tudo bem?\n\n'
     +'O seu horário de '+quando+' está guardado. Assim que você me enviar o comprovante do sinal de '
-    +_brl(x.sinal_valor)+', eu confirmo a sua consulta.';
+    +_brl(x.sinal_valor)+', eu confirmo a sua consulta. Pode mandar por aqui ou pela própria tela do agendamento.';   /* HAG_MSG_AGENDA_NO_FORMULARIO_v1 */
   var fone=_sinalFone(x.whatsapp);
   if(!fone){
     try{ await navigator.clipboard.writeText(msg); toast('Sem WhatsApp no cadastro. Mensagem copiada.','ok'); }
@@ -5085,7 +5085,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261119-1303';
+  var VERSAO = '20261119-1431';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
