@@ -473,6 +473,19 @@ details.mais p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.45}
 :root{--disp:'Bodoni Moda',Georgia,serif;--display:'Bodoni Moda',Georgia,serif;--body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;--mono:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif}
 </style><style id="hag-ondas">/* HAG_TREINO_ONDAS_v1 e HAG_TREINO_SOCIAL_v1 (14/11/2026) */
 .perfilint{margin:10px 0 14px}.perfilint svg{width:100%;height:46px;display:block}
+/* HAG_TREINO_ETAPAS_v1 */
+.etapas{margin:6px 0 12px;border:1px solid var(--line);border-radius:12px;padding:0 12px}
+.etapas summary{cursor:pointer;padding:11px 0;font-weight:700;font-size:14px;list-style:none;display:flex;align-items:baseline;gap:8px}
+.etapas summary::-webkit-details-marker{display:none}
+.etapas summary span{font-weight:400;color:var(--ink-2);font-size:13px;flex:1}
+.etapas summary::after{content:"+";font-weight:400;color:var(--ink-2)}.etapas[open] summary::after{content:"\2212"}
+.etapas ol{list-style:none;margin:0 0 10px;padding:0}
+.etapas ol>li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.35}
+.etapas .t{min-width:46px;font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:13px;padding-top:1px}
+.etapas ul{list-style:none;margin:4px 0 0;padding:0 0 0 10px;border-left:2px solid var(--gold)}
+.etapas ul li{padding:2px 0}
+.etapas .ex{color:var(--ink-2)}.etapas .pc{display:block;font-size:12.5px;color:var(--gold-ui)}
+.etapas ol.aqdq>li{display:block}.etapas ol.aqdq small{color:var(--ink-2)}
 .semnum{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:10px;margin-top:8px}
 .seqn{font:400 54px/1 var(--display);color:var(--gold)}
 .mesmapa{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px;max-width:210px}.mesmapa b{font:600 10px/1 var(--body);color:var(--muted);text-align:center}
@@ -1407,7 +1420,7 @@ function renderInicio(){
   ${ds.usa&&!ds.dia?`<div class="aviso">Hoje: descanso. Quer treinar? Escolha acima.</div>`:""}
   ${feitoHoje?`<div class="aviso">Você já registrou este treino hoje.</div>`:""}
   ${S.prontOk?`<div class="prontr">${sm?`<span class="semaforo ${sm.c}" style="padding:6px 10px;flex:1"><i></i><span>${sm.t}</span></span>`:`<span>Respostas de hoje registradas.</span>`}<button type="button" class="link" data-a="prontedit">alterar</button></div>`:""}
-  ${leveHTML()}<div class="card pdia">${perfilDia(its)}${listaItensHTML(its,"hoje:"+d.id)}</div>
+  ${leveHTML()}<div class="card pdia">${perfilDia(its,d)}${listaItensHTML(its,"hoje:"+d.id)}</div>
   ${temCarga&&!visto?`<div class="onb"><div class="kicker">Como registrar · 10 s</div><p style="margin:6px 0 0;font-size:15px">Após cada série com carga: <b>Leve, No ponto ou No limite?</b><br>No ponto = pesado, com técnica boa · na dúvida, No ponto.<br>É o que sobe a carga.</p><button type="button" class="btn small ghost" data-a="onbok" style="margin-top:10px">Entendi</button></div>`:""}
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
   ${extra}`;
@@ -1467,7 +1480,7 @@ function renderLivreInicio(){
   const C_=L.cat||{nome:"Em casa"}, sw=d.semana?` · semana ${d.semana} de ${C_.semanas}`:"", nv=L.nivel&&(C_.niveis||[]).length>1?" · "+esc(NIVEL[L.nivel]||L.nivel):"";
   vHoje.innerHTML=`${filaHTML()}
   <div><div class="kicker">${esc(C_.nome)}${sw}${nv}</div><h2>${esc(L.nome)}</h2><p class="sub">${L.foco?esc(L.foco)+" · ":""}~${minutosEstimados()} min${L.pc?" · peso do corpo":""}</p></div>
-  <div class="card pdia">${listaItensHTML(its,"livre:"+S.livre,{aq,resto,dq})}</div>
+  <div class="card pdia">${perfilDia(its,d)}${listaItensHTML(its,"livre:"+S.livre,{aq,resto,dq})}</div>
   <p class="note" style="margin:0">${L.pc?"Chão · parede · cadeira firme · ":""}toque em ▶ para ver o vídeo.</p>
   <button type="button" class="btn wide" data-a="iniciar">INICIAR TREINO</button>
   <button type="button" class="link" data-a="livresair" style="align-self:center">voltar a ${esc(C_.nome)}</button>`;
@@ -1548,7 +1561,7 @@ function renderCardio(it,ex,its,barra){
   const sups = ["corrida","caminhada"].includes(it.id) ? ["Rua","Pista","Esteira motorizada","Esteira curva","Trilha"] : [];
   vHoje.innerHTML=`${barra}<div class="card">${cabecalhoItem(it,ex,S.i+1,its.length)}
     ${it.alvo?`<div class="porque" style="margin-top:10px"><b>Hoje:</b> ${esc(it.alvo)}</div>`:""}
-    ${ritmoHTML(RS, diaAtual())}${perfilBarras(RS)}
+    ${ritmoHTML(RS, diaAtual())}${perfilBarras(RS)}${etapasHTML(RS, diaAtual())}
     ${G?`<div class="gres"><b>Guiada:</b> ${esc(G.resumo)}${G.total?` · ~${Math.max(1,Math.round(G.total/60))} min`:""}</div><button type="button" class="btn wide" data-a="guia">▶ CORRIDA GUIADA</button><p class="note" style="margin:4px 0 0">Som e vibração a cada troca. Tela acesa.</p>`:""}
     ${gfeito?gResultado(g):""}
     <div class="ajuste" style="border-top:0;margin-top:6px">
@@ -2484,7 +2497,36 @@ function perfilBarras(segs){
   const ds=segs.map(dur), tot=ds.reduce((a,x)=>a+x,0)||1, W=1000, H=56, gap=segs.length>40?1:3;
   let x=0; const r=segs.map((s,i)=>{ const w=Math.max(2,ds[i]/tot*W-gap), lv=intSeg(s), h=Math.round(lv/5*H); const el=`<rect x="${x.toFixed(1)}" y="${H-h}" width="${w.toFixed(1)}" height="${h}" rx="1.5" fill="${INT_COR[Math.round(lv)]||INT_COR[3]}"/>`; x+=ds[i]/tot*W; return el; }).join("");
   return `<div class="perfilint" aria-label="Perfil de intensidade do treino"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">${r}</svg><div class="note">Intensidade de cada etapa · mais alto = mais forte</div></div>`; }
-function perfilDia(its){ const segs=[]; for(const it of its){ if(it.mod==="cardio"&&GUIA_EX.has(it.id||it.ex)){ const G=guiaCorrida(it.alvo,it.nota); if(G) segs.push(...G.segs); } } return perfilBarras(segs); }
+function perfilDia(its,d){ const segs=[]; for(const it of its){ if(it.mod==="cardio"&&GUIA_EX.has(it.id||it.ex)){ const G=guiaCorrida(it.alvo,it.nota); if(G) segs.push(...G.segs); } } return perfilBarras(segs)+etapasHTML(segs,d); }
+/* HAG_TREINO_ETAPAS_v1 (20/11/2026): pedido do Dr. Henrique depois de correr com a Jessica: "sentimos falta de poder ver
+   um resumo completo de como sera cada bloco previsto do treino nos detalhes". Lista bloco a bloco, aberta no toque
+   (details, sem JS): relogio de inicio, o que fazer, duracao ou distancia e o ritmo alvo do perfil. Repeticoes iguais
+   aparecem uma vez com "N x". So leitura: nao muda a guiada nem o registro. */
+function etPace(s,d){ try{ const pf=perfilCorrida(), z=zonaSeg(s); if(!pf||!z) return ""; const p5=p5Perfil(pf);
+  if(!p5) return z==="leve"?"ritmo de conversa":""; d=d||{}; return txtFaixa(faixaZona(p5,z,ajusteZona(z,d.cat,d.semana)),pf.local); }catch(e){ return ""; } }
+function etDur(s){ return s.seg?gT(s.seg):(s.dist||(s.tipo==="trote"?"até recuperar":"sem tempo fixo")); }
+function etLinha(s,d){ const rot=s.tipo==="prova"?(s.nome||"sua prova"):s.rot, det=gLimpa(String(s.txt||"")), pc=etPace(s,d);
+  const extra=det && s.tipo!=="prova" && !/^(trotando|caminhando|correndo)$/i.test(det) && !String(rot).toLowerCase().includes(det.toLowerCase()) ? det : "";
+  return `<b>${esc(rot)}</b> · ${esc(etDur(s))}${extra?` <span class="ex">${esc(extra)}</span>`:""}${pc?`<span class="pc">${esc(pc)}</span>`:""}`; }
+function etapasHTML(segs,d){
+  if(!segs||segs.length<2) return "";
+  const rows=[]; let t=0, conhecido=true, k=0;
+  while(k<segs.length){ const s=segs[k];
+    if(s.rep && s.rep[0]===1){ const n=s.rep[1], pad=[]; let j=k;
+      while(j<segs.length && segs[j].rep && segs[j].rep[1]===n && segs[j].item===s.item && !(j>k && segs[j].rep[0]===1 && segs[j-1].rep[0]!==1)){ if(segs[j].rep[0]===1) pad.push(segs[j]); j++; }
+      const g=segs.slice(k,j), dur=g.reduce((a,x)=>a+(x.seg||0),0), aberto=g.some(x=>!x.seg);
+      rows.push({ini:conhecido?t:null, n, pad, tot:aberto?null:dur}); if(aberto) conhecido=false; else t+=dur; k=j; continue; }
+    rows.push({ini:conhecido?t:null, s}); if(s.seg) t+=s.seg; else conhecido=false; k++; }
+  const li=rows.map(r=>`<li><span class="t">${r.ini!=null?mmss(r.ini):""}</span><div>${r.s?etLinha(r.s,d):`<b>${r.n} ×</b>${r.tot?` <span class="ex">${esc(gT(r.tot))} no total</span>`:""}<ul>${r.pad.map(x=>`<li>${etLinha(x,d)}</li>`).join("")}</ul>`}</div></li>`).join("");
+  return `<details class="etapas"><summary>Bloco a bloco <span>${rows.length} ${rows.length===1?"etapa":"etapas"}${conhecido&&t?` · ~${Math.round(t/60)} min`:""}</span></summary><ol>${li}${conhecido&&t?`<li><span class="t">${mmss(t)}</span><div><b>Fim</b></div></li>`:""}</ol></details>`;
+}
+function etapasSessao(s,cat){ /* catalogo: corrida da sessao inteira, na ordem (aquecimento, principal, soltar) */
+  const segs=[]; for(const i of (s.itens||[])){ if(GUIA_EX.has(i.ex)){ const G=guiaCorrida(i.alvo,i.nota); if(G) segs.push(...G.segs); } }
+  return perfilBarras(segs)+etapasHTML(segs,{cat, semana:(s.semanas||[])[0]}); }
+function aqDqHTML(s){ const L=s.itens||[], f=re=>L.filter(i=>re.test(String(i.nota||"").trim())), aq=f(/^aquecimento\b/i), dq=f(/^desaquecimento\b/i);
+  if(!aq.length && !dq.length) return "";
+  const li=x=>x.map(i=>`<li>${esc(EX(i.ex).nome)} <small>${esc(presc(i))}</small></li>`).join("");
+  return `<details class="etapas"><summary>Aquecimento e desaquecimento <span>${aq.length+dq.length} itens</span></summary>${aq.length?`<div class="lbl">Antes</div><ol class="aqdq">${li(aq)}</ol>`:""}${dq.length?`<div class="lbl">Depois</div><ol class="aqdq">${li(dq)}</ol>`:""}</details>`; }
 
 /* 2. Semana em números */
 function semanaNumerosHTML(h){
@@ -2746,7 +2788,7 @@ function renderProg(){
   <div class="card pdia"><div class="cab"><div>${r.dia?`<div class="kicker">${esc(r.dia)}</div>`:""}<h3>${esc(r.titulo)}</h3></div>${d.id===sug&&p.dias.length>1?`<span class="tag">hoje</span>`:""}</div>
     <div class="kw"><span>${its.length} ex</span><span>~${minutosDe(its)} min</span>${ult?`<span class="ok">último ${br(ult.data)}</span>`:""}</div>
     ${focoHTML(d.foco)}
-    ${perfilDia(its)}
+    ${perfilDia(its,d)}
     ${listaItensHTML(its,d.id)}
     <button type="button" class="btn wide" data-a="progfazer" data-v="${esc(d.id)}" style="margin-top:12px">TREINAR ESTE ›</button></div>
   <p class="note" style="margin:0">Carga = sugestão para a próxima vez · ajustes na consulta.</p>`;
@@ -2821,7 +2863,7 @@ function diaPickHTML(c, lista, modo){
     <h3 style="margin-top:2px">${esc(sel.nome)}</h3>
     ${sel.foco?`<p class="sub" style="margin:4px 0 0">${esc(sel.foco)}</p>`:""}
     ${sel.mente?`<p class="note" style="margin:8px 0 0">${sel.mente.tipo==="resp"?"Respiração guiada por um círculo que cresce e diminui.":"Meditação com voz guia. Fone de ouvido ajuda."}</p>`
-      :`<ol>${its.map(i=>`<li>${esc(EX(i.ex).nome)} <small>${esc(presc(i))}</small></li>`).join("")}</ol>${extra?`<p class="note" style="margin:6px 0 0">+ aquecimento e desaquecimento</p>`:""}`}
+      :`${ehCorrida(c)?etapasSessao(sel,c.id):""}<ol>${its.map(i=>`<li>${esc(EX(i.ex).nome)} <small>${esc(presc(i))}</small></li>`).join("")}</ol>${extra?aqDqHTML(sel):""}`}
     ${feita(sel)?`<div class="ok" style="margin-top:8px">✓ feito ${modo==="atual"?"nesta semana":""}${ult?" · "+br(ult.data):""}</div>`:ult&&modo==="bloco"?`<div class="ok" style="margin-top:8px">última vez ${br(ult.data)}</div>`:""}
     ${hoje&&modo==="atual"&&!feita(sel)?`<p class="note" style="margin:8px 0 0">Você já fez um treino deste programa hoje. O ideal é o próximo amanhã.</p>`:""}
     <button type="button" class="btn${(hoje&&modo==="atual"&&!feita(sel))||feita(sel)?" ghost":""} wide" data-a="livrever" data-v="${esc(c.id+"|"+sel.id)}" style="margin-top:12px">${btn}</button>
