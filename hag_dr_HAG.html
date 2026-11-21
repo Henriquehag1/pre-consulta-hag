@@ -786,10 +786,10 @@ function pacienteCiclo(pid, nome){
       + '<button type="button" data-pxapp="central"><b>Central</b><span id="pxt_central">…</span></button>'
       + '<button type="button" data-pxapp="treino"><b>Treino</b><span id="pxt_treino">…</span></button>'
       + '<button type="button" data-pxapp="cozinha"><b>Cozinha</b><span id="pxt_coz">…</span></button></div>'
-      + '<div id="pxCentral" data-pxappsec="central"></div><div id="pxTreino" data-pxappsec="treino" hidden></div><div id="pxCozinha" data-pxappsec="cozinha" hidden></div></div>');
+      + '<div id="pxTrilhas"></div><div id="pxCentral" data-pxappsec="central"></div><div id="pxTreino" data-pxappsec="treino" hidden></div><div id="pxCozinha" data-pxappsec="cozinha" hidden></div></div>');
     var fc = document.getElementById('fCorpo'); if(fc) fc.setAttribute('data-px', pid);
     pxApp(ap); pxAba(ab);
-    treinoBloco(pid, nome); cozinhaBloco(pid, nome);
+    treinoBloco(pid, nome); cozinhaBloco(pid, nome); trilhasBloco(pid);   /* HAG_TRILHAS_v1 */
     return Promise.all([ centralBloco(pid, nome),
       extrasPaciente(pid).catch(function(){ return { agir: '', hist: '', av: '' }; }).then(function(x){
         var e = document.getElementById('pxCarr'); if(!e) return;
@@ -1395,6 +1395,36 @@ function pacLista(q){
     return '<div class="card row" data-pac="' + esc(p.id) + '" data-nome="' + esc(p.nome) + '"><div class="q"><div class="nome">' + esc(p.nome) + '</div><div class="sub">' + (p.plano ? plano(p.plano) : 'sem plano') + (p.proxima && p.proxima >= hojeISO() ? ' · próxima ' + dm(p.proxima) : '') + '</div></div>' + chipCentral(x) + '<span class="chev">›</span></div>';
   }).join('') : '<div class="vazio card">' + (q.length >= 2 ? 'Nenhum paciente com esse nome.' : 'Nenhum paciente com ciclo ativo.') + '</div>');
 }
+
+/* ── HAG_TRILHAS_v1 (21/11/2026) ─────────────────────────────────────────
+   Decisao do Dr.: cada ciclo tem ate DUAS trilhas clinicas (foco do acompanhamento).
+   Grava em ciclos.trilhas do ciclo ativo; o banco recusa mais de 2 ou nome fora da lista. */
+var TRILHAS_DR = [['caneta','Caneta'],['hormonios','Hormônios 35+'],['performance','Performance'],['forca','Força 40+'],['comportamento','Comportamento alimentar'],['metabolica','Saúde metabólica']];
+function trilhasBloco(pid){
+  var box = document.getElementById('pxTrilhas'); if(!box) return;
+  box.innerHTML = '<h2>Trilhas do ciclo</h2><div class="vazio">Carregando…</div>';
+  return api('ciclos?select=id,trilhas,tipo_ciclo&patient_id=eq.' + encodeURIComponent(pid) + '&status=eq.ativo&order=inicio.desc&limit=1').then(function(r){
+    var b = document.getElementById('pxTrilhas'); if(!b) return;
+    var c = (r || [])[0];
+    if(!c){ b.innerHTML = '<h2>Trilhas do ciclo</h2><div class="vazio card">Sem ciclo ativo.</div>'; return; }
+    var sel = c.trilhas || [];
+    b.innerHTML = '<h2>Trilhas do ciclo</h2><div class="card" style="padding:10px 12px"><div class="sub" style="margin-bottom:8px">Até duas. Personalizam metas, check-in e relatório.</div><div class="acoes" style="margin:0;flex-wrap:wrap;gap:6px">'
+      + TRILHAS_DR.map(function(x){ var on = sel.indexOf(x[0]) >= 0; return '<button type="button" data-trilha="' + x[0] + '" data-ciclo="' + esc(c.id) + '" data-pid="' + esc(pid) + '" class="' + (on ? 'pri' : '') + '">' + (on ? '✓ ' : '') + x[1] + '</button>'; }).join('')
+      + '</div></div>';
+  }).catch(function(e){ var b = document.getElementById('pxTrilhas'); if(b) b.innerHTML = '<h2>Trilhas do ciclo</h2><div class="msg erro">' + esc(e.message) + '</div>'; });
+}
+document.addEventListener('click', function(ev){
+  var bt = ev.target.closest && ev.target.closest('[data-trilha]'); if(!bt) return;
+  ev.preventDefault();
+  var cid = bt.getAttribute('data-ciclo'), pid = bt.getAttribute('data-pid'), id = bt.getAttribute('data-trilha');
+  var atuais = [].slice.call(document.querySelectorAll('#pxTrilhas [data-trilha].pri')).map(function(x){ return x.getAttribute('data-trilha'); });
+  var i = atuais.indexOf(id);
+  if(i >= 0) atuais.splice(i, 1); else { if(atuais.length >= 2){ aviso('No máximo duas trilhas. Tire uma antes.'); return; } atuais.push(id); }
+  api('ciclos?id=eq.' + encodeURIComponent(cid), { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ trilhas: atuais }) })
+    .then(function(){ aviso('Trilhas salvas'); trilhasBloco(pid); })
+    .catch(function(e){ aviso('Não salvou: ' + e.message); });
+});
+
 function centralBloco(pid, nome){
   var box = document.getElementById('pxCentral'); if(!box) return;
   box.innerHTML = '<h2>Central do paciente</h2><div class="vazio">Carregando…</div>';
