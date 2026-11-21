@@ -567,8 +567,10 @@ function janelaCheckin(CK){   /* HAG_CHECKIN_JANELA_v1 */
   var semAnt=new Date(seg); semAnt.setDate(semAnt.getDate()-7);
   var feitaSemana=!!(ult&&ult>=seg), feitaAnterior=!!(ult&&ult>=semAnt&&ult<seg);
   var devida=!feitaSemana&&!(CK&&CK.cadencia==='quinzenal'&&feitaAnterior);
-  var prox=new Date(seg); prox.setDate(prox.getDate()+(devida&&dow<=3?0:(CK&&CK.cadencia==='quinzenal'&&(feitaSemana)?14:7)));
-  return {aberta:dow<=3, feitaSemana:feitaSemana, devida:devida, proxima:isoD(prox)};
+  /* HAG_CHECKIN_SEG_QUA_v1 (21/11/2026, decisão do Dr.): a janela passou de seg-qui para seg-qua (91% das respostas),
+     porque o Dr. lê todos os check-ins num horário fixo na quinta às 7h e responde dentro do prazo de cada plano. */
+  var prox=new Date(seg); prox.setDate(prox.getDate()+(devida&&dow<=2?0:(CK&&CK.cadencia==='quinzenal'&&(feitaSemana)?14:7)));
+  return {aberta:dow<=2, feitaSemana:feitaSemana, devida:devida, proxima:isoD(prox)};
 }
 /* HAG_CENTRAL_EVOLUCAO_v1 (12/11/2026, decisão do Dr.): a evolução do corpo pela bioimpedância, um ponto por exame.
    Peso, massa muscular esquelética, gordura corporal e gordura visceral. Sem vermelho e sem faixa de bom ou ruim; quando o
@@ -710,7 +712,7 @@ function painel(d){
   /* HAG_CENTRAL_CHECKIN_v1: check-in da semana dentro da central, sem CPF */
   var CK=d.checkin||{};
   /* HAG_CHECKIN_BALANCO_v1: até 7 dias antes da consulta o check-in vira o balanço da fase (no lugar do mensal/trimestral genérico) */
-  /* HAG_CHECKIN_JANELA_v1 (12/11/2026, decisão do Dr.): o check-in abre de segunda a quinta e vale um por semana.
+  /* HAG_CHECKIN_JANELA_v1 (12/11/2026, decisão do Dr.): o check-in abre de segunda a quinta e vale um por semana. (21/11: seg a qua, HAG_CHECKIN_SEG_QUA_v1)
      Dados: 49% respondem na segunda, 27% na terça, 15% na quarta; a janela cobre 97%. O balanço antes da consulta
      substitui o check-in daquela semana. Fase quinzenal: semanas alternadas. O banco recusa uma segunda resposta na semana. */
   var JC=janelaCheckin(CK);
