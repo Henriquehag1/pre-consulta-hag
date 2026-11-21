@@ -629,6 +629,24 @@ function metasHTML(d){
 }
 /* HAG_CONSULTA_ANTECIPADA_v1 (13/11/2026): "Para agora" diz quando a consulta foi antecipada pelo Dr. (caso Maria Eduarda) */
 function mesAnoC(iso){ var M=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'], p=String(iso||'').split('-'); return p.length===3?M[+p[1]-1]+' de '+p[0]:''; }
+/* HAG_TRILHAS_CENTRAL_v1 (21/11/2026): o foco clinico do ciclo, escolhido pelo Dr. (ate duas trilhas). Metas de acao, sem promessa. */
+/* HAG_TRILHAS_CENTRAL_v1: a edge central nao manda as trilhas; quem manda e a funcao central_trilhas do banco,
+   com a mesma validacao de sessao da edge. Se a funcao ainda nao existir ou falhar, o painel segue sem o cartao. */
+function comTrilhas(d){
+  if(!d||VER||!SESSAO||!TOKEN||d.trilhas) return;
+  d.trilhas=[];
+  fetch(FN.replace(/\/functions\/v1\/.*$/,'')+'/rest/v1/rpc/central_trilhas',{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify({p_token:TOKEN,p_sessao:SESSAO})})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(x){ if(!Array.isArray(x)||!x.length) return; d.trilhas=x; var s=document.getElementById('trilhaSlot'); if(s) s.innerHTML=trilhaHTML(d); })
+    .catch(function(){});
+}
+function trilhaHTML(d){
+  var T=d.trilhas||[]; if(!T.length) return '';
+  return '<h3 class="tit">'+(T.length>1?'Suas trilhas':'Sua trilha')+'</h3>'+T.map(function(tr){
+    return '<div class="card" style="margin-bottom:10px"><p class="rot" style="margin:0 0 4px">'+esc(tr.nome)+'</p><ul class="metas">'+(tr.metas||[]).map(function(m,i){
+      return '<li><span class="n">'+(i+1)+'</span><span>'+esc(m)+'</span></li>'; }).join('')+'</ul></div>'; }).join('')
+    +'<p class="metnota" style="margin-top:2px">Escolhida pelo Dr. Henrique para o seu momento. O check-in traz perguntas sobre ela.</p>';
+}
 function protocoloHTML(d){
   var P=(d.extra||{}).protocolos||[]; if(!P.length) return '';
   return '<h3 class="tit">Seu protocolo</h3><div class="card">'+P.map(function(p){
@@ -740,6 +758,7 @@ function painel(d){
   }
 
   h+=protocoloHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
+  h+='<div id="trilhaSlot">'+trilhaHTML(d)+'</div>'; comTrilhas(d);   /* HAG_TRILHAS_CENTRAL_v1 */
   /* HAG_CENTRAL_SEM_METAS_v1 (13/11/2026): o Dr. tirou as metas da visão do paciente ("alguns têm metas diversas").
      As metas seguem no motor e no HAG Dr; metasHTML fica no arquivo para voltar se ele quiser. */
   h+=evolucaoHTML(d);   /* HAG_CENTRAL_EVOLUCAO_v1 */
@@ -845,6 +864,9 @@ function telaCheckin(d){
   } else {
     h+=escQ(['s_dieta','Alimentação','Seguiu o plano?',CINCO])+escQ(['s_treino','Treino','Cumpriu a meta?',CINCO]);
   }
+  /* HAG_TRILHAS_CENTRAL_v1: duas perguntas por trilha do ciclo */
+  (d.trilhas||[]).forEach(function(tr){ (tr.perguntas||[]).forEach(function(q){ h+='<div class="card ckq" data-tri="'+esc(q.id)+'"><div class="ckt"><b>'+esc(tr.nome)+' · '+esc(q.t)+'</b><span>'+esc(q.d)+'</span></div><div class="ckops">'
+    +CINCO.map(function(l,i){ return '<button data-v="'+i+'"><b>'+i+'</b><span>'+l+'</span></button>'; }).join('')+'</div></div>'; }); });
   h+=escQ(['s_sono','Sono','Acordou descansado?',['Péssimo','Ruim','Regular','Ok','Bom','Ótimo']]);
   /* HAG_RECUPERACAO_CENTRAL_v1: com o bloco de sono e descanso no plano, perguntas sobre ele */
   var PR=P&&P.recuperacao;
@@ -880,6 +902,7 @@ function telaCheckin(d){
     if(q.dataset.k){ if(v==='na') delete R[q.dataset.k]; else R[q.dataset.k]=+v; }
     if(q.dataset.meta) R.metas[q.dataset.meta]=+v;
     if(q.dataset.ex) R.exercicios[q.dataset.ex]=+v;
+    if(q.dataset.tri){ R.trilha=R.trilha||{}; R.trilha[q.dataset.tri]=+v; }   /* HAG_TRILHAS_CENTRAL_v1 */
     if(q.dataset.rec){ R.recuperacao=R.recuperacao||{}; R.recuperacao[q.dataset.rec]=+v; } }; }); });   /* HAG_RECUPERACAO_CENTRAL_v1 */
   tela.querySelectorAll('.ckmed').forEach(function(q){ var id=q.dataset.med;
     q.querySelectorAll('[data-uso]').forEach(function(b){ b.onclick=function(){ q.querySelectorAll('[data-uso]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); q.classList.add('feita'); R.meds[id]=b.dataset.uso; }; }); });
