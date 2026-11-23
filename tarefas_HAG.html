@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261123-1719"></script>
+<script src="hag_auth.js?v=20261123-2242"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -1392,7 +1392,7 @@ var DAN_TPL=[
      Dr. Henrique. Restante de consulta é dívida de serviço já prestado; plano é decisão da paciente: nunca condicionar um ao
      outro, e nunca oferecer desconto para destravar. [valor], [plano] e [prazo] são escritos à mão (Copiar), e o botão do
      WhatsApp fica travado enquanto estiverem no texto (ver _msgPendencias). */
-  {id:'pos_diag_silencio_t1',cat:'pos_consulta',nome:'Pós-diagnóstica · ficou de fechar e não respondeu · toque 1',sub:'Restante da consulta em aberto e plano indicado sem resposta, 2 dias de silêncio · uma mensagem só, com tudo pronto · Copiar e completar [valor], [plano] e [prazo] · espera 48 h',texto:'[nome], tudo bem? Deixo tudo organizado aqui:\n\n*Restante da consulta diagnóstica:* [valor]\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, te envio o link.\n\n*Seu acompanhamento:* o [plano] indicado pelo Dr. Henrique segue reservado até [prazo]. Para começar, é só me confirmar que eu organizo o pagamento e as datas.\n\nFicou alguma dúvida? Me conta.'},
+  {id:'pos_diag_silencio_t1',cat:'pos_consulta',nome:'Pós-diagnóstica · ficou de fechar e não respondeu · toque 1',sub:'Restante da consulta em aberto e plano indicado sem resposta, 2 dias de silêncio · uma mensagem só, com tudo pronto · Copiar e completar [valor], [plano] e [prazo] · espera 48 h',texto:'[nome], tudo bem? Deixo tudo organizado aqui:\n\n*Restante da consulta diagnóstica:* [valor]\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, te envio o link.\n\n*Seu acompanhamento:* o [plano] indicado pelo Dr. Henrique segue reservado até [prazo]. Para começar, é só me confirmar que eu organizo o pagamento e as datas.\n\nFicou alguma dúvida sobre como o acompanhamento funciona? Me conta.'},
   {id:'pos_diag_silencio_t2',cat:'pos_consulta',nome:'Pós-diagnóstica · ficou de fechar e não respondeu · toque 2 (último)',sub:'48 h depois do toque 1, sem resposta · encerra a reserva do plano e mantém o restante em aberto · depois disso, para de escrever e avisa o Dr. Henrique',texto:'[nome], como não tive o seu retorno, encerrei a reserva do [plano] e a vaga voltou para a agenda. Quando quiser começar, é só me chamar que eu vejo as datas e as condições do momento.\n\nO restante da consulta diagnóstica, [valor], segue em aberto.\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, te envio o link. Depois, me manda o comprovante por aqui.'},
   /* HAG_MSG_RESTANTE_EM_ABERTO_v1 (15/10/2026). Pergunta do Dr. Henrique depois do caso Bianca: e se a paciente seguir sem pagar o
      restante da consulta? Depois do toque 2 sobra só a dívida do serviço já prestado. Dois contatos, nada mais: um lembrete 7 dias
@@ -1527,7 +1527,7 @@ var DAN_TPL=[
      resolver. Quem oferece horario e a pagina, nunca a mensagem. */
   {id:'sem_resposta_link',cat:'pre_consulta',nome:'Lembrete · Recebeu o link e não escolheu',sub:'3 dias de silêncio · reforça a escolha, sem abrir negociação',texto:'[nome], tudo bem? A sua consulta ainda está sem data. As datas separadas para você estão no link:\n\n[link]\n\nLeva menos de um minuto, e o horário já fica guardado no seu nome.'},
   {id:'janela_fechando',cat:'pre_consulta',nome:'Lembrete · Datas do link acabando',sub:'Última chamada antes de o link vencer',texto:'[nome], tudo bem? As datas separadas para a sua consulta se encerram nos próximos dias. Para garantir a sua, escolha pelo link:\n\n[link]\n\nDepois disso eu preciso pedir ao Dr. Henrique uma nova liberação de agenda.'},
-  {id:'fechamento_aviso',cat:'finalizacao',nome:'Aviso da consulta de fechamento',sub:'Antes da última consulta do ciclo',texto:'[nome], a sua próxima consulta é a de fechamento do ciclo. Além de avaliar a sua evolução no período, é nela que o Dr. Henrique define com você o próximo passo: seguir com um novo ciclo ou encerrar com orientações de alta.\n\nVale ir pensando no que funcionou e no que travou. Ajuda a conversa render.'},
+  {id:'fechamento_aviso',cat:'finalizacao',nome:'Aviso da consulta de fechamento',sub:'Antes da última consulta do ciclo',texto:'[nome], a sua próxima consulta é a de fechamento do ciclo. Além de avaliar a sua evolução no período, é nela que o Dr. Henrique define com você o próximo passo: seguir com um novo ciclo ou encerrar com orientações de alta.\n\nVale ir pensando no que funcionou, no que travou e no que você quer garantir nos próximos meses. Ajuda a conversa render.'},
   {id:'proposta_toque1',cat:'finalizacao',nome:'Proposta sem resposta · toque 1',sub:'24h, metade do prazo · vale para nova e renovação',texto:'[nome], ficou alguma dúvida sobre o planejamento que o Dr. Henrique montou para você? Se for sobre forma de pagamento, me fala que eu te ajudo a organizar.\n\nA proposta vale até [data], e a sua vaga na agenda fica reservada até lá.'},
   {id:'proposta_toque2',cat:'finalizacao',nome:'Proposta sem resposta · toque 2',sub:'Prazo vencido, vaga liberada, sem aspereza',texto:'[nome], como não recebi a confirmação até [data], a reserva na agenda foi liberada e o planejamento se encerrou.\n\nIsso não fecha nenhuma porta: quando quiser retomar, me avisa que eu vejo as datas e as condições do momento. Foi um prazer acompanhar o seu ciclo até aqui.'},
   /* HAG_ALTA_ENTREGA_v2 (04/09/2026): tres correcoes.
@@ -5109,7 +5109,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261123-1719';
+  var VERSAO = '20261123-2242';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;

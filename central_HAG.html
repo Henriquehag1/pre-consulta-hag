@@ -961,6 +961,9 @@ function telaCheckin(d){
     +'<label class="ckl">Peso ou como as roupas estão <span>(opcional)</span></label><input id="ck_peso" type="text" inputmode="decimal">'
     +(temMed?'<label class="ckl">Medicação e suplementos dão para '+(PER?'o próximo mês':'7 dias')+'?</label><div class="ckops est">'
       +[['Sim, estoque suficiente','Sim'],['Preciso renovar em breve','Renovar em breve'],['Estou sem, preciso com urgência','Estou sem']].map(function(o){ return '<button data-est="'+o[0]+'"><span>'+o[1]+'</span></button>'; }).join('')+'</div>':'')
+    /* HAG_SPIN_v1 (23/11/2026): no balanço antes da consulta (e no check-in do mês ou do trimestre perto do fim do ciclo),
+       o que o paciente quer garantir nos próximos meses. O Dr. lê isso antes da conversa de renovação. */
+    +((BAL||(PER&&d.ciclo&&d.ciclo.fim&&diasAte(d.ciclo.fim)<=100))?'<label class="ckl">O que você quer garantir nos próximos meses? <span>(opcional)</span></label><textarea id="ck_prox" rows="2"></textarea>':'')
     +'<label class="ckl">'+(BAL?'O que você quer levar para a consulta?':'Algo para o Dr. Henrique?')+' <span>(opcional)</span></label><textarea id="ck_msg" rows="'+(BAL?3:2)+'"></textarea></div>'
     +'<div class="msg" id="ckM"></div><button class="btn" id="ckEnviar" style="margin-top:14px"'+(VER?' disabled':'')+'>'+(VER?'Pré-visualização':'Enviar check-in')+'</button>';
   tela.innerHTML=h; window.scrollTo(0,0);
@@ -987,6 +990,7 @@ function telaCheckin(d){
     if(base<3){ $('#ckM').textContent='Responda pelo menos alimentação, sono e energia.'; return; }
     var b=this; b.disabled=true; b.textContent='Enviando…';
     var r=Object.assign({},R,{colateral:$('#ck_colateral').value,peso:$('#ck_peso').value,estoque:EST,mensagem:$('#ck_msg').value});
+    var _px=$('#ck_prox'); if(_px && _px.value.trim()) r.proximos_meses=_px.value.trim().slice(0,600);   /* HAG_SPIN_v1 */
     r[ab[0]]=$('#ck_aberta').value;
     api({acao:'checkin',token:TOKEN,sessao:SESSAO,respostas:r}).then(function(x){
       if(x.fechado) return fechado(x.motivo);
