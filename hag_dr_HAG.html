@@ -1429,7 +1429,8 @@ function centralBloco(pid, nome){
   var box = document.getElementById('pxCentral'); if(!box) return;
   box.innerHTML = '<h2>Central do paciente</h2><div class="vazio">Carregando…</div>';
   return Promise.all([ api('v_central_painel?select=token,aparelhos,ultimo_uso,docs_visiveis,ciclo&patient_id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; }),
-                       api('patients?select=central_ocultar,central_liberada&id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; }) ]).then(function(r){
+                       api('patients?select=central_ocultar,central_liberada&id=eq.' + encodeURIComponent(pid)).catch(function(){ return []; }),
+                       rpc('hag_combinados_central', { p_patient: pid }).catch(function(){ return null; }) ]).then(function(r){   /* HAG_COMBINADOS_CENTRAL_v1 */
     var b2 = document.getElementById('pxCentral'); if(!b2) return;
     var x = (r[0] || [])[0], pr = (r[1] || [])[0] || {}, oc = pr.central_ocultar || [];
     COC[pid] = oc.slice();
@@ -1443,6 +1444,7 @@ function centralBloco(pid, nome){
     var g = oc.indexOf('evolucao') < 0, pe = oc.indexOf('peso') < 0;
     b2.innerHTML = '<h2>Central do paciente</h2>'
       + li('Situação', esc(st) + (x.docs_visiveis != null ? ' · ' + x.docs_visiveis + (x.docs_visiveis == 1 ? ' documento' : ' documentos') : ''))
+      + cmbLinha(r[2])   /* HAG_COMBINADOS_CENTRAL_v1 */
       + li('Gráficos de evolução', g ? 'aparecem para o paciente' : 'escondidos', '<button type="button" class="mini" data-cocult="evolucao" data-pid="' + id + '" data-nome="' + nm + '">' + (g ? 'Esconder' : 'Mostrar') + '</button>')
       + li('Peso', pe ? 'aparece' : 'escondido (músculo, gordura e visceral continuam)', '<button type="button" class="mini" data-cocult="peso" data-pid="' + id + '" data-nome="' + nm + '">' + (pe ? 'Esconder' : 'Mostrar') + '</button>')
       + '<div class="acoes">' + (x.token
@@ -1450,6 +1452,17 @@ function centralBloco(pid, nome){
           : '<button class="pri" data-cgerar="' + id + '" data-nome="' + nm + '">Gerar link da central</button>') + '</div>'
       + (libSoManual ? '<div class="meta" style="margin-top:8px">Liberada por você, sem ciclo ativo. <button type="button" class="mini" data-clib="0" data-pid="' + id + '" data-nome="' + nm + '">Fechar a central</button></div>' : '');
   });
+}
+/* HAG_COMBINADOS_CENTRAL_v1 (23/11/2026): situação dos "Nossos combinados" na ficha. Só contratos a partir de 21/11 (data da proposta);
+   quem contratou antes segue com o canal que foi vendido e não recebe o cartão. */
+function cmbLinha(c){
+  if(!c) return '';
+  if(c.elegivel){
+    if(c.aceito_em){ var t = new Date(c.aceito_em); return li('Nossos combinados', 'Aceitos em ' + dmy(c.aceito_em) + ' às ' + t.toLocaleTimeString('pt-BR', { timeZone:'America/Sao_Paulo', hour:'2-digit', minute:'2-digit' }) + ' · versão ' + esc(String(c.versao || '').replace(/^v/, ''))); }
+    return li('Nossos combinados', '<span class="logistica">Pendente</span> · aparece para ele na central até o aceite');
+  }
+  if(c.motivo === 'contrato_anterior') return li('Nossos combinados', 'Não se aplica: contratou antes de 21/11, segue o canal combinado na venda');
+  return '';
 }
 function centralLibera(pid, nome, v){
   api('patients?id=eq.' + encodeURIComponent(pid), { method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ central_liberada: !!v }) })
