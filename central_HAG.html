@@ -278,6 +278,28 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .avisoscel{display:flex;gap:12px;align-items:center;width:100%;background:var(--papel);border:1px solid var(--conhaque);border-radius:4px;padding:14px 16px;margin-top:16px;text-align:left;font-family:var(--t);color:var(--tinta);cursor:pointer}
 .avisoscel svg{width:22px;height:22px;flex:none;fill:none;stroke:var(--conhaque);stroke-width:1.5}
 .avisoscel .q{display:block;font-size:13.5px;color:var(--apoio)}
+/* HAG_COMBINADOS_CENTRAL_v1 (23/11/2026): "Nossos combinados", folha no primeiro acesso, cartao pendente no topo, cartao discreto depois do aceite */
+.cmb-pend{display:flex;align-items:center;gap:14px;width:100%;margin-top:18px;background:var(--papel);border:1px solid var(--conhaque);border-left:4px solid var(--conhaque);border-radius:6px;padding:15px 16px;text-align:left;cursor:pointer;font-family:var(--t);color:var(--tinta)}
+.cmb-pend .dt{flex:1;display:flex;flex-direction:column;gap:2px}
+.cmb-k{font-family:var(--r);font-weight:500;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--conhaque)}
+.cmb-pend .t{font-family:var(--d);font-size:19px}.cmb-pend .q{font-size:13px;color:var(--suave)}
+.cmb-fundo{position:fixed;inset:0;z-index:60;background:rgba(34,26,22,.45);display:flex;align-items:flex-end;justify-content:center}
+.cmb-folha{background:var(--papel);width:100%;max-width:560px;max-height:92vh;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:18px 18px 0 0;padding:24px 22px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -14px 36px -18px rgba(0,0,0,.45)}
+.cmb-folha h2{font-family:var(--d);font-weight:400;font-size:30px;line-height:1.1;margin:6px 0 8px}
+.cmb-folha .sub{font-size:15px;color:var(--suave)}
+.cmb-lista{list-style:none;margin:18px 0 16px;padding:0;display:flex;flex-direction:column;gap:13px}
+.cmb-lista li{display:grid;grid-template-columns:26px 1fr;gap:8px;font-size:15.5px;line-height:1.5;font-weight:400}
+.cmb-n{font-family:var(--r);font-size:12px;color:var(--conhaque);padding-top:3px}
+.cmb-urg{background:var(--linho);border-left:3px solid var(--conhaque);padding:11px 13px;font-size:14px;color:var(--suave);border-radius:2px}
+.cmb-urg b{color:var(--tinta);font-weight:500}
+.cmb-ok{display:flex;gap:11px;align-items:flex-start;font-size:15.5px;margin:18px 0 14px;cursor:pointer}
+.cmb-ok input{margin-top:2px;width:21px;height:21px;flex:none;accent-color:var(--conhaque)}
+.cmb-folha .btn:disabled{opacity:.45;cursor:not-allowed}
+.cmb-rod{font-size:12px;color:var(--apoio);margin:12px 0 0;text-align:center}
+.cmb-feito{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--suave);margin-top:16px}
+.cmb-pend .sv svg{width:18px;height:18px;stroke:var(--conhaque);fill:none;stroke-width:1.6}
+.cmb-folha .msg:empty{display:none}
+.cmb-feito svg{width:18px;height:18px;stroke:var(--conhaque);fill:none;stroke-width:1.6}
 </style>
 </head>
 <body>
@@ -703,11 +725,53 @@ function progresso(c,d){
     +(rv?'<div class="renov">'+IC.ok+'<span><b>Renovação confirmada.</b> '+esc(nomeCiclo(rv.tipo))+' a partir de '+dataBR(rv.inicio)+'.</span></div>':'')
     +consultasHTML(d)+'</div>';
 }
+/* HAG_COMBINADOS_CENTRAL_v1 (23/11/2026, decisao do Dr.; validado pelo juridico). Os combinados do plano, numa folha que abre no
+   primeiro acesso de quem contratou a partir de 21/11. "Ler com calma depois" fecha a folha e deixa o cartao no topo ate o aceite.
+   Nada clinico fica preso ao aceite: planos, receitas e exames seguem abertos. O texto vem do banco (hag_combinados_central);
+   o aceite manda o hash do texto exibido, e o banco recusa se o texto tiver mudado. */
+var CMB_ADIADO=false;
+function cmbHora(iso){ try{ var x=new Date(iso); return dataBR(x.toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'}))+' às '+x.toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}); }catch(e){ return dataBR(iso); } }
+function cmbPendente(d){ var C=d&&d.combinados; return !!(C&&C.elegivel&&!C.aceito_em); }
+function cmbTopoHTML(d){ if(!cmbPendente(d)) return ''; var C=d.combinados;
+  return '<button class="cmb-pend" id="bCmb"><span class="dt"><span class="cmb-k">Falta você</span><span class="t">Nossos combinados</span><span class="q">'+C.itens.length+' pontos do seu acompanhamento. Leia e confirme.</span></span><span class="sv">'+IC.seta+'</span></button>'; }
+function cmbCartao(d){ var C=d&&d.combinados; if(!C||!C.elegivel||!C.aceito_em) return '';
+  return '<button class="plano" id="cCmb"><span class="ic">'+IC.ok+'</span><span class="t">Nossos combinados</span><span class="q">Aceitos em '+esc(cmbHora(C.aceito_em))+'</span><span class="a">Ver</span></button>'; }
+function cmbFecha(){ var f=document.getElementById('cmbFundo'); if(f) f.remove(); document.body.style.overflow=''; }
+function cmbFolha(d){
+  var C=d.combinados; if(!C) return; cmbFecha();
+  var lido=!!C.aceito_em||!!VER;
+  var h='<div class="cmb-fundo" id="cmbFundo"><div class="cmb-folha" role="dialog" aria-modal="true" aria-labelledby="cmbTit">'
+    +'<p class="rot">'+(C.aceito_em?'Seu acompanhamento':'Antes de começar')+'</p><h2 id="cmbTit">Nossos combinados</h2>'
+    +'<p class="sub">'+esc(C.plano)+(C.aceito_em?'':'. Os combinados do seu acompanhamento, num lugar só. Leva um minuto.')+'</p>'
+    +'<ol class="cmb-lista">'+C.itens.map(function(t,i){ return '<li><span class="cmb-n">'+(i<9?'0':'')+(i+1)+'</span><span>'+esc(t)+'</span></li>'; }).join('')+'</ol>'
+    +'<div class="cmb-urg"><b>Não é canal de urgência.</b> '+esc(String(C.urgencia||'').replace(/^A Central e as mensagens não são canal de urgência\.\s*/,''))+'</div>';
+  if(C.aceito_em) h+='<div class="cmb-feito">'+IC.ok+'<span>Aceitos em '+esc(cmbHora(C.aceito_em))+'</span></div><button class="btn" id="cmbFechar" style="margin-top:18px">Fechar</button>';
+  else if(VER) h+='<div class="cmb-feito">Visualização da equipe: o paciente ainda não confirmou.</div><button class="btn" id="cmbFechar" style="margin-top:18px">Fechar</button>';
+  else h+='<label class="cmb-ok"><input type="checkbox" id="cmbChk"><span>Li e estou de acordo com estes combinados.</span></label>'
+    +'<button class="btn" id="cmbOk" disabled>Confirmar</button><div class="msg" id="cmbMsg"></div>'
+    +'<div style="text-align:center;margin-top:8px"><button class="link" id="cmbDepois">Ler com calma depois</button></div>';
+  h+='<p class="cmb-rod">Versão '+esc(String(C.versao||'').replace(/^v/,''))+'</p></div></div>';
+  document.body.insertAdjacentHTML('beforeend',h); document.body.style.overflow='hidden';
+  var fx=$('#cmbFechar'); if(fx) fx.onclick=cmbFecha;
+  var dp=$('#cmbDepois'); if(dp) dp.onclick=function(){ CMB_ADIADO=true; cmbFecha(); };
+  var ck=$('#cmbChk'), ok=$('#cmbOk');
+  if(ck) ck.onchange=function(){ ok.disabled=!ck.checked; };
+  if(ok) ok.onclick=function(){
+    ok.disabled=true; ok.textContent='Registrando…';
+    var ap=(navigator.userAgent.match(/iPhone|iPad|Android|Mac|Windows/)||['aparelho'])[0];
+    api({acao:'combinados_aceitar',token:TOKEN,sessao:SESSAO,hash:C.hash,aparelho:ap}).then(function(r){
+      if(r&&r.ok){ C.aceito_em=r.aceito_em||new Date().toISOString(); cmbFecha(); painel(d); return; }
+      if(r&&r.erro==='texto_mudou'){ api({acao:'dados',token:TOKEN,sessao:SESSAO}).then(function(x){ if(x&&x.ok&&x.dados){ d=x.dados; painel(d); if(cmbPendente(d)) cmbFolha(d); } }); return; }
+      ok.disabled=false; ok.textContent='Confirmar'; $('#cmbMsg').textContent=(r&&ERROS[r.erro])||'Não conseguimos registrar agora. Tente de novo em instantes.';
+    });
+  };
+}
 function painel(d){
   d=d||{}; var L=d.links||{};
   var h=VOLTA_DR+(VER?'<div class="aviso" style="margin:0 0 14px;border-left-color:#8C4F2B"><b>Visualização da equipe.</b> É assim que o paciente vê a central. Nada aqui fica registrado como acesso dele.</div>':'')
     +'<p class="rot">Seu acompanhamento</p><h1>Olá, '+esc(d.nome||'')+'.</h1>';
   if(d.ciclo){ h+=progresso(d.ciclo,d)||('<p class="sub">'+esc(nomeCiclo(d.ciclo.tipo))+(d.ciclo.fim?' · até '+dataBR(d.ciclo.fim):'')+'</p>'); }
+  h+=cmbTopoHTML(d);   /* HAG_COMBINADOS_CENTRAL_v1 */
 
   /* HAG_CENTRAL_CHECKIN_v1: check-in da semana dentro da central, sem CPF */
   var CK=d.checkin||{};
@@ -800,6 +864,7 @@ function painel(d){
   if(SNK.length) cards.push('<button class="plano" id="cSnk"><span class="ic">'+IC.snk+'</span><span class="t">Lanches proteicos</span><span class="q">'+SNK.length+' opções que valem a pena</span><span class="a">Ver</span></button>');   /* HAG_SNACKS_v1 */
   var XN=(d.extra||{}), nN=(XN.notas||[]).length, nE=(XN.notas_ano||{}).emitidas||0;   /* HAG_CENTRAL_NIVEL2_v1 */
   if(nN||nE) cards.push('<button class="plano" id="cNf"><span class="ic">'+IC.nf+'</span><span class="t">Notas fiscais</span><span class="q">'+(nN?nN+(nN>1?' notas':' nota'):nE+(nE>1?' emitidas em ':' emitida em ')+esc(XN.notas_ano.ano))+'</span><span class="a">Ver</span></button>');
+  var cmbC=cmbCartao(d); if(cmbC) cards.push(cmbC);   /* HAG_COMBINADOS_CENTRAL_v1 */
   cards.push('<button class="plano" id="cEx"><span class="ic">'+IC.ex+'</span><span class="t">Exames</span><span class="q">'+(g.exame.length?g.exame.length+(g.exame.length>1?' arquivos':' arquivo'):'Envie seus exames por aqui')+'</span><span class="a">Ver</span></button>');
   h+='<div class="planos n'+cards.length+'">'+cards.join('')+'</div>';
   if(!g.plano_tratamento.length&&!g.plano_alimentar.length&&!g.receita.length) h+='<p class="exnota">Os seus planos e receitas aparecem aqui assim que o Dr. Henrique concluir o seu plano.</p>';
@@ -824,6 +889,8 @@ function painel(d){
   var cnf=$('#cNf'); if(cnf) cnf.onclick=function(){ telaNotas(d); };   /* HAG_CENTRAL_NIVEL2_v1 */
   var agx=$('#agEx'); if(agx) agx.onclick=function(){ telaExames(d); };
   var bav=$('#bAv'); if(bav) bav.onclick=function(){ ligarAvisos(bav); };
+  var bcm=$('#bCmb'); if(bcm) bcm.onclick=function(){ cmbFolha(d); };   /* HAG_COMBINADOS_CENTRAL_v1 */
+  var ccm=$('#cCmb'); if(ccm) ccm.onclick=function(){ cmbFolha(d); };
   /* HAG_CENTRAL_VER_EQUIPE_v2: na visualização da equipe os atalhos levam aos links DO PACIENTE.
      Agendar ali marcaria consulta em nome dele; Treino gravaria registro como se fosse ele. Ficam desligados. */
   if(VER){ tela.querySelectorAll('a[href^="agendar_HAG"],a.app,a.atalho').forEach(function(a){
@@ -831,6 +898,7 @@ function painel(d){
     a.onclick=function(){ $('#mDoc').textContent='Na visualização da equipe os atalhos ficam desligados: abririam a agenda e os apps em nome do paciente.'; $('#mDoc').scrollIntoView({block:'center'}); };
   }); }
   ligaInstalar(d);   /* HAG_CENTRAL_INSTALAR_v1 */
+  if(!VER&&!CMB_ADIADO&&cmbPendente(d)&&!document.getElementById('cmbFundo')) cmbFolha(d);   /* HAG_COMBINADOS_CENTRAL_v1: abre sozinha ate o aceite ou o 'depois' */
   if($('#bSair')) $('#bSair').onclick=function(){ api({acao:'sair',sessao:SESSAO}).then(function(){ ls.del('hagcentral.s'); SESSAO=''; inicio(); }); };
 }
 
