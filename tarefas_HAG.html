@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261123-1654"></script>
+<script src="hag_auth.js?v=20261123-1719"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -2957,7 +2957,8 @@ var _CRIADORES={
   pedido_remarcacao: {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que pediu para remarcar'},
   pedido_ajuda:      {curto:'&#x1f9d1; Paciente',   longo:'pelo proprio paciente, que nao achou horario'},
   vaga_aberta:       {curto:'&#x26a0; Vaga aberta', longo:'pelo sistema, quando a vaga abriu'},
-  desmarcacao:       {curto:'&#x2715; Desmarcação', longo:'pelo painel Desmarcou (controle antecipado ou diagnóstica a remarcar)'} /* HAG_DESMARCAR_ANTECIPA_v1 */
+  desmarcacao:       {curto:'&#x2715; Desmarcação', longo:'pelo painel Desmarcou (controle antecipado ou diagnóstica a remarcar)'}, /* HAG_DESMARCAR_ANTECIPA_v1 */
+  checkin_sem_resposta: {curto:'&#x2699; Sistema', longo:'pelo sistema: o check-in ficou 3 dias sem resposta depois do e-mail e a pessoa ainda não usa a Central'} /* HAG_CHECKIN_SEM_RESPOSTA_v1 */
 };
 function _quemCriou(cp){
   return _CRIADORES[String(cp||'')] || {curto:'&#x1f9ba; Medico', longo:'pelo Dr. Henrique'};
@@ -4199,6 +4200,28 @@ async function bloqReabrir(id){
 }
 function _dsmBloq(){ return !!(_dsm && _dsm.t && _dsm.t.agendado_data && _bloqDoDia(String(_dsm.t.agendado_data).slice(0,10), _dsm.t.local)); }
 
+/* HAG_CHECKIN_SEM_RESPOSTA_v1 (23/11/2026, pedido do Dr.). Caso Bruno Aguiar e Wilson: quem nunca abriu a Central
+   recebe o check-in do mês só por e-mail e não responde. Três dias depois do e-mail sem resposta, a rotina do banco
+   (hag_checkin_sem_resposta, pg_cron diário) cria esta tarefa com a mensagem pronta e o link da Central do paciente.
+   "Enviar mensagem" abre o WhatsApp com o texto e marca como aguardando; quando ele responde, a rotina conclui sozinha. */
+function _ehCk(t){ return t && t.tipo==='Check-in sem resposta' && !!t.obs; }
+async function ckMensagem(id){
+  var t=(_tasks||[]).find(function(x){return x.id===id;}); if(!t) return;
+  var fone=_filaFone(t.patient_id), msg=String(t.obs||'');
+  if(!fone){
+    try{ await navigator.clipboard.writeText(msg); toast('Sem WhatsApp no cadastro. Mensagem copiada.','ok'); }
+    catch(e){ prompt('Sem WhatsApp no cadastro. Copie a mensagem:', msg); }
+  } else {
+    window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
+  }
+  if(t.status==='pendente'||t.status==='andamento'){
+    try{
+      await db.from('tarefas').update({status:'aguardando',atualizado_em:new Date().toISOString()}).eq('id',id);
+      _tasks=await loadTasks(); render();
+      toast('WhatsApp aberto · '+String(t.patient_nome||'').split(' ')[0]+' aguardando o check-in','ok');
+    }catch(e){ toast('WhatsApp aberto, mas não consegui marcar: '+e.message,'err'); }
+  }
+}
 function buildCard(t){
   const color=gac(t.patient_nome);
   const stCls='st-'+(t.prioridade==='urgente'?'urgente':t.status);
@@ -4245,13 +4268,13 @@ function buildCard(t){
       '<div class="tc-info">'+
         '<div class="tc-name">'+t.patient_nome+'</div>'+
         '<div class="tc-tipo">'+t.tipo+'</div>'+
-        (t.descricao?'<div class="tc-desc">'+t.descricao+'</div>':'')+(t.obs?'<div class="tc-desc" style="color:var(--ink3)">'+t.obs+'</div>':'')+
+        (t.descricao?'<div class="tc-desc">'+t.descricao+'</div>':'')+(t.obs&&!_ehCk(t)?'<div class="tc-desc" style="color:var(--ink3)">'+t.obs+'</div>':'')+
         respostasHtml+
         '<div class="tc-meta">'+criadoPor+' &middot; '+criado+'</div>'+
       '</div>'+
       '<div class="tc-right">'+
         '<span class="tc-status-badge '+badgeCls+'">'+badgeLabel+'</span>'+
-        '<div class="tc-actions">'+advBtn+anotBtn+editBtn+delBtn+'</div>'+
+        '<div class="tc-actions">'+(_ehCk(t)&&t.status!=='concluida'?'<button class="btn-adv to-andamento" onclick="event.stopPropagation();ckMensagem(\''+tid+'\')">&#x1f4f2; Enviar mensagem</button> ':'')+advBtn+anotBtn+editBtn+delBtn+'</div>'+
       '</div>'+
     '</div>'+
   '</div>';
@@ -5086,7 +5109,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261123-1654';
+  var VERSAO = '20261123-1719';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
