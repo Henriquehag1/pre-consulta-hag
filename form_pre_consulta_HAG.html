@@ -619,6 +619,16 @@ var SURL = 'https://yutcnphwovqeiwcwzzhs.supabase.co';
 /* HAG: identificacao do paciente pelo link (?patient=<id>) */
 /* Intake de paciente novo: se houver id no link, reutiliza o paciente existente; */
 /* sem id, mantem o fluxo de cadastro. Nunca le a lista de pacientes. */
+/* HAG_INDICAR_CENTRAL_v1 (24/11/2026): convite de indicação enviado pela Central de um paciente (?ind=<código>).
+   O código é aleatório e não identifica ninguém nesta página; vai em respostas.indicacao e o banco liga ao paciente. */
+window.HAG_IND = (function(){
+  try{ var c=(new URLSearchParams(window.location.search).get('ind')||'').toUpperCase(); return /^[A-Z0-9]{4,10}$/.test(c)?c:''; }catch(e){ return ''; }
+})();
+document.addEventListener('DOMContentLoaded', function(){
+  if(!window.HAG_IND) return;
+  try{ var g=document.getElementById('c_conheceu'); var el=g&&[].slice.call(g.querySelectorAll('.chip-opt')).filter(function(c){ return c.textContent.trim()==='Indicação de amigo'; })[0];
+       if(el) toggleChipSingle(el,'c_conheceu'); }catch(e){}
+});
 window.HAG_URL_PID = (function(){
   try{
     var q = new URLSearchParams(window.location.search);
@@ -1712,6 +1722,7 @@ async function cpfLookupPatient(cpf, supaUrl, supaKey){ return docLookupPatient(
 <script>
 /* HAG_SPIN_v1 (23/11/2026): as respostas do paciente nas palavras dele, estruturadas, para o motor de consulta
    e o briefing lerem sem parse. Situação (o resto do formulário), problema, implicação e necessidade. */
+function hagIndCodigo(){ return window.HAG_IND || ''; }   /* HAG_INDICAR_CENTRAL_v1 */
 function hagSpinColeta(){
   function v(id){ var el=document.getElementById(id); return el ? String(el.value||'').trim().slice(0,600) : ''; }
   var inc=''; try{ inc=[].slice.call(document.querySelectorAll('#c_incomoda .chip-opt.on, #c_incomoda .chip-opt.selected, #c_incomoda .chip-opt.active')).map(function(x){ return x.textContent.trim(); }).join(', '); }catch(e){}
@@ -2112,7 +2123,7 @@ async function submitForm(){
       var _chk = { patient_nome:nomeP, semana:'Pre-consulta', data_envio:new Date().toISOString().slice(0,10),
         padroes:[], peso:fvp('f_peso'), mensagem:(fvp('f_mensagem')||fvp('f_uma_coisa')), interpretacao:interpretacao||'',
         texto_completo:soapTxt||'', tipo:'pre-consulta',
-        respostas:(function(){ var ex=fvp('f_exames_recentes'); try{ return { escalas: escalasColeta(), exames_recentes: ex, spin: hagSpinColeta() }; }catch(e){ return ex ? { exames_recentes: ex, spin: hagSpinColeta() } : { spin: hagSpinColeta() }; } })() };   /*HAG_ESCALAS_v1 HAG_FLUXO_SINAL_v1 HAG_SPIN_v1*/
+        respostas:(function(){ var ex=fvp('f_exames_recentes'); try{ return { escalas: escalasColeta(), exames_recentes: ex, spin: hagSpinColeta(), indicacao: hagIndCodigo() || undefined }; }catch(e){ return ex ? { exames_recentes: ex, spin: hagSpinColeta(), indicacao: hagIndCodigo() || undefined } : { spin: hagSpinColeta(), indicacao: hagIndCodigo() || undefined }; } })() };   /*HAG_ESCALAS_v1 HAG_FLUXO_SINAL_v1 HAG_SPIN_v1 HAG_INDICAR_CENTRAL_v1*/
       try{
         var _rpc = await fetch(SURL+'/rest/v1/rpc/upsert_pre_consulta', {
           method:'POST', headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
@@ -2242,7 +2253,7 @@ async function submitForm(){
       criado: new Date().toISOString(),
       tipo: 'pre-consulta',
       /*HAG_ESCALAS_v1: escore estruturado, para automacao futura ler sem parse*/
-      respostas: (function(){ var ex=fvp('f_exames_recentes'); try{ return { escalas: escalasColeta(), exames_recentes: ex, spin: hagSpinColeta() }; }catch(e){ return ex ? { exames_recentes: ex, spin: hagSpinColeta() } : { spin: hagSpinColeta() }; } })()   /* HAG_SPIN_v1 */
+      respostas: (function(){ var ex=fvp('f_exames_recentes'); try{ return { escalas: escalasColeta(), exames_recentes: ex, spin: hagSpinColeta(), indicacao: hagIndCodigo() || undefined }; }catch(e){ return ex ? { exames_recentes: ex, spin: hagSpinColeta(), indicacao: hagIndCodigo() || undefined } : { spin: hagSpinColeta(), indicacao: hagIndCodigo() || undefined }; } })()   /* HAG_SPIN_v1 HAG_INDICAR_CENTRAL_v1 */
     };
     // _HAG_PATCH_BLINDAGEM_v1 : so grava checkin se o paciente existe de fato
     // (a tabela checkins tem FK para patients; sem paciente, o checkin e rejeitado)

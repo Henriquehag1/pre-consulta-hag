@@ -40,6 +40,8 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .btn:disabled{opacity:.5}
 .btn.claro{background:transparent;color:var(--choc);border:1px solid var(--choc)}
 .btn+.btn{margin-top:10px}
+/* HAG_INDICAR_CENTRAL_v1 */
+.ind{border-color:var(--conhaque)}.ind h4{font-family:var(--t);font-size:18px;font-weight:600;color:var(--choc);margin:4px 0 6px}.ind .sub{font-size:15px;margin:0 0 14px}.ind .acoes{display:flex;gap:14px;align-items:center;margin-top:10px}
 .link{background:none;border:0;color:var(--conhaque);font-family:var(--t);font-size:15px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 0}
 .cod{width:100%;font-family:var(--d);font-size:36px;letter-spacing:.35em;text-align:center;padding:14px 8px;border:1px solid var(--fio);background:#fff;border-radius:3px;color:var(--tinta)}
 .msg{min-height:22px;margin-top:10px;font-size:14.5px;color:#8a2e2e}
@@ -872,6 +874,7 @@ function painel(d){
     return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo)+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>';
   }).join('')+'</ul></div>'; }
   h+='<div class="msg" id="mDoc"></div>';
+  h+=indHTML(d);   /* HAG_INDICAR_CENTRAL_v1 */
 
   /* equipe */
   h+='<a class="equipe" href="'+WPP+'" target="_blank" rel="noopener"><span class="ic">'+IC.chat+'</span><span class="dt"><span class="t">Falar com a equipe</span><span class="q">WhatsApp do consultório</span></span><span class="sv">'+IC.seta+'</span></a>';
@@ -898,6 +901,7 @@ function painel(d){
     a.onclick=function(){ $('#mDoc').textContent='Na visualização da equipe os atalhos ficam desligados: abririam a agenda e os apps em nome do paciente.'; $('#mDoc').scrollIntoView({block:'center'}); };
   }); }
   ligaInstalar(d);   /* HAG_CENTRAL_INSTALAR_v1 */
+  indLiga(d);   /* HAG_INDICAR_CENTRAL_v1 */
   if(!VER&&!CMB_ADIADO&&cmbPendente(d)&&!document.getElementById('cmbFundo')) cmbFolha(d);   /* HAG_COMBINADOS_CENTRAL_v1: abre sozinha ate o aceite ou o 'depois' */
   if($('#bSair')) $('#bSair').onclick=function(){ api({acao:'sair',sessao:SESSAO}).then(function(){ ls.del('hagcentral.s'); SESSAO=''; inicio(); }); };
 }
@@ -1001,6 +1005,75 @@ function telaCheckin(d){
     });
   };
 }
+/* ══ HAG_INDICAR_CENTRAL_v1 · 24/11/2026 ═══════════════════════════════════════
+   POR QUE: pedido do Dr. Indicação de amigo traz metade dos pacientes (7 de 14 pré-consultas em 5 meses) e não era
+   estimulada nem medida. O cartão aparece depois de 3 semanas de acompanhamento (antes disso o convite soa cedo demais)
+   e, uma vez a cada 30 dias, depois de um check-in bom (o momento em que a pessoa sente o resultado). O convite leva a
+   pré-consulta com ?ind=<código aleatório do paciente>; nada do paciente vai no link. Sem benefício em troca.
+   O código e o registro do toque vêm da função central_indicacao do banco (mesma sessão da Central). */
+var IND={cod:'',pend:false};
+function indElegivel(d){
+  if(!d||!d.ciclo||!d.ciclo.inicio) return false;
+  return diasAte(d.ciclo.inicio) <= -21;
+}
+function indCodigo(cb){
+  if(IND.cod){ if(cb) cb(IND.cod); return; }
+  if(VER||!SESSAO||!TOKEN||IND.pend) return;
+  IND.pend=true;
+  fetch(FN.replace(/\/functions\/v1\/.*$/,'')+'/rest/v1/rpc/central_indicacao',{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify({p_token:TOKEN,p_sessao:SESSAO,p_acao:'codigo'})})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(x){ IND.pend=false; if(x&&x.ok&&x.codigo){ IND.cod=x.codigo; if(cb) cb(IND.cod); } })
+    .catch(function(){ IND.pend=false; });
+}
+function indToque(canal){
+  if(VER||!SESSAO||!TOKEN) return;
+  try{ fetch(FN.replace(/\/functions\/v1\/.*$/,'')+'/rest/v1/rpc/central_indicacao',{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify({p_token:TOKEN,p_sessao:SESSAO,p_acao:canal})}).catch(function(){}); }catch(e){}
+}
+function indLink(){ return 'https://clinicahag.com/preconsulta?ind='+encodeURIComponent(IND.cod); }
+function indTexto(){
+  return 'Oi! Faço acompanhamento com o Dr. Henrique Alves (médico, CRM/SP 226530) no Método HAG, de emagrecimento e saúde muscular após os 35. Lembrei de você. '
+    +'Se quiser conhecer, por este link você faz a pré-consulta e a equipe te explica como funciona: '+indLink();
+}
+function indBotoes(){
+  return '<button class="btn" data-ind="enviar"'+(VER?' disabled':'')+'>Enviar convite</button>'
+    +'<div class="acoes"><button class="link" data-ind="copiar"'+(VER?' disabled':'')+'>Copiar o link do convite</button></div>'
+    +'<div class="msg" data-ind-msg></div>';
+}
+function indHTML(d){
+  if(!indElegivel(d)&&!VER) return '';
+  return '<div class="card ind"><p class="rot">Indicar</p><h4>Conhece alguém que quer cuidar do peso e do músculo de perto?</h4>'
+    +'<p class="sub">Mande o convite. A pessoa conhece o Método HAG e faz a pré-consulta pelo link; a equipe explica o resto.</p>'
+    +indBotoes()
+    +(VER?'<p class="exnota">Visualização da equipe: o convite fica desligado aqui.</p>':'')+'</div>';
+}
+function indPosCheckin(d, score){
+  if(VER||!indElegivel(d)||!(+score>=70)) return '';
+  var ult=+(ls.get('hagcentral.indck')||0);
+  if(ult && Date.now()-ult < 30*864e5) return '';
+  ls.set('hagcentral.indck', String(Date.now()));
+  return '<div class="card ind"><p class="rot">Que bom que está indo bem</p>'
+    +'<p class="sub" style="margin-top:6px">Se alguém perto de você quer esse mesmo cuidado, você pode mandar o convite.</p>'+indBotoes()+'</div>';
+}
+function indLiga(d){
+  var bs=tela.querySelectorAll('[data-ind]'); if(!bs.length) return;
+  indCodigo();
+  bs.forEach(function(b){ b.onclick=function(){
+    var acao=b.getAttribute('data-ind'), box=b.closest('.ind'), m=box&&box.querySelector('[data-ind-msg]');
+    if(VER) return;
+    if(!IND.cod){ if(m) m.textContent='Preparando o convite, toque de novo em instantes.'; indCodigo(function(){ if(m) m.textContent=''; }); return; }
+    if(acao==='copiar'){
+      var ok=function(){ if(m) m.textContent='Link copiado. É só colar na conversa.'; };
+      try{ navigator.clipboard.writeText(indLink()).then(ok, function(){ if(m) m.textContent=indLink(); }); }catch(e){ if(m) m.textContent=indLink(); }
+      indToque('copiar'); return;
+    }
+    if(navigator.share){
+      navigator.share({text:indTexto()}).then(function(){ indToque('compartilhar'); }, function(){});
+      return;
+    }
+    indToque('whatsapp');
+    window.open('https://wa.me/?text='+encodeURIComponent(indTexto()),'_blank','noopener');
+  }; });
+}
 function telaCheckinFeito(d, score, emerg){
   var CK=d.checkin||{}, hs=(CK.historico||[]);
   var barras=hs.map(function(c){ var p=Math.max(6,Math.min(100,+c.score||0)); return '<div class="b"><i style="height:'+p+'%"></i><span>'+dataBR(c.data).slice(0,5)+'</span></div>'; }).join('');
@@ -1009,8 +1082,10 @@ function telaCheckinFeito(d, score, emerg){
     +(CK.cadencia==='quinzenal'?'<p class="sub" style="font-size:14px;margin-top:8px">Sua fase está estável: o próximo check-in vem em duas semanas.</p>':'')
     +(CK.periodo?'':'<div class="card"><div class="ckres"><div><b>'+(CK.sequencia||1)+'</b><span>'+((CK.sequencia||1)>1?'semanas seguidas':'semana')+'</span></div>'
     +(hs.length>1?'<div class="graf">'+barras+'</div>':'')+'</div></div>')
+    +indPosCheckin(d, score)   /* HAG_INDICAR_CENTRAL_v1 */
     +'<button class="btn claro" id="ckOk" style="margin-top:14px">Voltar ao início</button>';
   window.scrollTo(0,0); $('#ckOk').onclick=function(){ painel(d); };
+  indLiga(d);
   try{ if(navigator.clearAppBadge) navigator.clearAppBadge().catch(function(){}); }catch(e){}
 }
 
