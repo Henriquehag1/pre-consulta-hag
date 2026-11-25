@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261123-2242"></script>
+<script src="hag_auth.js?v=20261125-1846"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -3266,7 +3266,7 @@ function blocoSinais(){
       +'</div>'
       +(x.comprovante_path?'<button onclick="verComprovanteSinal(\''+x.id+'\')" title="Abre o comprovante enviado pelo paciente" style="border:1px solid #1D6B45;background:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;color:#1D6B45">Ver comprovante</button>':'')
       +'<button onclick="whatsSinal(\''+x.id+'\')" title="Abre o WhatsApp para pedir o comprovante" style="border:1px solid #ddd0a8;background:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;color:#6E3E22">Cobrar comprovante</button>'
-      +'<button onclick="confirmarSinal(\''+x.id+'\')" title="O comprovante chegou: confirma o agendamento e cria a tarefa de lançar na Livance" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer">Sinal recebido</button>'
+      +'<button onclick="confirmarSinal(\''+x.id+'\')" title="O comprovante chegou: confirma o agendamento, cria a tarefa de lançar na Livance e lança o sinal no financeiro" style="border:1px solid #1a1a18;background:#1a1a18;color:#fff;border-radius:9px;padding:8px 12px;font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer">Sinal recebido</button>'
       +'</div>';
   }).join('');
   return '<div style="margin:0 0 12px;padding:10px 13px;background:#FBF8F0;border:1px solid #ddd0a8;border-radius:10px">'
@@ -3302,15 +3302,64 @@ async function whatsSinal(id){
   window.open('https://wa.me/'+fone+'?text='+encodeURIComponent(msg),'_blank');
   toast('WhatsApp aberto','ok');
 }
+/* HAG_SINAL_FINANCEIRO_v1 (25/11/2026, pedido do Dr.: "faça o botão sim no financeiro").
+   Antes, "Sinal recebido" só confirmava o agendamento; o lançamento no financeiro era outro passo (Mais, Recebimento)
+   e dava para confirmar e esquecer de lançar. Agora o mesmo clique pergunta como foi pago (Pix R$ 450 ou cartão
+   R$ 480 em 3x, HAG_SINAL_CARTAO_v1) e lança em receitas pela mesma RPC do Recebimento (m1_consulta, sinal, NFS-e pendente).
+   Ordem: confirma o sinal primeiro (o agendamento é o que não pode falhar) e depois lança. Se já foi lançado à mão,
+   a trava de duplicata do banco (mesmo valor em 3 dias) responde e nada se repete. "Já está no financeiro" pula o lançamento. */
+function _sinalPergunta(x){
+  return new Promise(function(resolve){
+    var ov=document.createElement('div'); ov.className='modal-overlay vis'; ov.id='modalSinalPg';
+    var nome=_recEsc(String(x.patient_nome||'').split(' ').slice(0,3).join(' '));
+    var pix=Number(x.sinal_valor)||450;
+    var bt='display:block;width:100%;text-align:left;border:1px solid #ddd0a8;background:#fff;border-radius:10px;padding:11px 13px;margin-top:8px;font-family:inherit;font-size:.86rem;cursor:pointer;color:#2b2a26';
+    ov.innerHTML='<div class="modal-box"><div class="modal-hdr"><div class="modal-ttl">Sinal recebido</div>'
+      +'<button class="modal-x" data-sp="x">&#x2715;</button></div><div class="modal-body">'
+      +'<div style="font-size:.86rem;color:#2b2a26"><b>'+nome+'</b>. O agendamento passa a valer, entra a tarefa de lançar na Livance e o valor vai para o financeiro.</div>'
+      +'<div style="font-size:.78rem;color:#6b6b63;margin-top:10px">Data do pagamento</div>'
+      +'<input type="date" id="sp-data" value="'+_recHoje()+'" max="'+_recHoje()+'" style="margin-top:4px;padding:8px 10px;border:1px solid #ddd0a8;border-radius:9px;font-family:inherit;font-size:.86rem">'
+      +'<div style="font-size:.78rem;color:#6b6b63;margin-top:12px">Como foi pago?</div>'
+      +'<button data-sp="pix" style="'+bt+'"><b>Pix</b> · '+_brl(pix)+'</button>'
+      +'<button data-sp="cartao" style="'+bt+'"><b>Cartão (link)</b> · R$ 480,00 em até 3x</button>'
+      +'<button data-sp="pular" style="'+bt+';color:#6b6b63">Já está no financeiro · só confirmar o sinal</button>'
+      +'</div></div>';
+    function fim(v){ ov.remove(); resolve(v); }
+    ov.addEventListener('click',function(ev){
+      var b=ev.target.closest('[data-sp]'); if(!b){ if(ev.target===ov) fim(null); return; }
+      var k=b.getAttribute('data-sp'), data=document.getElementById('sp-data').value;
+      if(k==='x') return fim(null);
+      if(k!=='pular'&&(!data||data>_recHoje())){ toast('Informe a data do pagamento (hoje ou antes).','err'); return; }
+      if(k==='pular') return fim({pular:true});
+      if(k==='pix') return fim({forma:'pix',meio:'pix_direto',valor:pix,parcelas:1,data:data});
+      return fim({forma:'link_parcelado',meio:'infinitepay_link',valor:480,parcelas:3,data:data});
+    });
+    document.body.appendChild(ov);
+  });
+}
 async function confirmarSinal(id){
   var x=(_sinais||[]).find(function(y){return String(y.id)===String(id);}); if(!x) return;
-  if(!confirm('Confirmar que o sinal de '+_brl(x.sinal_valor)+' de '+(x.patient_nome||'')+' chegou?\n\nNo cartão o sinal é R$ 480 (3x de R$ 160): confira o valor do link pago.\n\nO agendamento passa a valer e entra a tarefa de lançar na Livance.')) return; /* HAG_SINAL_CARTAO_v1 */
+  var pg=await _sinalPergunta(x); if(!pg) return;   /* HAG_SINAL_FINANCEIRO_v1: no lugar do confirm() */
   try{
     var r=await db.rpc('hag_confirmar_sinal',{p_agendamento_id:x.id,p_por:_role||'secretaria'});
     var d=r&&r.data;
     if(d&&d.ok===false){ toast('Nao consegui: '+(d.mensagem||d.erro||'erro'),'err'); return; }
+    var fin='', finErro=false;
+    if(!pg.pular){
+      try{
+        var quando=(x.data||'').split('-').reverse().slice(0,2).join('/')+(x.hora?' às '+x.hora:'');
+        var rr=await db.rpc('hag_registrar_recebimento',{p_patient_id:x.patient_id, p_servico_codigo:'m1_consulta', p_valor:pg.valor,
+          p_forma:pg.forma, p_meio:pg.meio, p_parcelas:pg.parcelas, p_data_pagamento:pg.data,
+          p_obs:'Sinal do agendamento de '+quando, p_eh_sinal:true, p_por:_role||'secretaria', p_forcar:false});
+        if(rr&&rr.error) throw rr.error;
+        var dd=rr&&rr.data;
+        if(dd&&dd.ok===true) fin=' · lançado no financeiro ('+_brl(pg.valor)+', nota pendente)';
+        else if(dd&&dd.erro==='possivel_duplicata') fin=' · já estava no financeiro, nada repetido';
+        else { finErro=true; fin=' · NÃO lançou no financeiro ('+((dd&&dd.erro)||'sem resposta')+'): lance em Mais, Recebimento'; }
+      }catch(e2){ finErro=true; fin=' · NÃO lançou no financeiro ('+((e2&&e2.message)||e2)+'): lance em Mais, Recebimento'; }
+    }
     _tasks=await loadTasks(); _fila=await loadFila(); render();
-    toast('Sinal confirmado · '+String(x.patient_nome||'').split(' ')[0]+' agendado · tarefa do pedido de exames aberta para o Dr. Henrique','ok'); /* HAG_FLUXO_SINAL_v1 */
+    toast('Sinal confirmado · '+String(x.patient_nome||'').split(' ')[0]+' agendado'+fin,finErro?'err':'ok'); /* HAG_FLUXO_SINAL_v1 · HAG_SINAL_FINANCEIRO_v1 */
   }catch(e){ toast('Nao consegui confirmar: '+e.message,'err'); }
 }
 const HAG_LINK_AGENDAR='https://clinicahag.com/agendar?t=';
@@ -5109,7 +5158,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261123-2242';
+  var VERSAO = '20261125-1846';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
