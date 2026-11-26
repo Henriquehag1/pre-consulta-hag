@@ -847,7 +847,7 @@ function painel(d){
   /* HAG_CENTRAL_CARTOES_v1 (12/11/2026, pedido do Dr.): quatro cartões, como já eram os dois planos: Plano de tratamento,
      Plano alimentar, Receitas e Exames. Os planos abrem o PDF; Receitas e Exames abrem uma tela com tudo organizado
      (receitas por data; exames por tipo: pedidos, bioimpedância, laboratoriais, imagem, outros e os enviados por ele). */
-  var docs=d.documentos||[], g={plano_tratamento:[],plano_alimentar:[],receita:[],exame:[],outros:[]};
+  var docs=d.documentos||[], g={plano_tratamento:[],plano_alimentar:[],receita:[],exame:[],relatorio:[],outros:[]};   /* HAG_RELATORIOS_v1: relatorio tem cartao proprio */
   docs.forEach(function(x){ (g[x.categoria]||g.outros).push(x); });
   g.exame=pedidosAbertos(g.exame);   /* HAG_CENTRAL_PEDIDO_ATENDIDO_v1 */
   d._g=g;
@@ -857,6 +857,9 @@ function painel(d){
     var x=g[k[0]][0]; if(x) cards.push('<button class="plano" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="t">'+esc(x.titulo||k[1])+'</span><span class="q">Atualizado em '+dataBR(x.data)+'</span><span class="a">Abrir</span></button>');
   });
   if(g.receita.length) cards.push('<button class="plano" id="cRx"><span class="ic">'+IC.rx+'</span><span class="t">Receitas</span><span class="q">'+g.receita.length+(g.receita.length>1?' receitas válidas':' receita válida')+'</span><span class="a">Ver</span></button>');
+  /* HAG_RELATORIOS_v1 (26/11/2026, pedido do Dr.): relatorios e encaminhamentos (para o personal, a fisioterapia, outro
+     medico) num cartao proprio, logo depois das receitas. Antes ficavam fora da central ou misturados com as receitas. */
+  if(g.relatorio.length) cards.push('<button class="plano" id="cRel"><span class="ic">'+IC.doc+'</span><span class="t">Relatórios e encaminhamentos</span><span class="q">'+g.relatorio.length+(g.relatorio.length>1?' documentos':' documento')+'</span><span class="a">Ver</span></button>');
   var SUP=((d.suplementos||{}).itens)||[];   /* HAG_SUPLEMENTOS_MARCAS_v1 */
   var SNK=d.snacks||[];   /* HAG_SNACKS_v1: lanches proteicos, para todos os pacientes */
   if(SUP.length) cards.push('<button class="plano" id="cSup"><span class="ic">'+IC.sup+'</span><span class="t">Suplementos</span><span class="q">'+SUP.length+(SUP.length>1?' itens · marcas e medidas':' item · marcas e medidas')+'</span><span class="a">Ver</span></button>');
@@ -890,6 +893,7 @@ function painel(d){
   var crc=$('#cRec'); if(crc) crc.onclick=function(){ telaRecuperacao(d); };   /* HAG_RECUPERACAO_CENTRAL_v1 */
   var cex=$('#cEx'); if(cex) cex.onclick=function(){ telaExames(d); };
   var cnf=$('#cNf'); if(cnf) cnf.onclick=function(){ telaNotas(d); };   /* HAG_CENTRAL_NIVEL2_v1 */
+  var crl=$('#cRel'); if(crl) crl.onclick=function(){ telaRelatorios(d); };   /* HAG_RELATORIOS_v1 */
   var agx=$('#agEx'); if(agx) agx.onclick=function(){ telaExames(d); };
   var bav=$('#bAv'); if(bav) bav.onclick=function(){ ligarAvisos(bav); };
   var bcm=$('#bCmb'); if(bcm) bcm.onclick=function(){ cmbFolha(d); };   /* HAG_COMBINADOS_CENTRAL_v1 */
@@ -1126,6 +1130,13 @@ function telaSub(d, rot, tit, corpo){
   tela.innerHTML=VOLTA_DR+'<button class="link" id="subV">‹ Voltar</button><p class="rot" style="margin-top:10px">'+rot+'</p><h1>'+tit+'</h1>'+corpo+'<div class="msg" id="mDoc"></div>';
   $('#subV').onclick=function(){ painel(d); };
   tela.querySelectorAll('[data-doc]').forEach(function(b){ b.onclick=function(){ abrirDoc(b.getAttribute('data-doc'), b); }; });
+}
+/* HAG_RELATORIOS_v1: a tela dos relatorios e encaminhamentos, do mais novo para o mais antigo */
+function telaRelatorios(d){
+  var L=((d._g&&d._g.relatorio)||[]).slice().sort(function(a,b){ return String(b.data||'').localeCompare(String(a.data||'')); });
+  var corpo=L.length?'<div class="card lst"><ul class="lista">'+L.map(function(x){ return '<li><button class="doc" data-doc="'+esc(x.id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">'+esc(x.titulo||'Relatório médico')+'</span><span class="q">'+dataBR(x.data)+'</span></span><span class="a">Abrir</span></button></li>'; }).join('')+'</ul></div>'
+    :'<div class="card"><p class="vazio">Nenhum relatório ou encaminhamento no momento.</p></div>';
+  telaSub(d,'Seu plano','Relatórios e encaminhamentos.','<p class="sub">Para levar ao profissional indicado pelo Dr. Henrique: o seu personal, a fisioterapia ou outro médico.</p>'+corpo);
 }
 function telaReceitas(d){
   var L=(d._g&&d._g.receita)||[], datas=[], porData={};
