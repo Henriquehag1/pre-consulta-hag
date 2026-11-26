@@ -158,6 +158,29 @@ h2{font-family:var(--d);font-weight:400;font-size:24px;line-height:1.15;margin:0
 .exl input{display:block;width:100%;margin-top:6px;border:1px solid var(--fio);border-radius:4px;background:#fff;padding:10px 12px;font:inherit;font-size:15.5px;color:var(--tinta)}
 .rxant summary::after{content:" ›";letter-spacing:0}
 .rxant[open] summary::after{content:" ⌄"}
+/* HAG_EXAMES_EXPLICADOS_v1 (26/11/2026) */
+.expc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;text-align:left;cursor:pointer;font-family:var(--t);color:var(--tinta)}
+.expc .t{font-family:var(--d);font-size:20px;line-height:1.15;display:flex;align-items:center;gap:10px}
+.expc .q{font-size:14px;color:var(--apoio)}
+.expc .a{margin-top:12px;font-family:var(--r);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--conhaque)}
+.expnovo{font-family:var(--r);font-weight:500;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--linho);background:var(--conhaque);border-radius:999px;padding:2px 8px}
+.exppend{font-size:14px;color:var(--suave);margin-top:10px}
+.expcol{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;font-size:13.5px;color:var(--apoio)}
+.expcol button{border:1px solid var(--fio);background:var(--papel);border-radius:999px;padding:6px 12px;font:inherit;font-size:13.5px;color:var(--tinta);cursor:pointer}
+.expcol button.on{border-color:var(--conhaque);color:var(--conhaque)}
+.expcom .grupo{margin-top:2px}.expcom p{font-size:15.5px;color:var(--tinta);white-space:pre-line;margin-top:6px}
+.expg{border-top:1px solid var(--fio)}.expg:first-child{border-top:0}
+.expg summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:15px 0;font-family:var(--d);font-size:18px;color:var(--tinta)}
+.expg summary::-webkit-details-marker{display:none}
+.expg summary span{font-family:var(--t);font-size:13px;color:var(--apoio);white-space:nowrap}
+.expg summary::after{content:"›";font-family:var(--t);color:var(--conhaque);font-size:20px;transition:transform .15s}
+.expg[open] summary::after{transform:rotate(90deg)}
+.expi{padding:12px 0 14px;border-top:1px dashed var(--fio)}
+.expi .n{font-size:16px;color:var(--tinta)}.expi .n b{font-weight:600}
+.expi .l{font-size:14px;color:var(--suave);margin-top:4px;line-height:1.45}
+.expi .l i{font-style:normal;color:var(--apoio)}
+.exprod{margin-top:18px;font-size:14px;color:var(--apoio);line-height:1.5}
+.exprod p{margin-top:8px}
 .equipe{display:flex;align-items:center;gap:14px;margin-top:14px;background:var(--papel);border:1px solid var(--fio);border-radius:6px;padding:14px 16px;text-decoration:none;color:var(--tinta)}
 .equipe .dt{flex:1;display:flex;flex-direction:column}
 .equipe .t{font-size:16px;font-weight:400}.equipe .q{font-size:13px;color:var(--apoio)}
@@ -626,6 +649,53 @@ function evolucaoHTML(d){
   return '<h3 class="tit">Sua evolução</h3><div class="card evc">'+rec+'<div class="evg">'+cards+'</div>'
     +'<p class="evnota">'+E.length+' bioimpedâncias, de '+dataBR(f.data)+' a '+dataBR(l.data)+'. A leitura clínica é feita em consulta.</p></div>';
 }
+/* HAG_EXAMES_EXPLICADOS_v1 (26/11/2026). Pedido do Dr. Henrique: "pode publicar e colocar para funcionar o passo 4".
+   Textos aprovados no documento "Seus exames explicados · proposta para aprovacao" (Claude Docs, 26/11/2026).
+   Regras: nunca diz se o valor esta bom ou ruim, sem cor de alerta; so os marcadores da lista aprovada (tabela
+   exame_marcador); a faixa e so a do laudo; a coleta aparece depois da consulta em que foi conversada (ou quando o Dr.
+   libera); comentario do Dr. quando ele escreve. Dados: d.exames_exp (Edge central -> central_exames_explicados). */
+var EXP_MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function expNum(v){ return String(v==null?'':v).replace(/(\d)\.(\d)/g,'$1,$2'); }
+function expMes(s){ var p=String(s||'').slice(0,10).split('-'); return p.length<3?'':EXP_MES[(+p[1])-1]+'/'+p[0].slice(2); }
+function expHTML(d){
+  var X=d&&d.exames_exp; if(!X||X.oculto) return '';
+  var C=X.coletas||[], h='<h3 class="tit">Seus exames explicados</h3>';
+  var pend=X.pendente&&(!C.length||String(X.pendente)>String(C[0].data))?'<p class="exppend">Recebemos o seu exame de '+dataBR(X.pendente).slice(0,5)+'. Ele aparece explicado aqui depois da sua próxima consulta.</p>':'';
+  if(!X.tem_sangue&&!X.pendente) return h+'<div class="card"><p class="vazio">Ainda não há exames de sangue registrados. Quando fizer novos exames, você pode enviar o arquivo pelo card Seus exames.</p></div>';
+  if(!C.length) return h+'<div class="card">'+(pend||'<p class="vazio">Seus exames aparecem aqui depois da consulta em que o Dr. Henrique conversar sobre eles com você.</p>')+'</div>';
+  var c=C[0];
+  return h+'<div class="card"><button class="expc" id="cExp"><span class="t">Seus exames explicados'+(!c.visto&&!VER?'<span class="expnovo">Novo</span>':'')+'</span>'
+    +'<span class="q">Coleta de '+dataBR(c.data)+(c.total>0?' · '+c.total+(c.total==1?' resultado':' resultados'):'')+'</span><span class="a">Ver os resultados</span></button>'+pend+'</div>';
+}
+function telaExp(d, i){
+  var X=d.exames_exp||{}, C=X.coletas||[], c=C[i]; if(!c) return painel(d);
+  var corpo='<p class="sub">Aqui estão os seus resultados, organizados por área do corpo, com o que cada exame mede. A leitura de cada valor, e o que fazer com ele, é feita pelo Dr. Henrique na consulta.</p>';
+  if(C.length>1) corpo+='<div class="expcol">Outras coletas: '+C.map(function(x,k){ return '<button data-expc="'+k+'"'+(k===i?' class="on"':'')+'>'+dataBR(x.data)+'</button>'; }).join('')+'</div>';
+  if(c.comentario) corpo+='<div class="card expcom"><div class="grupo">Comentário do Dr. Henrique</div><p>'+esc(c.comentario)+'</p></div>';
+  var G=c.grupos||[];
+  if(G.length){
+    corpo+='<div class="card lst">'+G.map(function(g){
+      var it=g.itens||[];
+      return '<details class="expg"><summary>'+esc(g.nome)+'<span>'+it.length+(it.length==1?' resultado':' resultados')+'</span></summary>'+it.map(function(x){
+        var num=x.num!=null&&x.num!=='';
+        var rot=(x.evolucao||[]).map(function(e){ return expMes(e.data); }), dup=rot.some(function(r,k){ return rot.indexOf(r)!==k; });
+        var ev=(x.evolucao||[]).map(function(e){ return expNum(e.valor)+' em '+(dup?dataBR(e.data).slice(0,6)+String(e.data).slice(2,4):expMes(e.data)); }).join(' · ');
+        return '<div class="expi"><div class="n">'+esc(x.nome)+(num?' · <b>'+esc(expNum(x.valor))+'</b>':'')+'</div>'
+          +(num?'':'<div class="l">Resultado: '+esc(expNum(x.valor))+'</div>')
+          +'<div class="l">'+(x.faixa?'Faixa do laboratório: '+esc(expNum(x.faixa)):'A faixa de referência está no laudo do laboratório.')+'</div>'
+          +'<div class="l"><i>O que mede:</i> '+esc(x.texto)+'</div>'
+          +(ev&&(x.evolucao||[]).length>=2?'<div class="l"><i>Sua evolução:</i> '+esc(ev)+'</div>':'')+'</div>';
+      }).join('')+'</details>';
+    }).join('')+'</div>';
+  } else corpo+='<div class="card"><p class="vazio">Os resultados desta coleta estão no laudo completo.</p></div>';
+  corpo+='<div class="exprod">'
+    +(c.doc_id?'<div class="card lst"><ul class="lista"><li><button class="doc" data-doc="'+esc(c.doc_id)+'"><span class="ic">'+IC.doc+'</span><span class="dt"><span class="t">Ver o laudo completo (PDF)</span></span><span class="a">Abrir</span></button></li></ul></div>':'')
+    +(c.fora_lista>0&&G.length?'<p>Alguns resultados ficam só no laudo completo.</p>':'')
+    +'<p>Dúvidas sobre os resultados são conversadas na sua consulta. Se você tiver um sintoma novo ou algo te preocupar, fale com a nossa equipe pelo WhatsApp.</p></div>';
+  telaSub(d,'Seus exames','Coleta de '+dataBR(c.data)+'.',corpo);
+  tela.querySelectorAll('[data-expc]').forEach(function(b){ b.onclick=function(){ telaExp(d, +b.getAttribute('data-expc')); }; });
+  if(!VER&&!c.visto){ c.visto=true; api({acao:'exames_visto',token:TOKEN,sessao:SESSAO,exame_id:c.id}).catch(function(){}); }
+}
 /* HAG_CENTRAL_NIVEL2_v1 (13/11/2026). Pedido do Dr.: "faça agora tudo isso" (claude/central-analise-especialista-13-11-2026.md).
    Para agora: uma ação por vez, na ordem do que mais importa (questionário, consulta a marcar, exame pedido, tratamento
    terminando). Metas do ciclo: as que o Dr. escreveu no motor. Protocolo: aplicações feitas e a próxima. Resumo do ciclo:
@@ -830,6 +900,7 @@ function painel(d){
   /* HAG_CENTRAL_SEM_METAS_v1 (13/11/2026): o Dr. tirou as metas da visão do paciente ("alguns têm metas diversas").
      As metas seguem no motor e no HAG Dr; metasHTML fica no arquivo para voltar se ele quiser. */
   h+=evolucaoHTML(d);   /* HAG_CENTRAL_EVOLUCAO_v1 */
+  h+=expHTML(d);   /* HAG_EXAMES_EXPLICADOS_v1 */
   h+=resumoHTML(d);   /* HAG_CENTRAL_NIVEL2_v1 */
 
   /* dia a dia */
@@ -892,6 +963,7 @@ function painel(d){
   var csk=$('#cSnk'); if(csk) csk.onclick=function(){ telaSnacks(d); };   /* HAG_SNACKS_v1 */
   var crc=$('#cRec'); if(crc) crc.onclick=function(){ telaRecuperacao(d); };   /* HAG_RECUPERACAO_CENTRAL_v1 */
   var cex=$('#cEx'); if(cex) cex.onclick=function(){ telaExames(d); };
+  var cxp=$('#cExp'); if(cxp) cxp.onclick=function(){ telaExp(d,0); };   /* HAG_EXAMES_EXPLICADOS_v1 */
   var cnf=$('#cNf'); if(cnf) cnf.onclick=function(){ telaNotas(d); };   /* HAG_CENTRAL_NIVEL2_v1 */
   var crl=$('#cRel'); if(crl) crl.onclick=function(){ telaRelatorios(d); };   /* HAG_RELATORIOS_v1 */
   var agx=$('#agEx'); if(agx) agx.onclick=function(){ telaExames(d); };

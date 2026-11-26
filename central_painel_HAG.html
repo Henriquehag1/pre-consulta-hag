@@ -86,7 +86,7 @@ function desenha(){
     var dc = '<span class="chip ne">'+x.docs_visiveis+' documento'+(x.docs_visiveis==1?'':'s')+'</span>'+(x.docs_sem_nuvem>0?'<span class="chip no">'+x.docs_sem_nuvem+' ainda só no Mac</span>':'');
     return '<div class="p" data-id="'+esc(x.patient_id)+'"><div class="cab"><div><div class="nm">'+esc(x.nome)+(x.interno?' <span class="chip ne">interno</span>':'')+'</div><div class="mt">'+st+dc+(x.ultimo_uso?' Último uso '+dt(x.ultimo_uso):'')+'</div></div>'
       +'<div class="acoes">'+(x.token?'<button class="b" data-a="msg">Mensagem</button>':'<button class="b" data-a="gerar">Gerar link</button>')
-      +'<a class="b c" style="text-decoration:none" target="_blank" rel="noopener" href="central_HAG.html?ver=1&p='+encodeURIComponent(x.patient_id)+'">Ver como ele vê</a><button class="b c" data-a="docs">Documentos</button><button class="b c" data-a="evo">Evolução</button><button class="b c" data-a="log">Registro</button></div></div><div class="det"></div></div>';
+      +'<a class="b c" style="text-decoration:none" target="_blank" rel="noopener" href="central_HAG.html?ver=1&p='+encodeURIComponent(x.patient_id)+'">Ver como ele vê</a><button class="b c" data-a="docs">Documentos</button><button class="b c" data-a="evo">Evolução</button><button class="b c" data-a="exp">Exames explicados</button><button class="b c" data-a="log">Registro</button></div></div><div class="det"></div></div>';
   }).join('');
   $('#lista').innerHTML=h||'<p>Nenhum paciente com ciclo ativo.</p>';
 }
@@ -134,6 +134,32 @@ async function abreEvo(box, x){
     +'<p class="mt" style="margin-top:8px">Para quem tem relação difícil com a balança, esconda só o peso: massa muscular, gordura e visceral continuam.</p>';
   det._oc=oc;
 }
+/* HAG_EXAMES_EXPLICADOS_v1 (26/11/2026): "Seus exames explicados" na central. Aqui o Dr. esconde o card ou só os
+   hormônios, libera ou segura uma coleta e escreve o comentário para o paciente (um por coleta). Sem nada marcado, a
+   coleta aparece sozinha depois da primeira consulta realizada depois da data dela. */
+async function abreExp(box, x){
+  var det=$('.det',box); det.innerHTML='Carregando…'; det.classList.add('on');
+  var r=await db.rpc('central_exames_explicados',{p_patient:x.patient_id,p_equipe:true});
+  if(r.error){ det.textContent='Erro: '+r.error.message; return; }
+  var X=r.data||{}, C=X.coletas||[];
+  var p=await db.from('patients').select('central_ocultar').eq('id',x.patient_id).maybeSingle();
+  var oc=(p.data&&p.data.central_ocultar)||[], cd=oc.indexOf('exames_explicados')<0, hm=oc.indexOf('exames_hormonios')<0;
+  var MOT={'automatica':'apareceu sozinha depois da consulta','aguardando a consulta':'ainda não aparece: espera a próxima consulta','liberada pelo Dr.':'liberada por você','segurada pelo Dr.':'segurada por você'};
+  det.innerHTML='<h3>Seus exames explicados</h3>'
+    +'<div class="linha"><span>Card na central</span><span><span class="vis" style="color:'+(cd?'var(--floresta)':'var(--apoio)')+'">'+(cd?'Aparece':'Oculto')+'</span> <button class="b c" data-a="evotog" data-k="exames_explicados" data-volta="exp">'+(cd?'Esconder':'Mostrar')+'</button></span></div>'
+    +'<div class="linha"><span>Hormônios (testosterona, estradiol, progesterona, FSH, LH, prolactina e outros)</span><span><span class="vis" style="color:'+(hm?'var(--floresta)':'var(--apoio)')+'">'+(hm?'Aparecem':'Ocultos')+'</span> <button class="b c" data-a="evotog" data-k="exames_hormonios" data-volta="exp">'+(hm?'Esconder':'Mostrar')+'</button></span></div>'
+    +'<h3>Coletas de sangue</h3>'+(C.length?C.map(function(c){
+      var dd=String(c.data||'').split('-').reverse().join('/');
+      return '<div class="linha" style="display:block"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span><b>'+dd+'</b> · '+(c.total||0)+' resultados explicados'+(c.fora_lista?' · '+c.fora_lista+' só no laudo':'')+'<br><span class="mt">'+(c.liberada?'Aparece':'Não aparece')+': '+esc(MOT[c.motivo]||c.motivo)+(c.liberada_em&&c.liberada?' ('+String(c.liberada_em).split('-').reverse().join('/')+')':'')+(c.visto?' · o paciente já abriu':'')+'</span></span>'
+        +'<span class="acoes">'+(c.motivo!=='liberada pelo Dr.'?'<button class="b c" data-a="explib" data-ex="'+esc(c.id)+'" data-v="liberar">Liberar agora</button>':'')
+        +(c.motivo!=='segurada pelo Dr.'?'<button class="b r" data-a="explib" data-ex="'+esc(c.id)+'" data-v="segurar">Segurar</button>':'')
+        +(c.motivo==='liberada pelo Dr.'||c.motivo==='segurada pelo Dr.'?'<button class="b c" data-a="explib" data-ex="'+esc(c.id)+'" data-v="">Automático</button>':'')+'</span></div>'
+        +'<textarea data-com="'+esc(c.id)+'" style="min-height:64px;margin-top:8px" placeholder="Comentário para o paciente sobre esta coleta (opcional)">'+esc(c.comentario||'')+'</textarea>'
+        +'<div class="acoes" style="justify-content:flex-start;margin-top:6px"><button class="b" data-a="expcom" data-ex="'+esc(c.id)+'">Salvar comentário</button></div></div>';
+    }).join(''):'<p class="mt">Nenhuma coleta de sangue registrada.</p>')
+    +'<p class="mt" style="margin-top:8px">O paciente vê o valor, a faixa do laudo, o que cada exame mede e a evolução. Nunca vê se o valor está bom ou ruim. Sorologias, gravidez, PSA e autoanticorpos ficam só no laudo.</p>';
+  det._oc=oc;
+}
 async function abreLog(box, x){
   var det=$('.det',box); det.innerHTML='Carregando…'; det.classList.add('on');
   var r=await db.from('central_log').select('acao,doc_id,detalhe,em').eq('patient_id',x.patient_id).order('em',{ascending:false}).limit(30);
@@ -154,16 +180,22 @@ function liga(){
   $('#lista').addEventListener('click',async function(e){
     var bt=e.target.closest('[data-a]'); if(!bt) return;
     var box=bt.closest('.p'), id=box.dataset.id, x=linha(id), a=bt.dataset.a, det=$('.det',box);
-    if(['msg','docs','log','evo'].indexOf(a)>=0 && det.classList.contains('on') && det.dataset.v===a){ det.classList.remove('on'); return; }
+    if(['msg','docs','log','evo','exp'].indexOf(a)>=0 && det.classList.contains('on') && det.dataset.v===a){ det.classList.remove('on'); return; }
     det.dataset.v=a;
     if(a==='gerar'){ bt.disabled=true; var t=await gerar(id,false); if(t){ x.token=t; await carrega(); box=$('.p[data-id="'+CSS.escape(id)+'"]'); abreMsg(box, linha(id)); } return; }
     if(a==='msg') return abreMsg(box,x);
     if(a==='docs') return abreDocs(box,x);
     if(a==='log') return abreLog(box,x);
     if(a==='evo') return abreEvo(box,x);
+    if(a==='exp') return abreExp(box,x);   /* HAG_EXAMES_EXPLICADOS_v1 */
+    if(a==='explib'){ var v=bt.dataset.v||null; var rl=await db.from('exames').update({central_liberacao:v,central_liberacao_em:v?new Date().toISOString():null}).eq('id',bt.dataset.ex).eq('patient_id',id);
+      if(rl.error){ toast('Erro: '+rl.error.message); return; } toast(v==='liberar'?'Liberada: já aparece na central.':v==='segurar'?'Segurada: não aparece na central.':'Volta ao automático.'); return abreExp(box,x); }
+    if(a==='expcom'){ var ta=box.querySelector('textarea[data-com="'+CSS.escape(bt.dataset.ex)+'"]'), tx=(ta&&ta.value||'').trim();
+      var rc=await db.from('exames').update({apresentacao_paciente:tx||null,apresentacao_em:tx?new Date().toISOString():null}).eq('id',bt.dataset.ex).eq('patient_id',id);
+      if(rc.error){ toast('Erro: '+rc.error.message); return; } toast(tx?'Comentário salvo.':'Comentário apagado.'); return; }
     if(a==='evotog'){ var oc=(det._oc||[]).slice(), k=bt.dataset.k, i=oc.indexOf(k); if(i>=0) oc.splice(i,1); else oc.push(k);
       var r3=await db.from('patients').update({central_ocultar:oc}).eq('id',id); if(r3.error){ toast('Erro: '+r3.error.message); return; }
-      toast(i>=0?'Agora aparece na central.':'Escondido da central.'); return abreEvo(box,x); }
+      toast(i>=0?'Agora aparece na central.':'Escondido da central.'); return bt.dataset.volta==='exp'?abreExp(box,x):abreEvo(box,x); }
     if(a==='copiar'){ try{ await navigator.clipboard.writeText($('textarea',box).value); toast('Mensagem copiada.'); }catch(_){ $('textarea',box).select(); toast('Selecionado: use Copiar.'); } return; }
     if(a==='copiarlink'){ try{ await navigator.clipboard.writeText(linkDe(x.token)); toast('Link copiado.'); }catch(_){ toast('Não deu para copiar.'); } return; }
     if(a==='sairtodos' || a==='trocar'){
