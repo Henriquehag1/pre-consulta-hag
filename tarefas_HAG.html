@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head><!-- HAG_TELAS_MARCA_2026_v1 (10/11/2026): marca Henrique Alves, ver claude/telas-internas-marca-2026-10-11-2026.md -->
 <script>window.SUPA_URL='https://yutcnphwovqeiwcwzzhs.supabase.co';window.SUPA_KEY='sb_publishable_V-tdeq_qDKLAPYzN2vQuMA_okwPaOPi';window.HAG_EXIGIR_LOGIN=true;</script>
-<script src="hag_auth.js?v=20261125-1846"></script>
+<script src="hag_auth.js?v=20261127-1437"></script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -1479,7 +1479,8 @@ var DAN_TPL=[
   /* HAG_AGENDA_BLOQUEIO_v1 (30/09/2026): o consultorio precisou fechar um dia. */
   {id:'consultorio_remarca',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcou pelo link",sub:"Ele remarca pelo próprio link, sem custo",texto:"[nome], tudo bem? Precisei reorganizar a agenda do dia [data], e a sua consulta vai mudar de data, sem custo e sem contar como remarcação sua.\n\nAbra o seu link, toque em \"Preciso remarcar\" e escolha o novo dia. O horário atual fica guardado até você confirmar:\n\n[link]\n\nObrigada pela compreensão!"},
   {id:'consultorio_remarca_cancelado',cat:'remarcacao',nome:"Dia fechado pelo consultório · marcado pela Daniela",sub:"Depois de desmarcar no painel, com o link",texto:"[nome], tudo bem? Precisei reorganizar a agenda do dia [data], e a sua consulta vai mudar de data, sem custo.\n\nEscolha o novo dia pelo link:\n\n[link]\n\nObrigada pela compreensão!"},
-  {id:'desmarcou_no_prazo',cat:'remarcacao',nome:"Desmarcou no prazo (72 h ou mais)",sub:"Sem custo, link para a nova data",texto:"[nome], recebi o seu aviso e liberei o horário. Como veio dentro do prazo, não há custo.\n\nEscolha a nova data pelo link:\n\n[link]"},
+  {id:'desmarcou_no_prazo',cat:'remarcacao',nome:"Desmarcou no prazo (72 h ou mais)",sub:"Sem custo, link para a nova data",texto:"[nome], recebi o seu aviso e liberei o horário. Como veio dentro do prazo, não há custo.\n\nEscolha a nova data pelo link:\n\n[link]",
+   textoCentral:"[nome], recebi o seu aviso e liberei o horário. Como veio dentro do prazo, não há custo.\n\nAs novas datas já estão na sua Central: é só abrir e escolher o melhor horário para você."}, /* HAG_DESMARCOU_CENTRAL_v1 */
   {id:'desmarcou_fora_prazo',cat:'remarcacao',nome:"Desmarcou fora do prazo · as 3 opções",sub:"Menos de 72 h: o paciente escolhe o caminho · só para quem tem o selo Combinados informados",texto:"[nome], obrigada por avisar.\n\nComo a desmarcação veio com menos de 72 horas, as diretrizes do acompanhamento preveem a taxa de reserva de agenda, porque o horário ficou reservado para você e não pôde ser oferecido a outro paciente. Você escolhe o caminho:\n\n1. Motivo de saúde: me envie o comprovante médico (atestado ou declaração) e a nova data sai sem custo.\n2. Usar esta consulta como uma das consultas do seu plano, sem cobrança; a próxima é antecipada e você escolhe a data na agenda do Dr. Henrique.\n3. Pagar a taxa de reserva de agenda, de R$ 350, e remarcar esta mesma consulta.\n\nMe responde com o número da opção."},
   /* HAG_COMBINADOS_v1 (05/11/2026): casos Paula, Rodrigo e Cristiane. Nenhum dos pacientes ativos tinha os
      combinados por escrito, com valor. Os modelos que comecam com 'combinados' marcam o selo na ficha
@@ -1487,11 +1488,14 @@ var DAN_TPL=[
   {id:'combinados',cat:'administrativo',nome:'Combinados do acompanhamento · plano em andamento',sub:'Enviar uma vez a cada paciente ativo · marca o selo na ficha',texto:'[nome], tudo bem? Estou enviando a todos os pacientes em acompanhamento os combinados do consultório por escrito:\n\n1. O seu plano segue até [fim]. As consultas acontecem dentro desse período, e ele não se estende por remarcações ou ausências.\n2. A consulta de fechamento é marcada na consulta anterior e acontece até a data-limite informada na marcação, logo após o fim do plano.\n3. Remarcação com 72 horas ou mais de antecedência é sem custo. Com menos de 72 horas, ou falta sem aviso, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você. Motivo de saúde ou imprevisto grave comprovado não tem custo.\n\nQualquer dúvida, estou por aqui.'},
   {id:'combinados_fechamento',cat:'administrativo',nome:'Combinados do acompanhamento · fechamento já marcado',sub:'Plano no fim ou vencido, com a consulta de fechamento na agenda · marca o selo na ficha',texto:'[nome], tudo bem? Estou enviando a todos os pacientes em acompanhamento os combinados do consultório por escrito:\n\n1. O seu plano vai até [fim], e a sua consulta de fechamento está marcada para [data]. Ela encerra este ciclo, e é nela que o Dr. Henrique revisa com você os resultados e os próximos passos.\n2. Remarcação com 72 horas ou mais de antecedência é sem custo. Com menos de 72 horas, ou falta sem aviso, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você. Motivo de saúde ou imprevisto grave comprovado não tem custo.\n\nQualquer dúvida, estou por aqui.'},
   {id:'combinados_desmarcou',cat:'remarcacao',nome:'Desmarcou fora do prazo · combinados ainda não enviados',sub:'Menos de 72 h, SEM o selo Combinados informados: sem taxa desta vez, e a regra segue por escrito · marca o selo',texto:'[nome], recebi o seu aviso. Desta vez a remarcação sai sem custo; escolha a nova data pelo link:\n\n[link]\n\nE fica por escrito o combinado que vale daqui em diante: remarcação com 72 horas ou mais de antecedência é sem custo; com menos de 72 horas, ou falta sem aviso, há taxa de reserva de agenda de R$ 350, porque o horário fica bloqueado para você. Motivo de saúde ou imprevisto grave comprovado não tem custo.'},
-  {id:'desmarcou_comprovante',cat:'remarcacao',nome:"Comprovante recebido · nova data",sub:"Sem custo, com o link",texto:"[nome], recebi o comprovante, obrigada. Fica sem custo nenhum. Escolha a nova data pelo link:\n\n[link]\n\nMelhoras!"},
+  {id:'desmarcou_comprovante',cat:'remarcacao',nome:"Comprovante recebido · nova data",sub:"Sem custo, com o link",texto:"[nome], recebi o comprovante, obrigada. Fica sem custo nenhum. Escolha a nova data pelo link:\n\n[link]\n\nMelhoras!",
+   textoCentral:"[nome], recebi o comprovante, obrigada. Fica sem custo nenhum. As novas datas já estão na sua Central: é só abrir e escolher o melhor horário.\n\nMelhoras!"}, /* HAG_DESMARCOU_CENTRAL_v1 */
   {id:'desmarcou_usar_plano',cat:'remarcacao',nome:"Escolheu contar a consulta no plano",sub:"Sem cobrança, segue para a próxima etapa",texto:"[nome], combinado. A consulta desmarcada conta como uma das consultas do seu plano, sem cobrança. Quando as datas da próxima etapa abrirem, eu te aviso por aqui."},
-  {id:'desmarcou_usar_plano_antecipa',cat:'remarcacao',nome:"Contou no plano · próxima antecipada",sub:"Sem cobrança, link das duas próximas semanas",texto:"[nome], combinado. A consulta desmarcada conta como uma das consultas do seu plano, sem cobrança, e a próxima foi antecipada. Escolha a data pelo link:\n\n[link]"},
+  {id:'desmarcou_usar_plano_antecipa',cat:'remarcacao',nome:"Contou no plano · próxima antecipada",sub:"Sem cobrança, datas do próximo mês",texto:"[nome], combinado. A consulta desmarcada conta como uma das consultas do seu plano, sem cobrança, e a próxima foi antecipada. Escolha a data pelo link:\n\n[link]",
+   textoCentral:"[nome], combinado. A consulta desmarcada conta como uma das consultas do seu plano, sem cobrança, e a próxima foi antecipada. As datas já estão liberadas na sua Central: é só abrir e escolher o melhor horário para você."}, /* HAG_DESMARCOU_CENTRAL_v1 */
   {id:'desmarcou_taxa',cat:'remarcacao',nome:"Escolheu a taxa de R$ 350",sub:"Cobrança; o link vai depois do pagamento",texto:"[nome], combinado. A taxa de reserva de agenda é de R$ 350:\n\nPix (CNPJ): 59.088.764/0001-23\nHENRIQUE A GONZAGA\nSe preferir o cartão, te envio o link.\n\nAssim que entrar, te mando o link para escolher a nova data desta mesma consulta."},
-  {id:'desmarcou_taxa_paga',cat:'remarcacao',nome:"Taxa recebida · nova data",sub:"Pagamento confirmado, com o link",texto:"[nome], pagamento recebido, obrigada. Escolha a nova data pelo link:\n\n[link]"},
+  {id:'desmarcou_taxa_paga',cat:'remarcacao',nome:"Taxa recebida · nova data",sub:"Pagamento confirmado, com o link",texto:"[nome], pagamento recebido, obrigada. Escolha a nova data pelo link:\n\n[link]",
+   textoCentral:"[nome], pagamento recebido, obrigada. As novas datas já estão na sua Central: é só abrir e escolher o melhor horário para você."}, /* HAG_DESMARCOU_CENTRAL_v1 */
   /* HAG_DESMARCAR_DIAG_v1 (03/10/2026, caso Cintia): quem desmarca a CONSULTA DIAGNOSTICA fora do prazo ainda nao tem
      plano nem contrato, entao os modelos acima ("o contrato preve", "consulta do seu plano") nao servem. O que esta em
      jogo e o sinal. Nao ha menu de opcoes para o paciente: ele informa o motivo, e manter ou reter o sinal e decisao
@@ -1618,7 +1622,7 @@ function _msgLinkAgendar(){
   return tok ? (HAG_LINK_AGENDAR+tok) : '';
 }
 function _msgTexto(t){
-  var txt=t.texto;
+  var txt=(t.textoCentral && _usaCentral(_msgPacId)) ? t.textoCentral : t.texto; /* HAG_DESMARCOU_CENTRAL_v1 */
   var nome=_msgPrimeiroNome();
   if(nome) txt=txt.split('[nome]').join(nome);
   var d=_msgDataProxima();
@@ -1670,6 +1674,7 @@ function abrirMsg(id){ _msgAberta = (_msgAberta===id) ? null : id; render(); }
 function escolherMsgPac(id){
   _msgPacId=id||null;
   render();
+  if(_msgPacId){ var _pc=_msgPacId; _centralBusca(_pc, function(){ if(_msgPacId===_pc) render(); }); } /* HAG_DESMARCOU_CENTRAL_v1 */
   if(_msgPacId && !_linksAgendar[_msgPacId]){
     (async function(pid){
       try{
@@ -3369,6 +3374,19 @@ const HAG_LINK_AGENDAR='https://clinicahag.com/agendar?t=';
    a aparencia: quem monta mensagem com link chama esta funcao, nunca cola o endereco direto. */
 function _linkDestaque(url){ return '*Seu link de agendamento:*\n'+url; }
 var _linksAgendar={};
+/* HAG_DESMARCOU_CENTRAL_v1 (27/11/2026). Pedido do Dr. Henrique (caso Erika): quem ja usa a Central recebe
+   "as datas ja estao na sua Central" em vez do link, nos modelos que tem textoCentral (painel Desmarcou e aba
+   Mensagens). Usa a Central = acesso nao revogado e aberto ao menos uma vez (ultimo_uso): quem nunca abriu pode
+   nem saber que tem, e segue recebendo o link. Na duvida (erro, ainda carregando), vai o link. */
+function _usaCentral(pid){ var m=window._HAG_CENTRAL_USA; return !!(pid && m && m[pid]); }
+function _centralBusca(pid, depois){
+  if(!pid) return;
+  var m=window._HAG_CENTRAL_USA=window._HAG_CENTRAL_USA||{};
+  if(Object.prototype.hasOwnProperty.call(m,pid)){ if(depois) depois(); return; }
+  db.from('central_acessos').select('patient_id').eq('patient_id',pid).eq('revogado',false).not('ultimo_uso','is',null).limit(1)
+    .then(function(r){ if(r && !r.error) m[pid]=!!(r.data && r.data.length); if(depois) depois(); })
+    .catch(function(){});
+}
 async function _carregaLinksAgendar(fila){
   try{
     var ids=[];
@@ -3897,6 +3915,9 @@ async function desmarcarFila(id){
       if(r&&r.data) Object.keys(r.data).forEach(function(k){ _linksAgendar[k]=r.data[k]; });
     }).catch(function(){});
   }
+  if(t.patient_id){ var _pidC=t.patient_id; /* HAG_DESMARCOU_CENTRAL_v1 */
+    _centralBusca(_pidC, function(){ if(_dsm && _dsm.t && _dsm.t.patient_id===_pidC){ _dsm.central=_usaCentral(_pidC); _dsmRender(); } });
+  }
   _dsmRender();
   document.getElementById('modalDsm').classList.add('vis');
   try{ _dsm.ret=await _dsmAcharRetorno(t); }catch(e){ if(_dsm) _dsm.retErro=true; }
@@ -4055,14 +4076,16 @@ function _dsmHtmlFeito(){
      +'<button class="btn-acao ba-agendei" onclick="dsmRecebimento()"><span class="g">&#x1f4b0;</span>Registrar o pagamento</button></div>';
   } else if(dec==='plano' && _dsm.antecipou){
     var aa=_dsm.antecipou.alvo;
-    h+='<div class="dsm-nota"><b>'+_dsmEsc(_dsm.antecipou.nome)+'</b> antecipado: o link oferece as duas próximas semanas (dia indicado '+aa.slice(8,10)+'/'+aa.slice(5,7)+'). A tarefa está em A agendar e fecha sozinha quando ele marcar.</div>'
-     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_usar_plano_antecipa\')"><span class="g">&#x1f4f2;</span>Enviar o link</button></div>';
+    h+='<div class="dsm-nota"><b>'+_dsmEsc(_dsm.antecipou.nome)+'</b> antecipado: '+(_dsm.central?'a Central e o link oferecem':'o link oferece')+' as datas do próximo mês (dia indicado '+aa.slice(8,10)+'/'+aa.slice(5,7)+'). A tarefa está em A agendar e fecha sozinha quando ele marcar.</div>'
+     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_usar_plano_antecipa\')"><span class="g">&#x1f4f2;</span>'+(_dsm.central?'Avisar que as datas estão na Central':'Enviar o link')+'</button></div>'; /* HAG_DESMARCOU_CENTRAL_v1 */
   } else if(dec==='plano'){
     h+='<div class="dsm-nota">O link passa a oferecer o controle seguinte quando a janela dele abrir.</div>'
      +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\'desmarcou_usar_plano\')"><span class="g">&#x1f4f2;</span>Avisar o paciente</button></div>';
   } else {
-    h+='<div class="dsm-nota">'+(_dsm.ret?'O link já oferece as datas desta consulta.':'Sem controle do plano: combine a nova data com o paciente.')+'</div>'
-     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\''+((dec==='prazo'&&_dsmBloq())?'consultorio_remarca_cancelado':_DSM_MSG_DEPOIS[dec])+'\')"><span class="g">&#x1f4f2;</span>Enviar o link da nova data</button></div>';
+    var _tpC=(dec==='prazo'&&_dsmBloq())?'consultorio_remarca_cancelado':_DSM_MSG_DEPOIS[dec]; /* HAG_DESMARCOU_CENTRAL_v1 */
+    var _comC=!!(_dsm.central && (DAN_TPL.find(function(x){return x.id===_tpC;})||{}).textoCentral);
+    h+='<div class="dsm-nota">'+(_dsm.ret?(_comC?'A Central e o link já oferecem as datas desta consulta.':'O link já oferece as datas desta consulta.'):'Sem controle do plano: combine a nova data com o paciente.')+'</div>'
+     +'<div><button class="btn-acao ba-contato" onclick="dsmWhats(\''+_tpC+'\')"><span class="g">&#x1f4f2;</span>'+(_comC?'Avisar que as datas estão na Central':'Enviar o link da nova data')+'</button></div>';
   }
   return h+'<button class="btn-save" onclick="dsmFechar()">Fechar</button>';
 }
@@ -4071,7 +4094,8 @@ function dsmWhats(tplId){
   var t=_dsm.t, tpl=DAN_TPL.find(function(x){return x.id===tplId;});
   if(!tpl){ toast('Modelo não encontrado','err'); return; }
   var lk=_linksAgendar[t.patient_id]; var tk=(lk&&lk.token)?lk.token:((typeof lk==='string')?lk:'');
-  var msg=tpl.texto.split('[nome]').join(String(t.patient_nome||'').trim().split(' ')[0]);
+  var _txt=(_dsm.central && tpl.textoCentral) ? tpl.textoCentral : tpl.texto; /* HAG_DESMARCOU_CENTRAL_v1 */
+  var msg=_txt.split('[nome]').join(String(t.patient_nome||'').trim().split(' ')[0]);
   var _pd=String(t.agendado_data||'').slice(0,10).split('-'); if(_pd.length===3) msg=msg.split('[data]').join(_pd[2]+'/'+_pd[1]);
   if(msg.indexOf('[link]')>=0){
     if(!tk){ toast('O link ainda não foi emitido. Espere 2 segundos e toque de novo.','err'); return; }
@@ -5158,7 +5182,7 @@ render=function(){
        ainda propagando), para de tentar e mostra uma tarja, em vez de ficar
        recarregando em laco.
      ====================================================================== */
-  var VERSAO = '20261125-1846';
+  var VERSAO = '20261127-1437';
   var ARQ = 'versao.json';
   var ultimaChecagem = 0;
   var pendente = null;
