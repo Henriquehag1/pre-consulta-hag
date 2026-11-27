@@ -891,8 +891,14 @@ function iniciar(){
       return;
     }
     /* HAG_PRAZO_PROPORCIONAL_v1: a folga depois do dia vem do plano; sem prazo, segue o de antes */
+    /* HAG_JANELA_UM_MES_v1 (27/11/2026). Pedido do Dr. Henrique (caso Erika, que desmarcou 28/11 e tinha
+       o seguinte indicado para 05/12, lotado): com dia indicado, ou com o prazo do plano, a pagina mostra
+       do dia indicado menos 7 ate 30 dias a partir de hoje (TETO_RETORNO). Nunca depois do limite do plano:
+       capLimite corta aqui, e hag_prazo_retorno recusa no servidor. Antes era o dia +7, ou a folga do plano.
+       O depois e calculado para bater no teto, para o TETO_CORTOU so acusar quando o plano cortou mesmo. */
+    var _ateMes=Math.max(7, _difDias(_somaDias(hojeSP(), TETO_RETORNO), ALVO||hojeSP()));
     JANELA=janelaComTeto(
-      (PRAZO && TIPOCON==='retorno') ? {antes:7, depois:PRAZO.depois} : (ALVOMED?{antes:7,depois:7}:null));
+      ((PRAZO && TIPOCON==='retorno') || ALVOMED) ? {antes:7, depois:_ateMes} : null);
     /* HAG_TETO_NAO_DESCE_v1: o proprio dia indicado ainda esta alem do teto */
     if(TETO_CORTOU && JANELA && JANELA.fim && ALVO>JANELA.fim){
       JANELA={inicio:null, fim:null, motivo:'dia indicado ainda alem das 5 semanas de antecedencia', situacao:'ainda_nao_abriu'};
